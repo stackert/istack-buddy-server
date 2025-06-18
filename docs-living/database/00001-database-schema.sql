@@ -154,6 +154,40 @@ CREATE TRIGGER set_timestamp_user_logins
     FOR EACH ROW
     EXECUTE FUNCTION trigger_set_timestamp();
 
+-- User Authentication Sessions (for active session management)
+CREATE TABLE user_authentication_sessions (
+    id uuid DEFAULT public.uuid_generate_v4() NOT NULL,
+    user_id uuid NOT NULL,
+    jwt_token character varying NOT NULL,
+    last_access_time timestamptz NOT NULL DEFAULT now(),
+    group_permission_chain jsonb DEFAULT '[]'::jsonb NOT NULL,
+    user_permission_chain jsonb DEFAULT '[]'::jsonb NOT NULL,
+    group_memberships jsonb DEFAULT '[]'::jsonb NOT NULL,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz DEFAULT now() NOT NULL,
+
+    -- Primary Key
+    CONSTRAINT pk_user_authentication_sessions PRIMARY KEY (id),
+    
+    -- Foreign Key
+    CONSTRAINT fk_user_authentication_sessions_user FOREIGN KEY (user_id) 
+        REFERENCES users(id),
+    
+    -- Unique constraint for user/token combination
+    CONSTRAINT uq_user_authentication_sessions_user_token UNIQUE (user_id, jwt_token)
+);
+
+-- Timestamp enforcement trigger for user_authentication_sessions table
+CREATE TRIGGER set_timestamp_user_authentication_sessions
+    BEFORE UPDATE ON user_authentication_sessions
+    FOR EACH ROW
+    EXECUTE FUNCTION trigger_set_timestamp();
+
+-- Indexes for performance
+CREATE INDEX idx_user_authentication_sessions_user_id ON user_authentication_sessions(user_id);
+CREATE INDEX idx_user_authentication_sessions_jwt_token ON user_authentication_sessions(jwt_token);
+CREATE INDEX idx_user_authentication_sessions_last_access ON user_authentication_sessions(last_access_time);
+
 -- User Profiles (extension table for profile information)
 -- Contains all user data except ID and timestamps from core users table
 CREATE TABLE user_profiles (

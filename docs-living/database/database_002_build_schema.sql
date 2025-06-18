@@ -455,6 +455,46 @@ CREATE INDEX idx_access_permission_assignments_group_permission_id ON access_per
 CREATE INDEX idx_access_permission_assignments_user_user_id ON access_permission_assignments_user(user_id);
 CREATE INDEX idx_access_permission_assignments_user_permission_id ON access_permission_assignments_user(permission_id);
 
+-- User Authentication Sessions Table
+-- This table manages active user authentication sessions
+-- Uses restrictive write pattern: ONLY updates last_access_time, ONLY inserts on new sessions, ONLY deletes on timeout
+CREATE TABLE user_authentication_sessions (
+    -- Primary identification
+    id uuid DEFAULT public.uuid_generate_v4() NOT NULL,
+    user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+
+    -- Session data
+    jwt_token character varying NOT NULL,
+
+    -- Permission caching (for performance)
+    group_permission_chain jsonb NOT NULL DEFAULT '[]',
+    user_permission_chain jsonb NOT NULL DEFAULT '[]',
+    group_memberships jsonb NOT NULL DEFAULT '[]',
+
+    -- Session timing
+    initial_access_time timestamptz NOT NULL DEFAULT now(),
+    last_access_time timestamptz NOT NULL DEFAULT now(),
+
+    -- Metadata
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+
+    -- Constraints
+    PRIMARY KEY (id),
+    UNIQUE (user_id, jwt_token)
+);
+
+-- Indexes for performance
+CREATE INDEX idx_user_auth_sessions_user_id ON user_authentication_sessions(user_id);
+CREATE INDEX idx_user_auth_sessions_last_access ON user_authentication_sessions(last_access_time);
+CREATE INDEX idx_user_auth_sessions_jwt_token ON user_authentication_sessions(jwt_token);
+
+-- Trigger for updating timestamps
+CREATE TRIGGER set_timestamp_user_authentication_sessions
+    BEFORE UPDATE ON user_authentication_sessions
+    FOR EACH ROW
+    EXECUTE FUNCTION trigger_set_timestamp();
+
 -- Access Control Audit Tables
 -- Audit trail tracking is primarily an application responsibility.
 -- These tables are for dev/debug purposes and to assist in troubleshooting.

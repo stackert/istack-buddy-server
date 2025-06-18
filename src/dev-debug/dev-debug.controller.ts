@@ -4,6 +4,7 @@ import {
   Get,
   Body,
   Param,
+  Query,
   HttpStatus,
   HttpCode,
 } from '@nestjs/common';
@@ -40,5 +41,17 @@ export class DevDebugController {
   @Get('users')
   async getAllUsers() {
     return this.devDebugService.getAllUsers();
+  }
+
+  /**
+   * GET /dev-debug/auth-status/:userId?token=...
+   * Test authentication status
+   */
+  @Get('auth-status/:userId')
+  async testAuthenticationStatus(
+    @Param('userId') userId: string,
+    @Query('token') token: string = 'default-test-token-12345',
+  ) {
+    return this.devDebugService.testAuthenticationStatus(userId, token);
   }
 }

@@ -135,6 +135,10 @@ async function seedDatabase() {
       console.log('👤 Creating admin user...');
       const adminUserId = await createAdminUser(client);
 
+      // Create authentication test users
+      console.log('👤 Creating authentication test users...');
+      const authUserIds = await createAuthenticationUsers(client);
+
       // Create sample permission groups
       console.log('🔐 Creating permission groups...');
       const permissionGroupIds = await createPermissionGroups(client);
@@ -150,6 +154,10 @@ async function seedDatabase() {
       // Assign admin to groups
       console.log('👥 Adding admin to groups...');
       await assignUserToGroups(client, adminUserId, permissionGroupIds);
+
+      // Assign permissions for authentication test users
+      console.log('🔑 Setting up authentication test user permissions...');
+      await assignAuthenticationUserPermissions(client, authUserIds);
 
       // Create admin login credentials
       console.log('🔑 Creating admin login...');
@@ -534,11 +542,10 @@ async function createAdminLogin(client: Client, userId: string): Promise<void> {
   const hashedPassword =
     '$2b$10$rHxriVNVON6.dXV7gVT5kezjNHYKL5XpXiKEd4hx4R4QqJTKfV8.i'; // "password123"
 
+  // Insert into user_logins table
   await client.query(
     `
-    INSERT INTO user_logins (user_id, password_hash)
-    VALUES ($1, $2)
-    ON CONFLICT (user_id) DO UPDATE SET password_hash = $2
+    INSERT INTO user_logins (user_id, password_hash) VALUES ($1, $2)
   `,
     [userId, hashedPassword],
   );
@@ -548,36 +555,172 @@ async function createAdminProfile(
   client: Client,
   userId: string,
 ): Promise<void> {
+  // Insert into user_profiles table
   await client.query(
     `
     INSERT INTO user_profiles (
-      user_id, username, first_name, last_name, email, user_defined_tags,
-      current_account_status, is_email_verified, email_verified_at,
-      account_type_informal, ui_handle, display_name, bio_about_me,
-      profile_visibility, ui_stash
+      user_id,
+      username,
+      first_name,
+      last_name,
+      email,
+      user_defined_tags,
+      current_account_status,
+      is_email_verified,
+      email_verified_at,
+      account_type_informal,
+      ui_handle,
+      display_name,
+      bio_about_me,
+      profile_visibility
     ) VALUES (
-      $1, 'admin', 'System', 'Administrator', 'admin@example.com', 'seed-data',
-      'ACTIVE', true, NOW(),
-      'ADMINISTRATOR', 'admin', 'System Administrator', 
+      $1,
+      'admin',
+      'System',
+      'Administrator',
+      'admin@example.com',
+      'seed-data',
+      'ACTIVE',
+      true,
+      NOW(),
+      'ADMINISTRATOR',
+      'admin',
+      'System Administrator',
       'System administrator account for managing the platform.',
-      'PRIVATE', '{}'
+      'PRIVATE'
     )
-    ON CONFLICT (user_id) DO UPDATE SET
-      username = 'admin',
-      first_name = 'System',
-      last_name = 'Administrator',
-      email = 'admin@example.com',
-      user_defined_tags = 'seed-data',
-      current_account_status = 'ACTIVE',
-      is_email_verified = true,
-      email_verified_at = NOW(),
-      account_type_informal = 'ADMINISTRATOR',
-      ui_handle = 'admin',
-      display_name = 'System Administrator',
-      bio_about_me = 'System administrator account for managing the platform.',
-      profile_visibility = 'PRIVATE'
   `,
     [userId],
+  );
+}
+
+async function createAuthenticationUsers(client: Client): Promise<{
+  allPermissionsUserId: string;
+  noPermissionsUserId: string;
+}> {
+  // Create base user records first
+  const allPermissionsUserResult = await client.query(`
+    INSERT INTO users DEFAULT VALUES RETURNING id
+  `);
+  const allPermissionsUserId = allPermissionsUserResult.rows[0].id;
+
+  const noPermissionsUserResult = await client.query(`
+    INSERT INTO users DEFAULT VALUES RETURNING id
+  `);
+  const noPermissionsUserId = noPermissionsUserResult.rows[0].id;
+
+  // Create user profiles
+  await client.query(
+    `
+    INSERT INTO user_profiles (
+      user_id,
+      username, 
+      first_name, 
+      last_name, 
+      email, 
+      account_type_informal,
+      current_account_status,
+      is_email_verified,
+      email_verified_at
+    ) VALUES (
+      $1,
+      'all-permissions',
+      'All',
+      'Permissions',
+      'all-permissions@example.com',
+      'STUDENT',
+      'ACTIVE',
+      true,
+      NOW()
+    )
+  `,
+    [allPermissionsUserId],
+  );
+
+  await client.query(
+    `
+    INSERT INTO user_profiles (
+      user_id,
+      username, 
+      first_name, 
+      last_name, 
+      email, 
+      account_type_informal,
+      current_account_status,
+      is_email_verified,
+      email_verified_at
+    ) VALUES (
+      $1,
+      'no-permissions',
+      'No',
+      'Permissions',
+      'no-permissions@example.com',
+      'STUDENT',
+      'ACTIVE',
+      true,
+      NOW()
+    )
+  `,
+    [noPermissionsUserId],
+  );
+
+  // Create user logins
+  await client.query(
+    `
+    INSERT INTO user_logins (user_id, password_hash)
+    VALUES ($1, '$2b$10$placeholder.hash.for.development.use.only.not.secure')
+  `,
+    [allPermissionsUserId],
+  );
+
+  await client.query(
+    `
+    INSERT INTO user_logins (user_id, password_hash)
+    VALUES ($1, '$2b$10$placeholder.hash.for.development.use.only.not.secure')
+  `,
+    [noPermissionsUserId],
+  );
+
+  return {
+    allPermissionsUserId,
+    noPermissionsUserId,
+  };
+}
+
+async function assignAuthenticationUserPermissions(
+  client: Client,
+  authUserIds: { allPermissionsUserId: string; noPermissionsUserId: string },
+): Promise<void> {
+  // Get all permissions for the all-permissions user
+  const allPermissions = await client.query(
+    'SELECT permission_id FROM access_permissions',
+  );
+
+  // Assign all permissions to all-permissions@example.com user directly (not through groups)
+  for (const permission of allPermissions.rows) {
+    const conditions = await getPermissionConditions(
+      client,
+      permission.permission_id,
+    );
+
+    await client.query(
+      `
+      INSERT INTO access_permission_assignments_user (user_id, permission_id, allow_deny, conditions)
+      VALUES ($1, $2, 'ALLOW', $3)
+      ON CONFLICT (user_id, permission_id) DO NOTHING
+    `,
+      [authUserIds.allPermissionsUserId, permission.permission_id, conditions],
+    );
+  }
+
+  // No permissions are assigned to no-permissions@example.com (they get no permissions by default)
+  logger.log(
+    'createAuthenticationUsers',
+    'Successfully created authentication test users',
+    {
+      allPermissionsUserId: authUserIds.allPermissionsUserId,
+      noPermissionsUserId: authUserIds.noPermissionsUserId,
+    },
   );
 }
 

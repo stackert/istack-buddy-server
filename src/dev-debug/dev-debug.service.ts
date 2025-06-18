@@ -2,44 +2,74 @@ import { Injectable } from '@nestjs/common';
 import { AuthDto, AuthResponseDto } from './dto/auth.dto';
 import { UserDetailsDto } from './dto/user-details.dto';
 import { CustomLoggerService } from '../common/logger/custom-logger.service';
+import { AuthService } from '../auth/auth.service';
 
 @Injectable()
 export class DevDebugService {
-  constructor(private readonly logger: CustomLoggerService) {}
+  constructor(
+    private readonly logger: CustomLoggerService,
+    private readonly authService: AuthService,
+  ) {}
   /**
    * Debug authentication endpoint
-   * Returns simple success response for development/debugging
+   * Now integrated with actual AuthService for testing
    */
   async authenticate(authData: AuthDto): Promise<AuthResponseDto> {
     this.logger.logWithContext(
       'log',
-      'Dev-debug authentication attempt',
+      'Dev-debug authentication attempt - using real AuthService',
       'DevDebugService.authenticate',
       undefined,
       { hasCredentials: !!authData },
     );
 
-    // For now, just return success
-    // Later we'll implement actual authentication logic
-    const result = {
-      success: true,
-      message: 'Authentication successful (dev-debug mode)',
-    };
+    try {
+      // Use the real AuthService for authentication
+      const authResult = await this.authService.authenticateUser(
+        authData.userId || 'dev-debug-user',
+        authData.token || 'dev-debug-token-placeholder-12345',
+      );
 
-    this.logger.auditLog(
-      'DEV_DEBUG_AUTH',
-      'success',
-      'DevDebugService.authenticate',
-      undefined,
-      { result },
-    );
+      const result = {
+        success: authResult.success,
+        message: `${authResult.message} (via AuthService)`,
+        sessionId: authResult.sessionId,
+        permissions: authResult.permissions,
+      };
 
-    return result;
+      this.logger.auditLog(
+        'DEV_DEBUG_AUTH',
+        'success',
+        'DevDebugService.authenticate',
+        undefined,
+        { result, authServiceUsed: true },
+      );
+
+      return result;
+    } catch (error) {
+      const result = {
+        success: false,
+        message: `Authentication failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      };
+
+      this.logger.auditLog(
+        'DEV_DEBUG_AUTH',
+        'failure',
+        'DevDebugService.authenticate',
+        undefined,
+        {
+          result,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        },
+      );
+
+      return result;
+    }
   }
 
   /**
    * Get user details by user ID
-   * Returns empty object for now, will be fleshed out later
+   * Now includes authentication status and permissions
    */
   async getUserDetails(userId: string): Promise<UserDetailsDto> {
     this.logger.logWithContext(
@@ -50,9 +80,72 @@ export class DevDebugService {
       { userId },
     );
 
-    // For now, just return empty object
-    // Later we'll implement actual user lookup
-    return {};
+    try {
+      // Test getUserPermissionSet method
+      const permissions = await this.authService.getUserPermissionSet(userId);
+
+      return {
+        userId,
+        permissions,
+        permissionCount: permissions.length,
+        timestamp: new Date().toISOString(),
+      };
+    } catch (error) {
+      this.logger.error(
+        'DevDebugService.getUserDetails',
+        'Failed to get user details',
+        error as Error,
+        { userId },
+      );
+
+      return {
+        userId,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: new Date().toISOString(),
+      };
+    }
+  }
+
+  /**
+   * Test authentication status endpoint
+   * Tests the isUserAuthenticated method
+   */
+  async testAuthenticationStatus(userId: string, token: string): Promise<any> {
+    this.logger.logWithContext(
+      'debug',
+      'Testing authentication status',
+      'DevDebugService.testAuthenticationStatus',
+      undefined,
+      { userId, tokenLength: token.length },
+    );
+
+    try {
+      const isAuthenticated = await this.authService.isUserAuthenticated(
+        userId,
+        token,
+      );
+
+      return {
+        userId,
+        token: token.substring(0, 10) + '...',
+        isAuthenticated,
+        timestamp: new Date().toISOString(),
+      };
+    } catch (error) {
+      this.logger.error(
+        'DevDebugService.testAuthenticationStatus',
+        'Failed to test authentication status',
+        error as Error,
+        { userId },
+      );
+
+      return {
+        userId,
+        isAuthenticated: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: new Date().toISOString(),
+      };
+    }
   }
 
   /**
