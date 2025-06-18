@@ -780,4 +780,109 @@ export class AuthService {
     // For now, simple string comparison (NOT SECURE - development only)
     return password === hash;
   }
+
+  /**
+   * Get session information by JWT token
+   * @param jwtToken - JWT token to look up
+   * @returns Session info if found, null otherwise
+   */
+  async getSessionByToken(
+    jwtToken: string,
+  ): Promise<{ userId: string; sessionId: string } | null> {
+    try {
+      const dbClient = await this.ensureDatabaseConnection();
+      const result = await dbClient.query(
+        'SELECT user_id, id as session_id FROM user_authentication_sessions WHERE jwt_token = $1',
+        [jwtToken],
+      );
+
+      if (result.rows.length === 0) {
+        this.logger.logWithContext(
+          'debug',
+          'No session found for JWT token',
+          'AuthService.getSessionByToken',
+          undefined,
+          { tokenLength: jwtToken.length },
+        );
+        return null;
+      }
+
+      return {
+        userId: result.rows[0].user_id,
+        sessionId: result.rows[0].session_id,
+      };
+    } catch (error) {
+      this.logger.error(
+        'AuthService.getSessionByToken',
+        'Database query failed',
+        error as Error,
+        { tokenLength: jwtToken.length },
+      );
+
+      if (error instanceof DatabaseError) {
+        this.logger.error(
+          'AuthService.getSessionByToken',
+          'FATAL: Database error during session lookup - re-throwing',
+          error,
+          { jwtToken: jwtToken.substring(0, 10) + '...', fatal: true },
+        );
+        throw error;
+      }
+
+      return null;
+    }
+  }
+
+  /**
+   * Get user profile information by user ID
+   * @param userId - User ID to get profile for
+   * @returns User profile if found, null otherwise
+   */
+  async getUserProfileById(userId: string): Promise<any | null> {
+    try {
+      const dbClient = await this.ensureDatabaseConnection();
+      const result = await dbClient.query(
+        `SELECT up.email, up.username, up.first_name, up.last_name, 
+                up.account_type_informal, up.current_account_status, 
+                up.last_login_at, up.is_email_verified, up.ui_handle,
+                up.display_name, up.bio_about_me, up.location_text,
+                up.profile_visibility
+         FROM user_profiles up 
+         WHERE up.user_id = $1`,
+        [userId],
+      );
+
+      if (result.rows.length === 0) {
+        this.logger.logWithContext(
+          'debug',
+          'User profile not found',
+          'AuthService.getUserProfileById',
+          undefined,
+          { userId },
+        );
+        return null;
+      }
+
+      return result.rows[0];
+    } catch (error) {
+      this.logger.error(
+        'AuthService.getUserProfileById',
+        'Database query failed',
+        error as Error,
+        { userId },
+      );
+
+      if (error instanceof DatabaseError) {
+        this.logger.error(
+          'AuthService.getUserProfileById',
+          'FATAL: Database error during profile lookup - re-throwing',
+          error,
+          { userId, fatal: true },
+        );
+        throw error;
+      }
+
+      return null;
+    }
+  }
 }
