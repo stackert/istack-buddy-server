@@ -1,0 +1,44 @@
+import {
+  Controller,
+  Post,
+  Get,
+  Body,
+  Param,
+  HttpStatus,
+  HttpCode,
+} from '@nestjs/common';
+import { DevDebugService } from './dev-debug.service';
+import { AuthDto } from './dto/auth.dto';
+
+@Controller('dev-debug')
+export class DevDebugController {
+  constructor(private readonly devDebugService: DevDebugService) {}
+
+  /**
+   * POST /dev-debug/auth
+   * Debug authentication endpoint
+   */
+  @Post('auth')
+  @HttpCode(HttpStatus.OK)
+  async authenticate(@Body() authData: AuthDto) {
+    return this.devDebugService.authenticate(authData);
+  }
+
+  /**
+   * GET /dev-debug/user-details/:userId
+   * Get user details by user ID
+   */
+  @Get('user-details/:userId')
+  async getUserDetails(@Param('userId') userId: string) {
+    return this.devDebugService.getUserDetails(userId);
+  }
+
+  /**
+   * GET /dev-debug/users
+   * Get all users list
+   */
+  @Get('users')
+  async getAllUsers() {
+    return this.devDebugService.getAllUsers();
+  }
+}

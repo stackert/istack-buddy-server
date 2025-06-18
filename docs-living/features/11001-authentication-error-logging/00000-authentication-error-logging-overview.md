@@ -1,5 +1,9 @@
 # Authentication, Error Handling & Logging Plan
 
+This is a copy of `docs-living/11001-authentication-error-logging-plan.md`
+
+Its expected that this document will change over the course of the work of this feature.
+
 ## Overview
 
 Foundation systems that must be implemented before any chat features. These provide security, reliability, and observability for the entire system.
