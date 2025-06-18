@@ -4,6 +4,51 @@ import { Client } from 'pg';
 import * as fs from 'fs';
 import * as path from 'path';
 
+// Simple logging utility for database scripts
+class DatabaseLogger {
+  private formatMessage(
+    level: string,
+    operation: string,
+    message: string,
+    data?: any,
+  ): string {
+    const timestamp = new Date().toISOString();
+    const logEntry = {
+      timestamp,
+      level,
+      context: 'DatabaseScript',
+      operation,
+      message,
+      data: data || undefined,
+    };
+    return JSON.stringify(logEntry);
+  }
+
+  log(operation: string, message: string, data?: any): void {
+    console.log(this.formatMessage('info', operation, message, data));
+  }
+
+  error(operation: string, message: string, error?: Error, data?: any): void {
+    const errorData = {
+      ...data,
+      error: error
+        ? {
+            name: error.name,
+            message: error.message,
+            stack: error.stack,
+          }
+        : undefined,
+    };
+    console.error(this.formatMessage('error', operation, message, errorData));
+  }
+
+  warn(operation: string, message: string, data?: any): void {
+    console.warn(this.formatMessage('warn', operation, message, data));
+  }
+}
+
+const logger = new DatabaseLogger();
+
 interface DatabaseConfig {
   host: string;
   port: number;
@@ -46,10 +91,12 @@ async function loadConfig(): Promise<DatabaseConfig> {
 async function createDatabase() {
   const config = await loadConfig();
 
-  console.log('🔧 Creating database...');
-  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`Host: ${config.host}:${config.port}`);
-  console.log(`Database: ${config.database}`);
+  logger.log('create-database', '🔧 Creating database...', {
+    environment: process.env.NODE_ENV || 'development',
+    host: config.host,
+    port: config.port,
+    database: config.database,
+  });
 
   // Connect to postgres database to create/drop target database
   const adminClient = new Client({
@@ -120,9 +167,11 @@ async function createDatabase() {
 
     await dbClient.end();
 
-    console.log('✅ Database created successfully!');
-    console.log(`📊 Database: ${config.database}`);
-    console.log('🔗 Connection ready for application use');
+    logger.log('create-database', '✅ Database created successfully!', {
+      database: config.database,
+      host: config.host,
+      port: config.port,
+    });
   } catch (error) {
     console.error('❌ Error creating database:', error);
     process.exit(1);

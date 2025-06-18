@@ -4,6 +4,51 @@ import { Client } from 'pg';
 import * as fs from 'fs';
 import * as path from 'path';
 
+// Simple logging utility for database scripts
+class DatabaseLogger {
+  private formatMessage(
+    level: string,
+    operation: string,
+    message: string,
+    data?: any,
+  ): string {
+    const timestamp = new Date().toISOString();
+    const logEntry = {
+      timestamp,
+      level,
+      context: 'DatabaseSeedScript',
+      operation,
+      message,
+      data: data || undefined,
+    };
+    return JSON.stringify(logEntry);
+  }
+
+  log(operation: string, message: string, data?: any): void {
+    console.log(this.formatMessage('info', operation, message, data));
+  }
+
+  error(operation: string, message: string, error?: Error, data?: any): void {
+    const errorData = {
+      ...data,
+      error: error
+        ? {
+            name: error.name,
+            message: error.message,
+            stack: error.stack,
+          }
+        : undefined,
+    };
+    console.error(this.formatMessage('error', operation, message, errorData));
+  }
+
+  warn(operation: string, message: string, data?: any): void {
+    console.warn(this.formatMessage('warn', operation, message, data));
+  }
+}
+
+const logger = new DatabaseLogger();
+
 interface DatabaseConfig {
   host: string;
   port: number;
