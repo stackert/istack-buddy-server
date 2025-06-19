@@ -1,0 +1,7 @@
+{
+  "sessionTimeoutSeconds": 28800,
+  "sessionCleanupIntervalMinutes": 30,
+  "jwtSecret": "development-jwt-secret-replace-in-production",
+  "jwtExpiration": "8h",
+  "jwtIssuer": "istack-buddy"
+}

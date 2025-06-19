@@ -1,0 +1,29 @@
+{
+  "development": {
+    "host": "localhost",
+    "port": 5432,
+    "database": "istack_buddy_dev",
+    "username": "postgres",
+    "password": "postgres",
+    "ssl": false,
+    "timezone": "UTC"
+  },
+  "test": {
+    "host": "localhost",
+    "port": 5432,
+    "database": "istack_buddy_test",
+    "username": "postgres",
+    "password": "postgres",
+    "ssl": false,
+    "timezone": "UTC"
+  },
+  "production": {
+    "host": "${DB_HOST}",
+    "port": "${DB_PORT}",
+    "database": "${DB_NAME}",
+    "username": "${DB_USERNAME}",
+    "password": "${DB_PASSWORD}",
+    "ssl": true,
+    "timezone": "UTC"
+  }
+}
