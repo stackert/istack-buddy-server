@@ -91,7 +91,31 @@ export class CustomLoggerService extends Logger implements LoggerService {
     };
   }
 
-  logWithContext(
+  /**
+   * Logs a message with structured context and data sanitization.
+   *
+   * This method provides context-aware logging with automatic data sanitization
+   * to prevent sensitive information from being logged. In production, it outputs
+   * structured JSON logs, while in development it uses NestJS's formatted output.
+   *
+   * @param level - The log level (log, error, warn, debug, verbose)
+   * @param message - The main log message
+   * @param context - The context/source of the log (typically class name)
+   * @param logContext - Optional context with user, request, and correlation data
+   * @param data - Optional additional data to log (will be sanitized)
+   *
+   * @example
+   * ```typescript
+   * logger.logWithContext(
+   *   'log',
+   *   'User authenticated successfully',
+   *   'AuthService',
+   *   { userId: 'user-123', correlationId: 'req-456' },
+   *   { permissions: ['read', 'write'] }
+   * );
+   * ```
+   */
+  public logWithContext(
     level: 'log' | 'error' | 'warn' | 'debug' | 'verbose',
     message: string,
     context: string,
@@ -126,7 +150,31 @@ export class CustomLoggerService extends Logger implements LoggerService {
     }
   }
 
-  errorWithContext(
+  /**
+   * Logs an error with structured context and full error details.
+   *
+   * This method specifically handles error logging with stack traces and
+   * associated context data. It automatically sanitizes any provided data
+   * and formats the error appropriately for both development and production.
+   *
+   * @param message - Descriptive message about the error context
+   * @param error - The Error object to log with stack trace
+   * @param context - The context/source of the error (typically class.method)
+   * @param logContext - Optional context with user, request, and correlation data
+   * @param data - Optional additional data related to the error (will be sanitized)
+   *
+   * @example
+   * ```typescript
+   * logger.errorWithContext(
+   *   'Database connection failed',
+   *   dbError,
+   *   'DatabaseService.connect',
+   *   { correlationId: 'req-123' },
+   *   { connectionString: 'postgres://...' }
+   * );
+   * ```
+   */
+  public errorWithContext(
     message: string,
     error: Error,
     context: string,
@@ -160,8 +208,31 @@ export class CustomLoggerService extends Logger implements LoggerService {
     }
   }
 
-  // Audit logging for security events
-  auditLog(
+  /**
+   * Logs security and audit events for compliance and monitoring.
+   *
+   * This method creates audit trail entries for security-sensitive operations
+   * such as authentication, authorization, data access, and system changes.
+   * All audit logs are automatically sanitized and structured for analysis.
+   *
+   * @param event - The type of audit event (e.g., 'USER_LOGIN', 'DATA_ACCESS')
+   * @param result - Whether the audited operation succeeded or failed
+   * @param context - The context/source of the audit event
+   * @param logContext - Optional context with user, request, and correlation data
+   * @param details - Optional additional details about the audited operation
+   *
+   * @example
+   * ```typescript
+   * logger.auditLog(
+   *   'USER_LOGIN',
+   *   'success',
+   *   'AuthController.login',
+   *   { userId: 'user-123', correlationId: 'req-456' },
+   *   { loginMethod: 'email', ipAddress: '192.168.1.1' }
+   * );
+   * ```
+   */
+  public auditLog(
     event: string,
     result: 'success' | 'failure',
     context: string,
@@ -181,8 +252,31 @@ export class CustomLoggerService extends Logger implements LoggerService {
     );
   }
 
-  // Permission logging
-  permissionCheck(
+  /**
+   * Logs permission check operations for security monitoring.
+   *
+   * This method tracks permission verification attempts, logging both
+   * successful grants and denied access attempts. Useful for security
+   * monitoring and debugging authorization issues.
+   *
+   * @param permission - The permission being checked (e.g., 'user:edit', 'admin:delete')
+   * @param allowed - Whether the permission check succeeded
+   * @param context - The context/source of the permission check
+   * @param logContext - Optional context with user, request, and correlation data
+   * @param conditions - Optional conditions or criteria used in the permission check
+   *
+   * @example
+   * ```typescript
+   * logger.permissionCheck(
+   *   'user:profile:edit',
+   *   true,
+   *   'UserController.updateProfile',
+   *   { userId: 'user-123', correlationId: 'req-456' },
+   *   { targetUserId: 'user-123', sameUser: true }
+   * );
+   * ```
+   */
+  public permissionCheck(
     permission: string,
     allowed: boolean,
     context: string,
@@ -202,8 +296,31 @@ export class CustomLoggerService extends Logger implements LoggerService {
     );
   }
 
-  // Database operation logging
-  databaseOperation(
+  /**
+   * Logs database operations for performance monitoring and debugging.
+   *
+   * This method tracks database operations including queries, inserts, updates,
+   * and deletes. Useful for monitoring database performance, debugging issues,
+   * and maintaining audit trails of data changes.
+   *
+   * @param operation - The type of database operation (e.g., 'SELECT', 'INSERT', 'UPDATE')
+   * @param table - The database table being operated on
+   * @param context - The context/source of the database operation
+   * @param logContext - Optional context with user, request, and correlation data
+   * @param details - Optional additional details about the operation (will be sanitized)
+   *
+   * @example
+   * ```typescript
+   * logger.databaseOperation(
+   *   'UPDATE',
+   *   'user_profiles',
+   *   'UserService.updateProfile',
+   *   { userId: 'user-123', correlationId: 'req-456' },
+   *   { fieldsUpdated: ['firstName', 'lastName'], recordId: 'profile-789' }
+   * );
+   * ```
+   */
+  public databaseOperation(
     operation: string,
     table: string,
     context: string,

@@ -32,7 +32,40 @@ export interface ValidationError {
 export class ValidationExceptionFilter implements ExceptionFilter {
   constructor(private readonly logger: CustomLoggerService) {}
 
-  catch(exception: BadRequestException, host: ArgumentsHost): void {
+  /**
+   * Handles BadRequestException instances, particularly validation errors from class-validator.
+   *
+   * This filter catches validation exceptions and transforms them into structured error responses
+   * with detailed field-level validation information. It extracts validation constraints from
+   * class-validator errors and formats them for easy client consumption. All validation errors
+   * are logged with full context for debugging and monitoring purposes.
+   *
+   * @param exception - The BadRequestException instance containing validation error details
+   * @param host - The arguments host containing request/response context
+   *
+   * @example
+   * ```typescript
+   * // This filter automatically handles validation errors and returns structured responses:
+   * // {
+   * //   "statusCode": 400,
+   * //   "timestamp": "2025-06-19T02:30:00.000Z",
+   * //   "path": "/auth/user",
+   * //   "method": "POST",
+   * //   "message": "Validation failed",
+   * //   "correlationId": "uuid-123",
+   * //   "errors": [
+   * //     {
+   * //       "field": "email",
+   * //       "value": "invalid-email",
+   * //       "constraints": {
+   * //         "isEmail": "email must be a valid email address"
+   * //       }
+   * //     }
+   * //   ]
+   * // }
+   * ```
+   */
+  public catch(exception: BadRequestException, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<

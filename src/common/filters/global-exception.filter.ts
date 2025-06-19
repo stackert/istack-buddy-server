@@ -27,7 +27,50 @@ export interface ErrorResponse {
 export class GlobalExceptionFilter implements ExceptionFilter {
   constructor(private readonly logger: CustomLoggerService) {}
 
-  catch(exception: unknown, host: ArgumentsHost): void {
+  /**
+   * Handles all unhandled exceptions throughout the application.
+   *
+   * This global exception filter serves as the last line of defense for error handling,
+   * catching any exceptions that aren't handled by more specific filters. It provides
+   * consistent error response formatting, comprehensive logging, and special handling
+   * for security-related errors. The filter automatically creates audit logs for
+   * authentication/authorization failures and ensures sensitive information is not
+   * exposed in production environments.
+   *
+   * @param exception - The exception that was thrown (can be HttpException, Error, or unknown)
+   * @param host - The arguments host containing request/response context
+   *
+   * @example
+   * ```typescript
+   * // This filter handles various exception types and returns structured responses:
+   *
+   * // For HttpException:
+   * // {
+   * //   "statusCode": 404,
+   * //   "timestamp": "2025-06-19T02:30:00.000Z",
+   * //   "path": "/api/users/999",
+   * //   "method": "GET",
+   * //   "message": "User not found",
+   * //   "correlationId": "uuid-123"
+   * // }
+   *
+   * // For unknown errors (production):
+   * // {
+   * //   "statusCode": 500,
+   * //   "timestamp": "2025-06-19T02:30:00.000Z",
+   * //   "path": "/api/endpoint",
+   * //   "method": "POST",
+   * //   "message": "Internal server error",
+   * //   "correlationId": "uuid-123"
+   * // }
+   *
+   * // Additional features:
+   * // - Automatic audit logging for 401/403 errors
+   * // - Detailed error info in development environments
+   * // - Full request context logging for debugging
+   * ```
+   */
+  public catch(exception: unknown, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<

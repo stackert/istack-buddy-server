@@ -18,7 +18,7 @@ export class AuthenticationUserService {
    * @param authRequest - User authentication request containing userId and jwtToken
    * @returns User permissions on success, throws UnauthorizedException on failure
    */
-  async authenticateUser(
+  public async authenticateUser(
     authRequest: UserAuthRequestDto,
   ): Promise<UserAuthResponseDto> {
     const { email, password } = authRequest;
@@ -121,7 +121,7 @@ export class AuthenticationUserService {
     }
   }
 
-  async getUserProfile(jwtToken: string): Promise<any> {
+  public async getUserProfile(jwtToken: string): Promise<any> {
     this.logger.logWithContext(
       'log',
       'User profile request received',

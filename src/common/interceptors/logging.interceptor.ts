@@ -15,7 +15,32 @@ import {
 export class LoggingInterceptor implements NestInterceptor {
   constructor(private readonly logger: CustomLoggerService) {}
 
-  intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
+  /**
+   * Intercepts HTTP requests and responses to provide comprehensive request/response logging.
+   *
+   * This interceptor automatically logs all incoming HTTP requests and their responses,
+   * including timing information, status codes, and request metadata. It integrates with
+   * the correlation ID system and provides structured logging for monitoring and debugging.
+   * The interceptor sanitizes sensitive data and provides different log levels for
+   * successful responses versus errors.
+   *
+   * @param context - The execution context containing request/response information
+   * @param next - The call handler to continue the request processing pipeline
+   * @returns Observable that emits the response data with logging side effects
+   *
+   * @example
+   * ```typescript
+   * // This interceptor is typically applied globally or to specific controllers
+   * // It automatically logs:
+   * // - Incoming requests with method, URL, user info, and metadata
+   * // - Outgoing responses with status codes and timing
+   * // - Errors with full context and timing information
+   * ```
+   */
+  public intercept(
+    context: ExecutionContext,
+    next: CallHandler,
+  ): Observable<any> {
     const request = context.switchToHttp().getRequest();
     const response = context.switchToHttp().getResponse();
     const now = Date.now();

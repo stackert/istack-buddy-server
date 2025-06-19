@@ -111,12 +111,29 @@ export class AuthService {
   }
 
   /**
-   * Authenticates user by email and password
-   * @param email - User email address
-   * @param password - User password
-   * @returns Authentication result with JWT token and session information
+   * Authenticates a user using email and password credentials.
+   *
+   * This method performs email/password authentication by validating credentials
+   * against the database, generating a JWT token, creating an authentication session,
+   * and caching user permissions for optimal performance.
+   *
+   * @param email - The user's email address used for authentication
+   * @param password - The user's password for credential verification
+   * @returns Promise resolving to AuthenticationResult containing session info, JWT token, and permissions
+   * @throws {AuthenticationFailedException} When credentials are invalid or missing
+   * @throws {DatabaseError} When database operations fail (re-thrown as fatal errors)
+   *
+   * @example
+   * ```typescript
+   * const result = await authService.authenticateUserByEmailAndPassword(
+   *   'user@example.com',
+   *   'password123'
+   * );
+   * console.log(result.jwtToken); // Generated JWT token
+   * console.log(result.permissions); // User's permission array
+   * ```
    */
-  async authenticateUserByEmailAndPassword(
+  public async authenticateUserByEmailAndPassword(
     email: string,
     password: string,
   ): Promise<AuthenticationResult> {
@@ -206,12 +223,29 @@ export class AuthService {
   }
 
   /**
-   * Validates JWT token and creates/updates authentication session
-   * @param userId - User ID to authenticate
-   * @param jwtToken - JWT token to validate
-   * @returns Authentication result with session information
+   * Authenticates a user using a JWT token and user ID.
+   *
+   * This method validates a JWT token, verifies the user exists, creates or updates
+   * an authentication session, and caches user permissions. This is primarily used
+   * for internal authentication workflows where a JWT token has already been generated.
+   *
+   * @param userId - The unique identifier of the user to authenticate
+   * @param jwtToken - The JWT token to validate for authentication
+   * @returns Promise resolving to AuthenticationResult containing session info and permissions
+   * @throws {AuthenticationFailedException} When JWT token is invalid or user not found
+   * @throws {DatabaseError} When database operations fail (re-thrown as fatal errors)
+   *
+   * @example
+   * ```typescript
+   * const result = await authService.authenticateUser(
+   *   'user-uuid-123',
+   *   'jwt-token-string'
+   * );
+   * console.log(result.sessionId); // Created session ID
+   * console.log(result.permissions); // Cached user permissions
+   * ```
    */
-  async authenticateUser(
+  public async authenticateUser(
     userId: string,
     jwtToken: string,
   ): Promise<AuthenticationResult> {
@@ -291,12 +325,31 @@ export class AuthService {
   }
 
   /**
-   * Checks if user session is valid and active
-   * @param userId - User ID to check
-   * @param jwtToken - JWT token to validate
-   * @returns True if session is valid and active
+   * Checks if a user's authentication session is valid and active.
+   *
+   * This method validates that a user has an active session with the provided JWT token,
+   * checks if the session is within the configured timeout period, and updates the
+   * session's last access time for valid sessions. Expired sessions are automatically
+   * removed from the database.
+   *
+   * @param userId - The unique identifier of the user to check
+   * @param jwtToken - The JWT token associated with the user's session
+   * @returns Promise resolving to true if session is valid and active, false otherwise
+   * @throws Never throws - all errors are caught and logged, returning false for safety
+   *
+   * @example
+   * ```typescript
+   * const isValid = await authService.isUserAuthenticated('user-uuid', 'jwt-token');
+   * if (isValid) {
+   *   // User has valid session, proceed with request
+   *   console.log('User is authenticated');
+   * } else {
+   *   // Session invalid, expired, or not found
+   *   console.log('Authentication required');
+   * }
+   * ```
    */
-  async isUserAuthenticated(
+  public async isUserAuthenticated(
     userId: string,
     jwtToken: string,
   ): Promise<boolean> {
@@ -374,11 +427,29 @@ export class AuthService {
   }
 
   /**
-   * Retrieves user's effective permissions (combined group and individual permissions)
-   * @param userId - User ID to get permissions for
-   * @returns Array of permission strings
+   * Retrieves the complete set of permissions for a user.
+   *
+   * This method returns a user's effective permissions by first attempting to use
+   * cached permissions from an active session, and falling back to querying the
+   * database if no cache is available. The permissions include both individual
+   * user permissions and permissions inherited through group memberships.
+   *
+   * @param userId - The unique identifier of the user to get permissions for
+   * @returns Promise resolving to an array of permission strings, empty array on error
+   * @throws Never throws - all errors are caught and logged, returning empty array for safety
+   *
+   * @example
+   * ```typescript
+   * const permissions = await authService.getUserPermissionSet('user-uuid-123');
+   * console.log(permissions); // ['user:profile:view', 'course:create', ...]
+   *
+   * // Check for specific permission
+   * if (permissions.includes('admin:users:delete')) {
+   *   console.log('User has admin delete permission');
+   * }
+   * ```
    */
-  async getUserPermissionSet(userId: string): Promise<string[]> {
+  public async getUserPermissionSet(userId: string): Promise<string[]> {
     this.logger.logWithContext(
       'debug',
       'Retrieving user permission set',
@@ -422,6 +493,145 @@ export class AuthService {
         { userId },
       );
       return [];
+    }
+  }
+
+  /**
+   * Retrieves session information using a JWT token.
+   *
+   * This method looks up an authentication session by JWT token and returns
+   * the associated user ID and session ID. This is primarily used for
+   * cookie-based authentication workflows where only the JWT token is available.
+   *
+   * @param jwtToken - The JWT token to look up in the session store
+   * @returns Promise resolving to session info object with userId and sessionId, or null if not found
+   * @throws {DatabaseError} When database operations fail (re-thrown as fatal errors)
+   *
+   * @example
+   * ```typescript
+   * const sessionInfo = await authService.getSessionByToken('jwt-token-string');
+   * if (sessionInfo) {
+   *   console.log(`User ${sessionInfo.userId} has session ${sessionInfo.sessionId}`);
+   * } else {
+   *   console.log('No session found for this token');
+   * }
+   * ```
+   */
+  public async getSessionByToken(
+    jwtToken: string,
+  ): Promise<{ userId: string; sessionId: string } | null> {
+    try {
+      const dbClient = await this.ensureDatabaseConnection();
+      const result = await dbClient.query(
+        'SELECT user_id, id as session_id FROM user_authentication_sessions WHERE jwt_token = $1',
+        [jwtToken],
+      );
+
+      if (result.rows.length === 0) {
+        this.logger.logWithContext(
+          'debug',
+          'No session found for JWT token',
+          'AuthService.getSessionByToken',
+          undefined,
+          { tokenLength: jwtToken.length },
+        );
+        return null;
+      }
+
+      return {
+        userId: result.rows[0].user_id,
+        sessionId: result.rows[0].session_id,
+      };
+    } catch (error) {
+      this.logger.error(
+        'AuthService.getSessionByToken',
+        'Database query failed',
+        error as Error,
+        { tokenLength: jwtToken.length },
+      );
+
+      if (error instanceof DatabaseError) {
+        this.logger.error(
+          'AuthService.getSessionByToken',
+          'FATAL: Database error during session lookup - re-throwing',
+          error,
+          { jwtToken: jwtToken.substring(0, 10) + '...', fatal: true },
+        );
+        throw error;
+      }
+
+      return null;
+    }
+  }
+
+  /**
+   * Retrieves complete user profile information by user ID.
+   *
+   * This method queries the database for comprehensive user profile data including
+   * personal information, account status, preferences, and metadata. Used primarily
+   * for profile display and user management operations.
+   *
+   * @param userId - The unique identifier of the user to get profile information for
+   * @returns Promise resolving to user profile object with all profile fields, or null if not found
+   * @throws {DatabaseError} When database operations fail (re-thrown as fatal errors)
+   *
+   * @example
+   * ```typescript
+   * const profile = await authService.getUserProfileById('user-uuid-123');
+   * if (profile) {
+   *   console.log(`${profile.first_name} ${profile.last_name}`);
+   *   console.log(`Account status: ${profile.current_account_status}`);
+   *   console.log(`Email verified: ${profile.is_email_verified}`);
+   * } else {
+   *   console.log('User profile not found');
+   * }
+   * ```
+   */
+  public async getUserProfileById(userId: string): Promise<any | null> {
+    try {
+      const dbClient = await this.ensureDatabaseConnection();
+      const result = await dbClient.query(
+        `SELECT up.email, up.username, up.first_name, up.last_name, 
+                up.account_type_informal, up.current_account_status, 
+                up.last_login_at, up.is_email_verified, up.ui_handle,
+                up.display_name, up.bio_about_me, up.location_text,
+                up.profile_visibility
+         FROM user_profiles up 
+         WHERE up.user_id = $1`,
+        [userId],
+      );
+
+      if (result.rows.length === 0) {
+        this.logger.logWithContext(
+          'debug',
+          'User profile not found',
+          'AuthService.getUserProfileById',
+          undefined,
+          { userId },
+        );
+        return null;
+      }
+
+      return result.rows[0];
+    } catch (error) {
+      this.logger.error(
+        'AuthService.getUserProfileById',
+        'Database query failed',
+        error as Error,
+        { userId },
+      );
+
+      if (error instanceof DatabaseError) {
+        this.logger.error(
+          'AuthService.getUserProfileById',
+          'FATAL: Database error during profile lookup - re-throwing',
+          error,
+          { userId, fatal: true },
+        );
+        throw error;
+      }
+
+      return null;
     }
   }
 
@@ -779,110 +989,5 @@ export class AuthService {
 
     // For now, simple string comparison (NOT SECURE - development only)
     return password === hash;
-  }
-
-  /**
-   * Get session information by JWT token
-   * @param jwtToken - JWT token to look up
-   * @returns Session info if found, null otherwise
-   */
-  async getSessionByToken(
-    jwtToken: string,
-  ): Promise<{ userId: string; sessionId: string } | null> {
-    try {
-      const dbClient = await this.ensureDatabaseConnection();
-      const result = await dbClient.query(
-        'SELECT user_id, id as session_id FROM user_authentication_sessions WHERE jwt_token = $1',
-        [jwtToken],
-      );
-
-      if (result.rows.length === 0) {
-        this.logger.logWithContext(
-          'debug',
-          'No session found for JWT token',
-          'AuthService.getSessionByToken',
-          undefined,
-          { tokenLength: jwtToken.length },
-        );
-        return null;
-      }
-
-      return {
-        userId: result.rows[0].user_id,
-        sessionId: result.rows[0].session_id,
-      };
-    } catch (error) {
-      this.logger.error(
-        'AuthService.getSessionByToken',
-        'Database query failed',
-        error as Error,
-        { tokenLength: jwtToken.length },
-      );
-
-      if (error instanceof DatabaseError) {
-        this.logger.error(
-          'AuthService.getSessionByToken',
-          'FATAL: Database error during session lookup - re-throwing',
-          error,
-          { jwtToken: jwtToken.substring(0, 10) + '...', fatal: true },
-        );
-        throw error;
-      }
-
-      return null;
-    }
-  }
-
-  /**
-   * Get user profile information by user ID
-   * @param userId - User ID to get profile for
-   * @returns User profile if found, null otherwise
-   */
-  async getUserProfileById(userId: string): Promise<any | null> {
-    try {
-      const dbClient = await this.ensureDatabaseConnection();
-      const result = await dbClient.query(
-        `SELECT up.email, up.username, up.first_name, up.last_name, 
-                up.account_type_informal, up.current_account_status, 
-                up.last_login_at, up.is_email_verified, up.ui_handle,
-                up.display_name, up.bio_about_me, up.location_text,
-                up.profile_visibility
-         FROM user_profiles up 
-         WHERE up.user_id = $1`,
-        [userId],
-      );
-
-      if (result.rows.length === 0) {
-        this.logger.logWithContext(
-          'debug',
-          'User profile not found',
-          'AuthService.getUserProfileById',
-          undefined,
-          { userId },
-        );
-        return null;
-      }
-
-      return result.rows[0];
-    } catch (error) {
-      this.logger.error(
-        'AuthService.getUserProfileById',
-        'Database query failed',
-        error as Error,
-        { userId },
-      );
-
-      if (error instanceof DatabaseError) {
-        this.logger.error(
-          'AuthService.getUserProfileById',
-          'FATAL: Database error during profile lookup - re-throwing',
-          error,
-          { userId, fatal: true },
-        );
-        throw error;
-      }
-
-      return null;
-    }
   }
 }

@@ -24,9 +24,11 @@ describe('AuthenticationUserService', () => {
         {
           provide: AuthService,
           useValue: {
-            authenticateUser: jest.fn(),
+            authenticateUserByEmailAndPassword: jest.fn(),
             isUserAuthenticated: jest.fn(),
             getUserPermissionSet: jest.fn(),
+            getSessionByToken: jest.fn(),
+            getUserProfileById: jest.fn(),
           },
         },
       ],
@@ -42,23 +44,70 @@ describe('AuthenticationUserService', () => {
   });
 
   describe('authenticateUser', () => {
-    it('should throw UnauthorizedException when userId is missing', async () => {
-      const authRequest = { userId: '', jwtToken: 'valid-token' };
+    it('should throw UnauthorizedException when email is missing', async () => {
+      const authRequest = { email: '', password: 'valid-password' };
 
       await expect(service.authenticateUser(authRequest)).rejects.toThrow(
         UnauthorizedException,
       );
     });
 
-    it('should throw UnauthorizedException when jwtToken is missing', async () => {
-      const authRequest = { userId: 'valid-user', jwtToken: '' };
+    it('should throw UnauthorizedException when password is missing', async () => {
+      const authRequest = { email: 'test@example.com', password: '' };
 
       await expect(service.authenticateUser(authRequest)).rejects.toThrow(
         UnauthorizedException,
       );
+    });
+
+    it('should return user data when authentication is successful', async () => {
+      const authRequest = {
+        email: 'test@example.com',
+        password: 'valid-password',
+      };
+      const mockAuthResult = {
+        success: true,
+        userId: 'test-user-id',
+        jwtToken: 'test-jwt-token',
+        permissions: ['test:permission'],
+        message: 'Authentication successful',
+      };
+
+      (
+        authService.authenticateUserByEmailAndPassword as jest.Mock
+      ).mockResolvedValue(mockAuthResult);
+
+      const result = await service.authenticateUser(authRequest);
+
+      expect(result).toEqual({
+        success: true,
+        userId: 'test-user-id',
+        email: 'test@example.com',
+        jwtToken: 'test-jwt-token',
+        permissions: ['test:permission'],
+        message: 'Authentication successful',
+      });
     });
 
     // TODO: Add more comprehensive tests when AuthService is properly mockable
     // This is a placeholder test structure for the development phase
+  });
+
+  describe('getUserProfile', () => {
+    it('should throw UnauthorizedException when no token provided', async () => {
+      await expect(service.getUserProfile('')).rejects.toThrow(
+        UnauthorizedException,
+      );
+    });
+
+    it('should throw UnauthorizedException when session not found', async () => {
+      (authService.getSessionByToken as jest.Mock).mockResolvedValue(null);
+
+      await expect(service.getUserProfile('invalid-token')).rejects.toThrow(
+        UnauthorizedException,
+      );
+    });
+
+    // TODO: Add more comprehensive tests for successful profile retrieval
   });
 });
