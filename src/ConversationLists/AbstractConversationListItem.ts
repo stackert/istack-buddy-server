@@ -1,0 +1,149 @@
+// ConversationListItem - aka "Message".
+
+import type {
+  TConversationListItem,
+  TConversationItemAuthorRoles,
+  TSupportedContentTypes,
+} from './types';
+// type TConversationListItem = {
+//   id: string;
+//   authorId: string; // at this time we don't have an 'id' for author.  Not sure how will deal with 'author' identity of users are anonymous.
+//   authorRole: TConversationItemAuthorRoles;
+//   content: {
+//     type: TSupportedContentTypes;
+//     payload;
+//   };
+
+//   createdAt: Date;
+//   updatedAt: Date;
+//   estimatedTokenCount: number;
+
+//   //  "TConversationListItem" will have different visibilities
+//   // admin/cx-agent will likely see all messages
+//   // "customer"/users will see most message (all between them and their cx-rep)
+//   //  cx-agent may choose to "share" a robot message with the customer (we'll duplicate the message in those cases)
+//   roleVisibilities: TConversationItemAuthorRoles[];
+// };
+
+/**
+ * Abstract base class for conversation list items (messages).
+ * Handles message properties and role-based visibility.
+ */
+class AbstractConversationListItem {
+  constructor(
+    public readonly id: string,
+    public readonly authorId: string,
+    public readonly authorRole: TConversationItemAuthorRoles,
+    public readonly content: { type: TSupportedContentTypes; payload: any },
+    public readonly createdAt: Date,
+    public readonly updatedAt: Date,
+    public readonly estimatedTokenCount: number,
+    public readonly roleVisibilities: TConversationItemAuthorRoles[],
+  ) {}
+
+  /**
+   * Helper method to create default visibility settings based on author role
+   */
+  static getDefaultVisibilities(
+    authorRole: TConversationItemAuthorRoles,
+  ): TConversationItemAuthorRoles[] {
+    switch (authorRole) {
+      case 'cx-customer':
+        // Customer messages are visible to customer, agent, supervisor, and admin
+        return [
+          'cx-customer',
+          'cx-agent',
+          'cx-supervisor',
+          'conversation-admin',
+        ];
+
+      case 'cx-agent':
+        // Agent messages are visible to customer, agent, supervisor, and admin
+        return [
+          'cx-customer',
+          'cx-agent',
+          'cx-supervisor',
+          'conversation-admin',
+        ];
+
+      case 'cx-supervisor':
+        // Supervisor messages are typically private to supervisor and admin (not shared with customer by default)
+        return ['cx-supervisor', 'conversation-admin'];
+
+      case 'robot':
+        // Robot messages are only visible to agent, supervisor, and admin (not customer unless explicitly shared)
+        return ['cx-agent', 'cx-supervisor', 'conversation-admin'];
+
+      case 'cx-robot':
+        // Shared robot messages are visible to customer (these are robot messages that were explicitly shared)
+        return [
+          'cx-customer',
+          'cx-agent',
+          'cx-supervisor',
+          'conversation-admin',
+        ];
+
+      case 'conversation-admin':
+        // Admin messages are visible to all roles
+        return [
+          'cx-customer',
+          'cx-agent',
+          'cx-supervisor',
+          'conversation-admin',
+        ];
+
+      case 'tool':
+        // Tool messages are typically only visible to agents, supervisors, and admin
+        return ['cx-agent', 'cx-supervisor', 'conversation-admin'];
+
+      case 'admin':
+        // Admin system messages are visible to all
+        return [
+          'cx-customer',
+          'cx-agent',
+          'cx-supervisor',
+          'conversation-admin',
+        ];
+
+      default:
+        // Default to agent and admin visibility
+        return ['cx-agent', 'conversation-admin'];
+    }
+  }
+
+  /**
+   * Helper method to create visibility for shared robot messages
+   * When an agent wants to share a robot message with the customer
+   */
+  static getSharedRobotVisibilities(): TConversationItemAuthorRoles[] {
+    return ['cx-customer', 'cx-agent', 'cx-supervisor', 'conversation-admin'];
+  }
+
+  /**
+   * Helper method to create visibility for private agent-supervisor communication
+   */
+  static getPrivateAgentSupervisorVisibilities(): TConversationItemAuthorRoles[] {
+    return ['cx-agent', 'cx-supervisor', 'conversation-admin'];
+  }
+
+  /**
+   * Check if this item is visible to a specific role
+   */
+  isVisibleToRole(role: TConversationItemAuthorRoles): boolean {
+    return this.roleVisibilities.includes(role);
+  }
+
+  /**
+   * Check if this item can be processed by AI/robots
+   */
+  canBeProcessedByAI(): boolean {
+    // Robot messages and private supervisor messages shouldn't be sent back to AI
+    return (
+      this.authorRole !== 'robot' &&
+      (this.authorRole !== 'cx-supervisor' ||
+        this.roleVisibilities.includes('robot'))
+    );
+  }
+}
+
+export { AbstractConversationListItem };
