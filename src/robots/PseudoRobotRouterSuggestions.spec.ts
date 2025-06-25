@@ -1,0 +1,368 @@
+import { PseudoRobotRouterSuggestions } from './PseudoRobotRouterSuggestions';
+import { TMessageEnvelope, TRobotMessage } from './types';
+
+describe('PseudoRobotRouterSuggestions', () => {
+  let robot: PseudoRobotRouterSuggestions;
+
+  beforeEach(() => {
+    robot = new PseudoRobotRouterSuggestions();
+  });
+
+  describe('Class Properties', () => {
+    it('should have correct name property', () => {
+      expect(robot.name).toBe('PseudoRobotRouterSuggestions');
+    });
+
+    it('should have correct version property', () => {
+      expect(robot.version).toBe('1.0.0');
+    });
+
+    it('should have correct LLModelName property', () => {
+      expect(robot.LLModelName).toBe('pseudo-router-suggestions');
+    });
+
+    it('should have correct LLModelVersion property', () => {
+      expect(robot.LLModelVersion).toBe('1.0.0');
+    });
+
+    it('should have correct contextWindowSizeInTokens property', () => {
+      expect(robot.contextWindowSizeInTokens).toBe(4096);
+    });
+
+    it('should inherit getName method from AbstractRobot', () => {
+      expect(robot.getName()).toBe('PseudoRobotRouterSuggestions');
+    });
+
+    it('should inherit getVersion method from AbstractRobot', () => {
+      expect(robot.getVersion()).toBe('1.0.0');
+    });
+
+    it('should have correct robotClass property', () => {
+      expect(robot.robotClass).toBe('PseudoRobotRouterSuggestions');
+    });
+  });
+
+  describe('Static Properties', () => {
+    it('should have static descriptionShort property', () => {
+      expect(PseudoRobotRouterSuggestions.descriptionShort).toBeDefined();
+      expect(typeof PseudoRobotRouterSuggestions.descriptionShort).toBe(
+        'string',
+      );
+      expect(
+        PseudoRobotRouterSuggestions.descriptionShort.trim().length,
+      ).toBeGreaterThan(0);
+    });
+
+    it('should have static descriptionLong property', () => {
+      expect(PseudoRobotRouterSuggestions.descriptionLong).toBeDefined();
+      expect(typeof PseudoRobotRouterSuggestions.descriptionLong).toBe(
+        'string',
+      );
+      expect(
+        PseudoRobotRouterSuggestions.descriptionLong.trim().length,
+      ).toBeGreaterThan(0);
+    });
+
+    it('should have descriptionLong longer than descriptionShort', () => {
+      const shortLength =
+        PseudoRobotRouterSuggestions.descriptionShort.trim().length;
+      const longLength =
+        PseudoRobotRouterSuggestions.descriptionLong.trim().length;
+      expect(longLength).toBeGreaterThan(shortLength);
+    });
+  });
+
+  describe('estimateTokens', () => {
+    it('should estimate tokens correctly for normal messages', () => {
+      const message = 'This is a test message';
+      const estimatedTokens = robot.estimateTokens(message);
+      const expectedTokens = Math.ceil(message.length / 4);
+      expect(estimatedTokens).toBe(expectedTokens);
+    });
+
+    it('should handle empty strings', () => {
+      expect(robot.estimateTokens('')).toBe(0);
+    });
+
+    it('should handle very long messages', () => {
+      const longMessage = 'A'.repeat(1000);
+      const estimatedTokens = robot.estimateTokens(longMessage);
+      expect(estimatedTokens).toBe(250); // 1000 / 4
+    });
+  });
+
+  describe('acceptMessageMultiPartResponse', () => {
+    let mockMessageEnvelope: TMessageEnvelope;
+    let mockRobotMessage: TRobotMessage;
+    let mockDelayedCallback: jest.Mock;
+
+    beforeEach(() => {
+      mockRobotMessage = {
+        message: 'I need help with robot selection',
+        content: 'I need help with robot selection',
+        sender: 'user123',
+        receiver: 'robot',
+        timestamp: '2024-01-01T10:00:00Z',
+        created_at: '2024-01-01T10:00:00Z',
+        role: 'user',
+      };
+
+      mockMessageEnvelope = {
+        routerId: 'router-123',
+        messageType: 'message',
+        message: mockRobotMessage,
+      };
+
+      mockDelayedCallback = jest.fn();
+      jest.useFakeTimers();
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    it('should return a promise that resolves with immediate response', async () => {
+      const result = await robot.acceptMessageMultiPartResponse(
+        mockMessageEnvelope,
+        mockDelayedCallback,
+      );
+
+      expect(result).toBeDefined();
+      expect(result.routerId).toBe('router-123');
+      expect(result.messageType).toBe('response');
+      expect(result.message?.sender).toBe('PseudoRobotRouterSuggestions');
+    });
+
+    it('should provide immediate response with analysis message', async () => {
+      const result = await robot.acceptMessageMultiPartResponse(
+        mockMessageEnvelope,
+        mockDelayedCallback,
+      );
+
+      expect(result.message?.content).toContain('Analyzing request');
+      expect(result.message?.content).toContain(
+        'I need help with robot selection',
+      );
+      expect(result.message?.message).toContain(
+        'Analyzing request and reviewing robot capabilities',
+      );
+    });
+
+    it('should call delayed callback with robot suggestions', async () => {
+      await robot.acceptMessageMultiPartResponse(
+        mockMessageEnvelope,
+        mockDelayedCallback,
+      );
+
+      // Fast forward through the delayed response (1000ms)
+      jest.advanceTimersByTime(1000);
+
+      expect(mockDelayedCallback).toHaveBeenCalledTimes(1);
+      const callArg = mockDelayedCallback.mock.calls[0][0];
+      expect(callArg.message?.content).toContain('Robot Suggestions');
+      expect(callArg.message?.message).toContain(
+        'AgentRobotParrot, ChatRobotParrot',
+      );
+    });
+
+    it('should suggest AgentRobotParrot and ChatRobotParrot', async () => {
+      await robot.acceptMessageMultiPartResponse(
+        mockMessageEnvelope,
+        mockDelayedCallback,
+      );
+
+      jest.advanceTimersByTime(1000);
+
+      const callArg = mockDelayedCallback.mock.calls[0][0];
+      expect(callArg.message?.content).toContain('AgentRobotParrot');
+      expect(callArg.message?.content).toContain('ChatRobotParrot');
+      expect(callArg.message?.message).toBe(
+        'Suggestions: AgentRobotParrot, ChatRobotParrot',
+      );
+    });
+
+    it('should include robot descriptions in analysis', async () => {
+      await robot.acceptMessageMultiPartResponse(
+        mockMessageEnvelope,
+        mockDelayedCallback,
+      );
+
+      jest.advanceTimersByTime(1000);
+
+      const callArg = mockDelayedCallback.mock.calls[0][0];
+      expect(callArg.message?.content).toContain('task-based interactions');
+      expect(callArg.message?.content).toContain('conversational interactions');
+      expect(callArg.message?.content).toContain('multi-part responses');
+      expect(callArg.message?.content).toContain('streaming');
+    });
+
+    it('should provide reasoning for robot selection', async () => {
+      await robot.acceptMessageMultiPartResponse(
+        mockMessageEnvelope,
+        mockDelayedCallback,
+      );
+
+      jest.advanceTimersByTime(1000);
+
+      const callArg = mockDelayedCallback.mock.calls[0][0];
+      expect(callArg.message?.content).toContain('Reasoning:');
+      expect(callArg.message?.content).toContain('complementary capabilities');
+      expect(callArg.message?.content).toContain(
+        'comprehensive message handling',
+      );
+    });
+
+    it('should handle empty message content', async () => {
+      mockMessageEnvelope.message = {
+        ...mockRobotMessage,
+        message: '',
+        content: '',
+      };
+
+      const result = await robot.acceptMessageMultiPartResponse(
+        mockMessageEnvelope,
+        mockDelayedCallback,
+      );
+
+      expect(result).toBeDefined();
+      expect(result.message?.content).toContain('Analyzing request: ""');
+    });
+
+    it('should handle missing message content gracefully', async () => {
+      mockMessageEnvelope.message = {
+        ...mockRobotMessage,
+        message: undefined,
+        content: undefined,
+      };
+
+      const result = await robot.acceptMessageMultiPartResponse(
+        mockMessageEnvelope,
+        mockDelayedCallback,
+      );
+
+      expect(result).toBeDefined();
+      expect(result.message?.content).toContain('Analyzing request: ""');
+    });
+
+    it('should handle missing message object gracefully', async () => {
+      mockMessageEnvelope.message = undefined;
+
+      const result = await robot.acceptMessageMultiPartResponse(
+        mockMessageEnvelope,
+        mockDelayedCallback,
+      );
+
+      expect(result).toBeDefined();
+      expect(result.message?.content).toContain('Analyzing request: ""');
+    });
+
+    it('should handle callback errors gracefully', async () => {
+      const errorCallback = jest.fn().mockImplementation(() => {
+        throw new Error('Callback error');
+      });
+
+      const result = await robot.acceptMessageMultiPartResponse(
+        mockMessageEnvelope,
+        errorCallback,
+      );
+
+      expect(result).toBeDefined();
+
+      // Should not throw even if callback throws
+      expect(() => {
+        jest.advanceTimersByTime(1000);
+      }).not.toThrow();
+    });
+
+    it('should work with null callback', async () => {
+      const result = await robot.acceptMessageMultiPartResponse(
+        mockMessageEnvelope,
+        null as any,
+      );
+
+      expect(result).toBeDefined();
+      expect(() => {
+        jest.advanceTimersByTime(1000);
+      }).not.toThrow();
+    });
+
+    it('should set correct timestamps', async () => {
+      const beforeTime = new Date();
+
+      const result = await robot.acceptMessageMultiPartResponse(
+        mockMessageEnvelope,
+        mockDelayedCallback,
+      );
+
+      const afterTime = new Date();
+
+      expect(result.message?.timestamp).toBeDefined();
+      expect(result.message?.created_at).toBeDefined();
+
+      const resultTimestamp = new Date(result.message?.timestamp || '');
+      expect(resultTimestamp.getTime()).toBeGreaterThanOrEqual(
+        beforeTime.getTime(),
+      );
+      expect(resultTimestamp.getTime()).toBeLessThanOrEqual(
+        afterTime.getTime(),
+      );
+    });
+  });
+
+  describe('Inheritance and Type Checking', () => {
+    it('should be an instance of PseudoRobotRouterSuggestions', () => {
+      expect(robot).toBeInstanceOf(PseudoRobotRouterSuggestions);
+    });
+
+    it('should have the correct constructor name', () => {
+      expect(robot.constructor.name).toBe('PseudoRobotRouterSuggestions');
+    });
+  });
+
+  describe('Robot Analysis Logic', () => {
+    it('should consistently return the same robot suggestions', async () => {
+      const testCases = [
+        'I need help with tasks',
+        'Can you help me chat?',
+        'What robots are available?',
+        'I need comprehensive support',
+      ];
+
+      const results = [];
+      jest.useFakeTimers();
+
+      for (const testMessage of testCases) {
+        const envelope: TMessageEnvelope = {
+          routerId: 'test',
+          messageType: 'message',
+          message: {
+            message: testMessage,
+            content: testMessage,
+            sender: 'user',
+            receiver: 'robot',
+            timestamp: '2024-01-01T10:00:00Z',
+            created_at: '2024-01-01T10:00:00Z',
+            role: 'user',
+          },
+        };
+
+        const callback = jest.fn();
+        await robot.acceptMessageMultiPartResponse(envelope, callback);
+        jest.advanceTimersByTime(1000);
+
+        expect(callback).toHaveBeenCalledTimes(1);
+        const response = callback.mock.calls[0][0];
+        results.push(response.message?.message);
+      }
+
+      // All should return the same suggestions since it's pseudo implementation
+      const expectedSuggestion =
+        'Suggestions: AgentRobotParrot, ChatRobotParrot';
+      results.forEach((result) => {
+        expect(result).toBe(expectedSuggestion);
+      });
+
+      jest.useRealTimers();
+    });
+  });
+});

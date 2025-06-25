@@ -5,6 +5,12 @@ import Anthropic from '@anthropic-ai/sdk';
 type TClaudeMessageEnvelope = Anthropic.Messages.MessageStreamParams;
 
 class RobotChatAnthropic extends AbstractRobotChat {
+  public readonly contextWindowSizeInTokens: number = 200000; // Claude 3.5 Sonnet context window
+
+  public estimateTokens(message: string): number {
+    // Simple token estimation: roughly 4 characters per token
+    return Math.ceil(message.length / 4);
+  }
   //  public readonly name: string = AbstractRobotChat.name;
   public readonly version: string = '1.0.0-test-dev';
 
@@ -151,6 +157,37 @@ class RobotChatAnthropic extends AbstractRobotChat {
     responseMessage.content = (response.content[0] as any).text;
     //Anthropic.Messages.Message
     return Promise.resolve(responseEnvelope);
+  }
+
+  public async acceptMessageMultiPartResponse(
+    messageEnvelope: TMessageEnvelope,
+    delayedMessageCallback: (response: TMessageEnvelope) => void,
+  ): Promise<TMessageEnvelope> {
+    // Placeholder implementation for Anthropic chat robot
+    const immediateResponse =
+      await this.acceptMessageImmediateResponse(messageEnvelope);
+
+    // Send delayed response after processing
+    setTimeout(() => {
+      const delayedMessage: TMessageEnvelope = {
+        ...messageEnvelope,
+        messageType: 'response',
+        message: {
+          ...messageEnvelope.message,
+          message: `Anthropic processing complete for: ${messageEnvelope.message?.message}`,
+          timestamp: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+        },
+      };
+      if (
+        delayedMessageCallback &&
+        typeof delayedMessageCallback === 'function'
+      ) {
+        delayedMessageCallback(delayedMessage);
+      }
+    }, 1000);
+
+    return immediateResponse;
   }
 
   private createClaudeMessageEnvelope(

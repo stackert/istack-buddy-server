@@ -41,6 +41,13 @@ class RobotChatOpenAI extends AbstractRobotChat {
   public readonly LLModelName: string = 'o4-mini';
   public readonly LLModelVersion: string = 'o4-mini-2025-04-16';
 
+  public readonly contextWindowSizeInTokens: number = 128000; // GPT-4 context window
+
+  public estimateTokens(message: string): number {
+    // Simple token estimation: roughly 4 characters per token
+    return Math.ceil(message.length / 4);
+  }
+
   get name(): string {
     return this.constructor.name;
   }
@@ -56,6 +63,37 @@ class RobotChatOpenAI extends AbstractRobotChat {
     inboundMessage: TMessageEnvelope,
   ): Promise<TMessageEnvelope> {
     return Promise.resolve(inboundMessage);
+  }
+
+  public async acceptMessageMultiPartResponse(
+    messageEnvelope: TMessageEnvelope,
+    delayedMessageCallback: (response: TMessageEnvelope) => void,
+  ): Promise<TMessageEnvelope> {
+    // Placeholder implementation for OpenAI chat robot
+    const immediateResponse =
+      await this.acceptMessageImmediateResponse(messageEnvelope);
+
+    // Send delayed response after processing
+    setTimeout(() => {
+      const delayedMessage: TMessageEnvelope = {
+        ...messageEnvelope,
+        messageType: 'response',
+        message: {
+          ...messageEnvelope.message,
+          message: `OpenAI processing complete for: ${messageEnvelope.message?.message}`,
+          timestamp: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+        },
+      };
+      if (
+        delayedMessageCallback &&
+        typeof delayedMessageCallback === 'function'
+      ) {
+        delayedMessageCallback(delayedMessage);
+      }
+    }, 1000);
+
+    return immediateResponse;
   }
 
   public async sendTestMessageToRobot(

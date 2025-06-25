@@ -5,11 +5,37 @@ import { AbstractRobotChat } from './AbstractRobotChat';
  * A concrete chat robot that parrots (repeats) messages back to the user
  */
 export class ChatRobotParrot extends AbstractRobotChat {
-  public readonly name: string = 'AgentRobotParrot';
+  public readonly name: string = 'ChatRobotParrot';
   public readonly version: string = '1.0.0';
 
   public readonly LLModelName: string = 'openAi.4.3';
   public readonly LLModelVersion: string = '4.3';
+
+  public readonly contextWindowSizeInTokens: number = 4096;
+
+  static descriptionShort = `
+    A simple chat robot that repeats messages back to the user with a random number prefix.
+    Perfect for testing chat functionality and message flow.
+  `;
+
+  static descriptionLong = `
+    ChatRobotParrot is a testing and demonstration robot that implements both immediate and streaming 
+    response patterns. It takes any incoming message and parrots it back with a random number prefix.
+    
+    This robot is ideal for:
+    - Testing chat interfaces and message handling
+    - Demonstrating streaming vs immediate response patterns  
+    - Debugging message envelope structures
+    - Basic conversational flow testing without AI costs
+    
+    The robot supports both immediate responses and streaming responses, breaking messages into 
+    chunks for streaming demonstration purposes.
+  `;
+
+  public estimateTokens(message: string): number {
+    // Simple token estimation: roughly 4 characters per token
+    return Math.ceil(message.length / 4);
+  }
 
   public acceptMessageImmediateResponse(
     messageEnvelope: TMessageEnvelope,
@@ -25,6 +51,38 @@ export class ChatRobotParrot extends AbstractRobotChat {
   }
 
   // streaming response
+  public acceptMessageMultiPartResponse(
+    messageEnvelope: TMessageEnvelope,
+    delayedMessageCallback: (response: TMessageEnvelope) => void,
+  ): Promise<TMessageEnvelope> {
+    // For chat robots, we can implement multipart by using the immediate response
+    // and then potentially sending additional responses via callback
+    const immediateResponse =
+      this.acceptMessageImmediateResponse(messageEnvelope);
+
+    // Optionally send delayed additional responses
+    setTimeout(() => {
+      const delayedMessage: TMessageEnvelope = {
+        ...messageEnvelope,
+        messageType: 'response',
+        message: {
+          ...messageEnvelope.message,
+          message: `Follow-up chat response for: ${messageEnvelope.message?.message}`,
+          timestamp: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+        },
+      };
+      if (
+        delayedMessageCallback &&
+        typeof delayedMessageCallback === 'function'
+      ) {
+        delayedMessageCallback(delayedMessage);
+      }
+    }, 300);
+
+    return immediateResponse;
+  }
+
   public acceptMessageStreamResponse(
     messageEnvelope: TMessageEnvelope,
     chunkCallback: (chunk: string) => void,
