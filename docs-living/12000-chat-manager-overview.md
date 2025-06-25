@@ -31,10 +31,12 @@ I envision the flow to looks something like:
 
 ### Router Robot (prerequisite)
 
-We will require (prerequisite) a 'RouterRobot' that accepts all questions and determine(s) the best-fit robots. The original question/request will likely be kinda generic "I have a problem with my Form", "I am not receive email", it will be the cx-agent's responsibility to refine the question to something more direct/specific. That request goes to the RouterRobot which then return a list of robots to best suited for the task. Sometimes will need to simply provided the user with appropriate documentation sometimes it will require further conversation. The cx-agent will then choose which robots to send the request to, there may be more than one.
+This has been completed
+
+<!-- We will require (prerequisite) a 'RouterRobot' that accepts all questions and determine(s) the best-fit robots. The original question/request will likely be kinda generic "I have a problem with my Form", "I am not receive email", it will be the cx-agent's responsibility to refine the question to something more direct/specific. That request goes to the RouterRobot which then return a list of robots to best suited for the task. Sometimes will need to simply provided the user with appropriate documentation sometimes it will require further conversation. The cx-agent will then choose which robots to send the request to, there may be more than one.
 
 We need to figure out how to work with multiple robots and changing robots in mid conversation. The cx-agent/user may have an issue which will be best served by a specific robot, so the conversation participants will include those robots. However, we may not need all robots to participate so we need to exclude some robots. There is the case where the cx-agent/user work on a specific issue, and in conclusion the cx-agent may want to include documentation so they will send the request to the documentation robot. The documentation robot will not need to view the whole conversation, just the cx-agents one request.
-I want to avoid multiple thread (or maybe threads is the solution.)
+I want to avoid multiple thread (or maybe threads is the solution.) -->
 
 ### Threaded conversation (prerequisite)
 

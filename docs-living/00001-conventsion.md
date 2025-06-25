@@ -38,3 +38,7 @@ export type {TSomeAwesomeClass};
 ```
 
 Hence there should only be one export for actual things and one export types for any file. Meaning there should not be multiple 'export' in any file
+
+# Move Files
+
+When instructed to move documents use bash `mv`, DO NOT rewrite the file. If there are many files consider a bash script.
