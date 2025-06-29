@@ -45,7 +45,9 @@ Returns channel-specific agent capabilities in structured format:
     "functionName": {
       "shortText": "brief description",
       "longText": "detailed usage",
-      "parameters": {"param": {"isRequired": boolean, "datatype": "string"}}
+      "parameters": {"param": {"isRequired": boolean, "datatype": "string"}},
+          "supportedShortCodes": ["string"];
+
     }
   }
 }
