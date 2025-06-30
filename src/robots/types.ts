@@ -24,4 +24,4 @@ type TMessageEnvelope<T = TMessageEnvelopePayload> = {
   message?: TRobotMessage;
 };
 
-export type { TRobotMessage, TMessageEnvelope };
+export type { TRobotMessage, TMessageEnvelope, TMessageEnvelopePayload };

@@ -14,5 +14,13 @@ export { PseudoRobotRouterSuggestions } from './PseudoRobotRouterSuggestions';
 export { PseudoRobotRouter } from './PseudoRobotRouter';
 export { PseudoRobotDocumentationSuggestions } from './PseudoRobotDocumentationSuggestions';
 
+// Slack Agent implementations
+export { SlackAgentCoreFormsParrot } from './SlackAgents/SlackAgentCoreFormsParrot';
+export { SlackAgentCoreFormsSsoAutofillParrot } from './SlackAgents/SlackAgentCoreFormsSsoAutofillParrot';
+
 // Types
 export type { TRobotMessage, TMessageEnvelope } from './types';
+
+// Services and Modules
+export { RobotService } from './robot.service';
+export { RobotModule } from './robot.module';

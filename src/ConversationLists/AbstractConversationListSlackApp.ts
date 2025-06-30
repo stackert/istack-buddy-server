@@ -8,7 +8,7 @@ import type {
  * Abstract base class for managing conversation lists with role-based visibility.
  * Handles message storage, filtering, and visibility rules for multi-party chat systems.
  */
-class AbstractConversationList<T extends TConversationListItem> {
+class AbstractConversationListSlackApp<T extends TConversationListItem> {
   private messages: T[] = [];
   private lastSummarizedIndex: number = -1; // Track last summarized position
   private lastSummarizedAt: Date | null = null; // Track last summary timestamp
@@ -82,35 +82,11 @@ class AbstractConversationList<T extends TConversationListItem> {
   }
 
   /**
-   * Get messages visible to cx-customer role
-   * cx-customer should only see messages between them and their cx-agent, and shared robot messages
-   */
-  getCustomerVisibleMessages(): T[] {
-    return this.filterByRoleVisibilities(['cx-customer']);
-  }
-
-  /**
    * Get messages visible to cx-agent role
    * cx-agent should see most messages including robot interactions
    */
   getAgentVisibleMessages(): T[] {
     return this.filterByRoleVisibilities(['cx-agent']);
-  }
-
-  /**
-   * Get messages visible to cx-supervisor role
-   * cx-supervisor should see all messages (excluding duplicates)
-   */
-  getSupervisorVisibleMessages(): T[] {
-    return this.filterByRoleVisibilities(['cx-supervisor']);
-  }
-
-  /**
-   * Get messages visible to conversation-admin role
-   * conversation-admin sees everything
-   */
-  getAdminVisibleMessages(): T[] {
-    return this.filterByRoleVisibilities(['conversation-admin']);
   }
 
   /**
@@ -182,4 +158,4 @@ class AbstractConversationList<T extends TConversationListItem> {
   }
 }
 
-export { AbstractConversationList };
+export { AbstractConversationListSlackApp };

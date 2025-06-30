@@ -1,5 +1,9 @@
 import { AbstractSlackRobotAgent } from './AbstractSlackRobotAgent';
-import { TMessageEnvelope, TRobotMessage } from '../types';
+import {
+  TMessageEnvelope,
+  TMessageEnvelopePayload,
+  TRobotMessage,
+} from '../types';
 import { TKnowledgeBase, TSlackAgentFunctionDescription } from './types';
 
 /**
@@ -80,22 +84,31 @@ class SlackAgentCoreFormsParrot extends AbstractSlackRobotAgent {
     messageEnvelope: TMessageEnvelope,
     delayedMessageCallback: (response: TMessageEnvelope) => void,
   ): Promise<TMessageEnvelope> {
-    const recvMessage: TRobotMessage = messageEnvelope.message;
-    const respMessage: TRobotMessage = { ...recvMessage };
-    messageEnvelope.message = respMessage;
-    const randomNumber = Math.floor(Math.random() * 10000);
+    const recvMessage: TMessageEnvelopePayload = messageEnvelope.payload;
+    const respMessage: TMessageEnvelopePayload = { ...recvMessage };
+    // @ts-ignore
+    const lastMessage = recvMessage.content;
+    const randomNumber = () => Math.floor(Math.random() * 10000);
 
-    respMessage.message = `(${randomNumber}) ${recvMessage.message}`;
+    for (let i = 1; i < 4; i++) {
+      setTimeout(() => {
+        // @ts-ignore
+        respMessage.content.payload =
+          randomNumber() + ' ' + lastMessage?.payload;
+        messageEnvelope.payload = respMessage;
 
-    setTimeout(() => {
-      respMessage.message = `(${randomNumber}) - complete: ${recvMessage.message}`;
-      if (
-        delayedMessageCallback &&
-        typeof delayedMessageCallback === 'function'
-      ) {
-        delayedMessageCallback(messageEnvelope);
-      }
-    }, 500);
+        if (
+          delayedMessageCallback &&
+          typeof delayedMessageCallback === 'function'
+        ) {
+          delayedMessageCallback(messageEnvelope);
+        }
+      }, 500 * i);
+    }
+    // @ts-ignore
+    respMessage.content.payload = randomNumber() + ' ' + lastMessage?.payload;
+
+    messageEnvelope.payload = respMessage;
 
     return Promise.resolve(messageEnvelope);
   }

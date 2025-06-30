@@ -6,6 +6,7 @@ import * as cookieParser from 'cookie-parser';
 jest.mock('@nestjs/core');
 jest.mock('@nestjs/swagger');
 jest.mock('cookie-parser');
+jest.mock('dotenv');
 jest.mock('./app.module', () => ({
   AppModule: class MockAppModule {},
 }));
@@ -25,6 +26,7 @@ describe('Main Bootstrap Function', () => {
     // Mock the application instance
     mockApp = {
       use: jest.fn(),
+      enableCors: jest.fn(),
       listen: jest.fn().mockResolvedValue(undefined),
     };
 
@@ -74,6 +76,22 @@ describe('Main Bootstrap Function', () => {
     it('should create NestJS application with AppModule', async () => {
       await bootstrap();
       expect(mockNestFactory.create).toHaveBeenCalledTimes(1);
+    });
+
+    it('should enable CORS with correct configuration', async () => {
+      await bootstrap();
+      expect(mockApp.enableCors).toHaveBeenCalledWith({
+        origin: true,
+        credentials: true,
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+        allowedHeaders: [
+          'Content-Type',
+          'Authorization',
+          'Accept',
+          'Origin',
+          'X-Requested-With',
+        ],
+      });
     });
 
     it('should enable cookie parsing middleware', async () => {
@@ -268,6 +286,10 @@ describe('Main Bootstrap Function', () => {
         return mockApp;
       });
 
+      mockApp.enableCors.mockImplementation(() => {
+        callOrder.push('enableCors');
+      });
+
       mockApp.use.mockImplementation(() => {
         callOrder.push('use');
       });
@@ -292,6 +314,7 @@ describe('Main Bootstrap Function', () => {
       await bootstrap();
       expect(callOrder).toEqual([
         'create',
+        'enableCors',
         'use',
         'createDocument',
         'setup',
@@ -304,6 +327,7 @@ describe('Main Bootstrap Function', () => {
 
       // Verify all major bootstrap steps were called
       expect(mockNestFactory.create).toHaveBeenCalledTimes(1);
+      expect(mockApp.enableCors).toHaveBeenCalledTimes(1);
       expect(mockApp.use).toHaveBeenCalledTimes(1);
       expect(mockSwaggerModule.createDocument).toHaveBeenCalledTimes(1);
       expect(mockSwaggerModule.setup).toHaveBeenCalledTimes(1);

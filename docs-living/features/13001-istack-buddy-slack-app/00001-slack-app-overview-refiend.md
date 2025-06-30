@@ -1,5 +1,12 @@
 # iStack Buddy Slack App - Refined Function Description
 
+This document should be considered tenative plan.
+
+The features concluding remarks should layout actual feature with details.
+
+As example, this document was written with websocket slack communication in mind, which does not work for our nest application.
+How that gets address is unclear. We'll use ngrok to create https/ssl tunnel to our application.
+
 ## Core Function
 
 The iStack Buddy Slack App bridges Slack conversations with AI-powered backend iStackBuddy utility services through asynchronous processing and webhook callbacks.

@@ -19,4 +19,9 @@ do we build sumo robot? or is that functionality reserved for the channel robot.
 
 Next we need build two robots #forms-sso-autofill and #cx-formstack.  These are the two robots that will be used to build the channel robot.
 
+
+
+############### NOW WE NEED TO RETRO FIT THE PARROT
+how do the messages shape transform?
+
 `;

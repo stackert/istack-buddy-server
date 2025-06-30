@@ -1,9 +1,9 @@
 import {
-  ConversationList,
+  ConversationListCxGroup,
   ConversationListItem,
   ConversationListFactory,
   ConversationMessageFactory,
-} from './ConversationList';
+} from './ConversationListCxGroup';
 import type { TConversationItemAuthorRoles } from './types';
 
 describe('ConversationListItem', () => {
@@ -234,12 +234,12 @@ describe('ConversationMessageFactory', () => {
 });
 
 describe('ConversationList', () => {
-  let conversationList: ConversationList;
+  let conversationList: ConversationListCxGroup;
 
   beforeEach(() => {
     jest.useFakeTimers();
     jest.setSystemTime(new Date('2024-01-01T00:00:00.000Z'));
-    conversationList = new ConversationList(
+    conversationList = new ConversationListCxGroup(
       'conv-1',
       'Test Conversation',
       'A test conversation',

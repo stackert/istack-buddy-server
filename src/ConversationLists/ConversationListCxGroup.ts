@@ -1,4 +1,4 @@
-import { AbstractConversationList } from './AbstractConversationList';
+import { AbstractConversationListCxGroup } from './AbstractConversationListCxGroup';
 import { AbstractConversationListItem } from './AbstractConversationListItem';
 import type {
   TConversationListItem,
@@ -183,7 +183,7 @@ class ConversationMessageFactory {
  * Concrete implementation of a conversation list
  * Focuses on managing messages, not creating them
  */
-class ConversationList extends AbstractConversationList<ConversationListItem> {
+class ConversationListCxGroup extends AbstractConversationListCxGroup<ConversationListItem> {
   constructor(
     id: string,
     name: string,
@@ -336,15 +336,15 @@ class ConversationListFactory {
     id: string,
     name: string,
     description: string,
-  ): ConversationList {
-    return new ConversationList(id, name, description);
+  ): ConversationListCxGroup {
+    return new ConversationListCxGroup(id, name, description);
   }
 
   static createCustomerSupportConversation(
     conversationId: string,
     customerId: string,
-  ): ConversationList {
-    return new ConversationList(
+  ): ConversationListCxGroup {
+    return new ConversationListCxGroup(
       conversationId,
       `Customer Support - ${customerId}`,
       `Customer support conversation for customer ${customerId}`,
@@ -353,7 +353,7 @@ class ConversationListFactory {
 }
 
 export {
-  ConversationList,
+  ConversationListCxGroup,
   ConversationListItem,
   ConversationListFactory,
   ConversationMessageFactory,

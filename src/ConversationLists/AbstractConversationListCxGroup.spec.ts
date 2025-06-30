@@ -1,4 +1,4 @@
-import { AbstractConversationList } from './AbstractConversationList';
+import { AbstractConversationListCxGroup } from './AbstractConversationListCxGroup';
 import { AbstractConversationListItem } from './AbstractConversationListItem';
 import type {
   TConversationListItem,
@@ -6,7 +6,7 @@ import type {
 } from './types';
 
 // Test implementation extending AbstractConversationList
-class TestConversationList extends AbstractConversationList<TConversationListItem> {
+class TestConversationList extends AbstractConversationListCxGroup<TConversationListItem> {
   constructor(id: string, name: string, description: string) {
     super(id, name, description, new Date(), new Date());
   }
@@ -103,21 +103,23 @@ describe('AbstractConversationList', () => {
 
   describe('canInteractWithRobots static method', () => {
     it('should identify roles that can interact with robots', () => {
-      expect(AbstractConversationList.canInteractWithRobots('cx-agent')).toBe(
-        true,
-      );
       expect(
-        AbstractConversationList.canInteractWithRobots('cx-supervisor'),
+        AbstractConversationListCxGroup.canInteractWithRobots('cx-agent'),
       ).toBe(true);
       expect(
-        AbstractConversationList.canInteractWithRobots('conversation-admin'),
+        AbstractConversationListCxGroup.canInteractWithRobots('cx-supervisor'),
       ).toBe(true);
       expect(
-        AbstractConversationList.canInteractWithRobots('cx-customer'),
+        AbstractConversationListCxGroup.canInteractWithRobots(
+          'conversation-admin',
+        ),
+      ).toBe(true);
+      expect(
+        AbstractConversationListCxGroup.canInteractWithRobots('cx-customer'),
       ).toBe(false);
-      expect(AbstractConversationList.canInteractWithRobots('robot')).toBe(
-        false,
-      );
+      expect(
+        AbstractConversationListCxGroup.canInteractWithRobots('robot'),
+      ).toBe(false);
     });
   });
 });

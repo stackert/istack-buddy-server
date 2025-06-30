@@ -12,8 +12,8 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { ValidationExceptionFilter } from './common/filters/validation-exception.filter';
 import { ChatManagerModule } from './chat-manager/chat-manager.module';
-// import { IstackBuddySlackApiModule } from './istack-buddy-slack-api/istack-buddy-slack-api.module';
-// import { IstackBuddySlackApiModule } from './istack-buddy-slack-api/istack-buddy-slack-api.module';
+import { IstackBuddySlackApiModule } from './istack-buddy-slack-api/istack-buddy-slack-api.module';
+import { RobotModule } from './robots/robot.module';
 
 @Module({
   imports: [
@@ -23,7 +23,8 @@ import { ChatManagerModule } from './chat-manager/chat-manager.module';
     IstackBuddyDataProxyModule,
     DevDebugModule,
     ChatManagerModule,
-    //    IstackBuddySlackApiModule,
+    IstackBuddySlackApiModule,
+    RobotModule,
   ],
   controllers: [AppController],
   providers: [
