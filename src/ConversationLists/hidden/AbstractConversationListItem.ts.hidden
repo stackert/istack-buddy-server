@@ -4,7 +4,7 @@ import type {
   TConversationListItem,
   TConversationItemAuthorRoles,
   TSupportedContentTypes,
-} from './types';
+} from '../types';
 // type TConversationListItem = {
 //   id: string;
 //   authorId: string; // at this time we don't have an 'id' for author.  Not sure how will deal with 'author' identity of users are anonymous.

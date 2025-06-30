@@ -1,5 +1,5 @@
-import { AbstractConversationListItem } from './AbstractConversationListItem';
-import type { TConversationItemAuthorRoles } from './types';
+import { AbstractConversationListItem } from './AbstractConversationListItem.ts.hidden';
+import type { TConversationItemAuthorRoles } from '../types';
 
 describe('AbstractConversationListItem', () => {
   const testDate = new Date('2024-01-01T00:00:00.000Z');

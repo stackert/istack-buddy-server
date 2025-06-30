@@ -1,4 +1,4 @@
-type TSupportedContentTypes =
+type TConversationMessageContentMediaTypes =
   | 'text/plain'
   | 'image/jpg'
   | 'image/gif'
@@ -6,38 +6,90 @@ type TSupportedContentTypes =
   | 'application/octet-stream'
   | 'application/json';
 
-type TConversationItemAuthorRoles =
-  | 'cx-customer'
-  | 'cx-agent'
-  | 'cx-robot' // for robot messages that are shared with the customer
-  | 'cx-supervisor'
-  | 'robot'
-  | 'conversation-admin' // for inserting additional instructions7
-  | 'tool'
-  | 'admin';
-
-type TConversationListItem = {
-  id: string;
-  authorId: string; // at this time we don't have an 'id' for author.  Not sure how will deal with 'author' identity of users are anonymous.
-  authorRole: TConversationItemAuthorRoles;
-  content: {
-    type: TSupportedContentTypes;
-    payload: any;
-  };
-
-  createdAt: Date;
-  updatedAt: Date;
-  estimatedTokenCount: number;
-
-  //  "TConversationListItem" will have different visibilities
-  // admin/cx-agent will likely see all messages
-  // "customer"/users will see most message (all between them and their cx-rep)
-  //  cx-agent may choose to "share" a robot message with the customer (we'll duplicate the message in those cases)
-  roleVisibilities: TConversationItemAuthorRoles[];
+type TConversationMessageContentTypes<
+  MEDIA_TYPE extends TConversationMessageContentMediaTypes,
+  BASE_TYPE,
+> = {
+  type: MEDIA_TYPE;
+  payload: BASE_TYPE;
 };
 
+type TConversationMessageContentString = TConversationMessageContentTypes<
+  'text/plain',
+  string
+>;
+
+// this type is not currently used - we hope to add support
+// therefore this is stub.  with files I would expect to fileName, size, etc
+type TConversationMessageContentImageBuffer = TConversationMessageContentTypes<
+  'image/*',
+  Buffer
+>;
+type TConversationMessageContentFileBuffer = TConversationMessageContentTypes<
+  'application/octet-stream',
+  Buffer
+>;
+
+// Union type for all possible content types
+type TConversationMessageContent =
+  | TConversationMessageContentString
+  | TConversationMessageContentImageBuffer
+  | TConversationMessageContentFileBuffer;
+
+// Base message structure - T can be any content type
+type TConversationListMessage<T = TConversationMessageContent> = {
+  messageId: string;
+  author_role: string;
+  content: T;
+  created_at: string;
+  estimated_token_count: number;
+};
+
+// Message envelope - contains the actual message as envelopePayload
+type TConversationMessageEnvelope<T = TConversationListMessage> = {
+  messageId: string;
+  envelopePayload: T;
+};
+
+// Convenience types for specific content types
+type TConversationTextMessage =
+  TConversationListMessage<TConversationMessageContentString>;
+type TConversationImageMessage =
+  TConversationListMessage<TConversationMessageContentImageBuffer>;
+type TConversationFileMessage =
+  TConversationListMessage<TConversationMessageContentFileBuffer>;
+
+// Convenience envelope types
+type TConversationTextMessageEnvelope =
+  TConversationMessageEnvelope<TConversationTextMessage>;
+type TConversationImageMessageEnvelope =
+  TConversationMessageEnvelope<TConversationImageMessage>;
+type TConversationFileMessageEnvelope =
+  TConversationMessageEnvelope<TConversationFileMessage>;
+
+// Union type for mixed content envelopes
+type TConversationMixedMessageEnvelope =
+  | TConversationTextMessageEnvelope
+  | TConversationImageMessageEnvelope
+  | TConversationFileMessageEnvelope;
+
 export type {
-  TConversationListItem,
-  TConversationItemAuthorRoles,
-  TSupportedContentTypes,
+  // Content types
+  TConversationMessageContent,
+  TConversationMessageContentString,
+  TConversationMessageContentImageBuffer,
+  TConversationMessageContentFileBuffer,
+
+  // Message types
+  TConversationListMessage,
+  TConversationTextMessage,
+  TConversationImageMessage,
+  TConversationFileMessage,
+
+  // Envelope types
+  TConversationMessageEnvelope,
+  TConversationTextMessageEnvelope,
+  TConversationImageMessageEnvelope,
+  TConversationFileMessageEnvelope,
+  TConversationMixedMessageEnvelope,
 };

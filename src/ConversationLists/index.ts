@@ -15,15 +15,11 @@ export {
   ConversationMessageFactory,
 } from './ConversationListSlackApp';
 
-export { ConversationListCxGroup } from './ConversationListCxGroup';
+// export { ConversationListCxGroup } from './ConversationListCxGroup.ts.hidden';
 
 export { AbstractConversationListSlackApp } from './AbstractConversationListSlackApp';
-export { AbstractConversationListCxGroup } from './AbstractConversationListCxGroup';
-export { AbstractConversationListItem } from './AbstractConversationListItem';
+// export { AbstractConversationListCxGroup } from './AbstractConversationListCxGroup.ts.hidden';
+export { AbstractConversationListItem } from './hidden/AbstractConversationListItem.ts.hidden';
 
 // Export types
-export type {
-  TConversationListItem,
-  TConversationItemAuthorRoles,
-  TSupportedContentTypes,
-} from './types';
+export type { TConversationListMessage } from './types';

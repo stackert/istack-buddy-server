@@ -1,5 +1,5 @@
 import { AbstractConversationListSlackApp } from './AbstractConversationListSlackApp';
-import { AbstractConversationListItem } from './AbstractConversationListItem';
+import { AbstractConversationListItem } from './hidden/AbstractConversationListItem.ts.hidden';
 import type {
   TConversationListItem,
   TConversationItemAuthorRoles,

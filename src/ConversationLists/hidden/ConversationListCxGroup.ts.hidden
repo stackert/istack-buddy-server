@@ -1,10 +1,10 @@
-import { AbstractConversationListCxGroup } from './AbstractConversationListCxGroup';
-import { AbstractConversationListItem } from './AbstractConversationListItem';
+import { AbstractConversationListCxGroup } from './AbstractConversationListCxGroup.ts.hidden';
+import { AbstractConversationListItem } from './hidden/AbstractConversationListItem.ts.hidden';
 import type {
   TConversationListItem,
   TConversationItemAuthorRoles,
   TSupportedContentTypes,
-} from './types';
+} from '../types';
 
 /**
  * Concrete implementation of a conversation list item (message)
