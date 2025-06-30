@@ -1,11 +1,66 @@
 import { Injectable, Logger } from '@nestjs/common';
-import {
-  ConversationListSlackAppService,
-  ConversationMessageFactory,
-} from '../ConversationLists';
+import { ConversationListSlackAppService } from '../ConversationLists';
+import type {
+  TConversationTextMessageEnvelope,
+  TConversationTextMessage,
+  TConversationMessageContentString,
+} from '../ConversationLists/types';
 import { RobotService } from 'src/robots/robot.service';
 import { SlackAgentCoreFormsParrot } from 'src/robots/SlackAgents/SlackAgentCoreFormsParrot';
 import { TMessageEnvelope } from 'src/robots';
+
+// Factory for creating conversation messages
+class ConversationMessageFactory {
+  static createCustomerMessage(
+    messageId: string,
+    authorRole: string,
+    text: string,
+    estimatedTokenCount: number,
+  ): TConversationTextMessageEnvelope {
+    const textContent: TConversationMessageContentString = {
+      type: 'text/plain',
+      payload: text,
+    };
+
+    const textMessage: TConversationTextMessage = {
+      messageId,
+      author_role: authorRole,
+      content: textContent,
+      created_at: new Date().toISOString(),
+      estimated_token_count: estimatedTokenCount,
+    };
+
+    return {
+      messageId,
+      envelopePayload: textMessage,
+    };
+  }
+
+  static createRobotMessage(
+    messageId: string,
+    authorRole: string,
+    content: { type: string; payload: string },
+    estimatedTokenCount: number,
+  ): TConversationTextMessageEnvelope {
+    const textContent: TConversationMessageContentString = {
+      type: 'text/plain',
+      payload: content.payload,
+    };
+
+    const textMessage: TConversationTextMessage = {
+      messageId,
+      author_role: authorRole,
+      content: textContent,
+      created_at: new Date().toISOString(),
+      estimated_token_count: estimatedTokenCount,
+    };
+
+    return {
+      messageId,
+      envelopePayload: textMessage,
+    };
+  }
+}
 
 @Injectable()
 export class IstackBuddySlackApiService {
@@ -84,7 +139,7 @@ export class IstackBuddySlackApiService {
         event.text,
         this.estimateTokenCount(event.text),
       );
-      conversation.addMessage(userMessage);
+      conversation.addTextMessageEnvelope(userMessage);
 
       const robot = this.robotService.getRobotByName<SlackAgentCoreFormsParrot>(
         'SlackAgentCoreFormsParrot',
@@ -101,17 +156,7 @@ export class IstackBuddySlackApiService {
         this.logger.log(`🤖 Robot response: ${response}`);
         //        conversation.addMessage(response); //
         this.sendSlackMessage(
-          JSON.stringify({
-            // @ts-ignore
-            message: response.payload.content.payload,
-          }) || '__EMPTY_MESSAGE__',
-          //   JSON.stringify({
-          //     // @ts-ignore
-          //     message: response.payload.content.payload,
-          //     payload: response.payload,
-          //     response,
-          //   }) || '__EMPTY_MESSAGE__',
-
+          response.envelopePayload.content.payload || '__EMPTY_MESSAGE__',
           event.channel,
           event.ts,
         );
@@ -147,7 +192,7 @@ export class IstackBuddySlackApiService {
           { type: 'text/plain', payload: botResponseText },
           this.estimateTokenCount(botResponseText),
         );
-        conversation.addMessage(botMessage);
+        conversation.addTextMessageEnvelope(botMessage);
 
         this.logger.log(
           `✅ Responded and added bot message to conversation. Total messages: ${conversation.getMessageCount()}`,
@@ -161,12 +206,10 @@ export class IstackBuddySlackApiService {
     }
   }
 
-  private slackMessageToMessageEnvelope(message: any): TMessageEnvelope {
-    return {
-      routerId: message.ts,
-      messageType: 'message',
-      payload: message,
-    };
+  private slackMessageToMessageEnvelope(
+    message: TConversationTextMessageEnvelope,
+  ): TMessageEnvelope {
+    return message; // The message is already in the correct format
   }
 
   private async sendSlackMessage(

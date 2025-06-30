@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { AbstractConversationListSlackApp } from './AbstractConversationListSlackApp';
+import { AbstractConversationMessageList } from './AbstractConversationMessageList';
 import { ConversationListSlackApp } from './ConversationListSlackApp';
 
 /**
@@ -7,7 +7,7 @@ import { ConversationListSlackApp } from './ConversationListSlackApp';
  * Maintains an in-memory dictionary of conversations by their ID
  */
 @Injectable()
-class ConversationListService<T extends AbstractConversationListSlackApp<any>> {
+class ConversationListService<T extends AbstractConversationMessageList<any>> {
   private conversations: Map<string, T> = new Map();
   private conversationFactory: (
     id: string,
@@ -131,7 +131,7 @@ class ConversationListService<T extends AbstractConversationListSlackApp<any>> {
 class ConversationListSlackAppService extends ConversationListService<ConversationListSlackApp> {
   constructor() {
     super((id: string, name: string, description: string) => {
-      return new ConversationListSlackApp(id, name, description);
+      return new ConversationListSlackApp();
     });
   }
 

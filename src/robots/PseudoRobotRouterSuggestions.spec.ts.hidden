@@ -1,4 +1,4 @@
-import { PseudoRobotRouterSuggestions } from './PseudoRobotRouterSuggestions';
+import { PseudoRobotRouterSuggestions } from './PseudoRobotRouterSuggestions.ts.hidden';
 import { TMessageEnvelope, TRobotMessage } from './types';
 
 describe('PseudoRobotRouterSuggestions', () => {

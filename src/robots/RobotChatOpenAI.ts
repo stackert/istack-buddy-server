@@ -75,16 +75,21 @@ class RobotChatOpenAI extends AbstractRobotChat {
 
     // Send delayed response after processing
     setTimeout(() => {
-      const delayedMessage: TMessageEnvelope = {
-        ...messageEnvelope,
-        messageType: 'response',
-        message: {
-          ...messageEnvelope.message,
-          message: `OpenAI processing complete for: ${messageEnvelope.message?.message}`,
-          timestamp: new Date().toISOString(),
-          created_at: new Date().toISOString(),
+      const delayedRespMessage: TRobotMessage = {
+        ...messageEnvelope.envelopePayload,
+        content: {
+          type: 'text/plain',
+          payload: `OpenAI processing complete for: ${messageEnvelope.envelopePayload.content.payload}`,
         },
+        author_role: 'assistant',
+        created_at: new Date().toISOString(),
       };
+
+      const delayedMessage: TMessageEnvelope = {
+        messageId: `response-${Date.now()}-delayed`,
+        envelopePayload: delayedRespMessage,
+      };
+
       if (
         delayedMessageCallback &&
         typeof delayedMessageCallback === 'function'

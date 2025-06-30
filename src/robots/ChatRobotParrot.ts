@@ -40,14 +40,18 @@ export class ChatRobotParrot extends AbstractRobotChat {
   public acceptMessageImmediateResponse(
     messageEnvelope: TMessageEnvelope,
   ): Promise<TMessageEnvelope> {
-    const recvMessage: TRobotMessage = messageEnvelope.message;
+    const recvMessage: TRobotMessage = messageEnvelope.envelopePayload;
     const respMessage: TRobotMessage = { ...recvMessage };
-    messageEnvelope.message = respMessage;
     const randomNumber = Math.floor(Math.random() * 10000);
 
-    respMessage.message = `(${randomNumber}) ${recvMessage.message}`;
+    respMessage.content.payload = `(${randomNumber}) ${recvMessage.content.payload}`;
 
-    return Promise.resolve(messageEnvelope);
+    const responseEnvelope: TMessageEnvelope = {
+      messageId: `response-${Date.now()}`,
+      envelopePayload: respMessage,
+    };
+
+    return Promise.resolve(responseEnvelope);
   }
 
   // streaming response
@@ -62,16 +66,21 @@ export class ChatRobotParrot extends AbstractRobotChat {
 
     // Optionally send delayed additional responses
     setTimeout(() => {
-      const delayedMessage: TMessageEnvelope = {
-        ...messageEnvelope,
-        messageType: 'response',
-        message: {
-          ...messageEnvelope.message,
-          message: `Follow-up chat response for: ${messageEnvelope.message?.message}`,
-          timestamp: new Date().toISOString(),
-          created_at: new Date().toISOString(),
+      const delayedRespMessage: TRobotMessage = {
+        ...messageEnvelope.envelopePayload,
+        content: {
+          type: 'text/plain',
+          payload: `Follow-up chat response for: ${messageEnvelope.envelopePayload.content.payload}`,
         },
+        author_role: 'assistant',
+        created_at: new Date().toISOString(),
       };
+
+      const delayedMessage: TMessageEnvelope = {
+        messageId: `response-${Date.now()}-delayed`,
+        envelopePayload: delayedRespMessage,
+      };
+
       if (
         delayedMessageCallback &&
         typeof delayedMessageCallback === 'function'
@@ -87,10 +96,10 @@ export class ChatRobotParrot extends AbstractRobotChat {
     messageEnvelope: TMessageEnvelope,
     chunkCallback: (chunk: string) => void,
   ): Promise<void> {
-    const recvMessage: TRobotMessage = messageEnvelope.message;
+    const recvMessage: TRobotMessage = messageEnvelope.envelopePayload;
 
     const randomNumber = Math.floor(Math.random() * 10000);
-    const response = `(${randomNumber}) ${recvMessage.message}`;
+    const response = `(${randomNumber}) ${recvMessage.content.payload}`;
 
     // Break response into 5 chunks of similar size
     const chunkSize = Math.ceil(response.length / 5);

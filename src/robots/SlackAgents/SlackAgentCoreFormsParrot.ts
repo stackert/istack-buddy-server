@@ -1,9 +1,5 @@
 import { AbstractSlackRobotAgent } from './AbstractSlackRobotAgent';
-import {
-  TMessageEnvelope,
-  TMessageEnvelopePayload,
-  TRobotMessage,
-} from '../types';
+import { TMessageEnvelope, TRobotMessage } from '../types';
 import { TKnowledgeBase, TSlackAgentFunctionDescription } from './types';
 
 /**
@@ -70,47 +66,72 @@ class SlackAgentCoreFormsParrot extends AbstractSlackRobotAgent {
   public acceptMessageImmediateResponse(
     messageEnvelope: TMessageEnvelope,
   ): Promise<TMessageEnvelope> {
-    const recvMessage: TRobotMessage = messageEnvelope.message;
+    const recvMessage: TRobotMessage = messageEnvelope.envelopePayload;
     const respMessage: TRobotMessage = { ...recvMessage };
-    messageEnvelope.message = respMessage;
     const randomNumber = Math.floor(Math.random() * 10000);
 
-    respMessage.message = `(${randomNumber}) ${recvMessage.message}`;
+    respMessage.content.payload = `(${randomNumber}) ${recvMessage.content.payload}`;
 
-    return Promise.resolve(messageEnvelope);
+    const responseEnvelope: TMessageEnvelope = {
+      messageId: `response-${Date.now()}`,
+      envelopePayload: respMessage,
+    };
+
+    return Promise.resolve(responseEnvelope);
   }
 
   public acceptMessageMultiPartResponse(
     messageEnvelope: TMessageEnvelope,
     delayedMessageCallback: (response: TMessageEnvelope) => void,
   ): Promise<TMessageEnvelope> {
-    const recvMessage: TMessageEnvelopePayload = messageEnvelope.payload;
-    const respMessage: TMessageEnvelopePayload = { ...recvMessage };
-    // @ts-ignore
-    const lastMessage = recvMessage.content;
+    const recvMessage: TRobotMessage = messageEnvelope.envelopePayload;
+    const originalContent = recvMessage.content.payload;
     const randomNumber = () => Math.floor(Math.random() * 10000);
 
+    // Send delayed responses
     for (let i = 1; i < 4; i++) {
       setTimeout(() => {
-        // @ts-ignore
-        respMessage.content.payload =
-          randomNumber() + ' ' + lastMessage?.payload;
-        messageEnvelope.payload = respMessage;
+        const respMessage: TRobotMessage = {
+          ...recvMessage,
+          content: {
+            type: 'text/plain',
+            payload: `${randomNumber()} ${originalContent}`,
+          },
+          author_role: 'assistant',
+          created_at: new Date().toISOString(),
+        };
+
+        const responseEnvelope: TMessageEnvelope = {
+          messageId: `response-${Date.now()}-${i}`,
+          envelopePayload: respMessage,
+        };
 
         if (
           delayedMessageCallback &&
           typeof delayedMessageCallback === 'function'
         ) {
-          delayedMessageCallback(messageEnvelope);
+          delayedMessageCallback(responseEnvelope);
         }
       }, 500 * i);
     }
-    // @ts-ignore
-    respMessage.content.payload = randomNumber() + ' ' + lastMessage?.payload;
 
-    messageEnvelope.payload = respMessage;
+    // Return immediate response
+    const immediateRespMessage: TRobotMessage = {
+      ...recvMessage,
+      content: {
+        type: 'text/plain',
+        payload: `${randomNumber()} ${originalContent}`,
+      },
+      author_role: 'assistant',
+      created_at: new Date().toISOString(),
+    };
 
-    return Promise.resolve(messageEnvelope);
+    const immediateResponseEnvelope: TMessageEnvelope = {
+      messageId: `response-${Date.now()}`,
+      envelopePayload: immediateRespMessage,
+    };
+
+    return Promise.resolve(immediateResponseEnvelope);
   }
 }
 

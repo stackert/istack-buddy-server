@@ -1,6 +1,6 @@
 import { AbstractRobot } from './AbstractRobot';
 import { TMessageEnvelope, TRobotMessage } from './types';
-import { PseudoRobotRouterSuggestions } from './PseudoRobotRouterSuggestions';
+import { PseudoRobotRouterSuggestions } from './PseudoRobotRouterSuggestions.ts.hidden';
 import { AgentRobotParrot } from './AgentRobotParrot';
 import { ChatRobotParrot } from './ChatRobotParrot';
 

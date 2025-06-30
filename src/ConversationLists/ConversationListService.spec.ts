@@ -7,7 +7,7 @@ import {
   ConversationListSlackApp,
   ConversationMessageFactory,
 } from './ConversationListSlackApp';
-import { AbstractConversationListSlackApp } from './AbstractConversationListSlackApp';
+import { AbstractConversationListSlackApp } from './hidden/AbstractConversationListSlackApp.ts.hidden';
 import type { TConversationListItem } from './types';
 
 // Mock conversation class for testing generic functionality

@@ -1,9 +1,9 @@
-import { AbstractConversationListSlackApp } from './AbstractConversationListSlackApp';
+import { AbstractConversationListSlackApp } from './AbstractConversationListSlackApp.ts.hidden';
 import { AbstractConversationListItem } from './hidden/AbstractConversationListItem.ts.hidden';
 import type {
   TConversationListItem,
   TConversationItemAuthorRoles,
-} from './types';
+} from '../types';
 
 // Test implementation extending AbstractConversationList
 class TestConversationList extends AbstractConversationListSlackApp<TConversationListItem> {

@@ -7,12 +7,13 @@ export { AbstractRobotAgent } from './AbstractRobotAgent';
 export { ChatRobotParrot } from './ChatRobotParrot';
 export { AgentRobotParrot } from './AgentRobotParrot';
 export { RobotChatOpenAI } from './RobotChatOpenAI';
-export { RobotChatAnthropic } from './RobotChatAnthropic';
+// export { RobotChatAnthropic } from './RobotChatAnthropic.ts.hidden';
 
 // Pseudo robot implementations
-export { PseudoRobotRouterSuggestions } from './PseudoRobotRouterSuggestions';
-export { PseudoRobotRouter } from './PseudoRobotRouter';
-export { PseudoRobotDocumentationSuggestions } from './PseudoRobotDocumentationSuggestions';
+// Note: PseudoRobot exports commented out as files are in .hidden
+// export { PseudoRobotRouterSuggestions } from './PseudoRobotRouterSuggestions.ts.hidden';
+// export { PseudoRobotRouter } from './PseudoRobotRouter.ts.hidden';
+// export { PseudoRobotDocumentationSuggestions } from './PseudoRobotDocumentationSuggestions.ts.hidden';
 
 // Slack Agent implementations
 export { SlackAgentCoreFormsParrot } from './SlackAgents/SlackAgentCoreFormsParrot';

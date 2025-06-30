@@ -81,14 +81,20 @@ class RobotChatAnthropic extends AbstractRobotChat {
 
     const claudeEnvelope = this.createClaudeMessageEnvelope(inboundMessage);
     const responseMessage: TRobotMessage = {
-      role: 'assistant',
-      content: '',
-      content_type: 'text',
+      messageId: `response-${Date.now()}`,
+      author_role: 'assistant',
+      content: {
+        type: 'text/plain',
+        payload: '',
+      },
       created_at: new Date().toISOString(),
+      estimated_token_count: 0,
     };
 
-    const responseEnvelope = this.makeResponseEnvelope(inboundMessage);
-    responseEnvelope.payload.messages.push(responseMessage);
+    const responseEnvelope: TMessageEnvelope = {
+      messageId: `response-${Date.now()}`,
+      envelopePayload: responseMessage,
+    };
 
     claudeEnvelope.tools = [
       {

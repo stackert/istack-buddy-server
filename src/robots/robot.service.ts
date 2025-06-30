@@ -3,10 +3,10 @@ import { AbstractRobot } from './AbstractRobot';
 import { ChatRobotParrot } from './ChatRobotParrot';
 import { AgentRobotParrot } from './AgentRobotParrot';
 import { RobotChatOpenAI } from './RobotChatOpenAI';
-import { RobotChatAnthropic } from './RobotChatAnthropic';
-import { PseudoRobotRouter } from './PseudoRobotRouter';
-import { PseudoRobotRouterSuggestions } from './PseudoRobotRouterSuggestions';
-import { PseudoRobotDocumentationSuggestions } from './PseudoRobotDocumentationSuggestions';
+// import { RobotChatAnthropic } from './RobotChatAnthropic.ts.hidden';
+// import { PseudoRobotRouter } from './PseudoRobotRouter.ts.hidden';
+// import { PseudoRobotRouterSuggestions } from './PseudoRobotRouterSuggestions.ts.hidden';
+// import { PseudoRobotDocumentationSuggestions } from './PseudoRobotDocumentationSuggestions.ts.hidden';
 import { SlackAgentCoreFormsParrot } from './SlackAgents/SlackAgentCoreFormsParrot';
 import { SlackAgentCoreFormsSsoAutofillParrot } from './SlackAgents/SlackAgentCoreFormsSsoAutofillParrot';
 
@@ -28,10 +28,10 @@ export class RobotService implements OnModuleInit {
       new ChatRobotParrot(),
       new AgentRobotParrot(),
       new RobotChatOpenAI(),
-      new RobotChatAnthropic(),
-      new PseudoRobotRouter(),
-      new PseudoRobotRouterSuggestions(),
-      new PseudoRobotDocumentationSuggestions(),
+      // new RobotChatAnthropic(),
+      // new PseudoRobotRouter(),
+      // new PseudoRobotRouterSuggestions(),
+      // new PseudoRobotDocumentationSuggestions(),
       new SlackAgentCoreFormsParrot(),
       new SlackAgentCoreFormsSsoAutofillParrot(),
     ];

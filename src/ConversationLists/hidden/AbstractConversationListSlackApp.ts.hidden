@@ -2,7 +2,7 @@ import type {
   TConversationListItem,
   TConversationItemAuthorRoles,
   TSupportedContentTypes,
-} from './types';
+} from '../types';
 
 /**
  * Abstract base class for managing conversation lists with role-based visibility.
