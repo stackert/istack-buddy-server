@@ -1,5 +1,8 @@
 import { AbstractSlackRobotAgent } from './AbstractSlackRobotAgent';
-import { TConversationTextMessageEnvelope, TConversationTextMessage } from '../types';
+import {
+  TConversationTextMessageEnvelope,
+  TConversationTextMessage,
+} from '../types';
 import { TKnowledgeBase, TSlackAgentFunctionDescription } from './types';
 
 /**
@@ -66,7 +69,8 @@ class SlackAgentCoreFormsParrot extends AbstractSlackRobotAgent {
   public acceptMessageImmediateResponse(
     messageEnvelope: TConversationTextMessageEnvelope,
   ): Promise<TConversationTextMessageEnvelope> {
-    const recvMessage: TConversationTextMessage = messageEnvelope.envelopePayload;
+    const recvMessage: TConversationTextMessage =
+      messageEnvelope.envelopePayload;
     const respMessage: TConversationTextMessage = { ...recvMessage };
     const randomNumber = Math.floor(Math.random() * 10000);
 
@@ -74,6 +78,7 @@ class SlackAgentCoreFormsParrot extends AbstractSlackRobotAgent {
 
     const responseEnvelope: TConversationTextMessageEnvelope = {
       messageId: `response-${Date.now()}`,
+      requestOrResponse: 'response',
       envelopePayload: respMessage,
     };
 
@@ -82,9 +87,12 @@ class SlackAgentCoreFormsParrot extends AbstractSlackRobotAgent {
 
   public acceptMessageMultiPartResponse(
     messageEnvelope: TConversationTextMessageEnvelope,
-    delayedMessageCallback: (response: TConversationTextMessageEnvelope) => void,
+    delayedMessageCallback: (
+      response: TConversationTextMessageEnvelope,
+    ) => void,
   ): Promise<TConversationTextMessageEnvelope> {
-    const recvMessage: TConversationTextMessage = messageEnvelope.envelopePayload;
+    const recvMessage: TConversationTextMessage =
+      messageEnvelope.envelopePayload;
     const originalContent = recvMessage.content.payload;
     const randomNumber = () => Math.floor(Math.random() * 10000);
 
@@ -103,6 +111,7 @@ class SlackAgentCoreFormsParrot extends AbstractSlackRobotAgent {
 
         const responseEnvelope: TConversationTextMessageEnvelope = {
           messageId: `response-${Date.now()}-${i}`,
+          requestOrResponse: 'response',
           envelopePayload: respMessage,
         };
 
@@ -128,6 +137,7 @@ class SlackAgentCoreFormsParrot extends AbstractSlackRobotAgent {
 
     const immediateResponseEnvelope: TConversationTextMessageEnvelope = {
       messageId: `response-${Date.now()}`,
+      requestOrResponse: 'response',
       envelopePayload: immediateRespMessage,
     };
 

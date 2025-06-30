@@ -31,6 +31,7 @@ class ConversationMessageFactory {
 
     return {
       messageId,
+      requestOrResponse: 'request',
       envelopePayload: textMessage,
     };
   }
@@ -56,6 +57,7 @@ class ConversationMessageFactory {
 
     return {
       messageId,
+      requestOrResponse: 'response',
       envelopePayload: textMessage,
     };
   }

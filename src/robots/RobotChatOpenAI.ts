@@ -1,5 +1,8 @@
 import { AbstractRobotChat } from './AbstractRobotChat';
-import { TConversationTextMessageEnvelope, TConversationTextMessage } from './types';
+import {
+  TConversationTextMessageEnvelope,
+  TConversationTextMessage,
+} from './types';
 import { OpenAI } from 'openai';
 const OPEN_AI_API_KEY =
   ' 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';
@@ -67,7 +70,9 @@ class RobotChatOpenAI extends AbstractRobotChat {
 
   public async acceptMessageMultiPartResponse(
     messageEnvelope: TConversationTextMessageEnvelope,
-    delayedMessageCallback: (response: TConversationTextMessageEnvelope) => void,
+    delayedMessageCallback: (
+      response: TConversationTextMessageEnvelope,
+    ) => void,
   ): Promise<TConversationTextMessageEnvelope> {
     // Placeholder implementation for OpenAI chat robot
     const immediateResponse =
@@ -87,6 +92,7 @@ class RobotChatOpenAI extends AbstractRobotChat {
 
       const delayedMessage: TConversationTextMessageEnvelope = {
         messageId: `response-${Date.now()}-delayed`,
+        requestOrResponse: 'response',
         envelopePayload: delayedRespMessage,
       };
 

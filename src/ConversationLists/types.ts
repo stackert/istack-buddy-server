@@ -48,6 +48,7 @@ type TConversationListMessage<T = TConversationMessageContent> = {
 // Message envelope - contains the actual message as envelopePayload
 type TConversationMessageEnvelope<T = TConversationListMessage> = {
   messageId: string;
+  requestOrResponse: 'request' | 'response';
   envelopePayload: T;
 };
 

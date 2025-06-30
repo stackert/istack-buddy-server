@@ -29,9 +29,27 @@ export abstract class AbstractRobot {
 
   constructor() {}
 
+  /**
+   *
+   * @param messageEnvelope
+   * @param delayedMessageCallback
+   * @description `messageEnvelope` will have properties
+   * will have the shape of
+   * {
+   *   messageId: string;
+   *   author_role: string
+   *   content: any
+   *   created_at: string
+   * }
+   *
+   * By convention, 'acceptMessage*' functions will return the envelop replacing
+   * author_role, content, created_at
+   */
   public abstract acceptMessageMultiPartResponse(
     messageEnvelope: TConversationTextMessageEnvelope,
-    delayedMessageCallback: (response: TConversationTextMessageEnvelope) => void,
+    delayedMessageCallback: (
+      response: TConversationTextMessageEnvelope,
+    ) => void,
   ): Promise<TConversationTextMessageEnvelope>;
 
   get robotClass(): string {

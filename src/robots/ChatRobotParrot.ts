@@ -1,4 +1,7 @@
-import type { TConversationTextMessageEnvelope, TConversationTextMessage } from './types';
+import type {
+  TConversationTextMessageEnvelope,
+  TConversationTextMessage,
+} from './types';
 import { AbstractRobotChat } from './AbstractRobotChat';
 
 /**
@@ -40,7 +43,8 @@ export class ChatRobotParrot extends AbstractRobotChat {
   public acceptMessageImmediateResponse(
     messageEnvelope: TConversationTextMessageEnvelope,
   ): Promise<TConversationTextMessageEnvelope> {
-    const recvMessage: TConversationTextMessage = messageEnvelope.envelopePayload;
+    const recvMessage: TConversationTextMessage =
+      messageEnvelope.envelopePayload;
     const respMessage: TConversationTextMessage = { ...recvMessage };
     const randomNumber = Math.floor(Math.random() * 10000);
 
@@ -48,6 +52,7 @@ export class ChatRobotParrot extends AbstractRobotChat {
 
     const responseEnvelope: TConversationTextMessageEnvelope = {
       messageId: `response-${Date.now()}`,
+      requestOrResponse: 'response',
       envelopePayload: respMessage,
     };
 
@@ -57,7 +62,9 @@ export class ChatRobotParrot extends AbstractRobotChat {
   // streaming response
   public acceptMessageMultiPartResponse(
     messageEnvelope: TConversationTextMessageEnvelope,
-    delayedMessageCallback: (response: TConversationTextMessageEnvelope) => void,
+    delayedMessageCallback: (
+      response: TConversationTextMessageEnvelope,
+    ) => void,
   ): Promise<TConversationTextMessageEnvelope> {
     // For chat robots, we can implement multipart by using the immediate response
     // and then potentially sending additional responses via callback
@@ -78,6 +85,7 @@ export class ChatRobotParrot extends AbstractRobotChat {
 
       const delayedMessage: TConversationTextMessageEnvelope = {
         messageId: `response-${Date.now()}-delayed`,
+        requestOrResponse: 'response',
         envelopePayload: delayedRespMessage,
       };
 
@@ -96,7 +104,8 @@ export class ChatRobotParrot extends AbstractRobotChat {
     messageEnvelope: TConversationTextMessageEnvelope,
     chunkCallback: (chunk: string) => void,
   ): Promise<void> {
-    const recvMessage: TConversationTextMessage = messageEnvelope.envelopePayload;
+    const recvMessage: TConversationTextMessage =
+      messageEnvelope.envelopePayload;
 
     const randomNumber = Math.floor(Math.random() * 10000);
     const response = `(${randomNumber}) ${recvMessage.content.payload}`;
