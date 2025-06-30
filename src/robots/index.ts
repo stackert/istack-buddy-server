@@ -20,7 +20,7 @@ export { SlackAgentCoreFormsParrot } from './SlackAgents/SlackAgentCoreFormsParr
 export { SlackAgentCoreFormsSsoAutofillParrot } from './SlackAgents/SlackAgentCoreFormsSsoAutofillParrot';
 
 // Types
-export type { TRobotMessage, TMessageEnvelope } from './types';
+export type { TConversationTextMessage, TConversationTextMessageEnvelope } from './types';
 
 // Services and Modules
 export { RobotService } from './robot.service';

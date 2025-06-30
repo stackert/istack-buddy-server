@@ -1,4 +1,4 @@
-import type { TMessageEnvelope } from './types';
+import type { TConversationTextMessageEnvelope } from './types';
 /**
  * Abstract base class for all robot types
  */
@@ -30,9 +30,9 @@ export abstract class AbstractRobot {
   constructor() {}
 
   public abstract acceptMessageMultiPartResponse(
-    messageEnvelope: TMessageEnvelope,
-    delayedMessageCallback: (response: TMessageEnvelope) => void,
-  ): Promise<TMessageEnvelope>;
+    messageEnvelope: TConversationTextMessageEnvelope,
+    delayedMessageCallback: (response: TConversationTextMessageEnvelope) => void,
+  ): Promise<TConversationTextMessageEnvelope>;
 
   get robotClass(): string {
     return this.constructor.name;

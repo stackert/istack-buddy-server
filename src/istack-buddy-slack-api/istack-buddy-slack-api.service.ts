@@ -7,7 +7,6 @@ import type {
 } from '../ConversationLists/types';
 import { RobotService } from 'src/robots/robot.service';
 import { SlackAgentCoreFormsParrot } from 'src/robots/SlackAgents/SlackAgentCoreFormsParrot';
-import { TMessageEnvelope } from 'src/robots';
 
 // Factory for creating conversation messages
 class ConversationMessageFactory {
@@ -149,7 +148,7 @@ export class IstackBuddySlackApiService {
         return;
       }
 
-      const messageEnvelope: TMessageEnvelope =
+      const messageEnvelope: TConversationTextMessageEnvelope =
         this.slackMessageToMessageEnvelope(userMessage);
 
       robot.acceptMessageMultiPartResponse(messageEnvelope, (response) => {
@@ -208,7 +207,7 @@ export class IstackBuddySlackApiService {
 
   private slackMessageToMessageEnvelope(
     message: TConversationTextMessageEnvelope,
-  ): TMessageEnvelope {
+  ): TConversationTextMessageEnvelope {
     return message; // The message is already in the correct format
   }
 

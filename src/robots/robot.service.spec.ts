@@ -3,7 +3,7 @@ import { RobotService } from './robot.service';
 import { ChatRobotParrot } from './ChatRobotParrot';
 import { AgentRobotParrot } from './AgentRobotParrot';
 import { AbstractRobot } from './AbstractRobot';
-import type { TMessageEnvelope } from './types';
+import type { TConversationTextMessageEnvelope } from './types';
 
 // Test robot class for testing purposes
 class TestRobot extends AbstractRobot {
@@ -14,9 +14,9 @@ class TestRobot extends AbstractRobot {
   public readonly contextWindowSizeInTokens: number = 1000;
 
   public acceptMessageMultiPartResponse(
-    messageEnvelope: TMessageEnvelope,
-    delayedMessageCallback: (response: TMessageEnvelope) => void,
-  ): Promise<TMessageEnvelope> {
+    messageEnvelope: TConversationTextMessageEnvelope,
+    delayedMessageCallback: (response: TConversationTextMessageEnvelope) => void,
+  ): Promise<TConversationTextMessageEnvelope> {
     return Promise.resolve(messageEnvelope);
   }
 

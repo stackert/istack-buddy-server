@@ -1,5 +1,5 @@
 import { ChatRobotParrot } from './ChatRobotParrot';
-import { TMessageEnvelope, TRobotMessage } from './types';
+import { TConversationTextMessageEnvelope, TConversationTextMessage } from './types';
 
 describe('ChatRobotParrot', () => {
   let robot: ChatRobotParrot;
@@ -39,8 +39,8 @@ describe('ChatRobotParrot', () => {
   });
 
   describe('acceptMessageImmediateResponse', () => {
-    let mockMessageEnvelope: TMessageEnvelope;
-    let mockRobotMessage: TRobotMessage;
+    let mockMessageEnvelope: TConversationTextMessageEnvelope;
+    let mockRobotMessage: TConversationTextMessage;
 
     beforeEach(() => {
       mockRobotMessage = {
@@ -137,8 +137,8 @@ describe('ChatRobotParrot', () => {
   });
 
   describe('acceptMessageStreamResponse', () => {
-    let mockMessageEnvelope: TMessageEnvelope;
-    let mockRobotMessage: TRobotMessage;
+    let mockMessageEnvelope: TConversationTextMessageEnvelope;
+    let mockRobotMessage: TConversationTextMessage;
     let mockChunkCallback: jest.Mock;
 
     beforeEach(() => {
@@ -359,7 +359,7 @@ describe('ChatRobotParrot', () => {
 
   describe('Edge Cases', () => {
     it('should handle message envelope without message property in immediate response', async () => {
-      const envelopeWithoutMessage: TMessageEnvelope = {
+      const envelopeWithoutMessage: TConversationTextMessageEnvelope = {
         routerId: 'router-123',
         messageType: 'message',
         // message property is undefined
@@ -373,7 +373,7 @@ describe('ChatRobotParrot', () => {
     });
 
     it('should handle message envelope without message property in stream response', async () => {
-      const envelopeWithoutMessage: TMessageEnvelope = {
+      const envelopeWithoutMessage: TConversationTextMessageEnvelope = {
         routerId: 'router-123',
         messageType: 'message',
         // message property is undefined

@@ -1,5 +1,5 @@
 import { AbstractRobot } from './AbstractRobot';
-import type { TMessageEnvelope } from './types';
+import type { TConversationTextMessageEnvelope } from './types';
 
 /**
  * Abstract agent robot class that extends the base robot functionality

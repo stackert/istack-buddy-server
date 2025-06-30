@@ -1,4 +1,4 @@
-import type { TMessageEnvelope, TRobotMessage } from './types';
+import type { TConversationTextMessageEnvelope, TConversationTextMessage } from './types';
 import { AbstractRobotChat } from './AbstractRobotChat';
 
 /**
@@ -38,15 +38,15 @@ export class ChatRobotParrot extends AbstractRobotChat {
   }
 
   public acceptMessageImmediateResponse(
-    messageEnvelope: TMessageEnvelope,
-  ): Promise<TMessageEnvelope> {
-    const recvMessage: TRobotMessage = messageEnvelope.envelopePayload;
-    const respMessage: TRobotMessage = { ...recvMessage };
+    messageEnvelope: TConversationTextMessageEnvelope,
+  ): Promise<TConversationTextMessageEnvelope> {
+    const recvMessage: TConversationTextMessage = messageEnvelope.envelopePayload;
+    const respMessage: TConversationTextMessage = { ...recvMessage };
     const randomNumber = Math.floor(Math.random() * 10000);
 
     respMessage.content.payload = `(${randomNumber}) ${recvMessage.content.payload}`;
 
-    const responseEnvelope: TMessageEnvelope = {
+    const responseEnvelope: TConversationTextMessageEnvelope = {
       messageId: `response-${Date.now()}`,
       envelopePayload: respMessage,
     };
@@ -56,9 +56,9 @@ export class ChatRobotParrot extends AbstractRobotChat {
 
   // streaming response
   public acceptMessageMultiPartResponse(
-    messageEnvelope: TMessageEnvelope,
-    delayedMessageCallback: (response: TMessageEnvelope) => void,
-  ): Promise<TMessageEnvelope> {
+    messageEnvelope: TConversationTextMessageEnvelope,
+    delayedMessageCallback: (response: TConversationTextMessageEnvelope) => void,
+  ): Promise<TConversationTextMessageEnvelope> {
     // For chat robots, we can implement multipart by using the immediate response
     // and then potentially sending additional responses via callback
     const immediateResponse =
@@ -66,7 +66,7 @@ export class ChatRobotParrot extends AbstractRobotChat {
 
     // Optionally send delayed additional responses
     setTimeout(() => {
-      const delayedRespMessage: TRobotMessage = {
+      const delayedRespMessage: TConversationTextMessage = {
         ...messageEnvelope.envelopePayload,
         content: {
           type: 'text/plain',
@@ -76,7 +76,7 @@ export class ChatRobotParrot extends AbstractRobotChat {
         created_at: new Date().toISOString(),
       };
 
-      const delayedMessage: TMessageEnvelope = {
+      const delayedMessage: TConversationTextMessageEnvelope = {
         messageId: `response-${Date.now()}-delayed`,
         envelopePayload: delayedRespMessage,
       };
@@ -93,10 +93,10 @@ export class ChatRobotParrot extends AbstractRobotChat {
   }
 
   public acceptMessageStreamResponse(
-    messageEnvelope: TMessageEnvelope,
+    messageEnvelope: TConversationTextMessageEnvelope,
     chunkCallback: (chunk: string) => void,
   ): Promise<void> {
-    const recvMessage: TRobotMessage = messageEnvelope.envelopePayload;
+    const recvMessage: TConversationTextMessage = messageEnvelope.envelopePayload;
 
     const randomNumber = Math.floor(Math.random() * 10000);
     const response = `(${randomNumber}) ${recvMessage.content.payload}`;

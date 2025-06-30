@@ -1,5 +1,5 @@
 import { SlackAgentCoreFormsParrot } from './SlackAgentCoreFormsParrot';
-import { TMessageEnvelope, TRobotMessage } from '../types';
+import { TConversationTextMessageEnvelope, TConversationTextMessage } from '../types';
 
 describe('SlackAgentCoreFormsParrot', () => {
   let robot: SlackAgentCoreFormsParrot;
@@ -43,8 +43,8 @@ describe('SlackAgentCoreFormsParrot', () => {
   });
 
   describe('acceptMessageImmediateResponse', () => {
-    let mockMessageEnvelope: TMessageEnvelope;
-    let mockRobotMessage: TRobotMessage;
+    let mockMessageEnvelope: TConversationTextMessageEnvelope;
+    let mockRobotMessage: TConversationTextMessage;
 
     beforeEach(() => {
       mockRobotMessage = {
@@ -141,8 +141,8 @@ describe('SlackAgentCoreFormsParrot', () => {
   });
 
   describe('acceptMessageMultiPartResponse', () => {
-    let mockMessageEnvelope: TMessageEnvelope;
-    let mockRobotMessage: TRobotMessage;
+    let mockMessageEnvelope: TConversationTextMessageEnvelope;
+    let mockRobotMessage: TConversationTextMessage;
     let mockCallback: jest.Mock;
 
     beforeEach(() => {
@@ -276,7 +276,7 @@ describe('SlackAgentCoreFormsParrot', () => {
 
   describe('Edge Cases', () => {
     it('should handle message envelope without message property', async () => {
-      const envelopeWithoutMessage: TMessageEnvelope = {
+      const envelopeWithoutMessage: TConversationTextMessageEnvelope = {
         routerId: 'router-123',
         messageType: 'message',
         // message property is undefined

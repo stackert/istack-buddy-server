@@ -1,5 +1,5 @@
 import { AgentRobotParrot } from './AgentRobotParrot';
-import { TMessageEnvelope, TRobotMessage } from './types';
+import { TConversationTextMessageEnvelope, TConversationTextMessage } from './types';
 
 describe('AgentRobotParrot', () => {
   let robot: AgentRobotParrot;
@@ -39,8 +39,8 @@ describe('AgentRobotParrot', () => {
   });
 
   describe('acceptMessageImmediateResponse', () => {
-    let mockMessageEnvelope: TMessageEnvelope;
-    let mockRobotMessage: TRobotMessage;
+    let mockMessageEnvelope: TConversationTextMessageEnvelope;
+    let mockRobotMessage: TConversationTextMessage;
 
     beforeEach(() => {
       mockRobotMessage = {
@@ -137,8 +137,8 @@ describe('AgentRobotParrot', () => {
   });
 
   describe('acceptMessageMultiPartResponse', () => {
-    let mockMessageEnvelope: TMessageEnvelope;
-    let mockRobotMessage: TRobotMessage;
+    let mockMessageEnvelope: TConversationTextMessageEnvelope;
+    let mockRobotMessage: TConversationTextMessage;
     let mockCallback: jest.Mock;
 
     beforeEach(() => {
@@ -272,7 +272,7 @@ describe('AgentRobotParrot', () => {
 
   describe('Edge Cases', () => {
     it('should handle message envelope without message property', async () => {
-      const envelopeWithoutMessage: TMessageEnvelope = {
+      const envelopeWithoutMessage: TConversationTextMessageEnvelope = {
         routerId: 'router-123',
         messageType: 'message',
         // message property is undefined

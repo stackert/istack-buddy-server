@@ -1,11 +1,8 @@
-// Re-export ConversationLists types for robot compatibility
+// Direct exports of ConversationLists types for robots
 export type {
-  TConversationTextMessageEnvelope as TMessageEnvelope,
-  TConversationTextMessage as TRobotMessage,
-  TConversationMessageContentString as TMessageContent,
+  TConversationTextMessageEnvelope,
+  TConversationTextMessage,
+  TConversationMessageContentString,
+  TConversationMessageEnvelope,
+  TConversationListMessage,
 } from '../ConversationLists/types';
-
-// Legacy type for backward compatibility
-type TMessageEnvelopePayload = {
-  messages: any[]; // deprecated - use TConversationTextMessageEnvelope instead
-};

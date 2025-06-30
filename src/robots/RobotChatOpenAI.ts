@@ -1,5 +1,5 @@
 import { AbstractRobotChat } from './AbstractRobotChat';
-import { TMessageEnvelope, TRobotMessage } from './types';
+import { TConversationTextMessageEnvelope, TConversationTextMessage } from './types';
 import { OpenAI } from 'openai';
 const OPEN_AI_API_KEY =
   ' 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';
@@ -53,29 +53,29 @@ class RobotChatOpenAI extends AbstractRobotChat {
   }
 
   public async acceptMessageStreamResponse(
-    messageEnvelope: TMessageEnvelope,
+    messageEnvelope: TConversationTextMessageEnvelope,
     chunkCallback: (chunk: string) => void,
   ): Promise<void> {
     return Promise.resolve();
   }
 
   public async acceptMessageImmediateResponse(
-    inboundMessage: TMessageEnvelope,
-  ): Promise<TMessageEnvelope> {
+    inboundMessage: TConversationTextMessageEnvelope,
+  ): Promise<TConversationTextMessageEnvelope> {
     return Promise.resolve(inboundMessage);
   }
 
   public async acceptMessageMultiPartResponse(
-    messageEnvelope: TMessageEnvelope,
-    delayedMessageCallback: (response: TMessageEnvelope) => void,
-  ): Promise<TMessageEnvelope> {
+    messageEnvelope: TConversationTextMessageEnvelope,
+    delayedMessageCallback: (response: TConversationTextMessageEnvelope) => void,
+  ): Promise<TConversationTextMessageEnvelope> {
     // Placeholder implementation for OpenAI chat robot
     const immediateResponse =
       await this.acceptMessageImmediateResponse(messageEnvelope);
 
     // Send delayed response after processing
     setTimeout(() => {
-      const delayedRespMessage: TRobotMessage = {
+      const delayedRespMessage: TConversationTextMessage = {
         ...messageEnvelope.envelopePayload,
         content: {
           type: 'text/plain',
@@ -85,7 +85,7 @@ class RobotChatOpenAI extends AbstractRobotChat {
         created_at: new Date().toISOString(),
       };
 
-      const delayedMessage: TMessageEnvelope = {
+      const delayedMessage: TConversationTextMessageEnvelope = {
         messageId: `response-${Date.now()}-delayed`,
         envelopePayload: delayedRespMessage,
       };
@@ -102,9 +102,9 @@ class RobotChatOpenAI extends AbstractRobotChat {
   }
 
   public async sendTestMessageToRobot(
-    inboundMessage: TMessageEnvelope,
+    inboundMessage: TConversationTextMessageEnvelope,
     chunkCallback: (chunk: string) => void,
-  ): Promise<TMessageEnvelope> {
+  ): Promise<TConversationTextMessageEnvelope> {
     const openAiClient = this.getClient();
     const responseToCallTools = await openAiClient.responses.create({
       model: 'gpt-4.1',

@@ -1,5 +1,5 @@
 import { AbstractSlackRobotAgent } from './AbstractSlackRobotAgent';
-import { TMessageEnvelope, TRobotMessage } from '../types';
+import { TConversationTextMessageEnvelope, TConversationTextMessage } from '../types';
 import { TKnowledgeBase, TSlackAgentFunctionDescription } from './types';
 
 /**
@@ -64,15 +64,15 @@ class SlackAgentCoreFormsSsoAutofillParrot extends AbstractSlackRobotAgent {
   }
 
   public acceptMessageImmediateResponse(
-    messageEnvelope: TMessageEnvelope,
-  ): Promise<TMessageEnvelope> {
-    const recvMessage: TRobotMessage = messageEnvelope.envelopePayload;
-    const respMessage: TRobotMessage = { ...recvMessage };
+    messageEnvelope: TConversationTextMessageEnvelope,
+  ): Promise<TConversationTextMessageEnvelope> {
+    const recvMessage: TConversationTextMessage = messageEnvelope.envelopePayload;
+    const respMessage: TConversationTextMessage = { ...recvMessage };
     const randomNumber = Math.floor(Math.random() * 10000);
 
     respMessage.content.payload = `(${randomNumber}) ${recvMessage.content.payload}`;
 
-    const responseEnvelope: TMessageEnvelope = {
+    const responseEnvelope: TConversationTextMessageEnvelope = {
       messageId: `response-${Date.now()}`,
       envelopePayload: respMessage,
     };
@@ -81,16 +81,16 @@ class SlackAgentCoreFormsSsoAutofillParrot extends AbstractSlackRobotAgent {
   }
 
   public acceptMessageMultiPartResponse(
-    messageEnvelope: TMessageEnvelope,
-    delayedMessageCallback: (response: TMessageEnvelope) => void,
-  ): Promise<TMessageEnvelope> {
-    const recvMessage: TRobotMessage = messageEnvelope.envelopePayload;
+    messageEnvelope: TConversationTextMessageEnvelope,
+    delayedMessageCallback: (response: TConversationTextMessageEnvelope) => void,
+  ): Promise<TConversationTextMessageEnvelope> {
+    const recvMessage: TConversationTextMessage = messageEnvelope.envelopePayload;
     const originalContent = recvMessage.content.payload;
     const randomNumber = Math.floor(Math.random() * 10000);
 
     // Send delayed response
     setTimeout(() => {
-      const delayedRespMessage: TRobotMessage = {
+      const delayedRespMessage: TConversationTextMessage = {
         ...recvMessage,
         content: {
           type: 'text/plain',
@@ -100,7 +100,7 @@ class SlackAgentCoreFormsSsoAutofillParrot extends AbstractSlackRobotAgent {
         created_at: new Date().toISOString(),
       };
 
-      const delayedResponseEnvelope: TMessageEnvelope = {
+      const delayedResponseEnvelope: TConversationTextMessageEnvelope = {
         messageId: `response-${Date.now()}-delayed`,
         envelopePayload: delayedRespMessage,
       };
@@ -114,7 +114,7 @@ class SlackAgentCoreFormsSsoAutofillParrot extends AbstractSlackRobotAgent {
     }, 500);
 
     // Return immediate response
-    const immediateRespMessage: TRobotMessage = {
+    const immediateRespMessage: TConversationTextMessage = {
       ...recvMessage,
       content: {
         type: 'text/plain',
@@ -124,7 +124,7 @@ class SlackAgentCoreFormsSsoAutofillParrot extends AbstractSlackRobotAgent {
       created_at: new Date().toISOString(),
     };
 
-    const immediateResponseEnvelope: TMessageEnvelope = {
+    const immediateResponseEnvelope: TConversationTextMessageEnvelope = {
       messageId: `response-${Date.now()}`,
       envelopePayload: immediateRespMessage,
     };
