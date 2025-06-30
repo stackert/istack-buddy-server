@@ -73,6 +73,7 @@ class ConversationListViewedImage extends AbstractConversationMessageList<TConve
 
     const imageEnvelope: TConversationImageMessageEnvelope = {
       messageId,
+      requestOrResponse: 'request',
       envelopePayload: imageMessage,
     };
 
@@ -108,6 +109,7 @@ class ConversationListViewedImage extends AbstractConversationMessageList<TConve
 
     const textEnvelope: TConversationTextMessageEnvelope = {
       messageId,
+      requestOrResponse: 'request',
       envelopePayload: textMessage,
     };
 

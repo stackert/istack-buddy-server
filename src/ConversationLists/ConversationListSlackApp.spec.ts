@@ -58,6 +58,7 @@ function createTestTextMessageEnvelope(
 
   return {
     messageId,
+    requestOrResponse: 'request',
     envelopePayload: textMessage,
   };
 }
@@ -213,8 +214,8 @@ describe('ConversationListSlackApp', () => {
     });
 
     it('should generate valid timestamps', () => {
-      const currentTime = new Date();
-      mockDateNow.mockReturnValue(currentTime.getTime());
+      const fixedTime = 1751270681000; // Fixed timestamp
+      mockDateNow.mockReturnValue(fixedTime);
 
       const envelopeId = slackApp.addMessage(
         'timestamp-test',
@@ -225,7 +226,7 @@ describe('ConversationListSlackApp', () => {
       const stored = slackApp.getMessageEnvelopeById(envelopeId);
       const messageTime = new Date(stored!.envelope.envelopePayload.created_at);
 
-      expect(messageTime.getTime()).toBe(currentTime.getTime());
+      expect(messageTime.getTime()).toBe(fixedTime);
     });
 
     it('should handle empty text content', () => {
@@ -300,14 +301,20 @@ describe('ConversationListSlackApp', () => {
     });
 
     it('should return messages in reverse chronological order', () => {
-      // Add messages with specific timestamps
-      mockDateNow.mockReturnValueOnce(1000);
+      // Add messages with specific timestamps (each call to addMessage uses Date.now() twice)
+      mockDateNow
+        .mockReturnValueOnce(1000) // for created_at
+        .mockReturnValueOnce(1000); // for addedAtMs
       const id1 = slackApp.addMessage('msg-1', 'user', 'First message');
 
-      mockDateNow.mockReturnValueOnce(3000);
+      mockDateNow
+        .mockReturnValueOnce(3000) // for created_at
+        .mockReturnValueOnce(3000); // for addedAtMs
       const id2 = slackApp.addMessage('msg-2', 'bot', 'Second message');
 
-      mockDateNow.mockReturnValueOnce(2000);
+      mockDateNow
+        .mockReturnValueOnce(2000) // for created_at
+        .mockReturnValueOnce(2000); // for addedAtMs
       const id3 = slackApp.addMessage('msg-3', 'admin', 'Third message');
 
       const results = slackApp.getLatestMessages();
@@ -353,13 +360,19 @@ describe('ConversationListSlackApp', () => {
 
     it('should return the earliest added message when multiple exist', () => {
       // Add messages with non-sequential timestamps
-      mockDateNow.mockReturnValueOnce(3000); // Third chronologically
+      mockDateNow
+        .mockReturnValueOnce(3000) // for created_at
+        .mockReturnValueOnce(3000); // for addedAtMs
       const id1 = slackApp.addMessage('msg-1', 'user', 'first');
 
-      mockDateNow.mockReturnValueOnce(1000); // First chronologically
+      mockDateNow
+        .mockReturnValueOnce(1000) // for created_at
+        .mockReturnValueOnce(1000); // for addedAtMs
       const id2 = slackApp.addMessage('msg-2', 'bot', 'second');
 
-      mockDateNow.mockReturnValueOnce(2000); // Second chronologically
+      mockDateNow
+        .mockReturnValueOnce(2000) // for created_at
+        .mockReturnValueOnce(2000); // for addedAtMs
       const id3 = slackApp.addMessage('msg-3', 'admin', 'third');
 
       const result = slackApp.getFirstMessage();
@@ -430,10 +443,14 @@ describe('ConversationListSlackApp', () => {
 
     it('should return messages in chronological order (most recent first)', () => {
       // Add more user messages with specific timestamps
-      mockDateNow.mockReturnValueOnce(1000);
+      mockDateNow
+        .mockReturnValueOnce(1000) // for created_at
+        .mockReturnValueOnce(1000); // for addedAtMs
       slackApp.addMessage('user-early', 'user', 'Early user message');
 
-      mockDateNow.mockReturnValueOnce(3000);
+      mockDateNow
+        .mockReturnValueOnce(3000) // for created_at
+        .mockReturnValueOnce(3000); // for addedAtMs
       slackApp.addMessage('user-late', 'user', 'Late user message');
 
       const userMessages = slackApp.getMessagesByAuthorRole('user');
@@ -556,13 +573,19 @@ describe('ConversationListSlackApp', () => {
 
     it('should return the most recent message for the role', () => {
       // Add messages with specific timestamps
-      mockDateNow.mockReturnValueOnce(1000);
+      mockDateNow
+        .mockReturnValueOnce(1000) // for created_at
+        .mockReturnValueOnce(1000); // for addedAtMs
       slackApp.addMessage('user-1', 'user', 'First user message');
 
-      mockDateNow.mockReturnValueOnce(2000);
+      mockDateNow
+        .mockReturnValueOnce(2000) // for created_at
+        .mockReturnValueOnce(2000); // for addedAtMs
       slackApp.addBotMessage('bot-1', 'Bot message');
 
-      mockDateNow.mockReturnValueOnce(3000);
+      mockDateNow
+        .mockReturnValueOnce(3000) // for created_at
+        .mockReturnValueOnce(3000); // for addedAtMs
       slackApp.addMessage('user-2', 'user', 'Latest user message');
 
       const latestUserMessage = slackApp.getLatestMessageFromRole('user');

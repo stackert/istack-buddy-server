@@ -60,6 +60,7 @@ function createTestImageMessageEnvelope(
 
   return {
     messageId,
+    requestOrResponse: 'request',
     envelopePayload: imageMessage,
   };
 }
@@ -86,6 +87,7 @@ function createTestTextMessageEnvelope(
 
   return {
     messageId,
+    requestOrResponse: 'request',
     envelopePayload: textMessage,
   };
 }

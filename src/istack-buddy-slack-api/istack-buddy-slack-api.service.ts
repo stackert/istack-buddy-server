@@ -5,8 +5,8 @@ import type {
   TConversationTextMessage,
   TConversationMessageContentString,
 } from '../ConversationLists/types';
-import { RobotService } from 'src/robots/robot.service';
-import { SlackAgentCoreFormsParrot } from 'src/robots/SlackAgents/SlackAgentCoreFormsParrot';
+import { RobotService } from '../robots/robot.service';
+import { SlackAgentCoreFormsParrot } from '../robots/SlackAgents/SlackAgentCoreFormsParrot';
 
 // Factory for creating conversation messages
 class ConversationMessageFactory {

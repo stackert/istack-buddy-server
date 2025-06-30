@@ -1,5 +1,8 @@
 import { AbstractRobotAgent } from './AbstractRobotAgent';
-import { TConversationTextMessageEnvelope, TConversationTextMessage } from './types';
+import {
+  TConversationTextMessageEnvelope,
+  TConversationTextMessage,
+} from './types';
 
 /**
  * A concrete agent robot that parrots (repeats) task descriptions as it executes them
@@ -41,7 +44,8 @@ export class AgentRobotParrot extends AbstractRobotAgent {
   public acceptMessageImmediateResponse(
     messageEnvelope: TConversationTextMessageEnvelope,
   ): Promise<TConversationTextMessageEnvelope> {
-    const recvMessage: TConversationTextMessage = messageEnvelope.envelopePayload;
+    const recvMessage: TConversationTextMessage =
+      messageEnvelope.envelopePayload;
     const respMessage: TConversationTextMessage = { ...recvMessage };
     const randomNumber = Math.floor(Math.random() * 10000);
 
@@ -49,6 +53,7 @@ export class AgentRobotParrot extends AbstractRobotAgent {
 
     const responseEnvelope: TConversationTextMessageEnvelope = {
       messageId: `response-${Date.now()}`,
+      requestOrResponse: 'response',
       envelopePayload: respMessage,
     };
 
@@ -57,9 +62,12 @@ export class AgentRobotParrot extends AbstractRobotAgent {
 
   public acceptMessageMultiPartResponse(
     messageEnvelope: TConversationTextMessageEnvelope,
-    delayedMessageCallback: (response: TConversationTextMessageEnvelope) => void,
+    delayedMessageCallback: (
+      response: TConversationTextMessageEnvelope,
+    ) => void,
   ): Promise<TConversationTextMessageEnvelope> {
-    const recvMessage: TConversationTextMessage = messageEnvelope.envelopePayload;
+    const recvMessage: TConversationTextMessage =
+      messageEnvelope.envelopePayload;
     const originalContent = recvMessage.content.payload;
     const randomNumber = Math.floor(Math.random() * 10000);
 
@@ -77,6 +85,7 @@ export class AgentRobotParrot extends AbstractRobotAgent {
 
       const delayedResponseEnvelope: TConversationTextMessageEnvelope = {
         messageId: `response-${Date.now()}-delayed`,
+        requestOrResponse: 'response',
         envelopePayload: delayedRespMessage,
       };
 
@@ -101,6 +110,7 @@ export class AgentRobotParrot extends AbstractRobotAgent {
 
     const immediateResponseEnvelope: TConversationTextMessageEnvelope = {
       messageId: `response-${Date.now()}`,
+      requestOrResponse: 'response',
       envelopePayload: immediateRespMessage,
     };
 

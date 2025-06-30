@@ -63,6 +63,7 @@ function createTestMessageEnvelope(
 
   return {
     messageId,
+    requestOrResponse: 'request',
     envelopePayload: message,
   };
 }

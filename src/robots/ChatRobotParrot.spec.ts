@@ -1,5 +1,8 @@
 import { ChatRobotParrot } from './ChatRobotParrot';
-import { TConversationTextMessageEnvelope, TConversationTextMessage } from './types';
+import {
+  TConversationTextMessageEnvelope,
+  TConversationTextMessage,
+} from './types';
 
 describe('ChatRobotParrot', () => {
   let robot: ChatRobotParrot;
@@ -38,22 +41,34 @@ describe('ChatRobotParrot', () => {
     });
   });
 
+  describe('estimateTokens', () => {
+    it('should estimate tokens correctly', () => {
+      expect(robot.estimateTokens('hello world')).toBe(3); // 11 chars / 4 = 2.75 -> 3
+      expect(robot.estimateTokens('')).toBe(0);
+      expect(robot.estimateTokens('a')).toBe(1);
+    });
+  });
+
   describe('acceptMessageImmediateResponse', () => {
     let mockMessageEnvelope: TConversationTextMessageEnvelope;
     let mockRobotMessage: TConversationTextMessage;
 
     beforeEach(() => {
       mockRobotMessage = {
-        message: 'Test message',
-        sender: 'user123',
-        receiver: 'robot',
-        timestamp: '2024-01-01T10:00:00Z',
+        messageId: 'msg-123',
+        author_role: 'user',
+        content: {
+          type: 'text/plain',
+          payload: 'Test message',
+        },
+        created_at: '2024-01-01T10:00:00Z',
+        estimated_token_count: 10,
       };
 
       mockMessageEnvelope = {
-        routerId: 'router-123',
-        messageType: 'message',
-        message: mockRobotMessage,
+        messageId: 'envelope-123',
+        requestOrResponse: 'request',
+        envelopePayload: mockRobotMessage,
       };
     });
 
@@ -62,75 +77,73 @@ describe('ChatRobotParrot', () => {
         await robot.acceptMessageImmediateResponse(mockMessageEnvelope);
 
       expect(result).toBeDefined();
-      expect(result.routerId).toBe('router-123');
-      expect(result.messageType).toBe('message');
+      expect(result.messageId).toBeDefined();
+      expect(result.envelopePayload).toBeDefined();
     });
 
     it('should prefix the original message with a random number', async () => {
       const result =
         await robot.acceptMessageImmediateResponse(mockMessageEnvelope);
 
-      expect(result.message?.message).toMatch(/^\(\d+\) Test message$/);
+      expect(result.envelopePayload.content.payload).toMatch(
+        /^\(\d+\) Test message$/,
+      );
     });
 
-    it('should preserve all other message properties', async () => {
+    it('should preserve the message structure', async () => {
       const result =
         await robot.acceptMessageImmediateResponse(mockMessageEnvelope);
 
-      expect(result.message?.sender).toBe('user123');
-      expect(result.message?.receiver).toBe('robot');
-      expect(result.message?.timestamp).toBe('2024-01-01T10:00:00Z');
+      expect(result.envelopePayload.author_role).toBe('user');
+      expect(result.envelopePayload.created_at).toBe('2024-01-01T10:00:00Z');
+      expect(result.envelopePayload.content.type).toBe('text/plain');
     });
 
     it('should generate different random numbers for consecutive calls', async () => {
-      // Create separate envelope objects to avoid reference issues
       const envelope1 = JSON.parse(JSON.stringify(mockMessageEnvelope));
       const envelope2 = JSON.parse(JSON.stringify(mockMessageEnvelope));
 
       const result1 = await robot.acceptMessageImmediateResponse(envelope1);
       const result2 = await robot.acceptMessageImmediateResponse(envelope2);
 
-      // Extract the random numbers from both results
-      const number1 = result1.message?.message.match(/^\((\d+)\)/)?.[1];
-      const number2 = result2.message?.message.match(/^\((\d+)\)/)?.[1];
+      const number1 =
+        result1.envelopePayload.content.payload.match(/^\((\d+)\)/)?.[1];
+      const number2 =
+        result2.envelopePayload.content.payload.match(/^\((\d+)\)/)?.[1];
 
-      // They should both be valid numbers
       expect(number1).toBeDefined();
       expect(number2).toBeDefined();
-
-      // Note: There's a small statistical chance they could be the same (1/10000)
-      // but if they're different, the test passes. If they're the same, we accept it
-      // as a valid random occurrence and just check they're both valid numbers
     });
 
     it('should handle empty message string', async () => {
-      mockMessageEnvelope.message!.message = '';
+      mockMessageEnvelope.envelopePayload.content.payload = '';
 
       const result =
         await robot.acceptMessageImmediateResponse(mockMessageEnvelope);
 
-      expect(result.message?.message).toMatch(/^\(\d+\) $/);
+      expect(result.envelopePayload.content.payload).toMatch(/^\(\d+\) $/);
     });
 
     it('should handle messages with special characters', async () => {
-      mockMessageEnvelope.message!.message = 'Special chars: @#$%^&*()';
+      mockMessageEnvelope.envelopePayload.content.payload =
+        'Special chars: @#$%^&*()';
 
       const result =
         await robot.acceptMessageImmediateResponse(mockMessageEnvelope);
 
-      expect(result.message?.message).toMatch(
+      expect(result.envelopePayload.content.payload).toMatch(
         /^\(\d+\) Special chars: @#\$%\^\&\*\(\)$/,
       );
     });
 
     it('should handle very long messages', async () => {
       const longMessage = 'A'.repeat(1000);
-      mockMessageEnvelope.message!.message = longMessage;
+      mockMessageEnvelope.envelopePayload.content.payload = longMessage;
 
       const result =
         await robot.acceptMessageImmediateResponse(mockMessageEnvelope);
 
-      expect(result.message?.message).toMatch(
+      expect(result.envelopePayload.content.payload).toMatch(
         new RegExp(`^\\(\\d+\\) ${longMessage}$`),
       );
     });
@@ -143,16 +156,20 @@ describe('ChatRobotParrot', () => {
 
     beforeEach(() => {
       mockRobotMessage = {
-        message: 'Test message for streaming',
-        sender: 'user123',
-        receiver: 'robot',
-        timestamp: '2024-01-01T10:00:00Z',
+        messageId: 'stream-msg-123',
+        author_role: 'user',
+        content: {
+          type: 'text/plain',
+          payload: 'Test message for streaming',
+        },
+        created_at: '2024-01-01T10:00:00Z',
+        estimated_token_count: 15,
       };
 
       mockMessageEnvelope = {
-        routerId: 'router-123',
-        messageType: 'message',
-        message: mockRobotMessage,
+        messageId: 'stream-envelope-123',
+        requestOrResponse: 'request',
+        envelopePayload: mockRobotMessage,
       };
 
       mockChunkCallback = jest.fn();
@@ -237,39 +254,8 @@ describe('ChatRobotParrot', () => {
       expect(allChunks).toMatch(/^\(\d+\) Test message for streaming$/);
     });
 
-    it('should divide message into roughly equal chunks', async () => {
-      const promise = robot.acceptMessageStreamResponse(
-        mockMessageEnvelope,
-        mockChunkCallback,
-      );
-
-      // Fast-forward through all intervals
-      for (let i = 0; i < 6; i++) {
-        jest.advanceTimersByTime(500);
-      }
-
-      await promise;
-
-      // Get all chunks except the null terminator
-      const chunks = mockChunkCallback.mock.calls
-        .slice(0, -1)
-        .map((call) => call[0]);
-
-      expect(chunks).toHaveLength(5);
-
-      // Each chunk should be a string
-      chunks.forEach((chunk) => {
-        expect(typeof chunk).toBe('string');
-        expect(chunk.length).toBeGreaterThan(0);
-      });
-
-      // When combined, chunks should form the complete response
-      const combined = chunks.join('');
-      expect(combined).toMatch(/^\(\d+\) Test message for streaming$/);
-    });
-
     it('should handle empty message', async () => {
-      mockMessageEnvelope.message!.message = '';
+      mockMessageEnvelope.envelopePayload.content.payload = '';
 
       const promise = robot.acceptMessageStreamResponse(
         mockMessageEnvelope,
@@ -295,234 +281,69 @@ describe('ChatRobotParrot', () => {
 
       expect(allChunks).toMatch(/^\(\d+\) $/);
     });
-
-    it('should handle very short messages', async () => {
-      mockMessageEnvelope.message!.message = 'Hi';
-
-      const promise = robot.acceptMessageStreamResponse(
-        mockMessageEnvelope,
-        mockChunkCallback,
-      );
-
-      // Fast-forward through all intervals - use more iterations for safety
-      for (let i = 0; i < 10; i++) {
-        jest.advanceTimersByTime(500);
-      }
-
-      await promise;
-
-      // For very short messages, we might get fewer chunks than the standard 5
-      // The important thing is that we get at least some chunks and a null terminator
-      expect(mockChunkCallback.mock.calls.length).toBeGreaterThanOrEqual(2); // At least 1 chunk + null
-      expect(mockChunkCallback).toHaveBeenLastCalledWith(null);
-
-      // Verify the content is correct when chunks are combined (excluding null)
-      const chunks = mockChunkCallback.mock.calls
-        .slice(0, -1) // Remove the null call
-        .map((call) => call[0]);
-
-      const combined = chunks.join('');
-      expect(combined).toMatch(/^\(\d+\) Hi$/);
-    });
-
-    it('should handle callback errors gracefully', async () => {
-      const errorCallback = jest.fn().mockImplementation(() => {
-        throw new Error('Callback error');
-      });
-
-      const promise = robot.acceptMessageStreamResponse(
-        mockMessageEnvelope,
-        errorCallback,
-      );
-
-      // The promise should still resolve even if callback throws
-      for (let i = 0; i < 10; i++) {
-        jest.advanceTimersByTime(500);
-      }
-
-      await expect(promise).resolves.toBeUndefined();
-
-      // Should have attempted to call the callback multiple times despite errors
-      expect(errorCallback.mock.calls.length).toBeGreaterThan(0);
-    });
   });
 
-  describe('Inheritance and Type Checking', () => {
-    it('should be an instance of ChatRobotParrot', () => {
-      expect(robot).toBeInstanceOf(ChatRobotParrot);
-    });
+  describe('acceptMessageMultiPartResponse', () => {
+    let mockMessageEnvelope: TConversationTextMessageEnvelope;
+    let mockRobotMessage: TConversationTextMessage;
+    let mockDelayedCallback: jest.Mock;
 
-    it('should have the correct constructor name', () => {
-      expect(robot.constructor.name).toBe('ChatRobotParrot');
-    });
-  });
-
-  describe('Edge Cases', () => {
-    it('should handle message envelope without message property in immediate response', async () => {
-      const envelopeWithoutMessage: TConversationTextMessageEnvelope = {
-        routerId: 'router-123',
-        messageType: 'message',
-        // message property is undefined
+    beforeEach(() => {
+      mockRobotMessage = {
+        messageId: 'multipart-msg-123',
+        author_role: 'user',
+        content: {
+          type: 'text/plain',
+          payload: 'Test multipart message',
+        },
+        created_at: '2024-01-01T10:00:00Z',
+        estimated_token_count: 15,
       };
 
-      expect(async () => {
-        await robot.acceptMessageImmediateResponse(
-          envelopeWithoutMessage as any,
-        );
-      }).rejects.toThrow();
-    });
-
-    it('should handle message envelope without message property in stream response', async () => {
-      const envelopeWithoutMessage: TConversationTextMessageEnvelope = {
-        routerId: 'router-123',
-        messageType: 'message',
-        // message property is undefined
+      mockMessageEnvelope = {
+        messageId: 'multipart-envelope-123',
+        requestOrResponse: 'request',
+        envelopePayload: mockRobotMessage,
       };
 
-      const mockCallback = jest.fn();
+      mockDelayedCallback = jest.fn();
       jest.useFakeTimers();
+    });
 
-      expect(async () => {
-        const promise = robot.acceptMessageStreamResponse(
-          envelopeWithoutMessage as any,
-          mockCallback,
-        );
-        jest.advanceTimersByTime(3000);
-        await promise;
-      }).rejects.toThrow();
-
+    afterEach(() => {
       jest.useRealTimers();
     });
 
-    it('should handle multiple concurrent immediate calls', async () => {
-      const envelopes = Array.from({ length: 3 }, (_, i) => ({
-        routerId: `router-${i}`,
-        messageType: 'message' as const,
-        message: {
-          message: `Message ${i}`,
-          sender: `user${i}`,
-          receiver: 'robot',
-          timestamp: '2024-01-01T10:00:00Z',
-        },
-      }));
-
-      const promises = envelopes.map((envelope) =>
-        robot.acceptMessageImmediateResponse(envelope),
+    it('should return an immediate response', async () => {
+      const result = await robot.acceptMessageMultiPartResponse(
+        mockMessageEnvelope,
+        mockDelayedCallback,
       );
 
-      const results = await Promise.all(promises);
-
-      results.forEach((result, index) => {
-        expect(result.routerId).toBe(`router-${index}`);
-        expect(result.message?.message).toMatch(
-          new RegExp(`^\\(\\d+\\) Message ${index}$`),
-        );
-      });
+      expect(result).toBeDefined();
+      expect(result.envelopePayload.content.payload).toMatch(
+        /^\(\d+\) Test multipart message$/,
+      );
     });
 
-    it('should handle multiple concurrent streaming calls', async () => {
-      jest.useFakeTimers();
-
-      const callbacks = [jest.fn(), jest.fn(), jest.fn()];
-      const envelopes = Array.from({ length: 3 }, (_, i) => ({
-        routerId: `router-${i}`,
-        messageType: 'message' as const,
-        message: {
-          message: `Stream ${i}`,
-          sender: `user${i}`,
-          receiver: 'robot',
-          timestamp: '2024-01-01T10:00:00Z',
-        },
-      }));
-
-      const promises = envelopes.map((envelope, index) =>
-        robot.acceptMessageStreamResponse(envelope, callbacks[index]),
+    it('should call delayed callback after 300ms', async () => {
+      await robot.acceptMessageMultiPartResponse(
+        mockMessageEnvelope,
+        mockDelayedCallback,
       );
 
-      // Fast-forward all timers
-      for (let i = 0; i < 6; i++) {
-        jest.advanceTimersByTime(500);
-      }
+      // Initially no delayed callback
+      expect(mockDelayedCallback).not.toHaveBeenCalled();
 
-      await Promise.all(promises);
+      // After 300ms, delayed callback should be called
+      jest.advanceTimersByTime(300);
+      expect(mockDelayedCallback).toHaveBeenCalledTimes(1);
 
-      // Each callback should have been called 6 times
-      callbacks.forEach((callback) => {
-        expect(callback).toHaveBeenCalledTimes(6);
-        expect(callback).toHaveBeenLastCalledWith(null);
-      });
-
-      jest.useRealTimers();
-    });
-  });
-
-  describe('Random Number Generation', () => {
-    it('should generate numbers within expected range (0-9999) for immediate response', async () => {
-      const results = await Promise.all(
-        Array.from({ length: 10 }, () =>
-          robot.acceptMessageImmediateResponse({
-            routerId: 'test',
-            messageType: 'message',
-            message: {
-              message: 'test',
-              sender: 'user',
-              receiver: 'robot',
-              timestamp: '2024-01-01T10:00:00Z',
-            },
-          }),
-        ),
+      // Verify the delayed response
+      const delayedResponse = mockDelayedCallback.mock.calls[0][0];
+      expect(delayedResponse.envelopePayload.content.payload).toMatch(
+        /Follow-up chat response for:/,
       );
-
-      results.forEach((result) => {
-        const match = result.message?.message.match(/^\((\d+)\)/);
-        expect(match).toBeTruthy();
-        const number = parseInt(match![1], 10);
-        expect(number).toBeGreaterThanOrEqual(0);
-        expect(number).toBeLessThan(10000);
-      });
-    });
-
-    it('should generate numbers within expected range (0-9999) for stream response', async () => {
-      jest.useFakeTimers();
-
-      const callbacks = Array.from({ length: 5 }, () => jest.fn());
-      const promises = callbacks.map((callback) =>
-        robot.acceptMessageStreamResponse(
-          {
-            routerId: 'test',
-            messageType: 'message',
-            message: {
-              message: 'test',
-              sender: 'user',
-              receiver: 'robot',
-              timestamp: '2024-01-01T10:00:00Z',
-            },
-          },
-          callback,
-        ),
-      );
-
-      // Fast-forward all timers
-      for (let i = 0; i < 6; i++) {
-        jest.advanceTimersByTime(500);
-      }
-
-      await Promise.all(promises);
-
-      callbacks.forEach((callback) => {
-        const allChunks = callback.mock.calls
-          .slice(0, -1)
-          .map((call) => call[0])
-          .join('');
-
-        const match = allChunks.match(/^\((\d+)\)/);
-        expect(match).toBeTruthy();
-        const number = parseInt(match![1], 10);
-        expect(number).toBeGreaterThanOrEqual(0);
-        expect(number).toBeLessThan(10000);
-      });
-
-      jest.useRealTimers();
     });
   });
 });

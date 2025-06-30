@@ -50,12 +50,13 @@ class ConversationListSlackApp extends AbstractConversationMessageList<TConversa
       messageId,
       author_role: authorRole,
       content: textContent,
-      created_at: new Date().toISOString(),
+      created_at: new Date(Date.now()).toISOString(),
       estimated_token_count: estimatedTokenCount,
     };
 
     const textEnvelope: TConversationTextMessageEnvelope = {
       messageId,
+      requestOrResponse: 'request',
       envelopePayload: textMessage,
     };
 

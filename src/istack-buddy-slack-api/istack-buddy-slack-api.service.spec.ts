@@ -1,15 +1,19 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { IstackBuddySlackApiService } from './istack-buddy-slack-api.service';
 import { ConversationListServiceModule } from '../ConversationLists';
+import { RobotModule } from '../robots/robot.module';
 
 describe('IstackBuddySlackApiService', () => {
   let service: IstackBuddySlackApiService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      imports: [ConversationListServiceModule],
+      imports: [ConversationListServiceModule, RobotModule],
       providers: [IstackBuddySlackApiService],
     }).compile();
+
+    // Ensure module initialization is complete
+    await module.init();
 
     service = module.get<IstackBuddySlackApiService>(
       IstackBuddySlackApiService,

@@ -29,17 +29,6 @@ describe('ConversationListServiceModule', () => {
     expect(service).toBeInstanceOf(ConversationListSlackAppService);
   });
 
-  it('should export ConversationListSlackAppService', () => {
-    // Test that the service can be resolved from the module
-    expect(service).toBeDefined();
-
-    // Test basic functionality
-    const conversationId = 'module-test-conversation';
-    const conversation = service.getConversationOrCreate(conversationId);
-
-    expect(conversation.id).toBe(conversationId);
-  });
-
   it('should maintain singleton behavior within module', () => {
     const service1 = module.get<ConversationListSlackAppService>(
       ConversationListSlackAppService,

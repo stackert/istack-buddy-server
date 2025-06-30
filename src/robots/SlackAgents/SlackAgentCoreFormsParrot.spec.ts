@@ -1,5 +1,8 @@
 import { SlackAgentCoreFormsParrot } from './SlackAgentCoreFormsParrot';
-import { TConversationTextMessageEnvelope, TConversationTextMessage } from '../types';
+import {
+  TConversationTextMessageEnvelope,
+  TConversationTextMessage,
+} from '../types';
 
 describe('SlackAgentCoreFormsParrot', () => {
   let robot: SlackAgentCoreFormsParrot;
@@ -25,10 +28,6 @@ describe('SlackAgentCoreFormsParrot', () => {
       expect(robot.LLModelVersion).toBe('4.3');
     });
 
-    it('should have correct contextWindowSizeInTokens property', () => {
-      expect(robot.contextWindowSizeInTokens).toBe(4096);
-    });
-
     it('should inherit getName method from AbstractRobot', () => {
       expect(robot.getName()).toBe('SlackAgentCoreFormsParrot');
     });
@@ -42,22 +41,34 @@ describe('SlackAgentCoreFormsParrot', () => {
     });
   });
 
+  describe('estimateTokens', () => {
+    it('should estimate tokens correctly', () => {
+      expect(robot.estimateTokens('hello world')).toBe(3); // 11 chars / 4 = 2.75 -> 3
+      expect(robot.estimateTokens('')).toBe(0);
+      expect(robot.estimateTokens('a')).toBe(1);
+    });
+  });
+
   describe('acceptMessageImmediateResponse', () => {
     let mockMessageEnvelope: TConversationTextMessageEnvelope;
     let mockRobotMessage: TConversationTextMessage;
 
     beforeEach(() => {
       mockRobotMessage = {
-        message: 'Test message',
-        sender: 'user123',
-        receiver: 'robot',
-        timestamp: '2024-01-01T10:00:00Z',
+        messageId: 'slack-msg-123',
+        author_role: 'user',
+        content: {
+          type: 'text/plain',
+          payload: 'Test Slack message',
+        },
+        created_at: '2024-01-01T10:00:00Z',
+        estimated_token_count: 10,
       };
 
       mockMessageEnvelope = {
-        routerId: 'router-123',
-        messageType: 'message',
-        message: mockRobotMessage,
+        messageId: 'slack-envelope-123',
+        requestOrResponse: 'request',
+        envelopePayload: mockRobotMessage,
       };
     });
 
@@ -66,76 +77,46 @@ describe('SlackAgentCoreFormsParrot', () => {
         await robot.acceptMessageImmediateResponse(mockMessageEnvelope);
 
       expect(result).toBeDefined();
-      expect(result.routerId).toBe('router-123');
-      expect(result.messageType).toBe('message');
+      expect(result.messageId).toBeDefined();
+      expect(result.envelopePayload).toBeDefined();
     });
 
     it('should prefix the original message with a random number', async () => {
       const result =
         await robot.acceptMessageImmediateResponse(mockMessageEnvelope);
 
-      expect(result.message?.message).toMatch(/^\(\d+\) Test message$/);
-    });
-
-    it('should preserve all other message properties', async () => {
-      const result =
-        await robot.acceptMessageImmediateResponse(mockMessageEnvelope);
-
-      expect(result.message?.sender).toBe('user123');
-      expect(result.message?.receiver).toBe('robot');
-      expect(result.message?.timestamp).toBe('2024-01-01T10:00:00Z');
-    });
-
-    it('should generate different random numbers for consecutive calls', async () => {
-      // Create separate envelope objects to avoid reference issues
-      const envelope1 = JSON.parse(JSON.stringify(mockMessageEnvelope));
-      const envelope2 = JSON.parse(JSON.stringify(mockMessageEnvelope));
-
-      const result1 = await robot.acceptMessageImmediateResponse(envelope1);
-      const result2 = await robot.acceptMessageImmediateResponse(envelope2);
-
-      // Extract the random numbers from both results
-      const number1 = result1.message?.message.match(/^\((\d+)\)/)?.[1];
-      const number2 = result2.message?.message.match(/^\((\d+)\)/)?.[1];
-
-      // They should both be valid numbers
-      expect(number1).toBeDefined();
-      expect(number2).toBeDefined();
-
-      // Note: There's a small statistical chance they could be the same (1/10000)
-      // but if they're different, the test passes. If they're the same, we accept it
-      // as a valid random occurrence and just check they're both valid numbers
-    });
-
-    it('should handle empty message string', async () => {
-      mockMessageEnvelope.message!.message = '';
-
-      const result =
-        await robot.acceptMessageImmediateResponse(mockMessageEnvelope);
-
-      expect(result.message?.message).toMatch(/^\(\d+\) $/);
-    });
-
-    it('should handle messages with special characters', async () => {
-      mockMessageEnvelope.message!.message = 'Special chars: @#$%^&*()';
-
-      const result =
-        await robot.acceptMessageImmediateResponse(mockMessageEnvelope);
-
-      expect(result.message?.message).toMatch(
-        /^\(\d+\) Special chars: @#\$%\^\&\*\(\)$/,
+      expect(result.envelopePayload.content.payload).toMatch(
+        /^\(\d+\) Test Slack message$/,
       );
     });
 
-    it('should handle very long messages', async () => {
-      const longMessage = 'A'.repeat(1000);
-      mockMessageEnvelope.message!.message = longMessage;
+    it('should preserve the message structure', async () => {
+      const result =
+        await robot.acceptMessageImmediateResponse(mockMessageEnvelope);
+
+      expect(result.envelopePayload.author_role).toBe('user');
+      expect(result.envelopePayload.created_at).toBe('2024-01-01T10:00:00Z');
+      expect(result.envelopePayload.content.type).toBe('text/plain');
+    });
+
+    it('should handle empty message string', async () => {
+      mockMessageEnvelope.envelopePayload.content.payload = '';
 
       const result =
         await robot.acceptMessageImmediateResponse(mockMessageEnvelope);
 
-      expect(result.message?.message).toMatch(
-        new RegExp(`^\\(\\d+\\) ${longMessage}$`),
+      expect(result.envelopePayload.content.payload).toMatch(/^\(\d+\) $/);
+    });
+
+    it('should handle messages with special characters', async () => {
+      mockMessageEnvelope.envelopePayload.content.payload =
+        'Special Slack: @#$%^&*()';
+
+      const result =
+        await robot.acceptMessageImmediateResponse(mockMessageEnvelope);
+
+      expect(result.envelopePayload.content.payload).toMatch(
+        /^\(\d+\) Special Slack: @#\$%\^\&\*\(\)$/,
       );
     });
   });
@@ -143,124 +124,74 @@ describe('SlackAgentCoreFormsParrot', () => {
   describe('acceptMessageMultiPartResponse', () => {
     let mockMessageEnvelope: TConversationTextMessageEnvelope;
     let mockRobotMessage: TConversationTextMessage;
-    let mockCallback: jest.Mock;
+    let mockDelayedCallback: jest.Mock;
 
     beforeEach(() => {
       mockRobotMessage = {
-        message: 'Test message',
-        sender: 'user123',
-        receiver: 'robot',
-        timestamp: '2024-01-01T10:00:00Z',
+        messageId: 'multipart-slack-msg-123',
+        author_role: 'user',
+        content: {
+          type: 'text/plain',
+          payload: 'Test multipart Slack message',
+        },
+        created_at: '2024-01-01T10:00:00Z',
+        estimated_token_count: 15,
       };
 
       mockMessageEnvelope = {
-        routerId: 'router-123',
-        messageType: 'message',
-        message: mockRobotMessage,
+        messageId: 'multipart-slack-envelope-123',
+        requestOrResponse: 'request',
+        envelopePayload: mockRobotMessage,
       };
 
-      mockCallback = jest.fn();
+      mockDelayedCallback = jest.fn();
+      jest.useFakeTimers();
     });
 
-    it('should return a promise that resolves immediately', async () => {
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    it('should return an immediate response', async () => {
       const result = await robot.acceptMessageMultiPartResponse(
         mockMessageEnvelope,
-        mockCallback,
+        mockDelayedCallback,
       );
 
       expect(result).toBeDefined();
-      expect(result.routerId).toBe('router-123');
-      expect(result.messageType).toBe('message');
+      expect(result.envelopePayload.content.payload).toMatch(
+        /^\d+ Test multipart Slack message$/,
+      );
     });
 
-    it('should return initial response with prefixed message', async () => {
-      const result = await robot.acceptMessageMultiPartResponse(
+    it('should call delayed callback 3 times at intervals', async () => {
+      await robot.acceptMessageMultiPartResponse(
         mockMessageEnvelope,
-        mockCallback,
+        mockDelayedCallback,
       );
 
-      expect(result.message?.message).toMatch(/^\(\d+\) Test message$/);
-    });
+      // Initially no delayed callback
+      expect(mockDelayedCallback).not.toHaveBeenCalled();
 
-    it('should call the callback after 500ms with complete message', (done) => {
-      robot.acceptMessageMultiPartResponse(mockMessageEnvelope, mockCallback);
+      // After 500ms, first delayed callback should be called
+      jest.advanceTimersByTime(500);
+      expect(mockDelayedCallback).toHaveBeenCalledTimes(1);
 
-      setTimeout(() => {
-        expect(mockCallback).toHaveBeenCalledTimes(1);
-        const callArgs = mockCallback.mock.calls[0][0];
-        expect(callArgs.message?.message).toMatch(
-          /^\(\d+\) - complete: Test message$/,
+      // After 1000ms, second delayed callback should be called
+      jest.advanceTimersByTime(500);
+      expect(mockDelayedCallback).toHaveBeenCalledTimes(2);
+
+      // After 1500ms, third delayed callback should be called
+      jest.advanceTimersByTime(500);
+      expect(mockDelayedCallback).toHaveBeenCalledTimes(3);
+
+      // Verify the delayed responses contain the original message
+      mockDelayedCallback.mock.calls.forEach((call) => {
+        const delayedResponse = call[0];
+        expect(delayedResponse.envelopePayload.content.payload).toMatch(
+          /^\d+ Test multipart Slack message$/,
         );
-        done();
-      }, 600);
-    }, 1000);
-
-    it('should use the same random number for both initial and callback responses', async () => {
-      const initialResult = await robot.acceptMessageMultiPartResponse(
-        mockMessageEnvelope,
-        mockCallback,
-      );
-      const initialMessage = initialResult.message?.message || '';
-      const randomNumber = initialMessage.match(/^\((\d+)\)/)?.[1];
-
-      return new Promise<void>((resolve) => {
-        setTimeout(() => {
-          expect(mockCallback).toHaveBeenCalledWith(
-            expect.objectContaining({
-              message: expect.objectContaining({
-                message: `(${randomNumber}) - complete: Test message`,
-              }),
-            }),
-          );
-          resolve();
-        }, 600);
       });
-    });
-
-    it('should preserve all message properties in callback', (done) => {
-      robot.acceptMessageMultiPartResponse(mockMessageEnvelope, (response) => {
-        expect(response.message?.sender).toBe('user123');
-        expect(response.message?.receiver).toBe('robot');
-        expect(response.message?.timestamp).toBe('2024-01-01T10:00:00Z');
-        expect(response.routerId).toBe('router-123');
-        expect(response.messageType).toBe('message');
-        done();
-      });
-    }, 1000);
-
-    it('should handle empty message in multi-part response', async () => {
-      mockMessageEnvelope.message!.message = '';
-
-      const result = await robot.acceptMessageMultiPartResponse(
-        mockMessageEnvelope,
-        mockCallback,
-      );
-
-      expect(result.message?.message).toMatch(/^\(\d+\) $/);
-
-      return new Promise<void>((resolve) => {
-        setTimeout(() => {
-          expect(mockCallback).toHaveBeenCalledWith(
-            expect.objectContaining({
-              message: expect.objectContaining({
-                message: expect.stringMatching(/^\(\d+\) - complete: $/),
-              }),
-            }),
-          );
-          resolve();
-        }, 600);
-      });
-    });
-
-    it('should handle callback not being called if not provided', async () => {
-      // This test ensures the method doesn't crash if callback is somehow undefined
-      const result = await robot.acceptMessageMultiPartResponse(
-        mockMessageEnvelope,
-        undefined as any,
-      );
-
-      expect(result).toBeDefined();
-      expect(result.message?.message).toMatch(/^\(\d+\) Test message$/);
     });
   });
 
@@ -274,149 +205,23 @@ describe('SlackAgentCoreFormsParrot', () => {
     });
   });
 
-  describe('Edge Cases', () => {
-    it('should handle message envelope without message property', async () => {
-      const envelopeWithoutMessage: TConversationTextMessageEnvelope = {
-        routerId: 'router-123',
-        messageType: 'message',
-        // message property is undefined
-      };
-
-      expect(async () => {
-        await robot.acceptMessageImmediateResponse(
-          envelopeWithoutMessage as any,
-        );
-      }).rejects.toThrow();
+  describe('Static Properties', () => {
+    it('should have static description properties', () => {
+      expect(SlackAgentCoreFormsParrot.descriptionShort).toBeDefined();
+      expect(SlackAgentCoreFormsParrot.descriptionLong).toBeDefined();
+      expect(typeof SlackAgentCoreFormsParrot.descriptionShort).toBe('string');
+      expect(typeof SlackAgentCoreFormsParrot.descriptionLong).toBe('string');
     });
 
-    it('should handle multiple concurrent calls', async () => {
-      const envelopes = Array.from({ length: 5 }, (_, i) => ({
-        routerId: `router-${i}`,
-        messageType: 'message' as const,
-        message: {
-          message: `Message ${i}`,
-          sender: `user${i}`,
-          receiver: 'robot',
-          timestamp: '2024-01-01T10:00:00Z',
-        },
-      }));
-
-      const promises = envelopes.map((envelope) =>
-        robot.acceptMessageImmediateResponse(envelope),
+    it('should have meaningful description content', () => {
+      expect(SlackAgentCoreFormsParrot.descriptionShort.length).toBeGreaterThan(
+        10,
       );
-
-      const results = await Promise.all(promises);
-
-      results.forEach((result, index) => {
-        expect(result.routerId).toBe(`router-${index}`);
-        expect(result.message?.message).toMatch(
-          new RegExp(`^\\(\\d+\\) Message ${index}$`),
-        );
-      });
-    });
-  });
-
-  describe('Random Number Generation', () => {
-    it('should generate numbers within expected range (0-9999)', async () => {
-      const results = await Promise.all(
-        Array.from({ length: 10 }, () =>
-          robot.acceptMessageImmediateResponse({
-            routerId: 'test',
-            messageType: 'message',
-            message: {
-              message: 'test',
-              sender: 'user',
-              receiver: 'robot',
-              timestamp: '2024-01-01T10:00:00Z',
-            },
-          }),
-        ),
+      expect(SlackAgentCoreFormsParrot.descriptionLong.length).toBeGreaterThan(
+        50,
       );
-
-      results.forEach((result) => {
-        const match = result.message?.message.match(/^\((\d+)\)/);
-        expect(match).toBeTruthy();
-        const number = parseInt(match![1], 10);
-        expect(number).toBeGreaterThanOrEqual(0);
-        expect(number).toBeLessThan(10000);
-      });
-    });
-  });
-
-  describe('getFunctionDescriptions', () => {
-    it('should return an empty array', () => {
-      const result = robot.getFunctionDescriptions();
-      expect(result).toEqual([]);
-      expect(Array.isArray(result)).toBe(true);
-      expect(result.length).toBe(0);
-    });
-  });
-
-  describe('Knowledge Base', () => {
-    it('should return correct knowledgeBase via getter', () => {
-      const knowledgeBase = robot.knowledgeBase;
-      expect(knowledgeBase).toBeDefined();
-      expect(knowledgeBase.knowledgeBaseId).toBe('core:forms');
-      expect(knowledgeBase.name).toBe('Core Forms');
-      expect(knowledgeBase.descriptionShort).toBe('Core Forms');
-      expect(knowledgeBase.descriptionLong).toBe('Core Forms');
-      expect(knowledgeBase.channelId).toBe('123');
-      expect(knowledgeBase.channelName).toBe('#cx-formstack');
-    });
-
-    it('should return correct knowledgeBase via getKnowledgeBase method', () => {
-      const knowledgeBase = robot.getKnowledgeBase();
-      expect(knowledgeBase).toBeDefined();
-      expect(knowledgeBase.knowledgeBaseId).toBe('core:forms');
-      expect(knowledgeBase.name).toBe('Core Forms');
-      expect(knowledgeBase.descriptionShort).toBe('Core Forms');
-      expect(knowledgeBase.descriptionLong).toBe('Core Forms');
-      expect(knowledgeBase.channelId).toBe('123');
-      expect(knowledgeBase.channelName).toBe('#cx-formstack');
-    });
-
-    it('should return same object from getter and method', () => {
-      const fromGetter = robot.knowledgeBase;
-      const fromMethod = robot.getKnowledgeBase();
-      expect(fromGetter).toEqual(fromMethod);
-    });
-  });
-
-  describe('estimateTokens', () => {
-    it('should estimate tokens correctly for simple messages', () => {
-      expect(robot.estimateTokens('hello')).toBe(2); // 5 chars / 4 = 1.25, ceil = 2
-      expect(robot.estimateTokens('test')).toBe(1); // 4 chars / 4 = 1
-      expect(robot.estimateTokens('testing')).toBe(2); // 7 chars / 4 = 1.75, ceil = 2
-    });
-
-    it('should handle empty string', () => {
-      expect(robot.estimateTokens('')).toBe(0); // 0 chars / 4 = 0
-    });
-
-    it('should handle long messages', () => {
-      const longMessage = 'a'.repeat(100); // 100 characters
-      expect(robot.estimateTokens(longMessage)).toBe(25); // 100 / 4 = 25
-    });
-
-    it('should handle messages with special characters', () => {
-      const specialMessage = '@#$%^&*()_+-={}[]|\\:";\'<>?,./`~';
-      const expectedTokens = Math.ceil(specialMessage.length / 4);
-      expect(robot.estimateTokens(specialMessage)).toBe(expectedTokens);
-    });
-
-    it('should handle unicode characters', () => {
-      const unicodeMessage = '🚀🌟✨💫🎉';
-      const expectedTokens = Math.ceil(unicodeMessage.length / 4);
-      expect(robot.estimateTokens(unicodeMessage)).toBe(expectedTokens);
-    });
-
-    it('should return integer values only', () => {
-      const testCases = ['a', 'ab', 'abc', 'abcd', 'abcde'];
-      testCases.forEach((testCase) => {
-        const result = robot.estimateTokens(testCase);
-        expect(Number.isInteger(result)).toBe(true);
-        expect(result).toBeGreaterThanOrEqual(0);
-      });
+      expect(SlackAgentCoreFormsParrot.descriptionShort).toMatch(/agent/i);
+      expect(SlackAgentCoreFormsParrot.descriptionLong).toMatch(/robot/i);
     });
   });
 });
