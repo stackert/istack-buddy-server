@@ -1,0 +1,466 @@
+{
+  "testCase5603120": {
+    "marvEnabledFields": [
+      {
+        "id": "158238459",
+        "label": "DemonstrateLogice",
+        "hide_label": "0",
+        "description": "",
+        "name": "demonstratelogice",
+        "type": "text",
+        "options": "",
+        "required": "0",
+        "uniq": "0",
+        "hidden": "0",
+        "readonly": "0",
+        "colspan": "1",
+        "sort": "0",
+        "logic": {
+          "action": "show",
+          "conditional": "all",
+          "checks": [
+            {
+              "field": "158238460",
+              "condition": "equals",
+              "option": "Option1"
+            },
+            {
+              "field": 158238461,
+              "condition": "equals",
+              "option": "Option1"
+            }
+          ]
+        },
+        "calculation": "",
+        "workflow_access": "write",
+        "default": "",
+        "text_size": 50,
+        "minlength": 0,
+        "maxlength": 0,
+        "placeholder": "",
+        "field_one_calculation": 0,
+        "field_two_calculation": 0,
+        "calculation_units": "",
+        "calculation_operator": "",
+        "calculation_type": "",
+        "calculation_allow_negatives": 0,
+        "hide_input_characters": 0,
+        "remove_data_from_emails": 0,
+        "require_confirmation": 0,
+        "confirmationText": "",
+        "restrict_data_access": 0
+      },
+      {
+        "id": "158238460",
+        "label": "CheckboxA",
+        "hide_label": "0",
+        "description": "",
+        "name": "checkboxa",
+        "type": "checkbox",
+        "options": [
+          {
+            "label": "Option1",
+            "value": "Option1"
+          },
+          {
+            "label": "Option2",
+            "value": "Option2"
+          },
+          {
+            "label": "Option3",
+            "value": "Option3"
+          }
+        ],
+        "required": "0",
+        "uniq": "0",
+        "hidden": "0",
+        "readonly": "0",
+        "colspan": "1",
+        "sort": "1",
+        "logic": {
+          "action": "show",
+          "conditional": "all",
+          "checks": [
+            {
+              "field": "158238461",
+              "condition": "equals",
+              "option": "Option1"
+            }
+          ]
+        },
+        "calculation": "",
+        "workflow_access": "write",
+        "default": "",
+        "option_layout": "vertical",
+        "option_other": 0,
+        "option_checkall": 0,
+        "randomize_options": 0,
+        "option_store": "value",
+        "option_show_values": 0,
+        "use_images": 0,
+        "image_dimensions": "customDimensions",
+        "image_height": 100,
+        "image_width": 100,
+        "lock_image_ratio": true,
+        "lock_image_ratio_option": "fitProportionally",
+        "image_label_alignment": "bottom",
+        "hide_option_button": true
+      },
+      {
+        "id": "158238461",
+        "label": "CheckboxB",
+        "hide_label": "0",
+        "description": "",
+        "name": "checkboxb",
+        "type": "checkbox",
+        "options": [
+          {
+            "label": "Option1",
+            "value": "Option1"
+          },
+          {
+            "label": "Option2",
+            "value": "Option2"
+          },
+          {
+            "label": "Option3",
+            "value": "Option3"
+          }
+        ],
+        "required": "0",
+        "uniq": "0",
+        "hidden": "0",
+        "readonly": "0",
+        "colspan": "1",
+        "sort": "2",
+        "logic": {
+          "action": "show",
+          "conditional": "all",
+          "checks": [
+            {
+              "field": "158238460",
+              "condition": "equals",
+              "option": "Option1"
+            }
+          ]
+        },
+        "calculation": "",
+        "workflow_access": "write",
+        "default": "",
+        "option_layout": "vertical",
+        "option_other": 0,
+        "option_checkall": 0,
+        "randomize_options": 0,
+        "option_store": "value",
+        "option_show_values": 0,
+        "use_images": 0,
+        "image_dimensions": "customDimensions",
+        "image_height": 100,
+        "image_width": 100,
+        "lock_image_ratio": true,
+        "lock_image_ratio_option": "fitProportionally",
+        "image_label_alignment": "bottom",
+        "hide_option_button": true
+      },
+      {
+        "id": "158238462",
+        "label": "MARV_ENABLED",
+        "hide_label": "0",
+        "description": "",
+        "name": "marv_enabled",
+        "type": "text",
+        "options": "",
+        "required": "0",
+        "uniq": "0",
+        "hidden": "1",
+        "readonly": "0",
+        "colspan": "1",
+        "sort": "3",
+        "logic": null,
+        "calculation": "",
+        "workflow_access": "write",
+        "default": "MARV_ENABLED",
+        "text_size": 50,
+        "minlength": 0,
+        "maxlength": 0,
+        "placeholder": "",
+        "field_one_calculation": 0,
+        "field_two_calculation": 0,
+        "calculation_units": "",
+        "calculation_operator": "",
+        "calculation_type": "",
+        "calculation_allow_negatives": 0,
+        "hide_input_characters": 0,
+        "remove_data_from_emails": 0,
+        "require_confirmation": 0,
+        "confirmationText": "",
+        "restrict_data_access": 0
+      },
+      {
+        "id": "158238463",
+        "label": "MARV_LOGIC_STASH",
+        "hide_label": "0",
+        "description": "",
+        "name": "marv_logic_stash",
+        "type": "text",
+        "options": "",
+        "required": "0",
+        "uniq": "0",
+        "hidden": "1",
+        "readonly": "0",
+        "colspan": "1",
+        "sort": "4",
+        "logic": null,
+        "calculation": "",
+        "workflow_access": "write",
+        "default": "{\"allFieldLogic\":{\"158238459\":{\"action\":\"show\",\"conditional\":\"all\",\"checks\":[{\"field\":\"158238460\",\"condition\":\"equals\",\"option\":\"Option1\"},{\"field\":158238461,\"condition\":\"equals\",\"option\":\"Option1\"}]},\"158238460\":{\"action\":\"show\",\"conditional\":\"all\",\"checks\":[{\"field\":\"158238461\",\"condition\":\"equals\",\"option\":\"Option1\"}]},\"158238461\":{\"action\":\"show\",\"conditional\":\"all\",\"checks\":[{\"field\":\"158238460\",\"condition\":\"equals\",\"option\":\"Option1\"}]}},\"base64\":\"eyIxNTgyMzg0NTkiOnsiYWN0aW9uIjoic2hvdyIsImNvbmRpdGlvbmFsIjoiYWxsIiwiY2hlY2tzIjpbeyJmaWVsZCI6IjE1ODIzODQ2MCIsImNvbmRpdGlvbiI6ImVxdWFscyIsIm9wdGlvbiI6Ik9wdGlvbjEifSx7ImZpZWxkIjoxNTgyMzg0NjEsImNvbmRpdGlvbiI6ImVxdWFscyIsIm9wdGlvbiI6Ik9wdGlvbjEifV19LCIxNTgyMzg0NjAiOnsiYWN0aW9uIjoic2hvdyIsImNvbmRpdGlvbmFsIjoiYWxsIiwiY2hlY2tzIjpbeyJmaWVsZCI6IjE1ODIzODQ2MSIsImNvbmRpdGlvbiI6ImVxdWFscyIsIm9wdGlvbiI6Ik9wdGlvbjEifV19LCIxNTgyMzg0NjEiOnsiYWN0aW9uIjoic2hvdyIsImNvbmRpdGlvbmFsIjoiYWxsIiwiY2hlY2tzIjpbeyJmaWVsZCI6IjE1ODIzODQ2MCIsImNvbmRpdGlvbiI6ImVxdWFscyIsIm9wdGlvbiI6Ik9wdGlvbjEifV19fQ==\"}",
+        "text_size": 50,
+        "minlength": 0,
+        "maxlength": 0,
+        "placeholder": "",
+        "field_one_calculation": 0,
+        "field_two_calculation": 0,
+        "calculation_units": "",
+        "calculation_operator": "",
+        "calculation_type": "",
+        "calculation_allow_negatives": 0,
+        "hide_input_characters": 0,
+        "remove_data_from_emails": 0,
+        "require_confirmation": 0,
+        "confirmationText": "",
+        "restrict_data_access": 0
+      }
+    ],
+    "marvNotEnabledFields": [
+      {
+        "id": "158238459",
+        "label": "DemonstrateLogice",
+        "hide_label": "0",
+        "description": "",
+        "name": "demonstratelogice",
+        "type": "text",
+        "options": "",
+        "required": "0",
+        "uniq": "0",
+        "hidden": "0",
+        "readonly": "0",
+        "colspan": "1",
+        "sort": "0",
+        "logic": {
+          "action": "show",
+          "conditional": "all",
+          "checks": [
+            {
+              "field": "158238460",
+              "condition": "equals",
+              "option": "Option1"
+            },
+            {
+              "field": 158238461,
+              "condition": "equals",
+              "option": "Option1"
+            }
+          ]
+        },
+        "calculation": "",
+        "workflow_access": "write",
+        "default": "",
+        "text_size": 50,
+        "minlength": 0,
+        "maxlength": 0,
+        "placeholder": "",
+        "field_one_calculation": 0,
+        "field_two_calculation": 0,
+        "calculation_units": "",
+        "calculation_operator": "",
+        "calculation_type": "",
+        "calculation_allow_negatives": 0,
+        "hide_input_characters": 0,
+        "remove_data_from_emails": 0,
+        "require_confirmation": 0,
+        "confirmationText": "",
+        "restrict_data_access": 0
+      },
+      {
+        "id": "158238460",
+        "label": "CheckboxA",
+        "hide_label": "0",
+        "description": "",
+        "name": "checkboxa",
+        "type": "checkbox",
+        "options": [
+          {
+            "label": "Option1",
+            "value": "Option1"
+          },
+          {
+            "label": "Option2",
+            "value": "Option2"
+          },
+          {
+            "label": "Option3",
+            "value": "Option3"
+          }
+        ],
+        "required": "0",
+        "uniq": "0",
+        "hidden": "0",
+        "readonly": "0",
+        "colspan": "1",
+        "sort": "1",
+        "logic": {
+          "action": "show",
+          "conditional": "all",
+          "checks": [
+            {
+              "field": "158238461",
+              "condition": "equals",
+              "option": "Option1"
+            }
+          ]
+        },
+        "calculation": "",
+        "workflow_access": "write",
+        "default": "",
+        "option_layout": "vertical",
+        "option_other": 0,
+        "option_checkall": 0,
+        "randomize_options": 0,
+        "option_store": "value",
+        "option_show_values": 0,
+        "use_images": 0,
+        "image_dimensions": "customDimensions",
+        "image_height": 100,
+        "image_width": 100,
+        "lock_image_ratio": true,
+        "lock_image_ratio_option": "fitProportionally",
+        "image_label_alignment": "bottom",
+        "hide_option_button": true
+      },
+      {
+        "id": "158238461",
+        "label": "CheckboxB",
+        "hide_label": "0",
+        "description": "",
+        "name": "checkboxb",
+        "type": "checkbox",
+        "options": [
+          {
+            "label": "Option1",
+            "value": "Option1"
+          },
+          {
+            "label": "Option2",
+            "value": "Option2"
+          },
+          {
+            "label": "Option3",
+            "value": "Option3"
+          }
+        ],
+        "required": "0",
+        "uniq": "0",
+        "hidden": "0",
+        "readonly": "0",
+        "colspan": "1",
+        "sort": "2",
+        "logic": {
+          "action": "show",
+          "conditional": "all",
+          "checks": [
+            {
+              "field": "158238460",
+              "condition": "equals",
+              "option": "Option1"
+            }
+          ]
+        },
+        "calculation": "",
+        "workflow_access": "write",
+        "default": "",
+        "option_layout": "vertical",
+        "option_other": 0,
+        "option_checkall": 0,
+        "randomize_options": 0,
+        "option_store": "value",
+        "option_show_values": 0,
+        "use_images": 0,
+        "image_dimensions": "customDimensions",
+        "image_height": 100,
+        "image_width": 100,
+        "lock_image_ratio": true,
+        "lock_image_ratio_option": "fitProportionally",
+        "image_label_alignment": "bottom",
+        "hide_option_button": true
+      },
+      {
+        "id": "158238462",
+        "label": "MARV_NOT_ENABLED",
+        "hide_label": "0",
+        "description": "",
+        "name": "marv_enabled",
+        "type": "text",
+        "options": "",
+        "required": "0",
+        "uniq": "0",
+        "hidden": "1",
+        "readonly": "0",
+        "colspan": "1",
+        "sort": "3",
+        "logic": null,
+        "calculation": "",
+        "workflow_access": "write",
+        "default": "MARV_NOT_ENABLED",
+        "text_size": 50,
+        "minlength": 0,
+        "maxlength": 0,
+        "placeholder": "",
+        "field_one_calculation": 0,
+        "field_two_calculation": 0,
+        "calculation_units": "",
+        "calculation_operator": "",
+        "calculation_type": "",
+        "calculation_allow_negatives": 0,
+        "hide_input_characters": 0,
+        "remove_data_from_emails": 0,
+        "require_confirmation": 0,
+        "confirmationText": "",
+        "restrict_data_access": 0
+      },
+      {
+        "id": "158238463",
+        "label": "MARV_LOGIC_STASH",
+        "hide_label": "0",
+        "description": "",
+        "name": "marv_logic_stash",
+        "type": "text",
+        "options": "",
+        "required": "0",
+        "uniq": "0",
+        "hidden": "1",
+        "readonly": "0",
+        "colspan": "1",
+        "sort": "4",
+        "logic": null,
+        "calculation": "",
+        "workflow_access": "write",
+        "default": "{\"allFieldLogic\":{\"158238459\":{\"action\":\"show\",\"conditional\":\"all\",\"checks\":[{\"field\":\"158238460\",\"condition\":\"equals\",\"option\":\"Option1\"},{\"field\":158238461,\"condition\":\"equals\",\"option\":\"Option1\"}]},\"158238460\":{\"action\":\"show\",\"conditional\":\"all\",\"checks\":[{\"field\":\"158238461\",\"condition\":\"equals\",\"option\":\"Option1\"}]},\"158238461\":{\"action\":\"show\",\"conditional\":\"all\",\"checks\":[{\"field\":\"158238460\",\"condition\":\"equals\",\"option\":\"Option1\"}]}},\"base64\":\"eyIxNTgyMzg0NTkiOnsiYWN0aW9uIjoic2hvdyIsImNvbmRpdGlvbmFsIjoiYWxsIiwiY2hlY2tzIjpbeyJmaWVsZCI6IjE1ODIzODQ2MCIsImNvbmRpdGlvbiI6ImVxdWFscyIsIm9wdGlvbiI6Ik9wdGlvbjEifSx7ImZpZWxkIjoxNTgyMzg0NjEsImNvbmRpdGlvbiI6ImVxdWFscyIsIm9wdGlvbiI6Ik9wdGlvbjEifV19LCIxNTgyMzg0NjAiOnsiYWN0aW9uIjoic2hvdyIsImNvbmRpdGlvbmFsIjoiYWxsIiwiY2hlY2tzIjpbeyJmaWVsZCI6IjE1ODIzODQ2MSIsImNvbmRpdGlvbiI6ImVxdWFscyIsIm9wdGlvbiI6Ik9wdGlvbjEifV19LCIxNTgyMzg0NjEiOnsiYWN0aW9uIjoic2hvdyIsImNvbmRpdGlvbmFsIjoiYWxsIiwiY2hlY2tzIjpbeyJmaWVsZCI6IjE1ODIzODQ2MCIsImNvbmRpdGlvbiI6ImVxdWFscyIsIm9wdGlvbiI6Ik9wdGlvbjEifV19fQ==\"}",
+        "text_size": 50,
+        "minlength": 0,
+        "maxlength": 0,
+        "placeholder": "",
+        "field_one_calculation": 0,
+        "field_two_calculation": 0,
+        "calculation_units": "",
+        "calculation_operator": "",
+        "calculation_type": "",
+        "calculation_allow_negatives": 0,
+        "hide_input_characters": 0,
+        "remove_data_from_emails": 0,
+        "require_confirmation": 0,
+        "confirmationText": "",
+        "restrict_data_access": 0
+      }
+    ]
+  }
+}

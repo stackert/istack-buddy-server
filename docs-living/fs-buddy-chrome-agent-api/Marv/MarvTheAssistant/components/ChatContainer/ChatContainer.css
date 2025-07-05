@@ -1,0 +1,26 @@
+.full-screen  {
+    /* z-index: 1000;
+    position: absolute; */
+    height: 95%;
+    width: 95%;
+    transition:  height 1s ease-in-out, width 1s ease-in-out;
+}
+
+.parent-contained  {
+    /* width: 100%;
+    height: 100%; */
+    width: 800px;
+    height: 800px;
+    overflow-y: hidden;
+    resize: both;
+    /* does z-index and position need to be changed here*/
+
+    transition: 
+        height 1s ease-in-out,  
+        width 1s ease-in-out,
+        margin-left  1s ease-in-out,
+        margin-top 1s ease-in-out,
+        ;
+
+
+}

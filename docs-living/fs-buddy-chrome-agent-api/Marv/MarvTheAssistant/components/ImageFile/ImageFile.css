@@ -1,0 +1,14 @@
+.message-image-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 90%;
+  height: 90%;
+  /* max-width: 900px; */
+  margin-bottom: 1rem;
+}
+.message-image-container image{
+  width: 90%;
+  height: 90%;
+}
