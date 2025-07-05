@@ -3,6 +3,21 @@ import Anthropic from '@anthropic-ai/sdk';
 // Anthropic tool definitions converted from OpenAI format
 export const formstackToolDefinitions: Anthropic.Messages.Tool[] = [
   {
+    name: 'fieldRemove',
+    description: `Remove a field from a form by its field ID. This permanently deletes the field and all its data.`,
+    input_schema: {
+      type: 'object',
+      properties: {
+        fieldId: {
+          type: 'string',
+          description: 'The ID of the field to remove',
+        },
+      },
+      required: ['fieldId'],
+    },
+  },
+
+  {
     name: 'fsRestrictedApiFormLiteAdd',
     description: `Create a formstack form. This AI powered form creation tool can create a form based on examples found on the internet.
     The system will help define the form structure (form name and field definitions) and then create the form.

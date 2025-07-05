@@ -553,6 +553,26 @@ export class FsApiClient {
     return response;
   }
 
+  async fieldRemove(fieldId: string): Promise<IMarvApiUniversalResponse<any>> {
+    console.log(`🗑️ Removing field ${fieldId}`);
+
+    try {
+      const deleteResult = await this.deleteField(fieldId);
+
+      if (deleteResult.isSuccess) {
+        console.log(`✅ Field ${fieldId} removed successfully`);
+      }
+
+      return deleteResult;
+    } catch (error) {
+      return {
+        isSuccess: false,
+        response: null,
+        errorItems: [error instanceof Error ? error.message : 'Unknown error'],
+      };
+    }
+  }
+
   // Enable Marv on a form by adding the MARV_ENABLED field
   // async enableMarvOnForm();
   // DO NOT REMOVE THIS COMMENT

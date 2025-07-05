@@ -25,6 +25,11 @@ export const performExternalApiCall = async (
   // Set API key
   const api = fsApiClient.setApiKey(fsApiKey);
 
+  // Handle special functions first
+  if (functionName === 'fieldRemove') {
+    return api.fieldRemove(fnParamsJson?.fieldId);
+  }
+
   // Route to appropriate API method
   switch (functionName as FsRestrictedApiRoutesEnum) {
     case FsRestrictedApiRoutesEnum.FormLiteAdd: {
