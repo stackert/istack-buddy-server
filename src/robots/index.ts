@@ -7,7 +7,7 @@ export { AbstractRobotAgent } from './AbstractRobotAgent';
 export { ChatRobotParrot } from './ChatRobotParrot';
 export { AgentRobotParrot } from './AgentRobotParrot';
 export { RobotChatOpenAI } from './RobotChatOpenAI';
-// export { RobotChatAnthropic } from './RobotChatAnthropic.ts.hidden';
+export { RobotChatAnthropic } from './RobotChatAnthropic';
 
 // Pseudo robot implementations
 // Note: PseudoRobot exports commented out as files are in .hidden
@@ -20,7 +20,10 @@ export { SlackAgentCoreFormsParrot } from './SlackAgents/SlackAgentCoreFormsParr
 export { SlackAgentCoreFormsSsoAutofillParrot } from './SlackAgents/SlackAgentCoreFormsSsoAutofillParrot';
 
 // Types
-export type { TConversationTextMessage, TConversationTextMessageEnvelope } from './types';
+export type {
+  TConversationTextMessage,
+  TConversationTextMessageEnvelope,
+} from './types';
 
 // Services and Modules
 export { RobotService } from './robot.service';
