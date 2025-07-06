@@ -4,7 +4,18 @@ import {
   TFsFieldJson,
   IAddFsLiteFieldProps,
   TFsLiteFormAddResponse,
+  IFormAndRelatedEntityOverview,
 } from './types';
+
+// Debug mode control - set to false to disable console.log output
+const IS_DEBUG_MODE = process.env.NODE_ENV !== 'production';
+
+// Debug logging helper
+const debugLog = (...args: any[]): void => {
+  if (IS_DEBUG_MODE) {
+    console.log(...args);
+  }
+};
 
 // Real API client for Formstack operations - NO MOCKS
 export class FsApiClient {
@@ -84,12 +95,12 @@ export class FsApiClient {
       const marvEnabledField = fields.find(
         (field) => field.label === 'MARV_ENABLED',
       );
-      console.log(
+      debugLog(
         `🔍 Marv enabled check for form ${formId}: ${!!marvEnabledField ? 'YES' : 'NO'}`,
       );
       return !!marvEnabledField;
     } catch (error) {
-      console.log(`❌ Error checking Marv status for form ${formId}:`, error);
+      debugLog(`❌ Error checking Marv status for form ${formId}:`, error);
       return false;
     }
   }
@@ -158,7 +169,7 @@ export class FsApiClient {
   async fieldLogicStashCreate(
     formId: string,
   ): Promise<IMarvApiUniversalResponse<TFsFieldJson>> {
-    console.log(`🔍 Creating logic stash for form ${formId}`);
+    debugLog(`🔍 Creating logic stash for form ${formId}`);
 
     // Check if form is Marv enabled
     const isMarvEnabled = await this.isFormMarvEnabled(formId);
@@ -174,7 +185,7 @@ export class FsApiClient {
     const allFields = await this.getFormFieldJson(formId);
     const fieldsWithLogicJson = allFields.filter((field) => field.logic);
 
-    console.log(`📊 Found ${fieldsWithLogicJson.length} fields with logic`);
+    debugLog(`📊 Found ${fieldsWithLogicJson.length} fields with logic`);
 
     if (fieldsWithLogicJson.length === 0) {
       return {
@@ -188,7 +199,7 @@ export class FsApiClient {
     const logicStashString =
       this.stringifyLogicStashString(fieldsWithLogicJson);
 
-    console.log(`💾 Creating logic stash field...`);
+    debugLog(`💾 Creating logic stash field...`);
 
     // Create the logic stash field
     const createResponse = await this.makeRequest<TFsFieldJson>(
@@ -204,7 +215,7 @@ export class FsApiClient {
     );
 
     if (createResponse.isSuccess) {
-      console.log(
+      debugLog(
         `✅ Logic stash created successfully! Field ID: ${createResponse.response?.id}`,
       );
     }
@@ -300,7 +311,7 @@ export class FsApiClient {
   async fieldLabelUniqueSlugAdd(
     formId: string,
   ): Promise<IMarvApiUniversalResponse<{ isSuccessful: boolean }>> {
-    console.log(`🏷️ Adding unique slugs to form ${formId} field labels`);
+    debugLog(`🏷️ Adding unique slugs to form ${formId} field labels`);
 
     try {
       // Check if form is Marv enabled
@@ -315,7 +326,7 @@ export class FsApiClient {
 
       // Get all fields
       const fields = await this.getFormFieldJson(formId);
-      console.log(`📊 Found ${fields.length} fields to add slugs to`);
+      debugLog(`📊 Found ${fields.length} fields to add slugs to`);
 
       let successCount = 0;
       let errors: string[] = [];
@@ -331,7 +342,7 @@ export class FsApiClient {
 
         if (result.isSuccess) {
           successCount++;
-          console.log(
+          debugLog(
             `✅ Added slug to field ${field.id}: "${field.label}" → "${newLabel}"`,
           );
         } else {
@@ -341,7 +352,7 @@ export class FsApiClient {
         }
       }
 
-      console.log(
+      debugLog(
         `✅ Unique slugs added: ${successCount}/${fields.length} fields updated`,
       );
 
@@ -362,7 +373,7 @@ export class FsApiClient {
   async fieldLabelUniqueSlugRemove(
     formId: string,
   ): Promise<IMarvApiUniversalResponse<{ isSuccessful: boolean }>> {
-    console.log(`🏷️ Removing unique slugs from form ${formId} field labels`);
+    debugLog(`🏷️ Removing unique slugs from form ${formId} field labels`);
 
     try {
       // Check if form is Marv enabled
@@ -377,7 +388,7 @@ export class FsApiClient {
 
       // Get all fields
       const fields = await this.getFormFieldJson(formId);
-      console.log(`📊 Found ${fields.length} fields to remove slugs from`);
+      debugLog(`📊 Found ${fields.length} fields to remove slugs from`);
 
       let successCount = 0;
       let errors: string[] = [];
@@ -394,7 +405,7 @@ export class FsApiClient {
 
           if (result.isSuccess) {
             successCount++;
-            console.log(
+            debugLog(
               `✅ Removed slug from field ${field.id}: "${field.label}" → "${cleanedLabel}"`,
             );
           } else {
@@ -403,13 +414,13 @@ export class FsApiClient {
             );
           }
         } else {
-          console.log(
+          debugLog(
             `⏭️ Field ${field.id} has no slug to remove: "${field.label}"`,
           );
         }
       }
 
-      console.log(`✅ Unique slugs removed: ${successCount} fields updated`);
+      debugLog(`✅ Unique slugs removed: ${successCount} fields updated`);
 
       return {
         isSuccess: errors.length === 0,
@@ -428,27 +439,85 @@ export class FsApiClient {
   async fieldLogicRemove(
     formId: string,
   ): Promise<IMarvApiUniversalResponse<{ isSuccessful: boolean }>> {
-    return {
-      isSuccess: false,
-      response: { isSuccessful: false },
-      errorItems: ['Not implemented yet'],
-    };
+    debugLog(`🧹 Removing all logic from form ${formId} fields`);
+
+    try {
+      // Check if form is Marv enabled
+      const isMarvEnabled = await this.isFormMarvEnabled(formId);
+      if (!isMarvEnabled) {
+        return {
+          isSuccess: false,
+          response: { isSuccessful: false },
+          errorItems: ['Form is not Marv enabled'],
+        };
+      }
+
+      // Get all fields with logic
+      const allFields = await this.getFormFieldJson(formId);
+      const fieldsWithLogic = allFields.filter((field) => field.logic);
+
+      debugLog(
+        `📊 Found ${fieldsWithLogic.length} fields with logic to remove`,
+      );
+
+      if (fieldsWithLogic.length === 0) {
+        debugLog(`⏭️ No fields with logic found on form ${formId}`);
+        return {
+          isSuccess: true,
+          response: { isSuccessful: true },
+          errorItems: null,
+        };
+      }
+
+      // Remove logic from each field by setting logic to null
+      let successCount = 0;
+      let errors: string[] = [];
+
+      for (const field of fieldsWithLogic) {
+        const result = await this.updateFieldLogic(field.id, null);
+
+        if (result.isSuccess) {
+          successCount++;
+          debugLog(`✅ Removed logic from field ${field.id}: "${field.label}"`);
+        } else {
+          errors.push(
+            `Failed to remove logic from field ${field.id}: ${result.errorItems?.join(', ')}`,
+          );
+        }
+      }
+
+      debugLog(
+        `✅ Logic removal completed: ${successCount}/${fieldsWithLogic.length} fields updated`,
+      );
+
+      return {
+        isSuccess: errors.length === 0,
+        response: { isSuccessful: errors.length === 0 },
+        errorItems: errors.length > 0 ? errors : null,
+      };
+    } catch (error) {
+      return {
+        isSuccess: false,
+        response: { isSuccessful: false },
+        errorItems: [error instanceof Error ? error.message : 'Unknown error'],
+      };
+    }
   }
 
   async fieldLogicStashApply(
     formId: string,
   ): Promise<IMarvApiUniversalResponse<{ isSuccessful: boolean }>> {
-    console.log(`🔄 Applying logic stash for form ${formId}`);
+    debugLog(`🔄 Applying logic stash for form ${formId}`);
 
     try {
       // Get the stash field
       const stashField = await this.getLogicStashField(formId);
-      console.log(`📦 Found stash field: ${stashField.id}`);
+      debugLog(`📦 Found stash field: ${stashField.id}`);
 
       // Parse the stashed logic
       const logicStash = this.parseLogicStashString(stashField.default || '');
       const fieldIds = Object.keys(logicStash);
-      console.log(`🔧 Applying logic to ${fieldIds.length} fields`);
+      debugLog(`🔧 Applying logic to ${fieldIds.length} fields`);
 
       // Apply logic to each field
       let successCount = 0;
@@ -458,7 +527,7 @@ export class FsApiClient {
         const result = await this.updateFieldLogic(fieldId, logic);
         if (result.isSuccess) {
           successCount++;
-          console.log(`✅ Applied logic to field ${fieldId}`);
+          debugLog(`✅ Applied logic to field ${fieldId}`);
         } else {
           errors.push(
             `Failed to apply logic to field ${fieldId}: ${result.errorItems?.join(', ')}`,
@@ -466,7 +535,7 @@ export class FsApiClient {
         }
       }
 
-      console.log(
+      debugLog(
         `✅ Logic stash applied: ${successCount}/${fieldIds.length} fields updated`,
       );
 
@@ -487,7 +556,7 @@ export class FsApiClient {
   async fieldLogicStashApplyAndRemove(
     formId: string,
   ): Promise<IMarvApiUniversalResponse<{ isSuccessful: boolean }>> {
-    console.log(`🔄 Applying and removing logic stash for form ${formId}`);
+    debugLog(`🔄 Applying and removing logic stash for form ${formId}`);
 
     try {
       // First apply the logic
@@ -517,20 +586,18 @@ export class FsApiClient {
   async fieldLogicStashRemove(
     formId: string,
   ): Promise<IMarvApiUniversalResponse<any>> {
-    console.log(`🗑️ Removing logic stash for form ${formId}`);
+    debugLog(`🗑️ Removing logic stash for form ${formId}`);
 
     try {
       // Get the stash field
       const stashField = await this.getLogicStashField(formId);
-      console.log(`📦 Found stash field to remove: ${stashField.id}`);
+      debugLog(`📦 Found stash field to remove: ${stashField.id}`);
 
       // Delete the stash field
       const deleteResult = await this.deleteField(stashField.id);
 
       if (deleteResult.isSuccess) {
-        console.log(
-          `✅ Logic stash field ${stashField.id} removed successfully`,
-        );
+        debugLog(`✅ Logic stash field ${stashField.id} removed successfully`);
       }
 
       return deleteResult;
@@ -554,16 +621,141 @@ export class FsApiClient {
   }
 
   async fieldRemove(fieldId: string): Promise<IMarvApiUniversalResponse<any>> {
-    console.log(`🗑️ Removing field ${fieldId}`);
+    debugLog(`🗑️ Removing field ${fieldId}`);
 
     try {
       const deleteResult = await this.deleteField(fieldId);
 
       if (deleteResult.isSuccess) {
-        console.log(`✅ Field ${fieldId} removed successfully`);
+        debugLog(`✅ Field ${fieldId} removed successfully`);
       }
 
       return deleteResult;
+    } catch (error) {
+      return {
+        isSuccess: false,
+        response: null,
+        errorItems: [error instanceof Error ? error.message : 'Unknown error'],
+      };
+    }
+  }
+
+  async formAndRelatedEntityOverview(
+    formId: string,
+  ): Promise<IMarvApiUniversalResponse<IFormAndRelatedEntityOverview>> {
+    debugLog(`📋 Getting form and related entity overview for form ${formId}`);
+
+    try {
+      // Make parallel API calls to get all form-related data
+      const [
+        formResponse,
+        webhooksResponse,
+        notificationsResponse,
+        confirmationsResponse,
+      ] = await Promise.all([
+        this.makeRequest<TFsFormJson>(`/form/${formId}.json`, 'GET'),
+        this.makeRequest<{ webhooks: any[] }>(
+          `/form/${formId}/webhook.json`,
+          'GET',
+        ),
+        this.makeRequest<{ notifications: any[] }>(
+          `/form/${formId}/notification.json`,
+          'GET',
+        ),
+        this.makeRequest<{ confirmations: any[] }>(
+          `/form/${formId}/confirmation.json`,
+          'GET',
+        ),
+      ]);
+
+      if (!formResponse.isSuccess || !formResponse.response) {
+        return {
+          isSuccess: false,
+          response: null,
+          errorItems: formResponse.errorItems || ['Failed to get form details'],
+        };
+      }
+
+      const formData = formResponse.response;
+
+      // Extract submit actions (webhooks) with name and id
+      const submitActions =
+        webhooksResponse.isSuccess && webhooksResponse.response?.webhooks
+          ? webhooksResponse.response.webhooks.map((webhook: any) => ({
+              id: webhook.id || '',
+              name: webhook.name || webhook.url || 'Unnamed Webhook',
+            }))
+          : [];
+
+      // Extract notification emails with name and id
+      const notificationEmails =
+        notificationsResponse.isSuccess &&
+        notificationsResponse.response?.notifications
+          ? notificationsResponse.response.notifications.map(
+              (notification: any) => ({
+                id: notification.id || '',
+                name:
+                  notification.name ||
+                  notification.subject ||
+                  'Unnamed Notification',
+              }),
+            )
+          : [];
+
+      // Extract confirmation emails with name and id
+      const confirmationEmails =
+        confirmationsResponse.isSuccess &&
+        confirmationsResponse.response?.confirmations
+          ? confirmationsResponse.response.confirmations.map(
+              (confirmation: any) => ({
+                id: confirmation.id || '',
+                name:
+                  confirmation.name ||
+                  confirmation.subject ||
+                  'Unnamed Confirmation',
+              }),
+            )
+          : [];
+
+      // Transform the API response to our desired structure
+      const overview: IFormAndRelatedEntityOverview = {
+        formId: formData.id,
+        submissions: formData.submissions || 0,
+        version: formData.version || 1,
+        submissionsToday: formData.submissions_today || 0,
+        lastSubmissionId: formData.last_submission_id || null,
+        url: formData.url,
+        encrypted: formData.encrypted || false,
+        isActive: !formData.inactive, // Transform inactive to isActive
+        timezone: formData.timezone || 'UTC',
+        isOneQuestionAtATime:
+          formData.should_display_one_question_at_a_time || false,
+        hasApprovers: formData.has_approvers || false,
+        isWorkflowForm: formData.is_workflow_form || false,
+        fieldCount: formData.fields?.length || 0,
+        submitActions,
+        notificationEmails,
+        confirmationEmails,
+      };
+
+      // Only include isWorkflowPublished if isWorkflowForm is true
+      if (overview.isWorkflowForm) {
+        overview.isWorkflowPublished = formData.is_workflow_published || false;
+      }
+
+      debugLog(`✅ Form overview retrieved successfully for form ${formId}`);
+      debugLog(
+        `📊 Form stats: ${overview.fieldCount} fields, ${overview.submissions} submissions`,
+      );
+      debugLog(
+        `📋 Related entities: ${submitActions.length} webhooks, ${notificationEmails.length} notifications, ${confirmationEmails.length} confirmations`,
+      );
+
+      return {
+        isSuccess: true,
+        response: overview,
+        errorItems: null,
+      };
     } catch (error) {
       return {
         isSuccess: false,

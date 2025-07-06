@@ -1,66 +1,66 @@
 import { AbstractRobotChat } from './AbstractRobotChat';
 import type { TConversationTextMessageEnvelope } from './types';
 import Anthropic from '@anthropic-ai/sdk';
-import { RobotChatAnthropicToolSet } from './tool-definitions/RobotChatAnthropicTools';
-import { fsApiClient } from './api/fsApiClient';
+import { formstackToolDefinitions } from './api/formstackToolDefinitions';
+import { performExternalApiCall } from './api/performExternalApiCall';
+
 const ANTHROPIC_API_KEY =
   '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';
 
-const FORMSTACK_API_KEY = 'bf77018720efca7df34b3503dbc486e8';
-
-// Initialize Formstack API client
-fsApiClient.setApiKey(FORMSTACK_API_KEY);
-
 /**
- * Anthropic Claude Chat Robot implementation
- * Connects to Anthropic's API for real chat functionality with tool support
+ * Anthropic Marv - Specialized Formstack API Robot
+ * Focused on Formstack form management and field operations
  */
-export class RobotChatAnthropic extends AbstractRobotChat {
+export class AnthropicMarv extends AbstractRobotChat {
   // Required properties from AbstractRobot
   public readonly contextWindowSizeInTokens: number = 200000;
   public readonly LLModelName: string = 'claude-3-5-sonnet-20241022';
   public readonly LLModelVersion: string = '20241022';
-  public readonly name: string = 'RobotChatAnthropic';
+  public readonly name: string = 'AnthropicMarv';
   public readonly version: string = '1.0.0';
 
   // Static descriptions
   static descriptionShort =
-    'Anthropic Claude chat robot for intelligent conversations and troubleshooting with tool support';
+    'Specialized Formstack API robot for form creation, field management, and advanced form operations';
   static descriptionLong =
-    "This robot provides advanced chat functionality using Anthropic's Claude API. It specializes in Intellistack Forms Core troubleshooting, supports both streaming and immediate responses, and can handle complex technical questions. Includes tools for Sumo Logic queries and SSO auto-fill assistance.";
+    'Marv is a specialized robot focused on Formstack form management. It provides comprehensive form lifecycle management including form creation, field addition/removal, logic stash operations, unique label slug management, and developer copy creation. All operations are performed through real Formstack API calls on Marv-enabled forms.';
 
   // Robot role/system prompt
   private readonly robotRole = `
-You are an iStackBuddy robot specializing in Intellistack Forms Core troubleshooting.
+You are Marv, an iStackBuddy robot specializing in Formstack form management and API operations.
 
-"Forms Core" is Intellistack's legacy forms product (formally known as "Formstack").
+Your primary focus is on helping users manage Formstack forms through direct API operations. You have access to a comprehensive set of Formstack tools:
 
-A non-exhaustive list of things we can help with:
-- SSO troubleshooting (for Forms Password Protected / SSO Protected, not account access SSO)
-- Form troubleshooting (logic not working as expected, form rendering issues, etc)
-  Form configuration issues:
-  -- Field/Section configuration
-  -- Visibility Logic
-  -- Calculation
-- Form Integration (submitActions) issues 
-- Through our collaborative efforts with other iStackBuddy robots we are able to:
-  -- Trace submission from creation to Integration Runs (SubmitAction runs)
-  -- Trace email send logs
-  -- Submission error logs
+**Form Management:**
+- Create new forms with initial field sets (formLiteAdd)
+- Create developer copies of existing forms (formDeveloperCopy)
 
-You have access to specialized tools:
-1. Sumo Logic Queries - for analyzing logs and submission data
-2. SSO Auto-fill Assistance - for troubleshooting form SSO auto-fill issues
-3. Form and Related Entity Overview - for getting comprehensive information about a form's configuration, statistics, and all related entities (webhooks, notifications, confirmations)
+**Field Operations:**
+- Add individual fields to forms (fieldLiteAdd)
+- Remove fields from forms (fieldRemove)
 
-It's expected this list will grow over time.
+**Logic Management:**
+- Create logic stash (backup current field logic) (fieldLogicStashCreate)
+- Apply logic stash (restore backed up logic) (fieldLogicStashApply)
+- Apply and remove logic stash (restore then delete backup) (fieldLogicStashApplyAndRemove)
+- Remove logic stash (delete backup without applying) (fieldLogicStashRemove)
+- Remove all logic from form fields (fieldLogicRemove)
 
-Please provide helpful, accurate, and detailed responses to user questions. If you're unsure about something, say so rather than guessing. Use the available tools when they would be helpful for the user's question.
+**Label Management:**
+- Add unique slugs to field labels for easier identification (fieldLabelUniqueSlugAdd)
+- Remove unique slugs from field labels (fieldLabelUniqueSlugRemove)
+
+**IMPORTANT CONSTRAINTS:**
+- Most operations can ONLY be performed on Marv-enabled forms
+- All operations use real Formstack API calls
+- You work with actual form IDs, field IDs, and make permanent changes
+- Always confirm operations that modify or delete data
+
+Your goal is to help users efficiently manage their Formstack forms through these specialized tools. Be precise, helpful, and always confirm destructive operations.
 `;
 
-  // Tool definitions for Anthropic API
-  private readonly tools: Anthropic.Messages.Tool[] =
-    RobotChatAnthropicToolSet.toolDefinitions;
+  // Tool definitions for Anthropic API (only Formstack tools)
+  private readonly tools: Anthropic.Messages.Tool[] = formstackToolDefinitions;
 
   /**
    * Simple token estimation - roughly 4 characters per token for Claude
@@ -110,17 +110,27 @@ Please provide helpful, accurate, and detailed responses to user questions. If y
   }
 
   /**
-   * Execute tool calls based on tool name and arguments
+   * Execute tool calls for Formstack operations
    */
   private async executeToolCall(
     toolName: string,
     toolArgs: any,
   ): Promise<string> {
-    const result = RobotChatAnthropicToolSet.executeToolCall(
-      toolName,
-      toolArgs,
-    );
-    return typeof result === 'string' ? result : await result;
+    try {
+      // All our tools are Formstack API calls
+      const result = await performExternalApiCall(toolName, toolArgs);
+
+      // Convert the API response to a readable string format
+      if (result.isSuccess) {
+        return `✅ ${toolName} completed successfully\n\nResult: ${JSON.stringify(result.response, null, 2)}`;
+      } else {
+        return `❌ ${toolName} failed\n\nErrors: ${result.errorItems?.join(', ') || 'Unknown error'}`;
+      }
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      return `❌ Error executing ${toolName}: ${errorMessage}`;
+    }
   }
 
   /**
@@ -300,7 +310,7 @@ Please provide helpful, accurate, and detailed responses to user questions. If y
             ...messageEnvelope.envelopePayload,
             content: {
               type: 'text/plain',
-              payload: `Follow up on: "${messageEnvelope.envelopePayload.content.payload}". Is there anything else I can help you with regarding this topic? I have tools available for Sumo Logic queries and SSO auto-fill troubleshooting if needed.`,
+              payload: `Follow up on: "${messageEnvelope.envelopePayload.content.payload}". Is there anything else I can help you with regarding Formstack form management? I have tools available for form creation, field management, logic operations, and more.`,
             },
           },
         });

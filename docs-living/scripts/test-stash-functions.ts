@@ -1,7 +1,7 @@
 #!/usr/bin/env ts-node
 
 import { RobotChatAnthropic } from '../../src/robots/RobotChatAnthropic';
-import { RobotChatAnthropicToolSet } from '../../src/robots/tool-definitions/RobotChatAnthropicTools';
+import { AnthropicMarv } from '../../src/robots/AnthropicMarv';
 import { TConversationTextMessageEnvelope } from '../../src/robots/types';
 import Anthropic from '@anthropic-ai/sdk';
 

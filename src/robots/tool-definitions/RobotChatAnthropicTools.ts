@@ -1,12 +1,14 @@
 // Tool definitions for Anthropic API
 import Anthropic from '@anthropic-ai/sdk';
-import { formstackToolDefinitions } from '../api/formstackToolDefinitions';
-import { performExternalApiCall } from '../api/performExternalApiCall';
+import { fsApiClient } from '../api/fsApiClient';
 // as Anthropic.Messages.Tool[]
 
 type TAnthropicToolSet = {
   toolDefinitions: Anthropic.Messages.Tool[];
-  executeToolCall: (toolName: string, toolArgs: any) => string;
+  executeToolCall: (
+    toolName: string,
+    toolArgs: any,
+  ) => string | Promise<string>;
 };
 
 /**
@@ -93,149 +95,94 @@ ${analysisSection}
 };
 
 /**
- * Handle Formstack API calls
+ * Handle form and related entity overview tool
  */
-const handleFormstackApiCall = async (
-  toolName: string,
+const handleFormAndRelatedEntityOverview = async (
   toolArgs: any,
 ): Promise<string> => {
+  const { formId, apiKey } = toolArgs;
+
   try {
-    // Check for API key in multiple places, including the one from the original implementation
-    const apiKey =
-      process.env.CORE_FORMS_API_V2_KEY ||
-      process.env.FORMSTACK_API_KEY ||
-      process.env.FS_API_KEY ||
-      'bf77018720efca7df34b3503dbc486e8'; // Working API key
-
-    console.log('🔧 Executing Formstack API call:', { toolName, toolArgs });
-    console.log(
-      '🔑 Using API key:',
-      apiKey.substring(0, 10) + '...' + apiKey.substring(apiKey.length - 4),
-    );
-
-    const result = await performExternalApiCall(
-      apiKey,
-      toolName,
-      JSON.stringify(toolArgs),
-    );
-
-    console.log('🔍 API call result:', result);
-
-    if (result.isSuccess) {
-      return `✅ **${toolName} completed successfully!**
-
-📋 **Result:**
-${JSON.stringify(result.response, null, 2)}
-
-${formatFormstackResult(toolName, result.response)}`;
-    } else {
-      return `❌ **${toolName} FAILED**
-
-🚨 **Errors:**
-${(result.errorItems || ['Unknown error']).map((error) => `• ${error}`).join('\n')}
-
-**What went wrong:**
-${
-  result.errorItems?.includes('Form is not Marv enabled')
-    ? `The form ${toolArgs.formId} is not Marv-enabled. You need to add a "MARV_ENABLED" field to the form first, or use a form that already has this field.`
-    : result.errorItems?.includes('Unauthorized') ||
-        result.errorItems?.includes('401')
-      ? `❌ **API Authentication Failed!**
-    
-The API key being used is not valid or doesn't have permission to access this form.
-
-**To fix this:**
-1. Set your real Formstack API key: \`export CORE_FORMS_API_V2_KEY='your-api-key'\`
-2. Or set: \`export FORMSTACK_API_KEY='your-api-key'\`
-3. Make sure the key has permission to access form ${toolArgs.formId}
-
-**Current key:** ${apiKey.substring(0, 10)}...${apiKey.substring(apiKey.length - 4)}`
-      : 'Please check your parameters and try again.'
-}`;
+    // Set API key if provided
+    if (apiKey) {
+      fsApiClient.setApiKey(apiKey);
     }
+
+    const result = await fsApiClient.formAndRelatedEntityOverview(formId);
+
+    if (!result.isSuccess || !result.response) {
+      return `❌ Failed to retrieve form overview for form ${formId}
+      
+Error: ${result.errorItems?.join(', ') || 'Unknown error'}`;
+    }
+
+    const overview = result.response;
+
+    // Format related entities
+    const formatEntityList = (
+      entities: Array<{ id: string; name: string }>,
+      type: string,
+    ) => {
+      if (entities.length === 0) {
+        return `   • No ${type} configured`;
+      }
+      return entities
+        .map((entity) => `   • ${entity.name} (ID: ${entity.id})`)
+        .join('\n');
+    };
+
+    return `📋 Form Overview: ${overview.formId}
+
+🔗 **Form Details:**
+   • URL: ${overview.url}
+   • Version: ${overview.version}
+   • Timezone: ${overview.timezone}
+   • Status: ${overview.isActive ? '✅ Active' : '❌ Inactive'}
+   • Encryption: ${overview.encrypted ? '🔒 Enabled' : '🔓 Disabled'}
+
+📊 **Submission Statistics:**
+   • Total Submissions: ${overview.submissions}
+   • Submissions Today: ${overview.submissionsToday}
+   • Last Submission ID: ${overview.lastSubmissionId || 'None'}
+
+⚙️ **Form Configuration:**
+   • Field Count: ${overview.fieldCount}
+   • One Question at a Time: ${overview.isOneQuestionAtATime ? '✅ Yes' : '❌ No'}
+   • Has Approvers: ${overview.hasApprovers ? '✅ Yes' : '❌ No'}
+   • Workflow Form: ${overview.isWorkflowForm ? '✅ Yes' : '❌ No'}${overview.isWorkflowPublished !== undefined ? `\n   • Workflow Published: ${overview.isWorkflowPublished ? '✅ Yes' : '❌ No'}` : ''}
+
+🔗 **Submit Actions (Webhooks):** ${overview.submitActions.length}
+${formatEntityList(overview.submitActions, 'webhooks')}
+
+📧 **Notification Emails:** ${overview.notificationEmails.length}
+${formatEntityList(overview.notificationEmails, 'notification emails')}
+
+✅ **Confirmation Emails:** ${overview.confirmationEmails.length}
+${formatEntityList(overview.confirmationEmails, 'confirmation emails')}
+
+💡 This overview provides a comprehensive view of the form's configuration and related entities. Let me know if you need more details about any specific aspect!`;
   } catch (error) {
-    console.error('🚨 Error in handleFormstackApiCall:', error);
-    return `❌ **Error executing ${toolName}:**
-
-${error instanceof Error ? error.message : 'Unknown error occurred'}
-
-Please verify your parameters and try again.`;
-  }
-};
-
-/**
- * Format Formstack API results for user-friendly display
- */
-const formatFormstackResult = (toolName: string, response: any): string => {
-  switch (toolName) {
-    case 'fsRestrictedApiFormLiteAdd':
-      return `🎉 **New form created successfully!**
-• **Form ID:** ${response.formId}
-• **Edit URL:** ${response.editUrl}
-• **View URL:** ${response.viewUrl}
-
-You can now start building your form or add additional fields using the field tools.`;
-
-    case 'fsRestrictedApiFieldLiteAdd':
-      return `🆕 **Field added successfully!**
-• **Field ID:** ${response.fieldId}
-• **Field Label:** ${response.fieldJson?.label}
-• **Field Type:** ${response.fieldJson?.field_type}
-
-The field is now available in your form for users to interact with.`;
-
-    case 'fsRestrictedApiFormDeveloperCopy':
-      return `📋 **Developer copy created!**
-• **New Form ID:** ${response.id}
-• **Form Name:** ${response.name}
-• **Edit URL:** ${response.edit_url}
-• **View URL:** ${response.url}
-
-This copy can be used for testing and development without affecting the original form.`;
-
-    default:
-      return `ℹ️ **Operation completed successfully!**
-
-The ${toolName
-        .replace('fsRestrictedApi', '')
-        .replace(/([A-Z])/g, ' $1')
-        .toLowerCase()} operation has been completed.`;
+    return `❌ Error retrieving form overview: ${error instanceof Error ? error.message : 'Unknown error'}`;
   }
 };
 
 /**
  * Execute tool calls based on tool name and arguments
  */
-const executeToolCall = (toolName: string, toolArgs: any): string => {
-  // Handle existing tools
+const executeToolCall = (
+  toolName: string,
+  toolArgs: any,
+): string | Promise<string> => {
   switch (toolName) {
     case 'sumo_logic_query':
       return handleSumoLogicQuery(toolArgs);
     case 'sso_autofill_assistance':
       return handleSsoAutofillAssistance(toolArgs);
+    case 'form_and_related_entity_overview':
+      return handleFormAndRelatedEntityOverview(toolArgs);
+    default:
+      return `❌ Unknown tool: ${toolName}. Available tools: sumo_logic_query, sso_autofill_assistance, form_and_related_entity_overview`;
   }
-
-  // Handle Formstack API tools
-  const formstackToolNames = formstackToolDefinitions.map((tool) => tool.name);
-  if (formstackToolNames.includes(toolName)) {
-    // For synchronous execution, we'll return a promise-like response
-    // In a real implementation, you'd want to handle this asynchronously
-    handleFormstackApiCall(toolName, toolArgs)
-      .then((result) => result)
-      .catch((error) => `Error: ${error}`);
-
-    // Return immediate acknowledgment
-    return `🔄 **Processing ${toolName}...**
-
-⏳ Working on your request. This may take a moment as we communicate with the Formstack API.
-
-Parameters received:
-${Object.entries(toolArgs)
-  .map(([key, value]) => `• ${key}: ${value}`)
-  .join('\n')}`;
-  }
-
-  return `❌ Unknown tool: ${toolName}. Available tools: sumo_logic_query, sso_autofill_assistance, ${formstackToolNames.join(', ')}`;
 };
 
 const RobotChatAnthropicToolSet: TAnthropicToolSet = {
@@ -292,48 +239,29 @@ const RobotChatAnthropicToolSet: TAnthropicToolSet = {
         required: ['formId', 'accountId'],
       },
     },
-    // Add all Formstack tools
-    ...formstackToolDefinitions,
+    {
+      name: 'form_and_related_entity_overview',
+      description:
+        'Get comprehensive overview of a form including configuration, statistics, and all related entities (webhooks, notifications, confirmations). Provides detailed information about form setup and current status.',
+      input_schema: {
+        type: 'object',
+        properties: {
+          formId: {
+            type: 'string',
+            description:
+              'Form ID to get overview for, in numeric string format (e.g., "12345")',
+          },
+          apiKey: {
+            type: 'string',
+            description:
+              'Optional Formstack API key if different from default. Only provide if user specifically mentions an API key.',
+          },
+        },
+        required: ['formId'],
+      },
+    },
   ],
   executeToolCall: executeToolCall,
-};
-// we need to refactor the above- I think it would be best if we define all the functions
-// in a separate file.
-
-const handleFormOverview = (toolArgs: any): string => {
-  return `
- handleFormOverview
- - return form overview
-  - list submit actions (with ids) - maybe only webhooks are available through this api, which means we need to indicate the list is incomplete
-  - list notification/confirmation emails (with ids)
-  - list field count (if Ids are needed we should create an 'extended' form overview)
-  - form type: core-workflow, cor-form, copilot-workflow
-  - last submission
-  - number of submissions
-  - add/on feature 
-    (should be a list indicated has does not have)
-      approval
-      save-resume
-      one-question at a time
-`;
-};
-
-const handleFormObservations = (toolArgs: any): string => {
-  return `
-handleFormObservations
-  - list total number of: debug, info, warning, error.
-  - list of each warning
-  - list of each error
-  - total number of each field type (Number: 23, Address: 3) (if it doesn't exist build the observer)
-  - list number of fields with calculation.  
-  - list number of calculation systems
-  - list number of fields with logic.  
-  - list number of logic systems
-  
-
-This output will server as context for other tools      
-
-  `;
 };
 
 export { RobotChatAnthropicToolSet };

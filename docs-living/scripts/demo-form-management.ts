@@ -1,7 +1,6 @@
 #!/usr/bin/env ts-node
 
-import { RobotChatAnthropic } from '../../src/robots/RobotChatAnthropic';
-import { RobotChatAnthropicToolSet } from '../../src/robots/tool-definitions/RobotChatAnthropicTools';
+import { AnthropicMarv } from '../../src/robots/AnthropicMarv';
 import Anthropic from '@anthropic-ai/sdk';
 
 const ANTHROPIC_API_KEY =
@@ -11,81 +10,34 @@ async function executeFormstackTool(action: string, params?: any) {
   console.log(`\n🔧 Executing: ${action}`);
   console.log('-'.repeat(50));
 
-  const client = new Anthropic({ apiKey: ANTHROPIC_API_KEY });
+  const marv = new AnthropicMarv();
 
   const userMessage = params
     ? `Please ${action}. Parameters: ${JSON.stringify(params)}`
     : `Please ${action}`;
 
-  // Get initial response
-  const response = await client.messages.create({
-    model: 'claude-3-5-sonnet-20241022',
-    max_tokens: 1024,
-    system:
-      'You are an iStackBuddy robot. Execute Formstack operations as requested. Use the provided parameters.',
-    messages: [{ role: 'user', content: userMessage }],
-    tools: RobotChatAnthropicToolSet.toolDefinitions,
-  });
+  // Create message envelope for AnthropicMarv
+  const messageEnvelope = {
+    messageId: `msg-${Date.now()}`,
+    requestOrResponse: 'request' as const,
+    envelopePayload: {
+      messageId: `payload-${Date.now()}`,
+      author_role: 'user' as const,
+      content: {
+        type: 'text/plain' as const,
+        payload: userMessage,
+      },
+      created_at: new Date().toISOString(),
+      estimated_token_count: Math.ceil(userMessage.length / 4),
+    },
+  };
 
-  // Process response and execute tools
-  let assistantContent: any[] = [];
-  let toolUseBlocks: any[] = [];
-  let formId: string | null = null;
-  let fieldIds: string[] = [];
+  // Get response from AnthropicMarv
+  const response = await marv.acceptMessageImmediateResponse(messageEnvelope);
 
-  for (const content of response.content) {
-    if (content.type === 'text') {
-      console.log('💬', content.text);
-      assistantContent.push(content);
-    } else if (content.type === 'tool_use') {
-      console.log(`📋 Tool: ${content.name}`);
-      console.log(`📄 Args: ${JSON.stringify(content.input)}`);
-      toolUseBlocks.push(content);
-      assistantContent.push(content);
-    }
-  }
+  console.log('💬 Marv:', response.envelopePayload.content.payload);
 
-  // Execute tools if any
-  if (toolUseBlocks.length > 0) {
-    const toolResults: any[] = [];
-
-    for (const toolUse of toolUseBlocks) {
-      const toolResult = RobotChatAnthropicToolSet.executeToolCall(
-        toolUse.name,
-        toolUse.input,
-      );
-      toolResults.push({
-        tool_use_id: toolUse.id,
-        type: 'tool_result',
-        content: toolResult,
-      });
-
-      // Note: For full automation, you would parse the toolResult to extract
-      // form IDs and field IDs. This demo uses hardcoded IDs for simplicity.
-    }
-
-    // Get final response
-    const finalResponse = await client.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
-      max_tokens: 1024,
-      system: 'You are an iStackBuddy robot. Summarize what was accomplished.',
-      messages: [
-        { role: 'user', content: userMessage },
-        { role: 'assistant', content: assistantContent },
-        { role: 'user', content: toolResults },
-      ],
-      tools: RobotChatAnthropicToolSet.toolDefinitions,
-    });
-
-    console.log('\n📋 Summary:');
-    for (const content of finalResponse.content) {
-      if (content.type === 'text') {
-        console.log(content.text);
-      }
-    }
-  }
-
-  return { formId, fieldIds };
+  return { formId: null, fieldIds: [] };
 }
 
 async function main() {
