@@ -1,8 +1,7 @@
 import { AbstractRobotChat } from './AbstractRobotChat';
 import type { TConversationTextMessageEnvelope } from './types';
 import Anthropic from '@anthropic-ai/sdk';
-import { marvToolDefinitions } from './tool-definitions/marv/marvToolDefinitions';
-import { performMarvToolCall } from './tool-definitions/marv/performMarvToolCall';
+import { marvToolSet } from './tool-definitions/marv';
 
 const ANTHROPIC_API_KEY =
   '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';
@@ -60,7 +59,8 @@ Your goal is to help users efficiently manage their Formstack forms through thes
 `;
 
   // Tool definitions for Anthropic API (only Formstack tools)
-  private readonly tools: Anthropic.Messages.Tool[] = marvToolDefinitions;
+  private readonly tools: Anthropic.Messages.Tool[] =
+    marvToolSet.toolDefinitions;
 
   /**
    * Simple token estimation - roughly 4 characters per token for Claude
@@ -118,7 +118,7 @@ Your goal is to help users efficiently manage their Formstack forms through thes
   ): Promise<string> {
     try {
       // All our tools are Formstack API calls
-      const result = await performMarvToolCall(toolName, toolArgs);
+      const result = await marvToolSet.executeToolCall(toolName, toolArgs);
 
       // Convert the API response to a readable string format
       if (result.isSuccess) {

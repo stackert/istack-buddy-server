@@ -1,5 +1,4 @@
-import { FsApiClient, fsApiClient } from './fsApiClient';
-import { IAddFsLiteFieldProps } from './types';
+import { FsApiClient, fsApiClient, IAddFsLiteFieldProps } from '.';
 
 // Mock fetch globally
 const mockFetch = jest.fn();

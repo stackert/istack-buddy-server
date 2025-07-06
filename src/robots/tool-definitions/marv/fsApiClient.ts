@@ -19,8 +19,13 @@ const debugLog = (...args: any[]): void => {
 
 // Real API client for Formstack operations - NO MOCKS
 export class FsApiClient {
-  private apiKey: string = '';
+  private apiKey: string;
   private static readonly API_ROOT = 'https://www.formstack.com/api/v2';
+
+  constructor() {
+    // Read API key from environment on initialization
+    this.apiKey = process.env.FORMSTACK_API_KEY || '';
+  }
 
   setApiKey(apiKey: string): FsApiClient {
     this.apiKey = apiKey;

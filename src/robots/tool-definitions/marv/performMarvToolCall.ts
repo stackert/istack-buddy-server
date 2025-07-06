@@ -1,17 +1,18 @@
-import { fsApiClient } from './fsApiClient';
-import { IMarvApiUniversalResponse } from '../../api/types';
-import { FsRestrictedApiRoutesEnum } from './types';
+import { FsApiClient } from './fsApiClient';
+import { IMarvApiUniversalResponse, FsRestrictedApiRoutesEnum } from '.';
 
 // Main function to handle external API calls from the robot
 const performMarvToolCall = async (
-  apiKey: string,
   functionName: string,
-  functionParametersJson?: string,
+  functionParametersJson?: any,
 ): Promise<IMarvApiUniversalResponse<any>> => {
-  const api = fsApiClient.setApiKey(apiKey);
+  const api = new FsApiClient();
 
   // Parse function parameters
-  const fnParamsJson = helpers.parseJson(functionParametersJson);
+  const fnParamsJson =
+    typeof functionParametersJson === 'string'
+      ? helpers.parseJson(functionParametersJson)
+      : functionParametersJson || {};
   helpers.pushLog({ functionName, fnParamsJson });
 
   // Handle all functions through the enum-based switch
@@ -70,6 +71,9 @@ const performMarvToolCall = async (
 
     case FsRestrictedApiRoutesEnum.FormDeveloperAdd:
       return api.formDeveloperCopy(fnParamsJson?.formId);
+
+    case FsRestrictedApiRoutesEnum.FormAndRelatedEntityOverview:
+      return api.formAndRelatedEntityOverview(fnParamsJson?.formId);
 
     default:
       return {

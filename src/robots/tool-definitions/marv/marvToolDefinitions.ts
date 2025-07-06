@@ -2,7 +2,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { FsRestrictedApiRoutesEnum } from './types';
 
 // Anthropic tool definitions converted from OpenAI format
-export const marvToolDefinitions: Anthropic.Messages.Tool[] = [
+const marvToolDefinitions: Anthropic.Messages.Tool[] = [
   {
     name: FsRestrictedApiRoutesEnum.FieldRemove,
     description: `Remove a field from a form by its field ID. This permanently deletes the field and all its data.`,
@@ -250,3 +250,5 @@ export const marvToolDefinitions: Anthropic.Messages.Tool[] = [
     },
   },
 ];
+
+export { marvToolDefinitions };

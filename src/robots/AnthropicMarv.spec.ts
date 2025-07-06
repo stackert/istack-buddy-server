@@ -1,7 +1,6 @@
 import { AnthropicMarv } from './AnthropicMarv';
 import { AbstractRobotChat } from './AbstractRobotChat';
-import { marvToolDefinitions } from './tool-definitions/marv/marvToolDefinitions';
-import { performMarvToolCall } from './tool-definitions/marv/performMarvToolCall';
+import { marvToolSet } from './tool-definitions/marv';
 import type { TConversationTextMessageEnvelope } from './types';
 //src/robots/tool-definitions
 // Mock the dependencies
@@ -55,9 +54,10 @@ jest.mock('@anthropic-ai/sdk', () => {
 });
 
 // Get the mocked modules
-const mockPerformMarvToolCall = performMarvToolCall as jest.MockedFunction<
-  typeof performMarvToolCall
->;
+const mockPerformMarvToolCall =
+  marvToolSet.executeToolCall as jest.MockedFunction<
+    typeof marvToolSet.executeToolCall
+  >;
 
 describe('AnthropicMarv', () => {
   let marv: AnthropicMarv;
@@ -111,8 +111,8 @@ describe('AnthropicMarv', () => {
     });
 
     it('should use formstack tool definitions', () => {
-      expect(marvToolDefinitions).toBeDefined();
-      expect(Array.isArray(marvToolDefinitions)).toBe(true);
+      expect(marvToolSet.toolDefinitions).toBeDefined();
+      expect(Array.isArray(marvToolSet.toolDefinitions)).toBe(true);
     });
   });
 
@@ -945,7 +945,7 @@ describe('AnthropicMarv', () => {
       expect(request.system).toContain('You are Marv');
       expect(request.messages).toHaveLength(1);
       expect(request.messages[0].role).toBe('user');
-      expect(request.tools).toBe(marvToolDefinitions);
+      expect(request.tools).toBe(marvToolSet.toolDefinitions);
     });
 
     it('should handle complex Formstack operation scenario', async () => {

@@ -2,14 +2,6 @@ import { AbstractRobotChat } from './AbstractRobotChat';
 import type { TConversationTextMessageEnvelope } from './types';
 import Anthropic from '@anthropic-ai/sdk';
 import { RobotChatAnthropicToolSet } from './tool-definitions/RobotChatAnthropicTools';
-import { fsApiClient } from './tool-definitions/marv/fsApiClient';
-const ANTHROPIC_API_KEY =
-  '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';
-
-const FORMSTACK_API_KEY = 'bf77018720efca7df34b3503dbc486e8';
-
-// Initialize Formstack API client
-fsApiClient.setApiKey(FORMSTACK_API_KEY);
 
 /**
  * Anthropic Claude Chat Robot implementation
@@ -73,7 +65,7 @@ Please provide helpful, accurate, and detailed responses to user questions. If y
    * Get Anthropic client with API key from environment
    */
   private getClient(): Anthropic {
-    const apiKey = ANTHROPIC_API_KEY; // process.env.ANTHROPIC_API_KEY;
+    const apiKey = process.env.ANTHROPIC_API_KEY;
 
     if (!apiKey) {
       throw new Error(

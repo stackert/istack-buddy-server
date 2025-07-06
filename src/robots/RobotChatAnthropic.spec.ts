@@ -1,7 +1,7 @@
 import { RobotChatAnthropic } from './RobotChatAnthropic';
 import { AbstractRobotChat } from './AbstractRobotChat';
 import { RobotChatAnthropicToolSet } from './tool-definitions/RobotChatAnthropicTools';
-import { fsApiClient } from './tool-definitions/marv/fsApiClient';
+import { marvToolSet } from './tool-definitions/marv';
 import type { TConversationTextMessageEnvelope } from './types';
 
 // Mock the dependencies
@@ -24,11 +24,20 @@ jest.mock('./tool-definitions/RobotChatAnthropicTools', () => ({
   },
 }));
 
-jest.mock('./tool-definitions/marv/fsApiClient', () => ({
-  fsApiClient: {
+jest.mock('./tool-definitions/marv/fsApiClient', () => {
+  const mockInstance = {
     setApiKey: jest.fn(),
-  },
-}));
+  };
+  return {
+    FsApiClient: jest.fn().mockImplementation(() => mockInstance),
+    fsApiClient: mockInstance,
+  };
+});
+
+// Get the mocked module to access the mock instance
+const { fsApiClient: mockFsApiClient } = jest.mocked(
+  require('./tool-definitions/marv/fsApiClient'),
+) as any;
 
 // Mock Anthropic SDK with more sophisticated mocking
 const mockCreate = jest.fn();
@@ -50,7 +59,9 @@ jest.mock('@anthropic-ai/sdk', () => {
 const mockRobotChatAnthropicToolSet = RobotChatAnthropicToolSet as jest.Mocked<
   typeof RobotChatAnthropicToolSet
 >;
-const mockFsApiClient = fsApiClient as jest.Mocked<typeof fsApiClient>;
+const mockExecuteToolCall = marvToolSet.executeToolCall as jest.MockedFunction<
+  typeof marvToolSet.executeToolCall
+>;
 
 describe('RobotChatAnthropic', () => {
   let robot: RobotChatAnthropic;
@@ -73,7 +84,11 @@ describe('RobotChatAnthropic', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    process.env = { ...originalEnv };
+    process.env = {
+      ...originalEnv,
+      ANTHROPIC_API_KEY: 'sk-ant-api03-test-key-for-testing',
+      FORMSTACK_API_KEY: 'test-formstack-key',
+    };
     robot = new RobotChatAnthropic();
   });
 
@@ -103,8 +118,8 @@ describe('RobotChatAnthropic', () => {
       );
     });
 
-    it('should set API key on fsApiClient during initialization', () => {
-      expect(mockFsApiClient.setApiKey).toBeDefined();
+    it('should have fsApiClient available for API operations', () => {
+      expect(mockFsApiClient).toBeDefined();
     });
   });
 
@@ -126,8 +141,7 @@ describe('RobotChatAnthropic', () => {
       const AnthropicConstructor = require('@anthropic-ai/sdk').default;
       const client = (robot as any).getClient();
       expect(AnthropicConstructor).toHaveBeenCalledWith({
-        apiKey:
-          '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',
+        apiKey: 'sk-ant-api03-test-key-for-testing',
       });
       expect(client).toBeDefined();
     });
