@@ -6,7 +6,7 @@ import type {
   TConversationMessageContentString,
 } from '../ConversationLists/types';
 import { RobotService } from '../robots/robot.service';
-import { SlackAgentCoreFormsParrot } from '../robots/SlackAgents/SlackAgentCoreFormsParrot';
+import { RobotChatAnthropic } from '../robots/RobotChatAnthropic';
 
 // Factory for creating conversation messages
 class ConversationMessageFactory {
@@ -142,9 +142,10 @@ export class IstackBuddySlackApiService {
       );
       conversation.addTextMessageEnvelope(userMessage);
 
-      const robot = this.robotService.getRobotByName<SlackAgentCoreFormsParrot>(
-        'SlackAgentCoreFormsParrot',
-      );
+      const robot =
+        this.robotService.getRobotByName<RobotChatAnthropic>(
+          'RobotChatAnthropic',
+        );
       if (!robot) {
         this.logger.error('❌ Robot not found');
         return;
@@ -153,54 +154,31 @@ export class IstackBuddySlackApiService {
       const messageEnvelope: TConversationTextMessageEnvelope =
         this.slackMessageToMessageEnvelope(userMessage);
 
-      robot.acceptMessageMultiPartResponse(messageEnvelope, (response) => {
-        this.logger.log(`🤖 Robot response: ${response}`);
-        //        conversation.addMessage(response); //
-        this.sendSlackMessage(
-          response.envelopePayload.content.payload || '__EMPTY_MESSAGE__',
+      // Use immediate response for better integration with Anthropic
+      try {
+        const response =
+          await robot.acceptMessageImmediateResponse(messageEnvelope);
+
+        // Send the response to Slack
+        await this.sendSlackMessage(
+          response.envelopePayload.content.payload,
           event.channel,
           event.ts,
         );
-      });
 
-      this.logger.log(
-        `💬 Added user message to conversation ${conversationId} (total messages: ${conversation.getMessageCount()})`,
-      );
-
-      // Get current time for response
-      const currentTime = new Date().toLocaleString();
-      const botResponseText = `🤖 Current time: ${currentTime}\n\n📊 Conversation stats:\n- Total messages: ${conversation.getMessageCount()}\n- Conversation ID: ${conversationId}`;
-
-      // Use Slack Web API to respond
-      const response = await fetch('https://slack.com/api/chat.postMessage', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${process.env.SLACK_BOT_TOKEN}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          channel: event.channel,
-          text: botResponseText,
-          thread_ts: event.ts, // Reply in thread
-        }),
-      });
-
-      if (response.ok) {
-        // Add the bot's response to the conversation
-        const botMessage = ConversationMessageFactory.createRobotMessage(
-          `slack-bot-msg-${Date.now()}`,
-          'slack-bot',
-          { type: 'text/plain', payload: botResponseText },
-          this.estimateTokenCount(botResponseText),
-        );
-        conversation.addTextMessageEnvelope(botMessage);
+        // Add response to conversation
+        conversation.addTextMessageEnvelope(response);
 
         this.logger.log(
-          `✅ Responded and added bot message to conversation. Total messages: ${conversation.getMessageCount()}`,
+          `✅ Successfully processed message and sent response. Total messages: ${conversation.getMessageCount()}`,
         );
-      } else {
-        const errorData = await response.text();
-        this.logger.error(`❌ Failed to send message: ${errorData}`);
+      } catch (error) {
+        this.logger.error('❌ Error getting robot response:', error);
+        await this.sendSlackMessage(
+          '❌ Sorry, I encountered an error processing your request.',
+          event.channel,
+          event.ts,
+        );
       }
     } catch (error) {
       this.logger.error('❌ Error handling app mention:', error);

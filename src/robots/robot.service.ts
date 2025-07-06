@@ -3,7 +3,7 @@ import { AbstractRobot } from './AbstractRobot';
 import { ChatRobotParrot } from './ChatRobotParrot';
 import { AgentRobotParrot } from './AgentRobotParrot';
 import { RobotChatOpenAI } from './RobotChatOpenAI';
-// import { RobotChatAnthropic } from './RobotChatAnthropic.ts.hidden';
+import { RobotChatAnthropic } from './RobotChatAnthropic';
 // import { PseudoRobotRouter } from './PseudoRobotRouter.ts.hidden';
 // import { PseudoRobotRouterSuggestions } from './PseudoRobotRouterSuggestions.ts.hidden';
 // import { PseudoRobotDocumentationSuggestions } from './PseudoRobotDocumentationSuggestions.ts.hidden';
@@ -28,7 +28,7 @@ export class RobotService implements OnModuleInit {
       new ChatRobotParrot(),
       new AgentRobotParrot(),
       new RobotChatOpenAI(),
-      // new RobotChatAnthropic(),
+      new RobotChatAnthropic(),
       // new PseudoRobotRouter(),
       // new PseudoRobotRouterSuggestions(),
       // new PseudoRobotDocumentationSuggestions(),
