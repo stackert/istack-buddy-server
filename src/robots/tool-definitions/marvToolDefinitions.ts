@@ -1,7 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 
 // Anthropic tool definitions converted from OpenAI format
-export const formstackToolDefinitions: Anthropic.Messages.Tool[] = [
+export const marvToolDefinitions: Anthropic.Messages.Tool[] = [
   {
     name: 'fieldRemove',
     description: `Remove a field from a form by its field ID. This permanently deletes the field and all its data.`,

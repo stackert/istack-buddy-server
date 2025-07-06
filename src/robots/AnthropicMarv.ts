@@ -1,7 +1,7 @@
 import { AbstractRobotChat } from './AbstractRobotChat';
 import type { TConversationTextMessageEnvelope } from './types';
 import Anthropic from '@anthropic-ai/sdk';
-import { formstackToolDefinitions } from './api/formstackToolDefinitions';
+import { marvToolDefinitions } from './tool-definitions/marvToolDefinitions';
 import { performExternalApiCall } from './api/performExternalApiCall';
 
 const ANTHROPIC_API_KEY =
@@ -60,7 +60,7 @@ Your goal is to help users efficiently manage their Formstack forms through thes
 `;
 
   // Tool definitions for Anthropic API (only Formstack tools)
-  private readonly tools: Anthropic.Messages.Tool[] = formstackToolDefinitions;
+  private readonly tools: Anthropic.Messages.Tool[] = marvToolDefinitions;
 
   /**
    * Simple token estimation - roughly 4 characters per token for Claude

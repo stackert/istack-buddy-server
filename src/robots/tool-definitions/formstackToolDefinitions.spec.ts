@@ -1,19 +1,18 @@
-import { formstackToolDefinitions } from './formstackToolDefinitions';
-import Anthropic from '@anthropic-ai/sdk';
+import { marvToolDefinitions } from './marvToolDefinitions';
 
-describe('formstackToolDefinitions', () => {
+describe('marvToolDefinitions', () => {
   describe('Structure Validation', () => {
     it('should be defined and be an array', () => {
-      expect(formstackToolDefinitions).toBeDefined();
-      expect(Array.isArray(formstackToolDefinitions)).toBe(true);
+      expect(marvToolDefinitions).toBeDefined();
+      expect(Array.isArray(marvToolDefinitions)).toBe(true);
     });
 
     it('should contain 11 tool definitions', () => {
-      expect(formstackToolDefinitions).toHaveLength(11);
+      expect(marvToolDefinitions).toHaveLength(11);
     });
 
     it('should have all tools conform to Anthropic.Messages.Tool interface', () => {
-      formstackToolDefinitions.forEach((tool, index) => {
+      marvToolDefinitions.forEach((tool, index) => {
         expect(tool).toHaveProperty('name');
         expect(tool).toHaveProperty('description');
         expect(tool).toHaveProperty('input_schema');
@@ -40,12 +39,12 @@ describe('formstackToolDefinitions', () => {
         'fsRestrictedApiFormDeveloperCopy',
       ];
 
-      const actualToolNames = formstackToolDefinitions.map((tool) => tool.name);
+      const actualToolNames = marvToolDefinitions.map((tool) => tool.name);
       expect(actualToolNames).toEqual(expectedToolNames);
     });
 
     it('should have unique tool names', () => {
-      const toolNames = formstackToolDefinitions.map((tool) => tool.name);
+      const toolNames = marvToolDefinitions.map((tool) => tool.name);
       const uniqueNames = new Set(toolNames);
       expect(uniqueNames.size).toBe(toolNames.length);
     });
@@ -53,7 +52,7 @@ describe('formstackToolDefinitions', () => {
 
   describe('Input Schema Validation', () => {
     it('should have valid input schemas with type object', () => {
-      formstackToolDefinitions.forEach((tool) => {
+      marvToolDefinitions.forEach((tool) => {
         expect(tool.input_schema.type).toBe('object');
         expect(tool.input_schema).toHaveProperty('properties');
         expect(tool.input_schema).toHaveProperty('required');
@@ -62,7 +61,7 @@ describe('formstackToolDefinitions', () => {
     });
 
     it('should have all required properties defined in properties', () => {
-      formstackToolDefinitions.forEach((tool) => {
+      marvToolDefinitions.forEach((tool) => {
         const { properties, required } = tool.input_schema;
         const props = properties as Record<string, any>;
         required.forEach((requiredProp: string) => {
@@ -74,7 +73,7 @@ describe('formstackToolDefinitions', () => {
 
   describe('Individual Tool Definitions', () => {
     describe('fieldRemove', () => {
-      const fieldRemoveTool = formstackToolDefinitions.find(
+      const fieldRemoveTool = marvToolDefinitions.find(
         (tool) => tool.name === 'fieldRemove',
       )!;
 
@@ -100,7 +99,7 @@ describe('formstackToolDefinitions', () => {
     });
 
     describe('fsRestrictedApiFormLiteAdd', () => {
-      const formLiteAddTool = formstackToolDefinitions.find(
+      const formLiteAddTool = marvToolDefinitions.find(
         (tool) => tool.name === 'fsRestrictedApiFormLiteAdd',
       )!;
 
@@ -159,7 +158,7 @@ describe('formstackToolDefinitions', () => {
     });
 
     describe('fsRestrictedApiFieldLiteAdd', () => {
-      const fieldLiteAddTool = formstackToolDefinitions.find(
+      const fieldLiteAddTool = marvToolDefinitions.find(
         (tool) => tool.name === 'fsRestrictedApiFieldLiteAdd',
       )!;
 
@@ -219,7 +218,7 @@ describe('formstackToolDefinitions', () => {
     });
 
     describe('fsRestrictedApiFormDeveloperCopy', () => {
-      const formCopyTool = formstackToolDefinitions.find(
+      const formCopyTool = marvToolDefinitions.find(
         (tool) => tool.name === 'fsRestrictedApiFormDeveloperCopy',
       )!;
 
@@ -248,7 +247,7 @@ describe('formstackToolDefinitions', () => {
 
   describe('MARV Restriction Validation', () => {
     it('should have MARV restriction mentioned in all restricted tools', () => {
-      const restrictedTools = formstackToolDefinitions.filter((tool) =>
+      const restrictedTools = marvToolDefinitions.filter((tool) =>
         tool.name.startsWith('fsRestrictedApi'),
       );
 
@@ -260,7 +259,7 @@ describe('formstackToolDefinitions', () => {
     });
 
     it('should not have MARV restriction in fieldRemove tool', () => {
-      const fieldRemoveTool = formstackToolDefinitions.find(
+      const fieldRemoveTool = marvToolDefinitions.find(
         (tool) => tool.name === 'fieldRemove',
       )!;
       expect(fieldRemoveTool.description).not.toContain('MARV ENABLED FORMS');
@@ -269,7 +268,7 @@ describe('formstackToolDefinitions', () => {
 
   describe('Property Type Validation', () => {
     it('should have string type for all formId properties', () => {
-      const toolsWithFormId = formstackToolDefinitions.filter((tool) => {
+      const toolsWithFormId = marvToolDefinitions.filter((tool) => {
         const props = tool.input_schema.properties as Record<string, any>;
         return props.formId;
       });
@@ -281,7 +280,7 @@ describe('formstackToolDefinitions', () => {
     });
 
     it('should have string type for all fieldId properties', () => {
-      const toolsWithFieldId = formstackToolDefinitions.filter((tool) => {
+      const toolsWithFieldId = marvToolDefinitions.filter((tool) => {
         const props = tool.input_schema.properties as Record<string, any>;
         return props.fieldId;
       });
@@ -293,7 +292,7 @@ describe('formstackToolDefinitions', () => {
     });
 
     it('should have string type for all label properties', () => {
-      const toolsWithLabel = formstackToolDefinitions.filter((tool) => {
+      const toolsWithLabel = marvToolDefinitions.filter((tool) => {
         const props = tool.input_schema.properties as Record<string, any>;
         return props.label;
       });
@@ -307,14 +306,14 @@ describe('formstackToolDefinitions', () => {
 
   describe('Description Quality', () => {
     it('should have non-empty descriptions for all tools', () => {
-      formstackToolDefinitions.forEach((tool) => {
+      marvToolDefinitions.forEach((tool) => {
         expect(tool.description.length).toBeGreaterThan(0);
         expect(tool.description.trim()).toBe(tool.description);
       });
     });
 
     it('should have descriptions for all properties', () => {
-      formstackToolDefinitions.forEach((tool) => {
+      marvToolDefinitions.forEach((tool) => {
         const props = tool.input_schema.properties as Record<string, any>;
         Object.values(props).forEach((property: any) => {
           expect(property.description).toBeDefined();
@@ -336,7 +335,7 @@ describe('formstackToolDefinitions', () => {
 
     it('should have all logic management tools', () => {
       logicToolNames.forEach((toolName) => {
-        const tool = formstackToolDefinitions.find((t) => t.name === toolName);
+        const tool = marvToolDefinitions.find((t) => t.name === toolName);
         expect(tool).toBeDefined();
         expect(tool!.description).toContain('MARV ENABLED FORMS');
         expect(tool!.input_schema.required).toEqual(['formId']);
@@ -356,7 +355,7 @@ describe('formstackToolDefinitions', () => {
       };
 
       Object.entries(descriptions).forEach(([toolName, expectedText]) => {
-        const tool = formstackToolDefinitions.find((t) => t.name === toolName)!;
+        const tool = marvToolDefinitions.find((t) => t.name === toolName)!;
         expect(tool.description).toContain(expectedText);
       });
     });
@@ -364,7 +363,7 @@ describe('formstackToolDefinitions', () => {
 
   describe('Slug Management Tools', () => {
     it('should have slug add tool with correct structure', () => {
-      const slugAddTool = formstackToolDefinitions.find(
+      const slugAddTool = marvToolDefinitions.find(
         (tool) => tool.name === 'fsRestrictedApiFieldLabelUniqueSlugAdd',
       )!;
       expect(slugAddTool.name).toBe('fsRestrictedApiFieldLabelUniqueSlugAdd');
@@ -374,7 +373,7 @@ describe('formstackToolDefinitions', () => {
     });
 
     it('should have slug remove tool with correct structure', () => {
-      const slugRemoveTool = formstackToolDefinitions.find(
+      const slugRemoveTool = marvToolDefinitions.find(
         (tool) => tool.name === 'fsRestrictedApiFieldLabelUniqueSlugRemove',
       )!;
       expect(slugRemoveTool.name).toBe(
@@ -400,7 +399,7 @@ describe('formstackToolDefinitions', () => {
         'section',
       ];
 
-      const toolsWithFieldType = formstackToolDefinitions.filter((tool) => {
+      const toolsWithFieldType = marvToolDefinitions.filter((tool) => {
         const props = tool.input_schema.properties as Record<string, any>;
         return (
           props.field_type ||

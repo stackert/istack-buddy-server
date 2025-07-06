@@ -1,12 +1,13 @@
 import { AnthropicMarv } from './AnthropicMarv';
 import { AbstractRobotChat } from './AbstractRobotChat';
-import { formstackToolDefinitions } from './api/formstackToolDefinitions';
+import { marvToolDefinitions } from './tool-definitions/marvToolDefinitions';
 import { performExternalApiCall } from './api/performExternalApiCall';
 import type { TConversationTextMessageEnvelope } from './types';
-
+//src/robots/tool-definitions
 // Mock the dependencies
-jest.mock('./api/formstackToolDefinitions', () => ({
-  formstackToolDefinitions: [
+//jest.mock('./api/marvToolDefinitions', () => ({
+jest.mock('./tool-definitions/marvToolDefinitions', () => ({
+  marvToolDefinitions: [
     {
       name: 'formLiteAdd',
       description: 'Create a new form',
@@ -109,8 +110,8 @@ describe('AnthropicMarv', () => {
     });
 
     it('should use formstack tool definitions', () => {
-      expect(formstackToolDefinitions).toBeDefined();
-      expect(Array.isArray(formstackToolDefinitions)).toBe(true);
+      expect(marvToolDefinitions).toBeDefined();
+      expect(Array.isArray(marvToolDefinitions)).toBe(true);
     });
   });
 
@@ -945,7 +946,7 @@ describe('AnthropicMarv', () => {
       expect(request.system).toContain('You are Marv');
       expect(request.messages).toHaveLength(1);
       expect(request.messages[0].role).toBe('user');
-      expect(request.tools).toBe(formstackToolDefinitions);
+      expect(request.tools).toBe(marvToolDefinitions);
     });
 
     it('should handle complex Formstack operation scenario', async () => {
