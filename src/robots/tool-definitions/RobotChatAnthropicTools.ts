@@ -1,6 +1,6 @@
 // Tool definitions for Anthropic API
 import Anthropic from '@anthropic-ai/sdk';
-import { fsApiClient } from '../api/fsApiClient';
+import { fsApiClient } from './marv/fsApiClient';
 // as Anthropic.Messages.Tool[]
 
 type TAnthropicToolSet = {

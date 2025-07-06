@@ -1,7 +1,7 @@
-import { performExternalApiCall } from './performExternalApiCall';
+import { performMarvToolCall } from './performMarvToolCall';
 import { fsApiClient } from './fsApiClient';
 import { FsRestrictedApiRoutesEnum } from './types';
-import type { IMarvApiUniversalResponse } from './types';
+import type { IMarvApiUniversalResponse } from '../../api/types';
 
 // Mock the fsApiClient
 jest.mock('./fsApiClient', () => ({
@@ -26,7 +26,7 @@ const mockFsApiClient = fsApiClient as jest.Mocked<typeof fsApiClient>;
 // Mock console.log to avoid cluttering test output
 const mockConsoleLog = jest.spyOn(console, 'log').mockImplementation(() => {});
 
-describe('performExternalApiCall', () => {
+describe('performMarvToolCall', () => {
   const mockApiKey = 'test-api-key';
   const mockSuccessResponse: IMarvApiUniversalResponse<any> = {
     isSuccess: true,
@@ -50,47 +50,34 @@ describe('performExternalApiCall', () => {
     it('should set API key and log function call details', async () => {
       mockFsApiClient.fieldRemove.mockResolvedValue(mockSuccessResponse);
 
-      await performExternalApiCall(
-        mockApiKey,
-        'fieldRemove',
-        '{"fieldId":"123"}',
-      );
+      await performMarvToolCall(mockApiKey, 'fieldRemove', '{"fieldId":"123"}');
 
       expect(mockFsApiClient.setApiKey).toHaveBeenCalledWith(mockApiKey);
       expect(mockConsoleLog).toHaveBeenCalledWith({
-        performExternalApiCall: {
-          functionName: 'fieldRemove',
-          functionArgsAsJsonString: '{"fieldId":"123"}',
-          parameters: { fieldId: '123' },
-        },
+        functionName: 'fieldRemove',
+        fnParamsJson: { fieldId: '123' },
       });
     });
 
     it('should parse empty function arguments as empty object', async () => {
       mockFsApiClient.fieldRemove.mockResolvedValue(mockSuccessResponse);
 
-      await performExternalApiCall(mockApiKey, 'fieldRemove');
+      await performMarvToolCall(mockApiKey, 'fieldRemove');
 
       expect(mockConsoleLog).toHaveBeenCalledWith({
-        performExternalApiCall: {
-          functionName: 'fieldRemove',
-          functionArgsAsJsonString: undefined,
-          parameters: {},
-        },
+        functionName: 'fieldRemove',
+        fnParamsJson: {},
       });
     });
 
     it('should parse empty string function arguments as empty object', async () => {
       mockFsApiClient.fieldRemove.mockResolvedValue(mockSuccessResponse);
 
-      await performExternalApiCall(mockApiKey, 'fieldRemove', '');
+      await performMarvToolCall(mockApiKey, 'fieldRemove', '');
 
       expect(mockConsoleLog).toHaveBeenCalledWith({
-        performExternalApiCall: {
-          functionName: 'fieldRemove',
-          functionArgsAsJsonString: '',
-          parameters: {},
-        },
+        functionName: 'fieldRemove',
+        fnParamsJson: {},
       });
     });
   });
@@ -99,7 +86,7 @@ describe('performExternalApiCall', () => {
     it('should handle fieldRemove function', async () => {
       mockFsApiClient.fieldRemove.mockResolvedValue(mockSuccessResponse);
 
-      const result = await performExternalApiCall(
+      const result = await performMarvToolCall(
         mockApiKey,
         'fieldRemove',
         '{"fieldId":"456"}',
@@ -112,11 +99,7 @@ describe('performExternalApiCall', () => {
     it('should handle fieldRemove without fieldId parameter', async () => {
       mockFsApiClient.fieldRemove.mockResolvedValue(mockSuccessResponse);
 
-      const result = await performExternalApiCall(
-        mockApiKey,
-        'fieldRemove',
-        '{}',
-      );
+      const result = await performMarvToolCall(mockApiKey, 'fieldRemove', '{}');
 
       expect(mockFsApiClient.fieldRemove).toHaveBeenCalledWith(undefined);
       expect(result).toEqual(mockSuccessResponse);
@@ -128,7 +111,7 @@ describe('performExternalApiCall', () => {
       it('should handle FormLiteAdd with parameters', async () => {
         mockFsApiClient.formLiteAdd.mockResolvedValue(mockSuccessResponse);
 
-        const result = await performExternalApiCall(
+        const result = await performMarvToolCall(
           mockApiKey,
           FsRestrictedApiRoutesEnum.FormLiteAdd,
           '{"formName":"Test Form","fields":[{"label":"Name","field_type":"text"}]}',
@@ -143,7 +126,7 @@ describe('performExternalApiCall', () => {
       it('should apply default parameters for FormLiteAdd when none provided', async () => {
         mockFsApiClient.formLiteAdd.mockResolvedValue(mockSuccessResponse);
 
-        const result = await performExternalApiCall(
+        const result = await performMarvToolCall(
           mockApiKey,
           FsRestrictedApiRoutesEnum.FormLiteAdd,
           '{}',
@@ -159,7 +142,7 @@ describe('performExternalApiCall', () => {
       it('should merge provided parameters with defaults for FormLiteAdd', async () => {
         mockFsApiClient.formLiteAdd.mockResolvedValue(mockSuccessResponse);
 
-        const result = await performExternalApiCall(
+        const result = await performMarvToolCall(
           mockApiKey,
           FsRestrictedApiRoutesEnum.FormLiteAdd,
           '{"formName":"Custom Form"}',
@@ -175,7 +158,7 @@ describe('performExternalApiCall', () => {
       it('should handle FormLiteAdd failure and add error message', async () => {
         mockFsApiClient.formLiteAdd.mockResolvedValue(mockFailureResponse);
 
-        const result = await performExternalApiCall(
+        const result = await performMarvToolCall(
           mockApiKey,
           FsRestrictedApiRoutesEnum.FormLiteAdd,
           '{}',
@@ -195,7 +178,7 @@ describe('performExternalApiCall', () => {
         };
         mockFsApiClient.formLiteAdd.mockResolvedValue(responseWithNullErrors);
 
-        const result = await performExternalApiCall(
+        const result = await performMarvToolCall(
           mockApiKey,
           FsRestrictedApiRoutesEnum.FormLiteAdd,
           '{}',
@@ -213,7 +196,7 @@ describe('performExternalApiCall', () => {
           mockSuccessResponse,
         );
 
-        const result = await performExternalApiCall(
+        const result = await performMarvToolCall(
           mockApiKey,
           FsRestrictedApiRoutesEnum.FieldLabelUniqueSlugAdd,
           '{"formId":"789"}',
@@ -230,7 +213,7 @@ describe('performExternalApiCall', () => {
           mockSuccessResponse,
         );
 
-        const result = await performExternalApiCall(
+        const result = await performMarvToolCall(
           mockApiKey,
           FsRestrictedApiRoutesEnum.FieldLabelUniqueSlugRemove,
           '{"formId":"789"}',
@@ -248,7 +231,7 @@ describe('performExternalApiCall', () => {
         mockFsApiClient.fieldLiteAdd.mockResolvedValue(mockSuccessResponse);
 
         const fieldData = { label: 'Email', field_type: 'email' };
-        const result = await performExternalApiCall(
+        const result = await performMarvToolCall(
           mockApiKey,
           FsRestrictedApiRoutesEnum.FieldLiteAdd,
           `{"formId":"123","fields":${JSON.stringify(fieldData)}}`,
@@ -265,7 +248,7 @@ describe('performExternalApiCall', () => {
         mockFsApiClient.fieldLiteAdd.mockResolvedValue(mockSuccessResponse);
 
         const fieldData = { label: 'Name', field_type: 'text' };
-        const result = await performExternalApiCall(
+        const result = await performMarvToolCall(
           mockApiKey,
           FsRestrictedApiRoutesEnum.FieldLiteAdd,
           JSON.stringify(fieldData),
@@ -283,7 +266,7 @@ describe('performExternalApiCall', () => {
       it('should handle FieldLogicRemove', async () => {
         mockFsApiClient.fieldLogicRemove.mockResolvedValue(mockSuccessResponse);
 
-        const result = await performExternalApiCall(
+        const result = await performMarvToolCall(
           mockApiKey,
           FsRestrictedApiRoutesEnum.FieldLogicRemove,
           '{"formId":"456"}',
@@ -298,7 +281,7 @@ describe('performExternalApiCall', () => {
           mockSuccessResponse,
         );
 
-        const result = await performExternalApiCall(
+        const result = await performMarvToolCall(
           mockApiKey,
           FsRestrictedApiRoutesEnum.FieldLogicStashApply,
           '{"formId":"456"}',
@@ -315,7 +298,7 @@ describe('performExternalApiCall', () => {
           mockSuccessResponse,
         );
 
-        const result = await performExternalApiCall(
+        const result = await performMarvToolCall(
           mockApiKey,
           FsRestrictedApiRoutesEnum.FieldLogicStashApplyAndRemove,
           '{"formId":"456"}',
@@ -332,7 +315,7 @@ describe('performExternalApiCall', () => {
           mockSuccessResponse,
         );
 
-        const result = await performExternalApiCall(
+        const result = await performMarvToolCall(
           mockApiKey,
           FsRestrictedApiRoutesEnum.FieldLogicStashCreate,
           '{"formId":"456"}',
@@ -352,7 +335,7 @@ describe('performExternalApiCall', () => {
           mockSuccessResponse,
         );
 
-        const result = await performExternalApiCall(
+        const result = await performMarvToolCall(
           mockApiKey,
           FsRestrictedApiRoutesEnum.FieldLogicStashRemove,
           '{"formId":"456"}',
@@ -371,7 +354,7 @@ describe('performExternalApiCall', () => {
           mockSuccessResponse,
         );
 
-        const result = await performExternalApiCall(
+        const result = await performMarvToolCall(
           mockApiKey,
           FsRestrictedApiRoutesEnum.FormDeveloperAdd,
           '{"formId":"789"}',
@@ -385,7 +368,7 @@ describe('performExternalApiCall', () => {
 
   describe('Error Handling', () => {
     it('should return error for unknown function name', async () => {
-      const result = await performExternalApiCall(
+      const result = await performMarvToolCall(
         mockApiKey,
         'unknownFunction',
         '{}',
@@ -401,9 +384,16 @@ describe('performExternalApiCall', () => {
     });
 
     it('should handle invalid JSON in function arguments', async () => {
-      await expect(
-        performExternalApiCall(mockApiKey, 'fieldRemove', 'invalid-json'),
-      ).rejects.toThrow();
+      mockFsApiClient.fieldRemove.mockResolvedValue(mockSuccessResponse);
+
+      const result = await performMarvToolCall(
+        mockApiKey,
+        'fieldRemove',
+        'invalid-json',
+      );
+
+      expect(result).toEqual(mockSuccessResponse);
+      expect(mockFsApiClient.fieldRemove).toHaveBeenCalledWith(undefined);
     });
   });
 
@@ -416,18 +406,15 @@ describe('performExternalApiCall', () => {
         metadata: { source: 'test', nested: { deep: true } },
       };
 
-      await performExternalApiCall(
+      await performMarvToolCall(
         mockApiKey,
         'fieldRemove',
         JSON.stringify(complexParams),
       );
 
       expect(mockConsoleLog).toHaveBeenCalledWith({
-        performExternalApiCall: {
-          functionName: 'fieldRemove',
-          functionArgsAsJsonString: JSON.stringify(complexParams),
-          parameters: complexParams,
-        },
+        functionName: 'fieldRemove',
+        fnParamsJson: complexParams,
       });
     });
 
@@ -439,7 +426,7 @@ describe('performExternalApiCall', () => {
         { label: 'Email', field_type: 'email' },
       ];
 
-      await performExternalApiCall(
+      await performMarvToolCall(
         mockApiKey,
         FsRestrictedApiRoutesEnum.FormLiteAdd,
         JSON.stringify({ formName: 'Test', fields }),
@@ -451,7 +438,7 @@ describe('performExternalApiCall', () => {
     it('should handle missing formId parameter', async () => {
       mockFsApiClient.fieldLogicRemove.mockResolvedValue(mockSuccessResponse);
 
-      await performExternalApiCall(
+      await performMarvToolCall(
         mockApiKey,
         FsRestrictedApiRoutesEnum.FieldLogicRemove,
         '{"otherParam":"value"}',
@@ -475,7 +462,7 @@ describe('performExternalApiCall', () => {
       };
       mockFsApiClient.formLiteAdd.mockResolvedValue(successfulResponse);
 
-      const result = await performExternalApiCall(
+      const result = await performMarvToolCall(
         mockApiKey,
         FsRestrictedApiRoutesEnum.FormLiteAdd,
         '{}',
@@ -493,7 +480,7 @@ describe('performExternalApiCall', () => {
       };
       mockFsApiClient.formLiteAdd.mockResolvedValue(unsuccessfulResponse);
 
-      const result = await performExternalApiCall(
+      const result = await performMarvToolCall(
         mockApiKey,
         FsRestrictedApiRoutesEnum.FormLiteAdd,
         '{}',
@@ -514,7 +501,7 @@ describe('performExternalApiCall', () => {
       };
       mockFsApiClient.formLiteAdd.mockResolvedValue(ambiguousResponse);
 
-      const result = await performExternalApiCall(
+      const result = await performMarvToolCall(
         mockApiKey,
         FsRestrictedApiRoutesEnum.FormLiteAdd,
         '{}',
@@ -549,7 +536,7 @@ describe('performExternalApiCall', () => {
         errorItems: null,
       });
 
-      const result = await performExternalApiCall(
+      const result = await performMarvToolCall(
         mockApiKey,
         FsRestrictedApiRoutesEnum.FormLiteAdd,
         JSON.stringify(formData),
@@ -575,7 +562,7 @@ describe('performExternalApiCall', () => {
 
       mockFsApiClient.fieldLiteAdd.mockResolvedValue(mockSuccessResponse);
 
-      await performExternalApiCall(
+      await performMarvToolCall(
         mockApiKey,
         FsRestrictedApiRoutesEnum.FieldLiteAdd,
         JSON.stringify(fieldData),

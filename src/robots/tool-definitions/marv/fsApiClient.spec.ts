@@ -1,10 +1,5 @@
 import { FsApiClient, fsApiClient } from './fsApiClient';
-import {
-  IMarvApiUniversalResponse,
-  TFsFieldJson,
-  TFsFormJson,
-  IAddFsLiteFieldProps,
-} from './types';
+import { IAddFsLiteFieldProps } from './types';
 
 // Mock fetch globally
 const mockFetch = jest.fn();

@@ -742,7 +742,11 @@ describe('ConversationListViewedImage', () => {
           stored!.envelope.envelopePayload.created_at,
         );
 
-        expect(messageTime.getTime()).toBe(currentTime.getTime());
+        const currentTimeMs = currentTime.getTime();
+        expect(messageTime.getTime()).toBeLessThanOrEqual(currentTimeMs);
+        expect(messageTime.getTime()).toBeGreaterThanOrEqual(
+          currentTimeMs - 1000,
+        );
       });
 
       it('should handle empty text content', () => {

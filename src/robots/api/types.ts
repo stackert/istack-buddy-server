@@ -17,14 +17,6 @@ export type TFsFieldType =
   | 'signature'
   | 'section';
 
-// Lite field for simple form creation
-export interface IAddFsLiteFieldProps {
-  label: string;
-  field_type: TFsFieldType;
-  isHidden?: boolean;
-  isRequired?: boolean;
-}
-
 // Form creation response
 export interface TFsLiteFormAddResponse {
   editUrl: string;
@@ -85,21 +77,3 @@ export interface IFormAndRelatedEntityOverview {
   notificationEmails: Array<{ id: string; name: string }>;
   confirmationEmails: Array<{ id: string; name: string }>;
 }
-
-// Available API function names
-export enum FsRestrictedApiRoutesEnum {
-  FieldLabelUniqueSlugAdd = 'fsRestrictedApiFieldLabelUniqueSlugAdd',
-  FieldLabelUniqueSlugRemove = 'fsRestrictedApiFieldLabelUniqueSlugRemove',
-  FieldLiteAdd = 'fsRestrictedApiFieldLiteAdd',
-  FieldLogicRemove = 'fsRestrictedApiFieldLogicRemove',
-  FieldLogicStashApply = 'fsRestrictedApiFieldLogicStashApply',
-  FieldLogicStashApplyAndRemove = 'fsRestrictedApiFieldLogicStashApplyAndRemove',
-  FieldLogicStashCreate = 'fsRestrictedApiFieldLogicStashCreate',
-  FieldLogicStashRemove = 'fsRestrictedApiFieldLogicStashRemove',
-  FormDeveloperAdd = 'fsRestrictedApiFormDeveloperCopy',
-  FormLiteAdd = 'fsRestrictedApiFormLiteAdd',
-  FormAndRelatedEntityOverview = 'fsRestrictedApiFormAndRelatedEntityOverview',
-}
-
-export type TFsRestrictedApiFunctionNames =
-  keyof typeof FsRestrictedApiRoutesEnum;

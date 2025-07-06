@@ -1,12 +1,12 @@
 import { AnthropicMarv } from './AnthropicMarv';
 import { AbstractRobotChat } from './AbstractRobotChat';
-import { marvToolDefinitions } from './tool-definitions/marvToolDefinitions';
-import { performExternalApiCall } from './api/performExternalApiCall';
+import { marvToolDefinitions } from './tool-definitions/marv/marvToolDefinitions';
+import { performMarvToolCall } from './tool-definitions/marv/performMarvToolCall';
 import type { TConversationTextMessageEnvelope } from './types';
 //src/robots/tool-definitions
 // Mock the dependencies
 //jest.mock('./api/marvToolDefinitions', () => ({
-jest.mock('./tool-definitions/marvToolDefinitions', () => ({
+jest.mock('./tool-definitions/marv/marvToolDefinitions', () => ({
   marvToolDefinitions: [
     {
       name: 'formLiteAdd',
@@ -34,8 +34,8 @@ jest.mock('./tool-definitions/marvToolDefinitions', () => ({
   ],
 }));
 
-jest.mock('./api/performExternalApiCall', () => ({
-  performExternalApiCall: jest.fn(),
+jest.mock('./tool-definitions/marv/performMarvToolCall', () => ({
+  performMarvToolCall: jest.fn(),
 }));
 
 // Mock Anthropic SDK
@@ -55,8 +55,9 @@ jest.mock('@anthropic-ai/sdk', () => {
 });
 
 // Get the mocked modules
-const mockPerformExternalApiCall =
-  performExternalApiCall as jest.MockedFunction<typeof performExternalApiCall>;
+const mockPerformMarvToolCall = performMarvToolCall as jest.MockedFunction<
+  typeof performMarvToolCall
+>;
 
 describe('AnthropicMarv', () => {
   let marv: AnthropicMarv;
@@ -185,13 +186,13 @@ describe('AnthropicMarv', () => {
         errorItems: null,
       };
 
-      mockPerformExternalApiCall.mockResolvedValue(mockApiResponse);
+      mockPerformMarvToolCall.mockResolvedValue(mockApiResponse);
 
       const result = await (marv as any).executeToolCall('formLiteAdd', {
         name: 'Test Form',
       });
 
-      expect(mockPerformExternalApiCall).toHaveBeenCalledWith('formLiteAdd', {
+      expect(mockPerformMarvToolCall).toHaveBeenCalledWith('formLiteAdd', {
         name: 'Test Form',
       });
       expect(result).toContain('✅ formLiteAdd completed successfully');
@@ -206,7 +207,7 @@ describe('AnthropicMarv', () => {
         errorItems: ['Invalid form name', 'Missing required field'],
       };
 
-      mockPerformExternalApiCall.mockResolvedValue(mockApiResponse);
+      mockPerformMarvToolCall.mockResolvedValue(mockApiResponse);
 
       const result = await (marv as any).executeToolCall('formLiteAdd', {
         name: '',
@@ -223,7 +224,7 @@ describe('AnthropicMarv', () => {
         errorItems: null,
       };
 
-      mockPerformExternalApiCall.mockResolvedValue(mockApiResponse);
+      mockPerformMarvToolCall.mockResolvedValue(mockApiResponse);
 
       const result = await (marv as any).executeToolCall('fieldRemove', {
         fieldId: 'invalid',
@@ -234,7 +235,7 @@ describe('AnthropicMarv', () => {
     });
 
     it('should handle API call throwing an error', async () => {
-      mockPerformExternalApiCall.mockRejectedValue(
+      mockPerformMarvToolCall.mockRejectedValue(
         new Error('Network connection failed'),
       );
 
@@ -248,7 +249,7 @@ describe('AnthropicMarv', () => {
     });
 
     it('should handle API call throwing non-Error object', async () => {
-      mockPerformExternalApiCall.mockRejectedValue('String error');
+      mockPerformMarvToolCall.mockRejectedValue('String error');
 
       const result = await (marv as any).executeToolCall(
         'fieldLogicStashCreate',
@@ -345,7 +346,7 @@ describe('AnthropicMarv', () => {
       };
 
       mockCreate.mockResolvedValue(mockStream);
-      mockPerformExternalApiCall.mockResolvedValue({
+      mockPerformMarvToolCall.mockResolvedValue({
         isSuccess: true,
         response: { id: '67890', name: 'Test Form' },
         errorItems: null,
@@ -357,7 +358,7 @@ describe('AnthropicMarv', () => {
         chunkCallback,
       );
 
-      expect(mockPerformExternalApiCall).toHaveBeenCalledWith('formLiteAdd', {
+      expect(mockPerformMarvToolCall).toHaveBeenCalledWith('formLiteAdd', {
         name: 'Test Form',
       });
       expect(chunkCallback).toHaveBeenCalledWith(
@@ -451,9 +452,7 @@ describe('AnthropicMarv', () => {
       };
 
       mockCreate.mockResolvedValue(mockStream);
-      mockPerformExternalApiCall.mockRejectedValue(
-        new Error('Field not found'),
-      );
+      mockPerformMarvToolCall.mockRejectedValue(new Error('Field not found'));
 
       const chunkCallback = jest.fn();
       await marv.acceptMessageStreamResponse(
@@ -514,7 +513,7 @@ describe('AnthropicMarv', () => {
       };
 
       mockCreate.mockResolvedValue(mockStream);
-      mockPerformExternalApiCall.mockResolvedValue({
+      mockPerformMarvToolCall.mockResolvedValue({
         isSuccess: true,
         response: { id: '54321', name: 'New Form' },
         errorItems: null,
@@ -585,7 +584,7 @@ describe('AnthropicMarv', () => {
       };
 
       mockCreate.mockResolvedValue(mockResponse);
-      mockPerformExternalApiCall.mockResolvedValue({
+      mockPerformMarvToolCall.mockResolvedValue({
         isSuccess: true,
         response: {
           id: '98765',
@@ -620,7 +619,7 @@ describe('AnthropicMarv', () => {
       };
 
       mockCreate.mockResolvedValue(mockResponse);
-      mockPerformExternalApiCall.mockResolvedValue({
+      mockPerformMarvToolCall.mockResolvedValue({
         isSuccess: false,
         response: null,
         errorItems: ['Form not found', 'Invalid field type'],
@@ -650,7 +649,7 @@ describe('AnthropicMarv', () => {
       };
 
       mockCreate.mockResolvedValue(mockResponse);
-      mockPerformExternalApiCall.mockRejectedValue(
+      mockPerformMarvToolCall.mockRejectedValue(
         new Error('Logic stash not found'),
       );
 
@@ -685,7 +684,7 @@ describe('AnthropicMarv', () => {
       };
 
       mockCreate.mockResolvedValue(mockResponse);
-      mockPerformExternalApiCall
+      mockPerformMarvToolCall
         .mockResolvedValueOnce({
           isSuccess: true,
           response: { id: '12345', name: 'Multi Tool Form' },
@@ -709,7 +708,7 @@ describe('AnthropicMarv', () => {
       expect(result.envelopePayload.content.payload).toContain(
         '✅ fieldLiteAdd completed successfully',
       );
-      expect(mockPerformExternalApiCall).toHaveBeenCalledTimes(2);
+      expect(mockPerformMarvToolCall).toHaveBeenCalledTimes(2);
     });
 
     it('should generate proper response structure', async () => {
@@ -993,7 +992,7 @@ describe('AnthropicMarv', () => {
       };
 
       mockCreate.mockResolvedValueOnce(streamResponse);
-      mockPerformExternalApiCall.mockResolvedValue({
+      mockPerformMarvToolCall.mockResolvedValue({
         isSuccess: true,
         response: {
           id: '11111',
@@ -1016,7 +1015,7 @@ describe('AnthropicMarv', () => {
       expect(chunkCallback).toHaveBeenCalledWith(
         expect.stringContaining('✅ formLiteAdd completed successfully'),
       );
-      expect(mockPerformExternalApiCall).toHaveBeenCalledWith('formLiteAdd', {
+      expect(mockPerformMarvToolCall).toHaveBeenCalledWith('formLiteAdd', {
         name: 'Complex Form',
       });
     });

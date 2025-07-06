@@ -1,37 +1,24 @@
 import { fsApiClient } from './fsApiClient';
-import {
-  IMarvApiUniversalResponse,
-  FsRestrictedApiRoutesEnum,
-  TFsRestrictedApiFunctionNames,
-} from './types';
+import { IMarvApiUniversalResponse } from '../../api/types';
+import { FsRestrictedApiRoutesEnum } from './types';
 
 // Main function to handle external API calls from the robot
-export const performExternalApiCall = async (
-  fsApiKey: string,
+const performMarvToolCall = async (
+  apiKey: string,
   functionName: string,
-  functionArgsAsJsonString?: string,
+  functionParametersJson?: string,
 ): Promise<IMarvApiUniversalResponse<any>> => {
-  // Parse function arguments - don't apply defaults here
-  const fnParamsJson = JSON.parse(functionArgsAsJsonString || '{}');
+  const api = fsApiClient.setApiKey(apiKey);
 
-  console.log({
-    performExternalApiCall: {
-      functionName,
-      functionArgsAsJsonString,
-      parameters: fnParamsJson,
-    },
-  });
+  // Parse function parameters
+  const fnParamsJson = helpers.parseJson(functionParametersJson);
+  helpers.pushLog({ functionName, fnParamsJson });
 
-  // Set API key
-  const api = fsApiClient.setApiKey(fsApiKey);
-
-  // Handle special functions first
-  if (functionName === 'fieldRemove') {
-    return api.fieldRemove(fnParamsJson?.fieldId);
-  }
-
-  // Route to appropriate API method
+  // Handle all functions through the enum-based switch
   switch (functionName as FsRestrictedApiRoutesEnum) {
+    case FsRestrictedApiRoutesEnum.FieldRemove:
+      return api.fieldRemove(fnParamsJson?.fieldId);
+
     case FsRestrictedApiRoutesEnum.FormLiteAdd: {
       // Only apply defaults for FormLiteAdd
       const parameters = {
@@ -109,4 +96,21 @@ const helpers = {
     }
     apiResponse.errorItems.push(message);
   },
+
+  parseJson: (jsonString?: string) => {
+    if (jsonString) {
+      try {
+        return JSON.parse(jsonString);
+      } catch (e) {
+        console.error('Error parsing JSON:', e);
+      }
+    }
+    return {};
+  },
+
+  pushLog: (logObject: any) => {
+    console.log(logObject);
+  },
 };
+
+export { performMarvToolCall };

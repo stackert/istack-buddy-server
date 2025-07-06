@@ -1,9 +1,10 @@
 import Anthropic from '@anthropic-ai/sdk';
+import { FsRestrictedApiRoutesEnum } from './types';
 
 // Anthropic tool definitions converted from OpenAI format
 export const marvToolDefinitions: Anthropic.Messages.Tool[] = [
   {
-    name: 'fieldRemove',
+    name: FsRestrictedApiRoutesEnum.FieldRemove,
     description: `Remove a field from a form by its field ID. This permanently deletes the field and all its data.`,
     input_schema: {
       type: 'object',
@@ -18,7 +19,7 @@ export const marvToolDefinitions: Anthropic.Messages.Tool[] = [
   },
 
   {
-    name: 'fsRestrictedApiFormLiteAdd',
+    name: FsRestrictedApiRoutesEnum.FormLiteAdd,
     description: `Create a formstack form. This AI powered form creation tool can create a form based on examples found on the internet.
     The system will help define the form structure (form name and field definitions) and then create the form.
     
@@ -77,7 +78,7 @@ export const marvToolDefinitions: Anthropic.Messages.Tool[] = [
   },
 
   {
-    name: 'fsRestrictedApiFieldLiteAdd',
+    name: FsRestrictedApiRoutesEnum.FieldLiteAdd,
     description: `Adds a field to the current form using simplified syntax. 
     Required properties:
     - label: please use quotes if using spaces or other non-alphanumeric characters
@@ -129,7 +130,7 @@ export const marvToolDefinitions: Anthropic.Messages.Tool[] = [
   },
 
   {
-    name: 'fsRestrictedApiFieldLabelUniqueSlugAdd',
+    name: FsRestrictedApiRoutesEnum.FieldLabelUniqueSlugAdd,
     description: `Adds unique slugs to all field labels in a form to make them easier to identify and work with. This **CAN ONLY BE DONE ON MARV ENABLED FORMS**.`,
     input_schema: {
       type: 'object',
@@ -144,7 +145,7 @@ export const marvToolDefinitions: Anthropic.Messages.Tool[] = [
   },
 
   {
-    name: 'fsRestrictedApiFieldLabelUniqueSlugRemove',
+    name: FsRestrictedApiRoutesEnum.FieldLabelUniqueSlugRemove,
     description: `Removes unique slugs from all field labels in a form. This **CAN ONLY BE DONE ON MARV ENABLED FORMS**.`,
     input_schema: {
       type: 'object',
@@ -159,7 +160,7 @@ export const marvToolDefinitions: Anthropic.Messages.Tool[] = [
   },
 
   {
-    name: 'fsRestrictedApiFieldLogicRemove',
+    name: FsRestrictedApiRoutesEnum.FieldLogicRemove,
     description: `Removes all logic from fields in a form. This **CAN ONLY BE DONE ON MARV ENABLED FORMS**.`,
     input_schema: {
       type: 'object',
@@ -174,7 +175,7 @@ export const marvToolDefinitions: Anthropic.Messages.Tool[] = [
   },
 
   {
-    name: 'fsRestrictedApiFieldLogicStashCreate',
+    name: FsRestrictedApiRoutesEnum.FieldLogicStashCreate,
     description: `Stashes (saves) all field logic from a form for later restoration. This **CAN ONLY BE DONE ON MARV ENABLED FORMS**.`,
     input_schema: {
       type: 'object',
@@ -189,7 +190,7 @@ export const marvToolDefinitions: Anthropic.Messages.Tool[] = [
   },
 
   {
-    name: 'fsRestrictedApiFieldLogicStashApply',
+    name: FsRestrictedApiRoutesEnum.FieldLogicStashApply,
     description: `Applies previously stashed field logic back to a form. This **CAN ONLY BE DONE ON MARV ENABLED FORMS**.`,
     input_schema: {
       type: 'object',
@@ -204,7 +205,7 @@ export const marvToolDefinitions: Anthropic.Messages.Tool[] = [
   },
 
   {
-    name: 'fsRestrictedApiFieldLogicStashApplyAndRemove',
+    name: FsRestrictedApiRoutesEnum.FieldLogicStashApplyAndRemove,
     description: `Applies previously stashed field logic back to a form and then removes the stash. This **CAN ONLY BE DONE ON MARV ENABLED FORMS**.`,
     input_schema: {
       type: 'object',
@@ -220,7 +221,7 @@ export const marvToolDefinitions: Anthropic.Messages.Tool[] = [
   },
 
   {
-    name: 'fsRestrictedApiFieldLogicStashRemove',
+    name: FsRestrictedApiRoutesEnum.FieldLogicStashRemove,
     description: `Removes the logic stash from a form without applying it. This **CAN ONLY BE DONE ON MARV ENABLED FORMS**.`,
     input_schema: {
       type: 'object',
@@ -235,7 +236,7 @@ export const marvToolDefinitions: Anthropic.Messages.Tool[] = [
   },
 
   {
-    name: 'fsRestrictedApiFormDeveloperCopy',
+    name: FsRestrictedApiRoutesEnum.FormDeveloperAdd,
     description: `Creates a developer copy of a form for testing and development purposes. This **CAN ONLY BE DONE ON MARV ENABLED FORMS**.`,
     input_schema: {
       type: 'object',

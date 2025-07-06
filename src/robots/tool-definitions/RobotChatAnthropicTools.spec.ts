@@ -1,9 +1,9 @@
 import { RobotChatAnthropicToolSet } from './RobotChatAnthropicTools';
-import { fsApiClient } from '../api/fsApiClient';
+import { fsApiClient } from './marv/fsApiClient';
 import type { IMarvApiUniversalResponse } from '../api/types';
 
 // Mock the fsApiClient
-jest.mock('../api/fsApiClient', () => ({
+jest.mock('./marv/fsApiClient', () => ({
   fsApiClient: {
     setApiKey: jest.fn(),
     formAndRelatedEntityOverview: jest.fn(),

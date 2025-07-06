@@ -1,8 +1,8 @@
 import { AbstractRobotChat } from './AbstractRobotChat';
 import type { TConversationTextMessageEnvelope } from './types';
 import Anthropic from '@anthropic-ai/sdk';
-import { marvToolDefinitions } from './tool-definitions/marvToolDefinitions';
-import { performExternalApiCall } from './api/performExternalApiCall';
+import { marvToolDefinitions } from './tool-definitions/marv/marvToolDefinitions';
+import { performMarvToolCall } from './tool-definitions/marv/performMarvToolCall';
 
 const ANTHROPIC_API_KEY =
   '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';
@@ -118,7 +118,7 @@ Your goal is to help users efficiently manage their Formstack forms through thes
   ): Promise<string> {
     try {
       // All our tools are Formstack API calls
-      const result = await performExternalApiCall(toolName, toolArgs);
+      const result = await performMarvToolCall(toolName, toolArgs);
 
       // Convert the API response to a readable string format
       if (result.isSuccess) {

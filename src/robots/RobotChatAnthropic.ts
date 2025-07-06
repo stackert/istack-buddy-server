@@ -2,7 +2,7 @@ import { AbstractRobotChat } from './AbstractRobotChat';
 import type { TConversationTextMessageEnvelope } from './types';
 import Anthropic from '@anthropic-ai/sdk';
 import { RobotChatAnthropicToolSet } from './tool-definitions/RobotChatAnthropicTools';
-import { fsApiClient } from './api/fsApiClient';
+import { fsApiClient } from './tool-definitions/marv/fsApiClient';
 const ANTHROPIC_API_KEY =
   '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';
 

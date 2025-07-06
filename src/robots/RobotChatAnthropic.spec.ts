@@ -1,7 +1,7 @@
 import { RobotChatAnthropic } from './RobotChatAnthropic';
 import { AbstractRobotChat } from './AbstractRobotChat';
 import { RobotChatAnthropicToolSet } from './tool-definitions/RobotChatAnthropicTools';
-import { fsApiClient } from './api/fsApiClient';
+import { fsApiClient } from './tool-definitions/marv/fsApiClient';
 import type { TConversationTextMessageEnvelope } from './types';
 
 // Mock the dependencies
@@ -24,7 +24,7 @@ jest.mock('./tool-definitions/RobotChatAnthropicTools', () => ({
   },
 }));
 
-jest.mock('./api/fsApiClient', () => ({
+jest.mock('./tool-definitions/marv/fsApiClient', () => ({
   fsApiClient: {
     setApiKey: jest.fn(),
   },
