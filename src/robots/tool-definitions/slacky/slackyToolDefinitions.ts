@@ -1,8 +1,9 @@
 import Anthropic from '@anthropic-ai/sdk';
+import { SlackyToolsEnum } from './types';
 
 const slackyToolDefinitions: Anthropic.Messages.Tool[] = [
   {
-    name: 'sumo_logic_query',
+    name: SlackyToolsEnum.SumoLogicQuery,
     description:
       'Assist users with Sumo Logic queries to analyze form submissions, logs, and related data. Helps trace submission lifecycle and troubleshoot issues.',
     input_schema: {
@@ -33,7 +34,7 @@ const slackyToolDefinitions: Anthropic.Messages.Tool[] = [
     },
   },
   {
-    name: 'sso_autofill_assistance',
+    name: SlackyToolsEnum.SsoAutofillAssistance,
     description:
       'Assist users with form SSO auto-fill questions and troubleshooting. Helps diagnose SSO configuration and auto-fill mapping issues.',
     input_schema: {
@@ -51,27 +52,6 @@ const slackyToolDefinitions: Anthropic.Messages.Tool[] = [
         },
       },
       required: ['formId', 'accountId'],
-    },
-  },
-  {
-    name: 'form_and_related_entity_overview',
-    description:
-      'Get comprehensive overview of a form including configuration, statistics, and all related entities (webhooks, notifications, confirmations). Provides detailed information about form setup and current status.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        formId: {
-          type: 'string',
-          description:
-            'Form ID to get overview for, in numeric string format (e.g., "12345")',
-        },
-        apiKey: {
-          type: 'string',
-          description:
-            'Optional Formstack API key if different from default. Only provide if user specifically mentions an API key.',
-        },
-      },
-      required: ['formId'],
     },
   },
 ];

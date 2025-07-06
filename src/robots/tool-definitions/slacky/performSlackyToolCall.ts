@@ -1,9 +1,6 @@
 import { marvToolSet, FsRestrictedApiRoutesEnum } from '../marv';
-import type {
-  ISumoLogicQueryArgs,
-  ISsoAutofillAssistanceArgs,
-  IFormAndRelatedEntityOverviewArgs,
-} from './types';
+import type { ISumoLogicQueryArgs, ISsoAutofillAssistanceArgs } from './types';
+import { SlackyToolsEnum } from './types';
 
 /**
  * Handle SSO auto-fill assistance tool
@@ -91,93 +88,19 @@ ${analysisSection}
 };
 
 /**
- * Handle form and related entity overview tool
- */
-const handleFormAndRelatedEntityOverview = async (
-  toolArgs: IFormAndRelatedEntityOverviewArgs,
-): Promise<string> => {
-  const { formId } = toolArgs;
-
-  try {
-    // API key is now read from environment variables in FsApiClient
-    const result = await marvToolSet.executeToolCall(
-      FsRestrictedApiRoutesEnum.FormAndRelatedEntityOverview,
-      { formId },
-    );
-
-    if (!result.isSuccess || !result.response) {
-      return `❌ Failed to retrieve form overview for form ${formId}
-      
-Error: ${result.errorItems?.join(', ') || 'Unknown error'}`;
-    }
-
-    const overview = result.response;
-
-    // Format related entities
-    const formatEntityList = (
-      entities: Array<{ id: string; name: string }>,
-      type: string,
-    ) => {
-      if (entities.length === 0) {
-        return `   • No ${type} configured`;
-      }
-      return entities
-        .map((entity) => `   • ${entity.name} (ID: ${entity.id})`)
-        .join('\n');
-    };
-
-    return `📋 Form Overview: ${overview.formId}
-
-🔗 **Form Details:**
-   • URL: ${overview.url}
-   • Version: ${overview.version}
-   • Timezone: ${overview.timezone}
-   • Status: ${overview.isActive ? '✅ Active' : '❌ Inactive'}
-   • Encryption: ${overview.encrypted ? '🔒 Enabled' : '🔓 Disabled'}
-
-📊 **Submission Statistics:**
-   • Total Submissions: ${overview.submissions}
-   • Submissions Today: ${overview.submissionsToday}
-   • Last Submission ID: ${overview.lastSubmissionId || 'None'}
-
-⚙️ **Form Configuration:**
-   • Field Count: ${overview.fieldCount}
-   • One Question at a Time: ${overview.isOneQuestionAtATime ? '✅ Yes' : '❌ No'}
-   • Has Approvers: ${overview.hasApprovers ? '✅ Yes' : '❌ No'}
-   • Workflow Form: ${overview.isWorkflowForm ? '✅ Yes' : '❌ No'}${overview.isWorkflowPublished !== undefined ? `\n   • Workflow Published: ${overview.isWorkflowPublished ? '✅ Yes' : '❌ No'}` : ''}
-
-🔗 **Submit Actions (Webhooks):** ${overview.submitActions.length}
-${formatEntityList(overview.submitActions, 'webhooks')}
-
-📧 **Notification Emails:** ${overview.notificationEmails.length}
-${formatEntityList(overview.notificationEmails, 'notification emails')}
-
-✅ **Confirmation Emails:** ${overview.confirmationEmails.length}
-${formatEntityList(overview.confirmationEmails, 'confirmation emails')}
-
-💡 This overview provides a comprehensive view of the form's configuration and related entities. Let me know if you need more details about any specific aspect!`;
-  } catch (error) {
-    return `❌ Error retrieving form overview: ${error instanceof Error ? error.message : 'Unknown error'}`;
-  }
-};
-
-/**
  * Execute tool calls based on tool name and arguments
  */
 const performSlackyToolCall = (
   toolName: string,
   toolArgs: any,
 ): string | Promise<string> => {
-  switch (toolName) {
-    case 'sumo_logic_query':
+  switch (toolName as SlackyToolsEnum) {
+    case SlackyToolsEnum.SumoLogicQuery:
       return handleSumoLogicQuery(toolArgs);
-    case 'sso_autofill_assistance':
+    case SlackyToolsEnum.SsoAutofillAssistance:
       return handleSsoAutofillAssistance(toolArgs);
-    case 'form_and_related_entity_overview':
-      return handleFormAndRelatedEntityOverview(toolArgs);
-    default:
-      return `❌ Unknown tool: ${toolName}. Available tools: sumo_logic_query, sso_autofill_assistance, form_and_related_entity_overview`;
   }
+  // No default - let other tool catalogs handle unknown tools
 };
 
 export { performSlackyToolCall };

@@ -7,8 +7,10 @@ export type {
   TAnthropicIstackToolSet,
   ISumoLogicQueryArgs,
   ISsoAutofillAssistanceArgs,
-  IFormAndRelatedEntityOverviewArgs,
 } from './types';
+
+// Export enums
+export { SlackyToolsEnum } from './types';
 
 // Main slacky tool set
 const slackyToolSet: TAnthropicIstackToolSet = {

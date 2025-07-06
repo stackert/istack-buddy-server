@@ -249,6 +249,22 @@ const marvToolDefinitions: Anthropic.Messages.Tool[] = [
       required: ['formId'],
     },
   },
+
+  {
+    name: FsRestrictedApiRoutesEnum.FormAndRelatedEntityOverview,
+    description: `Get comprehensive overview of a form including configuration, statistics, and all related entities (webhooks, notifications, confirmations). Provides detailed information about form setup and current status. This **CAN ONLY BE DONE ON MARV ENABLED FORMS**.`,
+    input_schema: {
+      type: 'object',
+      properties: {
+        formId: {
+          type: 'string',
+          description:
+            'Form ID to get overview for, in numeric string format (e.g., "12345")',
+        },
+      },
+      required: ['formId'],
+    },
+  },
 ];
 
 export { marvToolDefinitions };

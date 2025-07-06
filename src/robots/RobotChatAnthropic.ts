@@ -2,7 +2,7 @@ import { AbstractRobotChat } from './AbstractRobotChat';
 import type { TConversationTextMessageEnvelope } from './types';
 import Anthropic from '@anthropic-ai/sdk';
 //import { slackyToolSet } from './tool-definitions/RobotChatAnthropicTools';
-import { slackyToolSet } from './tool-definitions';
+import { anthropicToolSet } from './tool-definitions/toolCatalog';
 /**
  * Anthropic Claude Chat Robot implementation
  * Connects to Anthropic's API for real chat functionality with tool support
@@ -52,7 +52,7 @@ Please provide helpful, accurate, and detailed responses to user questions. If y
 
   // Tool definitions for Anthropic API
   private readonly tools: Anthropic.Messages.Tool[] =
-    slackyToolSet.toolDefinitions;
+    anthropicToolSet.toolDefinitions;
 
   /**
    * Simple token estimation - roughly 4 characters per token for Claude
@@ -108,7 +108,7 @@ Please provide helpful, accurate, and detailed responses to user questions. If y
     toolName: string,
     toolArgs: any,
   ): Promise<string> {
-    const result = slackyToolSet.executeToolCall(toolName, toolArgs);
+    const result = anthropicToolSet.executeToolCall(toolName, toolArgs);
     return typeof result === 'string' ? result : await result;
   }
 

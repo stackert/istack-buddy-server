@@ -74,16 +74,8 @@ const performMarvToolCall = async (
 
     case FsRestrictedApiRoutesEnum.FormAndRelatedEntityOverview:
       return api.formAndRelatedEntityOverview(fnParamsJson?.formId);
-
-    default:
-      return {
-        isSuccess: false,
-        response: null,
-        errorItems: [
-          `External function name not found. Function name: '${functionName}'.`,
-        ],
-      } as IMarvApiUniversalResponse<any>;
   }
+  // No default - let other tool catalogs handle unknown tools
 };
 
 // Helper functions

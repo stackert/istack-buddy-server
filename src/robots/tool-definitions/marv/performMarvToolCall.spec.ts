@@ -369,16 +369,10 @@ describe('performMarvToolCall', () => {
   });
 
   describe('Error Handling', () => {
-    it('should return error for unknown function name', async () => {
+    it('should return undefined for unknown function name', async () => {
       const result = await performMarvToolCall('unknownFunction', '{}');
 
-      expect(result).toEqual({
-        isSuccess: false,
-        response: null,
-        errorItems: [
-          "External function name not found. Function name: 'unknownFunction'.",
-        ],
-      });
+      expect(result).toBeUndefined();
     });
 
     it('should handle invalid JSON in function arguments', async () => {

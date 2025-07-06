@@ -1,5 +1,11 @@
 import Anthropic from '@anthropic-ai/sdk';
 
+// Slacky tool names enum
+enum SlackyToolsEnum {
+  SumoLogicQuery = 'sumo_logic_query',
+  SsoAutofillAssistance = 'sso_autofill_assistance',
+}
+
 // Main tool set type for Anthropic Istack tools
 type TAnthropicIstackToolSet = {
   toolDefinitions: Anthropic.Messages.Tool[];
@@ -22,14 +28,10 @@ interface ISsoAutofillAssistanceArgs {
   accountId: string;
 }
 
-interface IFormAndRelatedEntityOverviewArgs {
-  formId: string;
-  apiKey?: string;
-}
-
 export type {
   TAnthropicIstackToolSet,
   ISumoLogicQueryArgs,
   ISsoAutofillAssistanceArgs,
-  IFormAndRelatedEntityOverviewArgs,
 };
+
+export { SlackyToolsEnum };

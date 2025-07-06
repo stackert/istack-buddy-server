@@ -7,8 +7,8 @@ describe('marvToolDefinitions', () => {
       expect(Array.isArray(marvToolDefinitions)).toBe(true);
     });
 
-    it('should contain 11 tool definitions', () => {
-      expect(marvToolDefinitions).toHaveLength(11);
+    it('should contain 12 tool definitions', () => {
+      expect(marvToolDefinitions).toHaveLength(12);
     });
 
     it('should have all tools conform to Anthropic.Messages.Tool interface', () => {
@@ -37,6 +37,7 @@ describe('marvToolDefinitions', () => {
         'fsRestrictedApiFieldLogicStashApplyAndRemove',
         'fsRestrictedApiFieldLogicStashRemove',
         'fsRestrictedApiFormDeveloperCopy',
+        'fsRestrictedApiFormAndRelatedEntityOverview',
       ];
 
       const actualToolNames = marvToolDefinitions.map((tool) => tool.name);
@@ -251,7 +252,7 @@ describe('marvToolDefinitions', () => {
         tool.name.startsWith('fsRestrictedApi'),
       );
 
-      expect(restrictedTools).toHaveLength(10); // All tools except fieldRemove
+      expect(restrictedTools).toHaveLength(11); // All tools except fieldRemove
 
       restrictedTools.forEach((tool) => {
         expect(tool.description).toContain('MARV ENABLED FORMS');

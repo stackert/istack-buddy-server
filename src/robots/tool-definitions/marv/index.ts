@@ -6,7 +6,16 @@ import { performMarvToolCall } from './performMarvToolCall';
 
 const marvToolSet: TAnthropicIstackToolSet = {
   toolDefinitions: marvToolDefinitions,
-  executeToolCall: performMarvToolCall,
+  executeToolCall: (toolName: string, toolArgs: any) => {
+    // Check if this tool is in our definitions
+    const toolExists = marvToolDefinitions.some(
+      (tool) => tool.name === toolName,
+    );
+    if (!toolExists) {
+      return undefined; // We don't handle this tool
+    }
+    return performMarvToolCall(toolName, toolArgs);
+  },
 };
 
 // Export types from types.ts
@@ -24,3 +33,4 @@ export { FsRestrictedApiRoutesEnum } from './types';
 export { FsApiClient, fsApiClient } from './fsApiClient';
 
 export { marvToolSet };
+export { formOverviewToolSet } from './formOverviewToolSet';
