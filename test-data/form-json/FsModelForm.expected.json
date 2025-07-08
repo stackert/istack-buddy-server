@@ -1,0 +1,96 @@
+{
+  "sections": [
+    {
+      "id": "FIELDS_WITHOUT_SECTIONS",
+      "heading": "",
+      "fields": [
+        "151701616",
+        "163917652",
+        "163917660",
+        "156919669",
+        "156919729",
+        "154796590",
+        "156906187",
+        "154795678",
+        "151702085",
+        "148456734",
+        "148456742",
+        "148456741",
+        "148456740",
+        "148456739"
+      ]
+    },
+    {
+      "id": "148456700",
+      "heading": "",
+      "fields": ["151678347"]
+    },
+    {
+      "id": "153051795",
+      "heading": "Conflict with show/hide, panel/field (parent panel)",
+      "fields": ["153051796"]
+    },
+    {
+      "id": "154795680",
+      "heading": "Conflict with show/hide, panel/field - (Child panel)",
+      "fields": ["154795826"]
+    },
+    {
+      "id": "148509465",
+      "heading": "Inter-dependent (not so much circular)",
+      "fields": [
+        "148509470",
+        "148509478",
+        "148509477",
+        "148509476",
+        "148509475",
+        "148509474"
+      ]
+    },
+    {
+      "id": "154328256",
+      "heading": "Inter-dependent (not so much circular) no internal logic",
+      "fields": [
+        "154328257",
+        "154328258",
+        "154328259",
+        "154328260",
+        "154328261",
+        "154328262"
+      ]
+    },
+    {
+      "id": "152139061",
+      "heading": "Triangle - ideal use",
+      "fields": [
+        "152139062",
+        "152139063",
+        "152139064",
+        "152139065",
+        "152139066",
+        "152139068"
+      ]
+    },
+    {
+      "id": "148604159",
+      "heading": "Big Dipper + Leaf",
+      "fields": [
+        "148604161",
+        "148604236",
+        "148604235",
+        "148604234",
+        "148604239"
+      ]
+    },
+    {
+      "id": "156917123",
+      "heading": "A) Two Panel With Conflicting Logic (A)",
+      "fields": ["156917750"]
+    },
+    {
+      "id": "156917124",
+      "heading": "B) Two Panel With Conflicting Logic (B)",
+      "fields": ["156917751"]
+    }
+  ]
+}

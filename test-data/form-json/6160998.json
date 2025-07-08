@@ -1,0 +1,1089 @@
+{
+  "created": "2025-04-11 01:40:03",
+  "db": "1",
+  "deleted": "0",
+  "folder": "328139",
+  "id": "6160998",
+  "name": "simple_inter_conflict",
+  "num_columns": "1",
+  "progress_meter": "0",
+  "submissions": "0",
+  "submissions_unread": "0",
+  "updated": "2025-04-11 01:40:03",
+  "viewkey": "9U0OeyhknH",
+  "views": "5",
+  "version": "4",
+  "language": "en",
+  "submissions_today": 0,
+  "url": "https://terarychambers.formstack.com/forms/simple_inter_conflict",
+  "encrypted": false,
+  "thumbnail_url": null,
+  "submit_button_title": "Submit Form",
+  "inactive": false,
+  "timezone": "US/Eastern",
+  "should_display_one_question_at_a_time": false,
+  "can_access_1q_feature": true,
+  "is_workflow_form": false,
+  "is_workflow_published": false,
+  "has_approvers": false,
+  "edit_url": "https://www.formstack.com/admin/form/builder/6160998/build",
+  "data_url": "",
+  "summary_url": "",
+  "permissions": 150,
+  "can_edit": true,
+  "fields": [
+    {
+      "id": "182513672",
+      "label": "Short Answer",
+      "hide_label": "0",
+      "description": "",
+      "name": "short_answer",
+      "type": "text",
+      "options": "",
+      "required": "0",
+      "uniq": "0",
+      "hidden": "0",
+      "readonly": "0",
+      "colspan": "1",
+      "sort": "0",
+      "logic": null,
+      "calculation": "",
+      "workflow_access": "write",
+      "internal_label": null,
+      "default": "",
+      "text_size": 50,
+      "minlength": 0,
+      "maxlength": 0,
+      "placeholder": "",
+      "field_one_calculation": 0,
+      "field_two_calculation": 0,
+      "calculation_units": "",
+      "calculation_operator": "",
+      "calculation_type": "",
+      "calculation_allow_negatives": 0,
+      "hide_input_characters": 0,
+      "remove_data_from_emails": 0,
+      "require_confirmation": 0,
+      "confirmationText": "",
+      "restrict_data_access": 0
+    },
+    {
+      "id": "182553313",
+      "label": "Switerland",
+      "hide_label": "0",
+      "description": "",
+      "name": "switerland",
+      "type": "checkbox",
+      "options": [
+        {
+          "label": "Neutral",
+          "value": "Neutral",
+          "imageUrl": null
+        }
+      ],
+      "required": "0",
+      "uniq": "0",
+      "hidden": "0",
+      "readonly": "0",
+      "colspan": "1",
+      "sort": "1",
+      "logic": null,
+      "calculation": "",
+      "workflow_access": "write",
+      "internal_label": null,
+      "default": "",
+      "option_layout": "vertical",
+      "option_other": 0,
+      "option_checkall": 0,
+      "randomize_options": 0,
+      "option_store": "value",
+      "option_show_values": 0,
+      "use_images": 0,
+      "image_dimensions": "customDimensions",
+      "image_height": 100,
+      "image_width": 100,
+      "lock_image_ratio": true,
+      "lock_image_ratio_option": "fitProportionally",
+      "image_label_alignment": "bottom",
+      "hide_option_button": true
+    },
+    {
+      "id": "182513688",
+      "label": "",
+      "hide_label": "0",
+      "description": "",
+      "name": "",
+      "type": "section",
+      "options": "",
+      "required": "0",
+      "uniq": "0",
+      "hidden": "0",
+      "readonly": "0",
+      "colspan": "1",
+      "sort": "2",
+      "logic": {
+        "action": "show",
+        "conditional": "all",
+        "checks": [
+          {
+            "field": "182513690",
+            "condition": "equals",
+            "option": "ChildA"
+          }
+        ]
+      },
+      "calculation": "",
+      "workflow_access": "write",
+      "internal_label": null,
+      "default": "",
+      "section_break": 0,
+      "section_heading": "Parent/Section",
+      "section_text": "<p>Child A directly depends on Child B.<br>Parent Directly depends on Child A.<br>Child B. Inherently depends on Parent.<br>---<br>Therefore: B-&gt;P-A-&gt;B</p>",
+      "text_editor": "wysiwyg",
+      "label_position": "default",
+      "num_columns": "0"
+    },
+    {
+      "id": "182513690",
+      "label": "ChildA",
+      "hide_label": "0",
+      "description": "",
+      "name": "childa",
+      "type": "select",
+      "options": [
+        {
+          "label": "Option1",
+          "value": "Option1",
+          "imageUrl": null
+        },
+        {
+          "label": "ChildA",
+          "value": "ChildA",
+          "imageUrl": null
+        },
+        {
+          "label": "Option3",
+          "value": "Option3",
+          "imageUrl": null
+        }
+      ],
+      "required": "0",
+      "uniq": "0",
+      "hidden": "0",
+      "readonly": "0",
+      "colspan": "1",
+      "sort": "3",
+      "logic": {
+        "action": "show",
+        "conditional": "all",
+        "checks": [
+          {
+            "field": "182513692",
+            "condition": "equals",
+            "option": "ChildB"
+          }
+        ]
+      },
+      "calculation": "",
+      "workflow_access": "write",
+      "internal_label": null,
+      "default": "",
+      "select_size": 1,
+      "option_layout": "vertical",
+      "option_other": 0,
+      "option_placeholder": false,
+      "randomize_options": 0,
+      "option_store": "value",
+      "option_show_values": 0,
+      "use_searchable_options": false
+    },
+    {
+      "id": "182513692",
+      "label": "ChildB",
+      "hide_label": "0",
+      "description": "",
+      "name": "childb",
+      "type": "select",
+      "options": [
+        {
+          "label": "Option1",
+          "value": "Option1",
+          "imageUrl": null
+        },
+        {
+          "label": "ChildB",
+          "value": "ChildB",
+          "imageUrl": null
+        },
+        {
+          "label": "Option3",
+          "value": "Option3",
+          "imageUrl": null
+        }
+      ],
+      "required": "0",
+      "uniq": "0",
+      "hidden": "0",
+      "readonly": "0",
+      "colspan": "1",
+      "sort": "4",
+      "logic": null,
+      "calculation": "",
+      "workflow_access": "write",
+      "internal_label": null,
+      "default": "",
+      "select_size": 1,
+      "option_layout": "vertical",
+      "option_other": 0,
+      "option_placeholder": false,
+      "randomize_options": 0,
+      "option_store": "value",
+      "option_show_values": 0,
+      "use_searchable_options": false
+    },
+    {
+      "id": "182514529",
+      "label": "",
+      "hide_label": "0",
+      "description": "",
+      "name": "",
+      "type": "section",
+      "options": "",
+      "required": "0",
+      "uniq": "0",
+      "hidden": "0",
+      "readonly": "0",
+      "colspan": "1",
+      "sort": "5",
+      "logic": {
+        "action": "show",
+        "conditional": "all",
+        "checks": [
+          {
+            "field": "182514635",
+            "condition": "equals",
+            "option": "ChildA.0"
+          }
+        ]
+      },
+      "calculation": "",
+      "workflow_access": "write",
+      "internal_label": null,
+      "default": "",
+      "section_break": 0,
+      "section_heading": "Parent",
+      "section_text": "<p>A.0 -&gt; A.1<br>A.1 -&gt; b.0<br>b.0 -&gt; p (inherent by virtue of child/parent)<br>p -&gt; A.0<br>---------<br>∴ A.0-&gt;A.0</p><p><br></p>",
+      "text_editor": "wysiwyg",
+      "label_position": "default",
+      "num_columns": "0"
+    },
+    {
+      "id": "182514635",
+      "label": "ChildA.0",
+      "hide_label": "0",
+      "description": "",
+      "name": "childa0",
+      "type": "select",
+      "options": [
+        {
+          "label": "Option1",
+          "value": "Option1",
+          "imageUrl": null
+        },
+        {
+          "label": "ChildA.0",
+          "value": "ChildA.0",
+          "imageUrl": null
+        },
+        {
+          "label": "Option3",
+          "value": "Option3",
+          "imageUrl": null
+        }
+      ],
+      "required": "0",
+      "uniq": "0",
+      "hidden": "0",
+      "readonly": "0",
+      "colspan": "1",
+      "sort": "6",
+      "logic": {
+        "action": "show",
+        "conditional": "all",
+        "checks": [
+          {
+            "field": "182514637",
+            "condition": "equals",
+            "option": "ChildA.1"
+          }
+        ]
+      },
+      "calculation": "",
+      "workflow_access": "write",
+      "internal_label": null,
+      "default": "",
+      "select_size": 1,
+      "option_layout": "vertical",
+      "option_other": 0,
+      "option_placeholder": false,
+      "randomize_options": 0,
+      "option_store": "value",
+      "option_show_values": 0,
+      "use_searchable_options": false
+    },
+    {
+      "id": "182514637",
+      "label": "ChildA.1",
+      "hide_label": "0",
+      "description": "",
+      "name": "childa1",
+      "type": "select",
+      "options": [
+        {
+          "label": "Option1",
+          "value": "Option1",
+          "imageUrl": null
+        },
+        {
+          "label": "ChildA.1",
+          "value": "ChildA.1",
+          "imageUrl": null
+        },
+        {
+          "label": "Option3",
+          "value": "Option3",
+          "imageUrl": null
+        }
+      ],
+      "required": "0",
+      "uniq": "0",
+      "hidden": "0",
+      "readonly": "0",
+      "colspan": "1",
+      "sort": "7",
+      "logic": {
+        "action": "show",
+        "conditional": "all",
+        "checks": [
+          {
+            "field": 182514636,
+            "condition": "equals",
+            "option": "Option1"
+          }
+        ]
+      },
+      "calculation": "",
+      "workflow_access": "write",
+      "internal_label": null,
+      "default": "",
+      "select_size": 1,
+      "option_layout": "vertical",
+      "option_other": 0,
+      "option_placeholder": false,
+      "randomize_options": 0,
+      "option_store": "value",
+      "option_show_values": 0,
+      "use_searchable_options": false
+    },
+    {
+      "id": "182514636",
+      "label": "ChildB.0",
+      "hide_label": "0",
+      "description": "",
+      "name": "childb0",
+      "type": "select",
+      "options": [
+        {
+          "label": "Option1",
+          "value": "Option1"
+        },
+        {
+          "label": "Option2",
+          "value": "Option2"
+        },
+        {
+          "label": "Option3",
+          "value": "Option3"
+        }
+      ],
+      "required": "0",
+      "uniq": "0",
+      "hidden": "0",
+      "readonly": "0",
+      "colspan": "1",
+      "sort": "8",
+      "logic": null,
+      "calculation": "",
+      "workflow_access": "write",
+      "internal_label": null,
+      "default": "",
+      "select_size": 1,
+      "option_layout": "vertical",
+      "option_other": 0,
+      "option_placeholder": false,
+      "randomize_options": 0,
+      "option_store": "value",
+      "option_show_values": 0,
+      "use_searchable_options": false
+    },
+    {
+      "id": "182515048",
+      "label": "",
+      "hide_label": "0",
+      "description": "",
+      "name": "",
+      "type": "section",
+      "options": "",
+      "required": "0",
+      "uniq": "0",
+      "hidden": "0",
+      "readonly": "0",
+      "colspan": "1",
+      "sort": "9",
+      "logic": {
+        "action": "show",
+        "conditional": "all",
+        "checks": [
+          {
+            "field": 182549908,
+            "condition": "equals",
+            "option": "CircularSectionA"
+          }
+        ]
+      },
+      "calculation": "",
+      "workflow_access": "write",
+      "internal_label": null,
+      "default": "",
+      "section_break": 0,
+      "section_heading": "Circular Section A",
+      "section_text": "<p>SectionA → SectionB.DD<br>SectionB.DD → SectionB (inherent by virtue of child/parent)<br>SectionB → SectionA.DD<br>SectionA.DD → SectionA (inherent by virtue of child/parent)<br>---------<br>∴ SectionA → SectionA</p>",
+      "text_editor": "wysiwyg",
+      "label_position": "default",
+      "num_columns": "0"
+    },
+    {
+      "id": "182549907",
+      "label": "circular section A DD",
+      "hide_label": "0",
+      "description": "",
+      "name": "circular_section_a_dd",
+      "type": "select",
+      "options": [
+        {
+          "label": "Option1",
+          "value": "Option1",
+          "imageUrl": null
+        },
+        {
+          "label": "CircularSectionB",
+          "value": "CircularSectionB",
+          "imageUrl": null
+        },
+        {
+          "label": "Option3",
+          "value": "Option3",
+          "imageUrl": null
+        }
+      ],
+      "required": "0",
+      "uniq": "0",
+      "hidden": "0",
+      "readonly": "0",
+      "colspan": "1",
+      "sort": "10",
+      "logic": null,
+      "calculation": "",
+      "workflow_access": "write",
+      "internal_label": null,
+      "default": "",
+      "select_size": 1,
+      "option_layout": "vertical",
+      "option_other": 0,
+      "option_placeholder": false,
+      "randomize_options": 0,
+      "option_store": "value",
+      "option_show_values": 0,
+      "use_searchable_options": false
+    },
+    {
+      "id": "182549906",
+      "label": "",
+      "hide_label": "0",
+      "description": "",
+      "name": "",
+      "type": "section",
+      "options": "",
+      "required": "0",
+      "uniq": "0",
+      "hidden": "0",
+      "readonly": "0",
+      "colspan": "1",
+      "sort": "11",
+      "logic": {
+        "action": "show",
+        "conditional": "all",
+        "checks": [
+          {
+            "field": 182549907,
+            "condition": "equals",
+            "option": "CircularSectionB"
+          }
+        ]
+      },
+      "calculation": "",
+      "workflow_access": "write",
+      "internal_label": null,
+      "default": "",
+      "section_break": 0,
+      "section_heading": "Circular Section B",
+      "section_text": "<p>SectionB -&gt; SectionA.DD<br>SectionA.DD -&gt; SectionA<br>SectionA -&gt; SectionB.DD<br>SectionB.DD -&gt; SectionB<br>---------<br>∴ SectionB -&gt; SectionB<br></p>",
+      "text_editor": "wysiwyg",
+      "label_position": "default",
+      "num_columns": "0"
+    },
+    {
+      "id": "182549908",
+      "label": "circular section B DD",
+      "hide_label": "0",
+      "description": "",
+      "name": "circular_section_b_dd",
+      "type": "select",
+      "options": [
+        {
+          "label": "Option1",
+          "value": "Option1",
+          "imageUrl": null
+        },
+        {
+          "label": "CircularSectionA",
+          "value": "CircularSectionA",
+          "imageUrl": null
+        },
+        {
+          "label": "Option3",
+          "value": "Option3",
+          "imageUrl": null
+        }
+      ],
+      "required": "0",
+      "uniq": "0",
+      "hidden": "0",
+      "readonly": "0",
+      "colspan": "1",
+      "sort": "12",
+      "logic": null,
+      "calculation": "",
+      "workflow_access": "write",
+      "internal_label": null,
+      "default": "",
+      "select_size": 1,
+      "option_layout": "vertical",
+      "option_other": 0,
+      "option_placeholder": false,
+      "randomize_options": 0,
+      "option_store": "value",
+      "option_show_values": 0,
+      "use_searchable_options": false
+    },
+    {
+      "id": "182553311",
+      "label": "",
+      "hide_label": "0",
+      "description": "",
+      "name": "",
+      "type": "section",
+      "options": "",
+      "required": "0",
+      "uniq": "0",
+      "hidden": "0",
+      "readonly": "0",
+      "colspan": "1",
+      "sort": "13",
+      "logic": {
+        "action": "show",
+        "conditional": "all",
+        "checks": [
+          {
+            "field": 182553313,
+            "condition": "equals",
+            "option": "Neutral"
+          }
+        ]
+      },
+      "calculation": "",
+      "workflow_access": "write",
+      "internal_label": null,
+      "default": "",
+      "section_break": 0,
+      "section_heading": "Simple - logic - Depends on Switzerland",
+      "section_text": "<p>For dev/debug purpose. &nbsp;This is a section that has logic to a field that is not in a section.</p>",
+      "text_editor": "wysiwyg",
+      "label_position": "default",
+      "num_columns": "0"
+    },
+    {
+      "id": "182553376",
+      "label": "",
+      "hide_label": "0",
+      "description": "",
+      "name": "",
+      "type": "section",
+      "options": "",
+      "required": "0",
+      "uniq": "0",
+      "hidden": "0",
+      "readonly": "0",
+      "colspan": "1",
+      "sort": "14",
+      "logic": null,
+      "calculation": "",
+      "workflow_access": "write",
+      "internal_label": null,
+      "default": "",
+      "section_break": 0,
+      "section_heading": "Switzerland In A box (section)",
+      "section_text": "",
+      "text_editor": "wysiwyg",
+      "label_position": "default",
+      "num_columns": "0"
+    },
+    {
+      "id": "182553380",
+      "label": "Switzerland In A box (field)",
+      "hide_label": "0",
+      "description": "",
+      "name": "switzerland_in_a_box_field",
+      "type": "checkbox",
+      "options": [
+        {
+          "label": "Neutral",
+          "value": "Neutral",
+          "imageUrl": null
+        }
+      ],
+      "required": "0",
+      "uniq": "0",
+      "hidden": "0",
+      "readonly": "0",
+      "colspan": "1",
+      "sort": "15",
+      "logic": null,
+      "calculation": "",
+      "workflow_access": "write",
+      "internal_label": null,
+      "default": "",
+      "option_layout": "vertical",
+      "option_other": 0,
+      "option_checkall": 0,
+      "randomize_options": 0,
+      "option_store": "value",
+      "option_show_values": 0,
+      "use_images": 0,
+      "image_dimensions": "customDimensions",
+      "image_height": 100,
+      "image_width": 100,
+      "lock_image_ratio": true,
+      "lock_image_ratio_option": "fitProportionally",
+      "image_label_alignment": "bottom",
+      "hide_option_button": true
+    },
+    {
+      "id": "182553377",
+      "label": "",
+      "hide_label": "0",
+      "description": "",
+      "name": "",
+      "type": "section",
+      "options": "",
+      "required": "0",
+      "uniq": "0",
+      "hidden": "0",
+      "readonly": "0",
+      "colspan": "1",
+      "sort": "16",
+      "logic": {
+        "action": "show",
+        "conditional": "all",
+        "checks": [
+          {
+            "field": 182553380,
+            "condition": "equals",
+            "option": "Neutral"
+          }
+        ]
+      },
+      "calculation": "",
+      "workflow_access": "write",
+      "internal_label": null,
+      "default": "",
+      "section_break": 0,
+      "section_heading": "Simple - logic - Depends on Switzerland In a Box",
+      "section_text": "",
+      "text_editor": "wysiwyg",
+      "label_position": "default",
+      "num_columns": "0"
+    },
+    {
+      "id": "182553413",
+      "label": "Child of Section that depends on Switzerland in a box",
+      "hide_label": "0",
+      "description": "",
+      "name": "child_of_section_that_depends_on_switzerland_in_a_box",
+      "type": "text",
+      "options": "",
+      "required": "0",
+      "uniq": "0",
+      "hidden": "0",
+      "readonly": "0",
+      "colspan": "1",
+      "sort": "17",
+      "logic": null,
+      "calculation": "",
+      "workflow_access": "write",
+      "internal_label": null,
+      "default": "",
+      "text_size": 50,
+      "minlength": 0,
+      "maxlength": 0,
+      "placeholder": "",
+      "field_one_calculation": 0,
+      "field_two_calculation": 0,
+      "calculation_units": "",
+      "calculation_operator": "",
+      "calculation_type": "",
+      "calculation_allow_negatives": 0,
+      "hide_input_characters": 0,
+      "remove_data_from_emails": 0,
+      "require_confirmation": 0,
+      "confirmationText": "",
+      "restrict_data_access": 0
+    },
+    {
+      "id": "182710776",
+      "label": "",
+      "hide_label": "0",
+      "description": "",
+      "name": "",
+      "type": "section",
+      "options": "",
+      "required": "0",
+      "uniq": "0",
+      "hidden": "0",
+      "readonly": "0",
+      "colspan": "1",
+      "sort": "18",
+      "logic": null,
+      "calculation": "",
+      "workflow_access": "write",
+      "internal_label": null,
+      "default": "",
+      "section_break": 0,
+      "section_heading": "Simple Ring",
+      "section_text": "<p>FieldA → FieldB<br>FieldB → FieldC<br>FieldC → FieldD<br>FieldD → FieldE<br>FieldE → FieldA<br>---------<br>∴ &nbsp;FieldA → FieldA</p>",
+      "text_editor": "wysiwyg",
+      "label_position": "default",
+      "num_columns": "0"
+    },
+    {
+      "id": "182710784",
+      "label": "SimpleRingFieldA",
+      "hide_label": "0",
+      "description": "",
+      "name": "simpleringfielda",
+      "type": "checkbox",
+      "options": [
+        {
+          "label": "Option1",
+          "value": "Option1",
+          "imageUrl": null
+        },
+        {
+          "label": "SimpleRingFieldA",
+          "value": "SimpleRingFieldA",
+          "imageUrl": null
+        },
+        {
+          "label": "Option3",
+          "value": "Option3",
+          "imageUrl": null
+        }
+      ],
+      "required": "0",
+      "uniq": "0",
+      "hidden": "0",
+      "readonly": "0",
+      "colspan": "1",
+      "sort": "19",
+      "logic": {
+        "action": "show",
+        "conditional": "all",
+        "checks": [
+          {
+            "field": "182710788",
+            "condition": "equals",
+            "option": "SimpleRingFieldB"
+          }
+        ]
+      },
+      "calculation": "",
+      "workflow_access": "write",
+      "internal_label": null,
+      "default": "",
+      "option_layout": "vertical",
+      "option_other": 0,
+      "option_checkall": 0,
+      "randomize_options": 0,
+      "option_store": "value",
+      "option_show_values": 0,
+      "use_images": 0,
+      "image_dimensions": "customDimensions",
+      "image_height": 100,
+      "image_width": 100,
+      "lock_image_ratio": true,
+      "lock_image_ratio_option": "fitProportionally",
+      "image_label_alignment": "bottom",
+      "hide_option_button": true
+    },
+    {
+      "id": "182710788",
+      "label": "SimpleRingFieldB",
+      "hide_label": "0",
+      "description": "",
+      "name": "simpleringfieldb",
+      "type": "checkbox",
+      "options": [
+        {
+          "label": "Option1",
+          "value": "Option1",
+          "imageUrl": null
+        },
+        {
+          "label": "SimpleRingFieldB",
+          "value": "SimpleRingFieldB",
+          "imageUrl": null
+        },
+        {
+          "label": "Option3",
+          "value": "Option3",
+          "imageUrl": null
+        }
+      ],
+      "required": "0",
+      "uniq": "0",
+      "hidden": "0",
+      "readonly": "0",
+      "colspan": "1",
+      "sort": "20",
+      "logic": {
+        "action": "show",
+        "conditional": "all",
+        "checks": [
+          {
+            "field": 182710787,
+            "condition": "equals",
+            "option": "SimpleRingFieldC"
+          }
+        ]
+      },
+      "calculation": "",
+      "workflow_access": "write",
+      "internal_label": null,
+      "default": "",
+      "option_layout": "vertical",
+      "option_other": 0,
+      "option_checkall": 0,
+      "randomize_options": 0,
+      "option_store": "value",
+      "option_show_values": 0,
+      "use_images": 0,
+      "image_dimensions": "customDimensions",
+      "image_height": 100,
+      "image_width": 100,
+      "lock_image_ratio": true,
+      "lock_image_ratio_option": "fitProportionally",
+      "image_label_alignment": "bottom",
+      "hide_option_button": true
+    },
+    {
+      "id": "182710787",
+      "label": "SimpleRingFieldC",
+      "hide_label": "0",
+      "description": "",
+      "name": "simpleringfieldc",
+      "type": "checkbox",
+      "options": [
+        {
+          "label": "Option1",
+          "value": "Option1",
+          "imageUrl": null
+        },
+        {
+          "label": "SimpleRingFieldC",
+          "value": "SimpleRingFieldC",
+          "imageUrl": null
+        },
+        {
+          "label": "Option3",
+          "value": "Option3",
+          "imageUrl": null
+        }
+      ],
+      "required": "0",
+      "uniq": "0",
+      "hidden": "0",
+      "readonly": "0",
+      "colspan": "1",
+      "sort": "21",
+      "logic": {
+        "action": "show",
+        "conditional": "all",
+        "checks": [
+          {
+            "field": 182710786,
+            "condition": "equals",
+            "option": "SimpleRingFieldD"
+          }
+        ]
+      },
+      "calculation": "",
+      "workflow_access": "write",
+      "internal_label": null,
+      "default": "",
+      "option_layout": "vertical",
+      "option_other": 0,
+      "option_checkall": 0,
+      "randomize_options": 0,
+      "option_store": "value",
+      "option_show_values": 0,
+      "use_images": 0,
+      "image_dimensions": "customDimensions",
+      "image_height": 100,
+      "image_width": 100,
+      "lock_image_ratio": true,
+      "lock_image_ratio_option": "fitProportionally",
+      "image_label_alignment": "bottom",
+      "hide_option_button": true
+    },
+    {
+      "id": "182710786",
+      "label": "SimpleRingFieldD",
+      "hide_label": "0",
+      "description": "",
+      "name": "simpleringfieldd",
+      "type": "checkbox",
+      "options": [
+        {
+          "label": "Option1",
+          "value": "Option1",
+          "imageUrl": null
+        },
+        {
+          "label": "SimpleRingFieldD",
+          "value": "SimpleRingFieldD",
+          "imageUrl": null
+        },
+        {
+          "label": "Option3",
+          "value": "Option3",
+          "imageUrl": null
+        }
+      ],
+      "required": "0",
+      "uniq": "0",
+      "hidden": "0",
+      "readonly": "0",
+      "colspan": "1",
+      "sort": "22",
+      "logic": {
+        "action": "show",
+        "conditional": "all",
+        "checks": [
+          {
+            "field": 182710785,
+            "condition": "equals",
+            "option": "SimpleRingFieldE"
+          }
+        ]
+      },
+      "calculation": "",
+      "workflow_access": "write",
+      "internal_label": null,
+      "default": "",
+      "option_layout": "vertical",
+      "option_other": 0,
+      "option_checkall": 0,
+      "randomize_options": 0,
+      "option_store": "value",
+      "option_show_values": 0,
+      "use_images": 0,
+      "image_dimensions": "customDimensions",
+      "image_height": 100,
+      "image_width": 100,
+      "lock_image_ratio": true,
+      "lock_image_ratio_option": "fitProportionally",
+      "image_label_alignment": "bottom",
+      "hide_option_button": true
+    },
+    {
+      "id": "182710785",
+      "label": "SimpleRingFieldE",
+      "hide_label": "0",
+      "description": "",
+      "name": "simpleringfielde",
+      "type": "checkbox",
+      "options": [
+        {
+          "label": "Option1",
+          "value": "Option1",
+          "imageUrl": null
+        },
+        {
+          "label": "SimpleRingFieldE",
+          "value": "SimpleRingFieldE",
+          "imageUrl": null
+        },
+        {
+          "label": "Option3",
+          "value": "Option3",
+          "imageUrl": null
+        }
+      ],
+      "required": "0",
+      "uniq": "0",
+      "hidden": "0",
+      "readonly": "0",
+      "colspan": "1",
+      "sort": "23",
+      "logic": {
+        "action": "show",
+        "conditional": "all",
+        "checks": [
+          {
+            "field": 182710784,
+            "condition": "equals",
+            "option": "SimpleRingFieldA"
+          }
+        ]
+      },
+      "calculation": "",
+      "workflow_access": "write",
+      "internal_label": null,
+      "default": "",
+      "option_layout": "vertical",
+      "option_other": 0,
+      "option_checkall": 0,
+      "randomize_options": 0,
+      "option_store": "value",
+      "option_show_values": 0,
+      "use_images": 0,
+      "image_dimensions": "customDimensions",
+      "image_height": 100,
+      "image_width": 100,
+      "lock_image_ratio": true,
+      "lock_image_ratio_option": "fitProportionally",
+      "image_label_alignment": "bottom",
+      "hide_option_button": true
+    }
+  ]
+}

@@ -20,7 +20,8 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "db:create": "ts-node docs-living/database/scripts/create-database.ts",
     "db:seed": "ts-node docs-living/database/scripts/seed-database.ts",
-    "robot:anth:test": "ts-node docs-living/scripts/test-anthropic-robot.ts"
+    "robot:anth:test": "ts-node docs-living/scripts/test-anthropic-robot.ts",
+    "re:import": "cp ../istack-buddy-utilities/istack-buddy-utilities-1.0.0.tgz .  && npm uninstall istack-buddy-utilities && npm install istack-buddy-utilities-1.0.0.tgz"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.54.0",
