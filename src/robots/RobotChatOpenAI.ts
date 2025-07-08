@@ -4,8 +4,7 @@ import {
   TConversationTextMessage,
 } from './types';
 import { OpenAI } from 'openai';
-const OPEN_AI_API_KEY =
-  ' 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';
+const OPEN_AI_API_KEY = '_OPEN_AI_KEY_';
 // OpenAI.Responses.Tool[]
 type OpenAiTool = OpenAI.Responses.Tool;
 const tools: OpenAiTool[] = [
