@@ -44,6 +44,18 @@ const knownFieldTypes: TFsFieldType[] = [
   'rating',
   'richtext',
 ];
+
+type TCountRecord = {
+  label: string;
+  count: number;
+};
+
+const otherCountIndexes: string[] = [
+  '_FIELDS_WITHOUT_CALCULATION_',
+  '_FIELDS_WITH_CALCULATION_',
+  '_FOUND_CALCULATION_ERRORS_',
+];
+
 const fieldTypes = '';
 
 class ObservationMakerFieldCounts extends ObservationMakers.AbstractObservationMaker {
@@ -51,7 +63,7 @@ class ObservationMakerFieldCounts extends ObservationMakers.AbstractObservationM
   protected observationClass = this.constructor.name;
   protected messagePrimary = 'Field Logic Validation Check';
   private fieldByTypeCounts: Record<TFsFieldType, number>;
-  private otherCounts: Record<string, number> = {};
+  private otherCounts: Record<string, TCountRecord> = {};
 
   // { [idx: keyof TFsFieldType]: number } = {};
 
