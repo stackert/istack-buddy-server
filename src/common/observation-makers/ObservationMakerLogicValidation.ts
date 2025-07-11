@@ -1,3 +1,4 @@
+import { log } from 'console';
 import {
   ObservationMakers,
   // TreeCalculations,
@@ -19,8 +20,6 @@ import type {
   IFsModelField,
 } from 'istack-buddy-utilities';
 
-const knownFieldTypes: TFsFieldType[] = [...ALL_KNOWN_FS_FIELD_TYPES];
-
 type TCountRecord = {
   label: string;
   count: number;
@@ -28,15 +27,10 @@ type TCountRecord = {
 };
 
 const otherCountIndexes = [
-  '_FIELDS_WITH_CALCULATION_',
-  '_FIELDS_WITHOUT_CALCULATION_',
   '_FIELDS_WITH_LOGIC_',
   '_FIELDS_WITHOUT_LOGIC_',
   '_FIELDS_WITH_LOGIC_ERRORS_',
-  '_FIELDS_WITH_LOGIC_NO_ERRORS_',
-  '_LABEL_HAS_LEADING_OR_TRAILING_WHITESPACE_',
-  '_DUPLICATE_LABELS_',
-  '_UNIQUE_LABELS_',
+  '_FIELDS_WITHOUT_LOGIC_ERRORS_',
 ] as const;
 
 type TOtherCountIndex = (typeof otherCountIndexes)[number];
@@ -44,10 +38,9 @@ type TOtherCountIndex = (typeof otherCountIndexes)[number];
 const fieldTypes = '';
 
 class ObservationMakerLogicValidation extends ObservationMakers.AbstractObservationMaker {
-  protected subjectType = EObservationSubjectType.FORM;
+  protected subjectType = EObservationSubjectType.FIELD;
   protected observationClass = this.constructor.name;
   protected messagePrimary = 'Field Logic Validation Check';
-  private fieldByTypeCounts: Record<TFsFieldType, TCountRecord>;
   private otherCounts: Record<TOtherCountIndex, TCountRecord> = {} as Record<
     TOtherCountIndex,
     TCountRecord
@@ -57,18 +50,6 @@ class ObservationMakerLogicValidation extends ObservationMakers.AbstractObservat
 
   constructor() {
     super();
-    this.fieldByTypeCounts = ALL_KNOWN_FS_FIELD_TYPES.reduce(
-      (acc, cur) => {
-        acc[cur] = {
-          count: 0,
-          relatedFields: [],
-          label: cur,
-        };
-        return acc;
-      },
-      {} as Record<TFsFieldType, TCountRecord>,
-    );
-
     // Initialize otherCounts with all required keys
     this.otherCounts = otherCountIndexes.reduce(
       (acc, key) => {
@@ -136,7 +117,7 @@ class ObservationMakerLogicValidation extends ObservationMakers.AbstractObservat
           );
         });
       } else {
-        this.otherCounts['_FIELDS_WITH_LOGIC_NO_ERRORS_'].relatedFields.push(
+        this.otherCounts['_FIELDS_WITHOUT_LOGIC_ERRORS_'].relatedFields.push(
           fieldId,
         );
       }
@@ -190,7 +171,50 @@ class ObservationMakerLogicValidation extends ObservationMakers.AbstractObservat
           }
         });
       }
+
+      // -- other counts
+      logItems.push(
+        this.createInfoLogItem(context, {
+          subjectId: fieldId,
+          messageSecondary: `Number of fields with logic: ${this.otherCounts['_FIELDS_WITH_LOGIC_'].count}`,
+          // additionalDetails: this.otherCounts,
+          relatedEntityIds:
+            this.otherCounts['_FIELDS_WITH_LOGIC_'].relatedFields,
+        }),
+      );
+
+      logItems.push(
+        this.createInfoLogItem(context, {
+          subjectId: fieldId,
+          messageSecondary: `Number of fields without logic: ${this.otherCounts['_FIELDS_WITHOUT_LOGIC_'].count}`,
+          // additionalDetails: this.otherCounts,
+          relatedEntityIds:
+            this.otherCounts['_FIELDS_WITHOUT_LOGIC_'].relatedFields,
+        }),
+      );
+
+      logItems.push(
+        this.createInfoLogItem(context, {
+          subjectId: fieldId,
+          messageSecondary: `Number of fields with logic errors: ${this.otherCounts['_FIELDS_WITH_LOGIC_ERRORS_'].count}`,
+          // additionalDetails: this.otherCounts,
+          relatedEntityIds:
+            this.otherCounts['_FIELDS_WITH_LOGIC_ERRORS_'].relatedFields,
+        }),
+      );
+
+      logItems.push(
+        this.createInfoLogItem(context, {
+          subjectId: fieldId,
+          messageSecondary: `Number of fields without logic errors: ${this.otherCounts['_FIELDS_WITHOUT_LOGIC_ERRORS_'].count}`,
+          // additionalDetails: this.otherCounts,
+          relatedEntityIds:
+            this.otherCounts['_FIELDS_WITHOUT_LOGIC_ERRORS_'].relatedFields,
+        }),
+      );
     }); // end of foreach field loop
+
+    // we need to add loging for this.otherCounts
 
     return { isObservationTrue, logItems };
   }
