@@ -1,19 +1,12 @@
 import { Injectable } from '@nestjs/common';
-import { Client, DatabaseError } from 'pg';
 import * as fs from 'fs';
 import * as path from 'path';
+import { Client, DatabaseError } from 'pg';
 import { CustomLoggerService } from '../common/logger/custom-logger.service';
-import {
-  AuthenticationResult,
-  SessionValidationResult,
-} from './interfaces/auth-result.interface';
-import {
-  AuthSession,
-  AuthSessionQueryResult,
-} from './interfaces/auth-session.interface';
+import { AuthenticationResult } from './interfaces/auth-result.interface';
+import { AuthSessionQueryResult } from './interfaces/auth-session.interface';
 
 import { AuthenticationFailedException } from './exceptions/authentication-failed.exception';
-import { SessionExpiredException } from './exceptions/session-expired.exception';
 
 interface SessionConfig {
   sessionTimeoutSeconds: number;

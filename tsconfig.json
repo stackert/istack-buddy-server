@@ -17,15 +17,8 @@
     "strictBindCallApply": false,
     "forceConsistentCasingInFileNames": false,
     "noFallthroughCasesInSwitch": false,
-    "resolveJsonModule": true,
+    "resolveJsonModule": true
   },
-  "include": [
-    "src/**/*",
-    "test/**/*"
-  ],
-  "exclude": [
-    "docs-living",
-    "node_modules",
-    "dist"
-  ]
+  "include": ["src/**/*", "test/**/*"],
+  "exclude": ["docs-living", "node_modules", "dist"]
 }
