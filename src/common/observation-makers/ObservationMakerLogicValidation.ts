@@ -16,6 +16,7 @@ import type {
   IObservationLogItem,
   IFsModelForm,
   TFsFieldType,
+  IFsModelField,
 } from 'istack-buddy-utilities';
 
 const knownFieldTypes: TFsFieldType[] = [...ALL_KNOWN_FS_FIELD_TYPES];
@@ -31,6 +32,8 @@ const otherCountIndexes = [
   '_FIELDS_WITHOUT_CALCULATION_',
   '_FIELDS_WITH_LOGIC_',
   '_FIELDS_WITHOUT_LOGIC_',
+  '_FIELDS_WITH_LOGIC_ERRORS_',
+  '_FIELDS_WITH_LOGIC_NO_ERRORS_',
   '_LABEL_HAS_LEADING_OR_TRAILING_WHITESPACE_',
   '_DUPLICATE_LABELS_',
   '_UNIQUE_LABELS_',
@@ -88,8 +91,21 @@ class ObservationMakerLogicValidation extends ObservationMakers.AbstractObservat
     const uniqueLabel: Record<string, string[]> = {};
     const formModel: IFsModelForm = context.resources.formModel;
 
+    // much of this function should be moved/refactored
+    // this validates Logic on a field.  It should validate logic on all logic-able things: integrations, field, emails, etc.
+
     formModel.getFieldIds().forEach((fieldId) => {
-      const fieldModel = formModel.getFieldModelByIdOrThrow(fieldId);
+      const fieldModel = formModel.getFieldModelById(fieldId) as IFsModelField;
+      if (!fieldModel) {
+        logItems.push(
+          this.createErrorLogItem(context, {
+            subjectId: fieldId,
+            messageSecondary: `Field model not found for logic check: ${fieldId}`,
+            relatedEntityIds: [],
+          }),
+        );
+        return;
+      }
 
       // Count fields with/out logic
       const logicTree = TreeUtilities.FsFieldVisibilityGraph.fromFormModel(
@@ -103,6 +119,76 @@ class ObservationMakerLogicValidation extends ObservationMakers.AbstractObservat
         return; // no reason to go further if there are no logic
       } else {
         this.otherCounts['_FIELDS_WITH_LOGIC_'].relatedFields.push(fieldId);
+      }
+
+      if (logicTree.getAllErrorNodes().length > 0) {
+        this.otherCounts['_FIELDS_WITH_LOGIC_ERRORS_'].relatedFields.push(
+          fieldId,
+        );
+        logicTree.getAllErrorNodes().forEach((errorNode) => {
+          logItems.push(
+            this.createWarnLogItem(context, {
+              subjectId: fieldId,
+              messageSecondary: `Logic error: ${errorNode.logicError.message}`,
+              additionalDetails: errorNode.logicError,
+              relatedEntityIds: [],
+            }),
+          );
+        });
+      } else {
+        this.otherCounts['_FIELDS_WITH_LOGIC_NO_ERRORS_'].relatedFields.push(
+          fieldId,
+        );
+      }
+
+      // check logic statement predicate fieldIds are valid
+
+      const ownLogic = fieldModel.getLogicOwn();
+      if (ownLogic && ownLogic.checks) {
+        (ownLogic.checks || []).forEach((check) => {
+          const {
+            fieldId: predicateFieldId,
+            condition: operator,
+            option: value,
+          } = check;
+          [predicateFieldId, operator].forEach((predicsteElement) => {
+            if (predicsteElement === null || predicsteElement === undefined) {
+              logItems.push(
+                this.createWarnLogItem(context, {
+                  subjectId: fieldId,
+                  messageSecondary: `Check appears invalid -one or more elements are not defined: '${JSON.stringify(check)}'`,
+                  additionalDetails: check,
+                  relatedEntityIds: [predicateFieldId],
+                }),
+              );
+            }
+          });
+
+          if (!value) {
+            logItems.push(
+              this.createWarnLogItem(context, {
+                subjectId: fieldId,
+                messageSecondary: `Using empty value for check - is not considered best practice: '${JSON.stringify(check)}'`,
+                additionalDetails: check,
+                relatedEntityIds: [predicateFieldId],
+              }),
+            );
+          }
+
+          // check fieldIds exists
+          const predicateFieldModel =
+            formModel.getFieldModelById(predicateFieldId);
+          if (!predicateFieldModel) {
+            logItems.push(
+              this.createErrorLogItem(context, {
+                subjectId: predicateFieldId,
+                messageSecondary: `Predicate fieldId does not exist: ${predicateFieldId}`,
+                additionalDetails: check,
+                relatedEntityIds: [predicateFieldId, fieldId],
+              }),
+            );
+          }
+        });
       }
     }); // end of foreach field loop
 
