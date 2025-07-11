@@ -1,10 +1,5 @@
-import { log } from 'console';
 import {
   ObservationMakers,
-  // TreeCalculations,
-  //   TreeVisibility,
-  // TreeSystems,
-  Models,
   TreeUtilities,
   EObservationSubjectType,
   ALL_KNOWN_FS_FIELD_TYPES,
@@ -64,10 +59,72 @@ class ObservationMakerLogicValidation extends ObservationMakers.AbstractObservat
     return ['formModel'];
   }
 
+  /**
+   * Validates logic checks array and adds log items for any validation errors
+   * @param checks - Array of logic checks to validate
+   * @param logItems - Array to push log items to
+   * @param context - Observation context for log item creation
+   * @param formModel - Form model for field validation
+   * @param subjectId - ID of the subject being validated (fieldId, submitActionId, etc)
+   */
+  private validateLogicChecks(
+    checks: any[],
+    logItems: IObservationLogItem[],
+    context: IObservationContext,
+    formModel: IFsModelForm,
+    subjectId: string,
+  ): void {
+    checks.forEach((check) => {
+      const {
+        fieldId: predicateFieldId,
+        condition: operator,
+        option: value,
+      } = check;
+
+      // Validate that predicateFieldId and operator are defined
+      [predicateFieldId, operator].forEach((predicateElement) => {
+        if (predicateElement === null || predicateElement === undefined) {
+          logItems.push(
+            this.createWarnLogItem(context, {
+              subjectId: subjectId,
+              messageSecondary: `Check appears invalid - one or more elements are not defined: '${JSON.stringify(check)}'`,
+              additionalDetails: check,
+              relatedEntityIds: [predicateFieldId],
+            }),
+          );
+        }
+      });
+
+      // Validate that value is not empty
+      if (!value) {
+        logItems.push(
+          this.createWarnLogItem(context, {
+            subjectId: subjectId,
+            messageSecondary: `Using empty value for check - is not considered best practice: '${JSON.stringify(check)}'`,
+            additionalDetails: check,
+            relatedEntityIds: [predicateFieldId],
+          }),
+        );
+      }
+
+      // Validate that predicate fieldId exists in the form
+      const predicateFieldModel = formModel.getFieldModelById(predicateFieldId);
+      if (!predicateFieldModel) {
+        logItems.push(
+          this.createErrorLogItem(context, {
+            subjectId: predicateFieldId,
+            messageSecondary: `Predicate fieldId does not exist: ${predicateFieldId}`,
+            additionalDetails: check,
+            relatedEntityIds: [predicateFieldId, subjectId],
+          }),
+        );
+      }
+    });
+  }
+
   async makeObservation(
     context: IObservationContext,
   ): Promise<IObservationResult> {
-    let isObservationTrue = false;
     const logItems: IObservationLogItem[] = [];
     const uniqueLabel: Record<string, string[]> = {};
     const formModel: IFsModelForm = context.resources.formModel;
@@ -123,53 +180,15 @@ class ObservationMakerLogicValidation extends ObservationMakers.AbstractObservat
       }
 
       // check logic statement predicate fieldIds are valid
-
       const ownLogic = fieldModel.getLogicOwn();
       if (ownLogic && ownLogic.checks) {
-        (ownLogic.checks || []).forEach((check) => {
-          const {
-            fieldId: predicateFieldId,
-            condition: operator,
-            option: value,
-          } = check;
-          [predicateFieldId, operator].forEach((predicsteElement) => {
-            if (predicsteElement === null || predicsteElement === undefined) {
-              logItems.push(
-                this.createWarnLogItem(context, {
-                  subjectId: fieldId,
-                  messageSecondary: `Check appears invalid -one or more elements are not defined: '${JSON.stringify(check)}'`,
-                  additionalDetails: check,
-                  relatedEntityIds: [predicateFieldId],
-                }),
-              );
-            }
-          });
-
-          if (!value) {
-            logItems.push(
-              this.createWarnLogItem(context, {
-                subjectId: fieldId,
-                messageSecondary: `Using empty value for check - is not considered best practice: '${JSON.stringify(check)}'`,
-                additionalDetails: check,
-                relatedEntityIds: [predicateFieldId],
-              }),
-            );
-          }
-
-          // check fieldIds exists
-          const predicateFieldModel =
-            formModel.getFieldModelById(predicateFieldId);
-          if (!predicateFieldModel) {
-            logItems.push(
-              this.createErrorLogItem(context, {
-                subjectId: predicateFieldId,
-                messageSecondary: `Predicate fieldId does not exist: ${predicateFieldId}`,
-                additionalDetails: check,
-                relatedEntityIds: [predicateFieldId, fieldId],
-              }),
-            );
-          }
-        });
+        this.validateLogicChecks(
+          ownLogic.checks,
+          logItems,
+          context,
+          formModel,
+          fieldId,
+        );
       }
 
       // -- other counts
@@ -216,7 +235,7 @@ class ObservationMakerLogicValidation extends ObservationMakers.AbstractObservat
 
     // we need to add loging for this.otherCounts
 
-    return { isObservationTrue, logItems };
+    return { isObservationTrue: logItems.length > 0, logItems };
   }
 }
 export { ObservationMakerLogicValidation };
