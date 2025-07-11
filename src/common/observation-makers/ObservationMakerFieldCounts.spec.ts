@@ -28,7 +28,7 @@ describe('ObservationMakerFieldCounts', () => {
         'ObservationMakerFieldCounts',
       );
       expect((observationMaker as any).messagePrimary).toBe(
-        'Field Logic Validation Check',
+        'Field Counts Observation',
       );
     });
 
