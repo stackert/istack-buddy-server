@@ -293,4 +293,104 @@ describe('ObservationMakerLogicValidation', () => {
       }
     }
   });
+
+  it('should create count log items for fields with logic', async () => {
+    const formModel = new Models.FsModelForm(formJson5375703);
+
+    const context = {
+      resources: {
+        formModel: formModel,
+      },
+    };
+
+    const result = await observationMaker.makeObservation(context);
+
+    // Should have log items for counting fields with logic
+    const logicCountLogItems = result.logItems.filter((item) =>
+      item.messageSecondary.includes('Number of fields with logic:'),
+    );
+    expect(logicCountLogItems.length).toBeGreaterThan(0);
+  });
+
+  it('should create count log items for fields without logic', async () => {
+    const formModel = new Models.FsModelForm(formJson5375703);
+
+    const context = {
+      resources: {
+        formModel: formModel,
+      },
+    };
+
+    const result = await observationMaker.makeObservation(context);
+
+    // Should have log items for counting fields without logic
+    const noLogicCountLogItems = result.logItems.filter((item) =>
+      item.messageSecondary.includes('Number of fields without logic:'),
+    );
+    expect(noLogicCountLogItems.length).toBeGreaterThan(0);
+  });
+
+  it('should create count log items for fields with logic errors', async () => {
+    const formModel = new Models.FsModelForm(formJson5375703);
+
+    const context = {
+      resources: {
+        formModel: formModel,
+      },
+    };
+
+    const result = await observationMaker.makeObservation(context);
+
+    // Should have log items for counting fields with logic errors
+    const logicErrorCountLogItems = result.logItems.filter((item) =>
+      item.messageSecondary.includes('Number of fields with logic errors:'),
+    );
+    expect(logicErrorCountLogItems.length).toBeGreaterThan(0);
+  });
+
+  it('should create count log items for fields without logic errors', async () => {
+    const formModel = new Models.FsModelForm(formJson5375703);
+
+    const context = {
+      resources: {
+        formModel: formModel,
+      },
+    };
+
+    const result = await observationMaker.makeObservation(context);
+
+    // Should have log items for counting fields without logic errors
+    const noLogicErrorCountLogItems = result.logItems.filter((item) =>
+      item.messageSecondary.includes('Number of fields without logic errors:'),
+    );
+    expect(noLogicErrorCountLogItems.length).toBeGreaterThan(0);
+  });
+
+  it('should include count information in log items', async () => {
+    const formModel = new Models.FsModelForm(formJson5375703);
+
+    const context = {
+      resources: {
+        formModel: formModel,
+      },
+    };
+
+    const result = await observationMaker.makeObservation(context);
+
+    // Should have all four types of count log items
+    const countLogItems = result.logItems.filter((item) =>
+      item.messageSecondary.includes('Number of fields'),
+    );
+
+    expect(countLogItems.length).toBeGreaterThan(0);
+
+    // Verify structure of count log items
+    countLogItems.forEach((logItem) => {
+      expect(logItem).toHaveProperty('subjectId');
+      expect(logItem).toHaveProperty('messageSecondary');
+      expect(logItem).toHaveProperty('relatedEntityIds');
+      expect(Array.isArray(logItem.relatedEntityIds)).toBe(true);
+      expect(logItem.messageSecondary).toMatch(/Number of fields .* \d+/);
+    });
+  });
 });
