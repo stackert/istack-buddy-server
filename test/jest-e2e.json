@@ -4,6 +4,21 @@
   "testEnvironment": "node",
   "testRegex": ".e2e-spec.ts$",
   "transform": {
-    "^.+\\.(t|j)s$": "ts-jest"
-  }
+    "^.+\\.(t|j)s$": [
+      "ts-jest",
+      {
+        "tsconfig": {
+          "module": "commonjs",
+          "target": "es2020",
+          "skipLibCheck": true,
+          "experimentalDecorators": true,
+          "emitDecoratorMetadata": true
+        }
+      }
+    ]
+  },
+  "testTimeout": 30000,
+  "maxWorkers": "25%",
+  "cache": true,
+  "setupFilesAfterEnv": ["<rootDir>/../jest.setup.js"]
 }
