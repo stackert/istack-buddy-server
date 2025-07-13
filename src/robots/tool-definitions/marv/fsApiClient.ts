@@ -7,8 +7,13 @@ import type {
   IFormAndRelatedEntityOverview,
 } from './types';
 
+import { ObservationMakerLogicValidation } from '../../../common/observation-makers/ObservationMakerLogicValidation';
+import { ObservationMakerCalculationValidation } from '../../../common/observation-makers/ObservationMakerCalculationValidation';
+import { Models } from 'istack-buddy-utilities';
+import type { IObservationResult } from 'istack-buddy-utilities';
+
 // Debug mode control - set to false to disable console.log output
-const IS_DEBUG_MODE = process.env.NODE_ENV !== 'production';
+const IS_DEBUG_MODE = true; // Force enable for debugging
 
 // Debug logging helper
 const debugLog = (...args: any[]): void => {
@@ -24,11 +29,19 @@ export class FsApiClient {
 
   constructor() {
     // Read API key from environment on initialization
-    this.apiKey = process.env.FORMSTACK_API_KEY || '';
+    this.apiKey = process.env.CORE_FORMS_API_V2_KEY || '';
   }
 
   setApiKey(apiKey: string): FsApiClient {
     this.apiKey = apiKey;
+    return this;
+  }
+
+  // Force refresh API key from environment variable
+  refreshApiKeyFromEnvironment(): FsApiClient {
+    const oldApiKey = this.apiKey;
+    this.apiKey = process.env.CORE_FORMS_API_V2_KEY || '';
+
     return this;
   }
 
@@ -52,12 +65,11 @@ export class FsApiClient {
         config.body = typeof body === 'string' ? body : JSON.stringify(body);
       }
 
-      const response = await fetch(
-        `${FsApiClient.API_ROOT}${endpoint}`,
-        config,
-      );
-      const data = await response.json();
+      const fullUrl = `${FsApiClient.API_ROOT}${endpoint}`;
 
+      const response = await fetch(fullUrl, config);
+
+      const data = await response.json();
       if (response.ok) {
         return {
           isSuccess: true,
@@ -65,10 +77,31 @@ export class FsApiClient {
           errorItems: null,
         };
       } else {
+        debugLog(`DEBUG: Returning error response`);
+
+        // Improve error handling for authentication failures
+        let errorMessage = data.error || 'API request failed';
+
+        // Check for authentication-related errors
+        if (response.status === 400 && data.error === 'invalid_request') {
+          if (data.error_description?.includes('authentication header')) {
+            errorMessage = !this.apiKey
+              ? 'Authentication failed: No API key provided (CORE_FORMS_API_V2_KEY environment variable not set)'
+              : 'Authentication failed: Invalid API key or malformed authentication header';
+          } else {
+            errorMessage = `Bad Request: ${data.error_description || data.error}`;
+          }
+        } else if (response.status === 401) {
+          errorMessage = 'Authentication failed: Invalid API key';
+        } else if (response.status === 403) {
+          errorMessage = 'Access forbidden: API key lacks required permissions';
+        }
+
+        debugLog(`DEBUG: Error message: ${errorMessage}`);
         return {
           isSuccess: false,
           response: null,
-          errorItems: [data.error || 'API request failed'],
+          errorItems: [errorMessage],
         };
       }
     } catch (error) {
@@ -759,6 +792,162 @@ export class FsApiClient {
       return {
         isSuccess: true,
         response: overview,
+        errorItems: null,
+      };
+    } catch (error) {
+      return {
+        isSuccess: false,
+        response: null,
+        errorItems: [error instanceof Error ? error.message : 'Unknown error'],
+      };
+    }
+  }
+
+  async formLogicValidation(
+    formId: string,
+  ): Promise<IMarvApiUniversalResponse<IObservationResult>> {
+    debugLog(`DEBUG: Starting formLogicValidation for form ${formId}`);
+
+    // Force refresh API key from environment to ensure we have the latest value
+    this.refreshApiKeyFromEnvironment();
+
+    debugLog(`DEBUG: API key present: ${!!this.apiKey}`);
+    debugLog(`DEBUG: API key length: ${this.apiKey?.length || 0}`);
+
+    try {
+      // Get form data from API
+      debugLog(`DEBUG: Making API request to /form/${formId}.json`);
+      const formResponse = await this.makeRequest<TFsFormJson>(
+        `/form/${formId}.json`,
+        'GET',
+      );
+
+      debugLog(
+        `DEBUG: API response received - isSuccess: ${formResponse.isSuccess}`,
+      );
+      debugLog(`DEBUG: API response has data: ${!!formResponse.response}`);
+      debugLog(
+        `DEBUG: API response error items: ${JSON.stringify(formResponse.errorItems)}`,
+      );
+
+      if (!formResponse.isSuccess || !formResponse.response) {
+        debugLog(`DEBUG: API request failed, returning error`);
+        return {
+          isSuccess: false,
+          response: null,
+          errorItems: formResponse.errorItems || ['Failed to get form details'],
+        };
+      }
+
+      const formData = formResponse.response;
+
+      // Convert form data to form model
+      const formDataWithFields = {
+        ...formData,
+        fields: formData.fields || [],
+      };
+      const formModel = new Models.FsModelForm(formDataWithFields, {
+        fieldModelVersion: 'v2',
+      });
+
+      // Create observation context
+      const observationContext = {
+        resources: {
+          formModel: formModel,
+        },
+      };
+
+      // Create and run observation maker
+      const observationMaker = new ObservationMakerLogicValidation();
+      const observationResult =
+        await observationMaker.makeObservation(observationContext);
+
+      debugLog(`✅ Form logic validation completed for form ${formId}`);
+      debugLog(
+        `📊 Found ${observationResult.logItems.length} observation items`,
+      );
+
+      return {
+        isSuccess: true,
+        response: observationResult,
+        errorItems: null,
+      };
+    } catch (error) {
+      return {
+        isSuccess: false,
+        response: null,
+        errorItems: [error instanceof Error ? error.message : 'Unknown error'],
+      };
+    }
+  }
+
+  async formCalculationValidation(
+    formId: string,
+  ): Promise<IMarvApiUniversalResponse<IObservationResult>> {
+    debugLog(`DEBUG: Starting formCalculationValidation for form ${formId}`);
+
+    // Force refresh API key from environment to ensure we have the latest value
+    this.refreshApiKeyFromEnvironment();
+
+    debugLog(`DEBUG: API key present: ${!!this.apiKey}`);
+    debugLog(`DEBUG: API key length: ${this.apiKey?.length || 0}`);
+
+    try {
+      // Get form data from API
+      debugLog(`DEBUG: Making API request to /form/${formId}.json`);
+      const formResponse = await this.makeRequest<TFsFormJson>(
+        `/form/${formId}.json`,
+        'GET',
+      );
+
+      debugLog(
+        `DEBUG: API response received - isSuccess: ${formResponse.isSuccess}`,
+      );
+      debugLog(`DEBUG: API response has data: ${!!formResponse.response}`);
+      debugLog(
+        `DEBUG: API response error items: ${JSON.stringify(formResponse.errorItems)}`,
+      );
+
+      if (!formResponse.isSuccess || !formResponse.response) {
+        debugLog(`DEBUG: API request failed, returning error`);
+        return {
+          isSuccess: false,
+          response: null,
+          errorItems: formResponse.errorItems || ['Failed to get form details'],
+        };
+      }
+
+      const formData = formResponse.response;
+
+      // Convert form data to form model
+      const formDataWithFields = {
+        ...formData,
+        fields: formData.fields || [],
+      };
+      const formModel = new Models.FsModelForm(formDataWithFields, {
+        fieldModelVersion: 'v2',
+      });
+
+      // Create observation context
+      const observationContext = {
+        resources: {
+          formModel: formModel,
+        },
+      };
+
+      // Create and run observation maker
+      const observationMaker = new ObservationMakerCalculationValidation();
+      const observationResult =
+        await observationMaker.makeObservation(observationContext);
+
+      debugLog(`✅ Form calculation validation completed for form ${formId}`);
+      debugLog(
+        `📊 Found ${observationResult.logItems.length} observation items`,
+      );
+
+      return {
+        isSuccess: true,
+        response: observationResult,
         errorItems: null,
       };
     } catch (error) {

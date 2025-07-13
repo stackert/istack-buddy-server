@@ -2,7 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ObservationMakerCalculationValidation } from './ObservationMakerCalculationValidation';
 import { Models } from 'istack-buddy-utilities';
 
-import * as formJson5375703 from '../../../test-data/form-json/5375703.json';
+//import * as formJson5375703 from '../../../test-data/form-json/5375703.json';
+import * as formJson6201623 from '../../../test-data/form-json/6201623.json';
 
 describe('ObservationMakerCalculationValidation', () => {
   let observationMaker: ObservationMakerCalculationValidation;
@@ -19,7 +20,7 @@ describe('ObservationMakerCalculationValidation', () => {
 
   it('should make observations and return log items with length greater than 0', async () => {
     // Create real form model from test data file
-    const formModel = new Models.FsModelForm(formJson5375703);
+    const formModel = new Models.FsModelForm(formJson6201623);
 
     const context = {
       resources: {
@@ -37,7 +38,7 @@ describe('ObservationMakerCalculationValidation', () => {
   });
 
   it('should process fields with calculations correctly', async () => {
-    const formModel = new Models.FsModelForm(formJson5375703);
+    const formModel = new Models.FsModelForm(formJson6201623);
 
     const context = {
       resources: {
@@ -51,15 +52,15 @@ describe('ObservationMakerCalculationValidation', () => {
     expect(Array.isArray(result.logItems)).toBe(true);
     expect(result.logItems.length).toBeGreaterThan(0);
 
-    // Should have calculation graph log items
-    const calcGraphLogItems = result.logItems.filter((item) =>
-      item.messageSecondary.includes('Calculation graph:'),
+    // Should have summary log items about fields with calculations
+    const calcSummaryLogItems = result.logItems.filter((item) =>
+      item.messageSecondary.includes('Number of fields with calculations:'),
     );
-    expect(calcGraphLogItems.length).toBeGreaterThan(0);
+    expect(calcSummaryLogItems.length).toBeGreaterThan(0);
   });
 
   it('should handle calculation errors correctly', async () => {
-    const formModel = new Models.FsModelForm(formJson5375703);
+    const formModel = new Models.FsModelForm(formJson6201623);
 
     const fieldIds = formModel.getFieldIds();
     if (fieldIds.length > 0) {
@@ -91,7 +92,7 @@ describe('ObservationMakerCalculationValidation', () => {
   });
 
   it('should handle unresolved field references', async () => {
-    const formModel = new Models.FsModelForm(formJson5375703);
+    const formModel = new Models.FsModelForm(formJson6201623);
 
     const fieldIds = formModel.getFieldIds();
     if (fieldIds.length > 0) {
@@ -133,7 +134,7 @@ describe('ObservationMakerCalculationValidation', () => {
   });
 
   it('should handle fields without calculations', async () => {
-    const formModel = new Models.FsModelForm(formJson5375703);
+    const formModel = new Models.FsModelForm(formJson6201623);
 
     const fieldIds = formModel.getFieldIds();
     if (fieldIds.length > 0) {
@@ -164,7 +165,7 @@ describe('ObservationMakerCalculationValidation', () => {
   });
 
   it('should return proper observation result structure', async () => {
-    const formModel = new Models.FsModelForm(formJson5375703);
+    const formModel = new Models.FsModelForm(formJson6201623);
 
     const context = {
       resources: {
@@ -182,7 +183,7 @@ describe('ObservationMakerCalculationValidation', () => {
   });
 
   it('should create proper log item structure', async () => {
-    const formModel = new Models.FsModelForm(formJson5375703);
+    const formModel = new Models.FsModelForm(formJson6201623);
 
     const context = {
       resources: {
@@ -206,7 +207,7 @@ describe('ObservationMakerCalculationValidation', () => {
   });
 
   it('should process multiple fields correctly', async () => {
-    const formModel = new Models.FsModelForm(formJson5375703);
+    const formModel = new Models.FsModelForm(formJson6201623);
 
     const context = {
       resources: {
@@ -216,9 +217,24 @@ describe('ObservationMakerCalculationValidation', () => {
 
     const result = await observationMaker.makeObservation(context);
 
-    const fieldIds = formModel.getFieldIds();
+    // The new implementation generates:
+    // 1. Detailed log items for each calculation error found
+    // 2. 4 summary log items (with/without calculations, with/without errors)
+    // So we expect at least 4 summary log items
+    expect(result.logItems.length).toBeGreaterThanOrEqual(4);
 
-    // Should have at least one log item per field (calculation graph info)
-    expect(result.logItems.length).toBeGreaterThanOrEqual(fieldIds.length);
+    // Should have summary log items about calculation statistics
+    const summaryLogItems = result.logItems.filter((item) =>
+      item.messageSecondary.includes('Number of fields'),
+    );
+    expect(summaryLogItems.length).toBe(4); // Exactly 4 summary items
+
+    // Should have detailed error log items for calculation problems
+    const errorLogItems = result.logItems.filter(
+      (item) => !item.messageSecondary.includes('Number of fields'),
+    );
+
+    // The form 6201623 has circular references, so we expect error log items
+    expect(errorLogItems.length).toBeGreaterThan(0);
   });
 });

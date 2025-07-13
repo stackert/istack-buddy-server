@@ -10,18 +10,24 @@ dotenv.config();
 export async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // DEV/DEBUG: Enable CORS for any origin (not for production!)
+  // CORS configuration for client communication - TEMPORARY: Allow all origins
   app.enableCors({
-    origin: true, // Allow any origin
+    origin: true, // Allow all origins (equivalent to '*' but works with credentials)
     credentials: true, // Allow cookies/credentials
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    methods: '*', // Allow all HTTP methods
     allowedHeaders: [
       'Content-Type',
       'Authorization',
       'Accept',
       'Origin',
       'X-Requested-With',
+      'Accept-Language',
+      'Content-Language',
+      'Cookie',
     ],
+    exposedHeaders: ['Set-Cookie', 'Authorization'],
+    optionsSuccessStatus: 200, // For legacy browser support
+    preflightContinue: false,
   });
 
   // Enable cookie parsing
@@ -36,6 +42,8 @@ export async function bootstrap() {
     .setVersion('1.0')
     .addTag('authentication', 'User authentication and session management')
     .addTag('profile', 'User profile management')
+    .addTag('chat', 'Chat and messaging functionality')
+    .addTag('websocket', 'WebSocket real-time communication')
     .addCookieAuth('auth-token', {
       type: 'http',
       in: 'cookie',
@@ -47,7 +55,14 @@ export async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
 
-  await app.listen(process.env.PORT ?? 3000);
+  const port = process.env.PORT ?? 3000;
+  await app.listen(port);
+
+  console.log(`🚀 iStack Buddy Server running on: http://localhost:${port}`);
+  console.log(
+    `📚 API Documentation available at: http://localhost:${port}/api`,
+  );
+  console.log(`🌐 CORS enabled for ALL origins (temporary)`);
 }
 
 // Only run bootstrap if this file is executed directly (not imported)

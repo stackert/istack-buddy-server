@@ -7,8 +7,8 @@ describe('marvToolDefinitions', () => {
       expect(Array.isArray(marvToolDefinitions)).toBe(true);
     });
 
-    it('should contain 12 tool definitions', () => {
-      expect(marvToolDefinitions).toHaveLength(12);
+    it('should contain 14 tool definitions', () => {
+      expect(marvToolDefinitions).toHaveLength(14);
     });
 
     it('should have all tools conform to Anthropic.Messages.Tool interface', () => {
@@ -38,6 +38,8 @@ describe('marvToolDefinitions', () => {
         'fsRestrictedApiFieldLogicStashRemove',
         'fsRestrictedApiFormDeveloperCopy',
         'fsRestrictedApiFormAndRelatedEntityOverview',
+        'fsRestrictedApiFormLogicValidation',
+        'fsRestrictedApiFormCalculationValidation',
       ];
 
       const actualToolNames = marvToolDefinitions.map((tool) => tool.name);
@@ -65,7 +67,7 @@ describe('marvToolDefinitions', () => {
       marvToolDefinitions.forEach((tool) => {
         const { properties, required } = tool.input_schema;
         const props = properties as Record<string, any>;
-        required.forEach((requiredProp: string) => {
+        (required || []).forEach((requiredProp: string) => {
           expect(props).toHaveProperty(requiredProp);
         });
       });
@@ -252,10 +254,10 @@ describe('marvToolDefinitions', () => {
         tool.name.startsWith('fsRestrictedApi'),
       );
 
-      expect(restrictedTools).toHaveLength(11); // All tools except fieldRemove
+      expect(restrictedTools).toHaveLength(13); // All tools except fieldRemove
 
       restrictedTools.forEach((tool) => {
-        expect(tool.description).toContain('MARV ENABLED FORMS');
+        expect(tool.description || '').toContain('MARV ENABLED FORMS');
       });
     });
 
@@ -308,8 +310,8 @@ describe('marvToolDefinitions', () => {
   describe('Description Quality', () => {
     it('should have non-empty descriptions for all tools', () => {
       marvToolDefinitions.forEach((tool) => {
-        expect(tool.description.length).toBeGreaterThan(0);
-        expect(tool.description.trim()).toBe(tool.description);
+        expect((tool.description || '').length).toBeGreaterThan(0);
+        expect((tool.description || '').trim()).toBe(tool.description || '');
       });
     });
 

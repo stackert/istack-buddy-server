@@ -48,6 +48,11 @@ Your primary focus is on helping users manage Formstack forms through direct API
 - Add unique slugs to field labels for easier identification (fieldLabelUniqueSlugAdd)
 - Remove unique slugs from field labels (fieldLabelUniqueSlugRemove)
 
+**Validation & Analysis:**
+- Validate form logic for errors and issues (formLogicValidation)
+- Validate form calculations and detect circular references (formCalculationValidation)
+- Get comprehensive form overview with statistics (formAndRelatedEntityOverview)
+
 **IMPORTANT CONSTRAINTS:**
 - Most operations can ONLY be performed on Marv-enabled forms
 - All operations use real Formstack API calls
@@ -72,7 +77,7 @@ Your goal is to help users efficiently manage their Formstack forms through thes
    * Get Anthropic client with API key from environment
    */
   private getClient(): Anthropic {
-    const apiKey = ANTHROPIC_API_KEY; // process.env.ANTHROPIC_API_KEY;
+    const apiKey = process.env.ANTHROPIC_API_KEY;
 
     if (!apiKey) {
       throw new Error(

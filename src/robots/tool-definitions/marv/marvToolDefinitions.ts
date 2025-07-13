@@ -265,6 +265,57 @@ const marvToolDefinitions: Anthropic.Messages.Tool[] = [
       required: ['formId'],
     },
   },
+
+  {
+    name: FsRestrictedApiRoutesEnum.FormLogicValidation,
+    description: `Validate form field logic and identify potential issues using ObservationMakerLogicValidation.
+    
+    This tool analyzes form logic and provides:
+    - Count of fields with/without logic
+    - Logic error detection and reporting
+    - Validation of logic checks (predicate fields, operators, values)
+    - Detailed error messages for logic issues
+    
+    Useful for debugging form logic problems and ensuring logic integrity.
+    
+    This **CAN ONLY BE DONE ON MARV ENABLED FORMS**.`,
+    input_schema: {
+      type: 'object',
+      properties: {
+        formId: {
+          type: 'string',
+          description: 'The ID of the form to validate logic for',
+        },
+      },
+      required: ['formId'],
+    },
+  },
+
+  {
+    name: FsRestrictedApiRoutesEnum.FormCalculationValidation,
+    description: `Validate form field calculations and identify potential issues using ObservationMakerCalculationValidation.
+    
+    This tool analyzes form calculations and provides:
+    - Count of fields with/without calculations
+    - Calculation error detection and reporting
+    - Circular reference detection in calculation dependencies
+    - Unresolved field reference validation
+    - Detailed error messages for calculation issues
+    
+    Useful for debugging form calculation problems, identifying circular references, and ensuring calculation integrity.
+    
+    This **CAN ONLY BE DONE ON MARV ENABLED FORMS**.`,
+    input_schema: {
+      type: 'object',
+      properties: {
+        formId: {
+          type: 'string',
+          description: 'The ID of the form to validate calculations for',
+        },
+      },
+      required: ['formId'],
+    },
+  },
 ];
 
 export { marvToolDefinitions };

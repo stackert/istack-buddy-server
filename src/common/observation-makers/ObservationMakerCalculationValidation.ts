@@ -7,7 +7,7 @@ import {
   TreeUtilities,
   EObservationSubjectType,
   ALL_KNOWN_FS_FIELD_TYPES,
-  // LogLevel,
+  ELogLevel,
 } from 'istack-buddy-utilities';
 
 import type {
@@ -16,6 +16,7 @@ import type {
   IObservationLogItem,
   IFsModelForm,
   TFsFieldType,
+  TFsCalcErrorNode,
 } from 'istack-buddy-utilities';
 
 const knownFieldTypes: TFsFieldType[] = [...ALL_KNOWN_FS_FIELD_TYPES];
@@ -69,7 +70,6 @@ class ObservationMakerCalculationValidation extends ObservationMakers.AbstractOb
   ): Promise<IObservationResult> {
     let isObservationTrue = false;
     const logItems: IObservationLogItem[] = [];
-    const uniqueLabel: Record<string, string[]> = {};
     const formModel: IFsModelForm = context.resources.formModel;
 
     formModel.getFieldIds().forEach((fieldId) => {
@@ -79,25 +79,29 @@ class ObservationMakerCalculationValidation extends ObservationMakers.AbstractOb
       );
 
       if (calcGraph.isEmptyTree()) {
+        this.otherCounts['_FIELDS_WITHOUT_CALCULATION_'].count++;
         this.otherCounts['_FIELDS_WITHOUT_CALCULATION_'].relatedFields.push(
           fieldId,
         );
       } else {
+        this.otherCounts['_FIELDS_WITH_CALCULATION_'].count++;
         this.otherCounts['_FIELDS_WITH_CALCULATION_'].relatedFields.push(
           fieldId,
         );
       }
 
       if (calcGraph.getAllErrorNodes().length === 0) {
+        this.otherCounts['_FIELDS_WITHOUT_CALCULATION_ERRORS_'].count++;
         this.otherCounts[
           '_FIELDS_WITHOUT_CALCULATION_ERRORS_'
         ].relatedFields.push(fieldId);
       } else {
+        this.otherCounts['_FIELDS_WITH_CALCULATION_ERRORS_'].count++;
         this.otherCounts['_FIELDS_WITH_CALCULATION_ERRORS_'].relatedFields.push(
           fieldId,
         );
 
-        calcGraph.getAllErrorNodes().forEach((errorNode) => {
+        calcGraph.getAllErrorNodes().forEach((errorNode: TFsCalcErrorNode) => {
           logItems.push(
             this.createWarnLogItem(context, {
               subjectId: fieldId,
@@ -123,20 +127,56 @@ class ObservationMakerCalculationValidation extends ObservationMakers.AbstractOb
           }
         });
       }
-
-      logItems.push(
-        this.createInfoLogItem(context, {
-          subjectId: fieldId,
-          messageSecondary: `Calculation graph:`,
-          relatedEntityIds: [],
-        }),
-      );
-      // .FsFieldCalculationGraph.fromFormModel(
-      //   fieldId,
-      //   formModel,
-      //   fieldId,
-      // );
     }); // end of foreach field loop
+
+    // Add summary information for the form using createDetailedLogMessage
+    logItems.push(
+      this.createDetailedLogMessage(context, {
+        logLevel: ELogLevel.INFO,
+        subjectType: EObservationSubjectType.FORM,
+        subjectId: formModel.formId,
+        messageSecondary: `Number of fields with calculations: ${this.otherCounts['_FIELDS_WITH_CALCULATION_'].count}`,
+        relatedEntityIds:
+          this.otherCounts['_FIELDS_WITH_CALCULATION_'].relatedFields,
+      }),
+    );
+
+    logItems.push(
+      this.createDetailedLogMessage(context, {
+        logLevel: ELogLevel.INFO,
+        subjectType: EObservationSubjectType.FORM,
+        subjectId: formModel.formId,
+        messageSecondary: `Number of fields without calculations: ${this.otherCounts['_FIELDS_WITHOUT_CALCULATION_'].count}`,
+        relatedEntityIds:
+          this.otherCounts['_FIELDS_WITHOUT_CALCULATION_'].relatedFields,
+      }),
+    );
+
+    logItems.push(
+      this.createDetailedLogMessage(context, {
+        logLevel: ELogLevel.INFO,
+        subjectType: EObservationSubjectType.FORM,
+        subjectId: formModel.formId,
+        messageSecondary: `Number of fields with calculation errors: ${this.otherCounts['_FIELDS_WITH_CALCULATION_ERRORS_'].count}`,
+        relatedEntityIds:
+          this.otherCounts['_FIELDS_WITH_CALCULATION_ERRORS_'].relatedFields,
+      }),
+    );
+
+    logItems.push(
+      this.createDetailedLogMessage(context, {
+        logLevel: ELogLevel.INFO,
+        subjectType: EObservationSubjectType.FORM,
+        subjectId: formModel.formId,
+        messageSecondary: `Number of fields without calculation errors: ${this.otherCounts['_FIELDS_WITHOUT_CALCULATION_ERRORS_'].count}`,
+        relatedEntityIds:
+          this.otherCounts['_FIELDS_WITHOUT_CALCULATION_ERRORS_'].relatedFields,
+      }),
+    );
+
+    // Set isObservationTrue if there are any calculation errors
+    isObservationTrue =
+      this.otherCounts['_FIELDS_WITH_CALCULATION_ERRORS_'].count > 0;
 
     return { isObservationTrue, logItems };
   }

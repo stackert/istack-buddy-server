@@ -96,6 +96,8 @@ enum FsRestrictedApiRoutesEnum {
   FormDeveloperAdd = 'fsRestrictedApiFormDeveloperCopy',
   FormLiteAdd = 'fsRestrictedApiFormLiteAdd',
   FormAndRelatedEntityOverview = 'fsRestrictedApiFormAndRelatedEntityOverview',
+  FormLogicValidation = 'fsRestrictedApiFormLogicValidation',
+  FormCalculationValidation = 'fsRestrictedApiFormCalculationValidation',
 }
 
 type TFsRestrictedApiFunctionNames = keyof typeof FsRestrictedApiRoutesEnum;

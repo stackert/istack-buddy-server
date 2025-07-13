@@ -633,7 +633,7 @@ export class AuthService {
   private isValidToken(token: string): boolean {
     // TODO: Replace with proper JWT validation
     // Current implementation: Accept any token with length > 10 characters
-    return token && token.length > 10;
+    return !!(token && token.length > 10);
   }
 
   private async verifyUserExists(userId: string): Promise<boolean> {

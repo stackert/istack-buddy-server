@@ -3,6 +3,7 @@ import {
   TreeUtilities,
   EObservationSubjectType,
   ALL_KNOWN_FS_FIELD_TYPES,
+  ELogLevel,
   // LogLevel,
 } from 'istack-buddy-utilities';
 
@@ -13,6 +14,8 @@ import type {
   IFsModelForm,
   TFsFieldType,
   IFsModelField,
+  FsFieldVisibilityNode,
+  TFsVisibilityErrorNode,
 } from 'istack-buddy-utilities';
 
 type TCountRecord = {
@@ -154,26 +157,35 @@ class ObservationMakerLogicValidation extends ObservationMakers.AbstractObservat
 
       if (logicTree.isEmptyTree()) {
         this.otherCounts['_FIELDS_WITHOUT_LOGIC_'].relatedFields.push(fieldId);
+        this.otherCounts['_FIELDS_WITHOUT_LOGIC_'].count++;
         return; // no reason to go further if there are no logic
       } else {
         this.otherCounts['_FIELDS_WITH_LOGIC_'].relatedFields.push(fieldId);
+        this.otherCounts['_FIELDS_WITH_LOGIC_'].count++;
       }
 
       if (logicTree.getAllErrorNodes().length > 0) {
+        this.otherCounts['_FIELDS_WITH_LOGIC_ERRORS_'].count++;
         this.otherCounts['_FIELDS_WITH_LOGIC_ERRORS_'].relatedFields.push(
           fieldId,
         );
-        logicTree.getAllErrorNodes().forEach((errorNode) => {
-          logItems.push(
-            this.createWarnLogItem(context, {
-              subjectId: fieldId,
-              messageSecondary: `Logic error: ${errorNode.logicError.message}`,
-              additionalDetails: errorNode.logicError,
-              relatedEntityIds: [],
-            }),
-          );
-        });
+        logicTree
+          .getAllErrorNodes()
+          .forEach((errorNode: TFsVisibilityErrorNode) => {
+            logItems.push(
+              this.createWarnLogItem(context, {
+                subjectId: fieldId,
+                messageSecondary: `Logic error: ${errorNode.logicError.message}`,
+                additionalDetails: errorNode.logicError,
+                relatedEntityIds:
+                  errorNode.logicError.dependencyChainFieldIds?.map(
+                    (fieldId) => fieldId.directOwnerFieldId,
+                  ),
+              }),
+            );
+          });
       } else {
+        this.otherCounts['_FIELDS_WITHOUT_LOGIC_ERRORS_'].count++;
         this.otherCounts['_FIELDS_WITHOUT_LOGIC_ERRORS_'].relatedFields.push(
           fieldId,
         );
@@ -190,48 +202,54 @@ class ObservationMakerLogicValidation extends ObservationMakers.AbstractObservat
           fieldId,
         );
       }
-
-      // -- other counts
-      logItems.push(
-        this.createInfoLogItem(context, {
-          subjectId: fieldId,
-          messageSecondary: `Number of fields with logic: ${this.otherCounts['_FIELDS_WITH_LOGIC_'].count}`,
-          // additionalDetails: this.otherCounts,
-          relatedEntityIds:
-            this.otherCounts['_FIELDS_WITH_LOGIC_'].relatedFields,
-        }),
-      );
-
-      logItems.push(
-        this.createInfoLogItem(context, {
-          subjectId: fieldId,
-          messageSecondary: `Number of fields without logic: ${this.otherCounts['_FIELDS_WITHOUT_LOGIC_'].count}`,
-          // additionalDetails: this.otherCounts,
-          relatedEntityIds:
-            this.otherCounts['_FIELDS_WITHOUT_LOGIC_'].relatedFields,
-        }),
-      );
-
-      logItems.push(
-        this.createInfoLogItem(context, {
-          subjectId: fieldId,
-          messageSecondary: `Number of fields with logic errors: ${this.otherCounts['_FIELDS_WITH_LOGIC_ERRORS_'].count}`,
-          // additionalDetails: this.otherCounts,
-          relatedEntityIds:
-            this.otherCounts['_FIELDS_WITH_LOGIC_ERRORS_'].relatedFields,
-        }),
-      );
-
-      logItems.push(
-        this.createInfoLogItem(context, {
-          subjectId: fieldId,
-          messageSecondary: `Number of fields without logic errors: ${this.otherCounts['_FIELDS_WITHOUT_LOGIC_ERRORS_'].count}`,
-          // additionalDetails: this.otherCounts,
-          relatedEntityIds:
-            this.otherCounts['_FIELDS_WITHOUT_LOGIC_ERRORS_'].relatedFields,
-        }),
-      );
     }); // end of foreach field loop
+    // -- other counts -- Is a "form" subject, not field subject.  Will need to use the createDetailedMessage.
+    logItems.push(
+      this.createDetailedLogMessage(context, {
+        logLevel: ELogLevel.INFO,
+        subjectType: EObservationSubjectType.FORM,
+        subjectId: formModel.formId,
+        messageSecondary: `Number of fields with logic: ${this.otherCounts['_FIELDS_WITH_LOGIC_'].count}`,
+        // additionalDetails: this.otherCounts,
+        relatedEntityIds: this.otherCounts['_FIELDS_WITH_LOGIC_'].relatedFields,
+      }),
+    );
+
+    logItems.push(
+      this.createDetailedLogMessage(context, {
+        logLevel: ELogLevel.INFO,
+        subjectType: EObservationSubjectType.FORM,
+        subjectId: formModel.formId,
+        messageSecondary: `Number of fields without logic: ${this.otherCounts['_FIELDS_WITHOUT_LOGIC_'].count}`,
+        // additionalDetails: this.otherCounts,
+        relatedEntityIds:
+          this.otherCounts['_FIELDS_WITHOUT_LOGIC_'].relatedFields,
+      }),
+    );
+
+    logItems.push(
+      this.createDetailedLogMessage(context, {
+        logLevel: ELogLevel.INFO,
+        subjectType: EObservationSubjectType.FORM,
+        subjectId: formModel.formId,
+        messageSecondary: `Number of fields with logic errors: ${this.otherCounts['_FIELDS_WITH_LOGIC_ERRORS_'].count}`,
+        // additionalDetails: this.otherCounts,
+        relatedEntityIds:
+          this.otherCounts['_FIELDS_WITH_LOGIC_ERRORS_'].relatedFields,
+      }),
+    );
+
+    logItems.push(
+      this.createDetailedLogMessage(context, {
+        logLevel: ELogLevel.INFO,
+        subjectType: EObservationSubjectType.FORM,
+        subjectId: formModel.formId,
+        messageSecondary: `Number of fields without logic errors: ${this.otherCounts['_FIELDS_WITHOUT_LOGIC_ERRORS_'].count}`,
+        // additionalDetails: this.otherCounts,
+        relatedEntityIds:
+          this.otherCounts['_FIELDS_WITHOUT_LOGIC_ERRORS_'].relatedFields,
+      }),
+    );
 
     // we need to add loging for this.otherCounts
 

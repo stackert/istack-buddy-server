@@ -119,7 +119,7 @@ class RobotChatOpenAI extends AbstractRobotChat {
       tools,
     });
 
-    const functionCallResponses = [];
+    const functionCallResponses: any[] = [];
     responseToCallTools.output.forEach(
       (toolCall: TOpenAIFunctionCallRequest) => {
         const {

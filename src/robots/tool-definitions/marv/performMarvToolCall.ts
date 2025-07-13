@@ -74,6 +74,12 @@ const performMarvToolCall = async (
 
     case FsRestrictedApiRoutesEnum.FormAndRelatedEntityOverview:
       return api.formAndRelatedEntityOverview(fnParamsJson?.formId);
+
+    case FsRestrictedApiRoutesEnum.FormLogicValidation:
+      return api.formLogicValidation(fnParamsJson?.formId);
+
+    case FsRestrictedApiRoutesEnum.FormCalculationValidation:
+      return api.formCalculationValidation(fnParamsJson?.formId);
   }
   // No default - let other tool catalogs handle unknown tools
 };

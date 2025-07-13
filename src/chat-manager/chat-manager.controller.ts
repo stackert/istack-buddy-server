@@ -11,6 +11,7 @@ import { ChatManagerService } from './chat-manager.service';
 import { CreateMessageDto } from './dto/create-message.dto';
 import { JoinRoomDto } from './dto/join-room.dto';
 import { GetMessagesDto } from './dto/get-messages.dto';
+import { StartConversationDto } from './dto/start-conversation.dto';
 
 @Controller('chat')
 export class ChatManagerController {
@@ -65,5 +66,10 @@ export class ChatManagerController {
   @Get('dashboard/stats')
   async getDashboardStats() {
     return this.chatManagerService.getDashboardStats();
+  }
+
+  @Post('conversations/start')
+  async startConversation(@Body() startConversationDto: StartConversationDto) {
+    return this.chatManagerService.startConversation(startConversationDto);
   }
 }
