@@ -126,15 +126,9 @@ describe('toolCatalog', () => {
     describe('formOverviewToolSet', () => {
       it('should only contain FormAndRelatedEntityOverview tool', () => {
         expect(formOverviewToolSet.toolDefinitions).toHaveLength(1);
-
-        const toolNames = formOverviewToolSet.toolDefinitions.map(
-          (tool) => tool.name,
-        );
-        expect(toolNames).toEqual([
+        expect(formOverviewToolSet.toolDefinitions[0].name).toBe(
           'fsRestrictedApiFormAndRelatedEntityOverview',
-        ]);
-        expect(toolNames).not.toContain('fieldRemove');
-        expect(toolNames).not.toContain('fsRestrictedApiFormLiteAdd');
+        );
       });
     });
   });

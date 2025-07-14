@@ -34,3 +34,4 @@ export { FsApiClient, fsApiClient } from './fsApiClient';
 
 export { marvToolSet };
 export { formOverviewToolSet } from './formOverviewToolSet';
+export { marvToolDefinitions, performMarvToolCall };

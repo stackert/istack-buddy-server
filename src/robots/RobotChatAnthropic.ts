@@ -113,7 +113,7 @@ Please provide helpful, accurate, and detailed responses to user questions. If y
       const result = anthropicToolSet.executeToolCall(toolName, toolArgs);
       const finalResult = typeof result === 'string' ? result : await result;
       console.log(
-        `✅ Tool ${toolName} executed successfully. Result type:`,
+        `Tool ${toolName} executed successfully. Result type:`,
         typeof finalResult,
       );
       const jsonResult = JSON.stringify(finalResult, null, 2);

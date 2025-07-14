@@ -28,7 +28,7 @@ const createCompositeToolSet = (...catalogs: IToolCatalog[]) => ({
 
     // No catalog handled this tool
     throw new Error(
-      `❌ Unknown tool: ${toolName}. Available tools: ${catalogs
+      `Unknown tool: ${toolName}. Available tools: ${catalogs
         .flatMap((c) => c.toolDefinitions.map((t) => t.name))
         .join(', ')}`,
     );
