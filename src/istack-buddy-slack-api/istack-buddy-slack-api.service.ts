@@ -13,11 +13,20 @@ import { StartConversationDto } from '../chat-manager/dto/start-conversation.dto
 export class IstackBuddySlackApiService {
   private readonly logger = new Logger(IstackBuddySlackApiService.name);
 
+  // Event deduplication to prevent duplicate processing
+  private readonly processedEvents = new Set<string>();
+  private readonly eventCleanupInterval = 60000; // 1 minute
+
   constructor(
     private readonly chatManagerService: ChatManagerService,
     private readonly robotProcessorService: RobotProcessorService,
   ) {
     this.logger.log('🚀 Initializing Slack service...');
+
+    // Clean up old processed events every minute
+    setInterval(() => {
+      this.cleanupOldEvents();
+    }, this.eventCleanupInterval);
   }
 
   /**
@@ -66,10 +75,23 @@ export class IstackBuddySlackApiService {
    */
   private async handleAppMention(event: any): Promise<void> {
     try {
+      // Create unique event ID for deduplication
+      const eventId = `${event.channel}-${event.ts}-${event.user}`;
+
+      // Check if we've already processed this event
+      if (this.processedEvents.has(eventId)) {
+        this.logger.log(`⚠️ Skipping duplicate event: ${eventId}`);
+        return;
+      }
+
+      // Mark event as processed
+      this.processedEvents.add(eventId);
+
       this.logger.log(
         `🎯 Received mention from user ${event.user} in channel ${event.channel}`,
       );
       this.logger.log(`📄 Message text: "${event.text}"`);
+      this.logger.log(`🔑 Event ID: ${eventId}`);
 
       // 🚀 IMMEDIATE ACKNOWLEDGMENT - Add thinking emoji reaction
       this.logger.log('⚡ Adding immediate acknowledgment reaction...');
@@ -254,6 +276,19 @@ export class IstackBuddySlackApiService {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
       };
+    }
+  }
+
+  /**
+   * Clean up old processed events to prevent memory leaks
+   */
+  private cleanupOldEvents(): void {
+    // In a real implementation, you might want to store timestamps
+    // and remove events older than X minutes. For now, we'll just
+    // clear the set periodically to prevent memory buildup.
+    if (this.processedEvents.size > 1000) {
+      this.logger.log('🧹 Cleaning up old processed events...');
+      this.processedEvents.clear();
     }
   }
 
