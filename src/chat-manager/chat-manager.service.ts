@@ -16,265 +16,32 @@ import {
 
 @Injectable()
 export class ChatManagerService {
-  // Temporary in-memory storage for Phase I
+  // In-memory storage for conversations and messages
   private messages: Map<string, Message> = new Map();
   private conversations: Map<string, Conversation> = new Map();
   private participants: Map<string, Participant[]> = new Map();
+  private gateway: any; // Will be set by the gateway
 
   constructor() {
-    this.initializePseudoConversations();
+    // Clean constructor - no robot dependencies
   }
 
-  private initializePseudoConversations(): void {
-    const now = new Date();
-
-    // Debug Conversation 1: Customer Support Session
-    const debugConv1: Conversation = {
-      id: 'debug-conv-customer-support-001',
-      participantIds: ['debug-user-customer-001', 'debug-user-agent-001'],
-      participantRoles: [UserRole.CUSTOMER, UserRole.AGENT],
-      messageCount: 3,
-      lastMessageAt: new Date(now.getTime() - 300000), // 5 minutes ago
-      isActive: true,
-      createdAt: new Date(now.getTime() - 1800000), // 30 minutes ago
-      updatedAt: new Date(now.getTime() - 300000),
-    };
-
-    // Debug Conversation 2: Agent-Supervisor Discussion
-    const debugConv2: Conversation = {
-      id: 'debug-conv-agent-supervisor-001',
-      participantIds: ['debug-user-agent-001', 'debug-user-supervisor-001'],
-      participantRoles: [UserRole.AGENT, UserRole.SUPERVISOR],
-      messageCount: 2,
-      lastMessageAt: new Date(now.getTime() - 600000), // 10 minutes ago
-      isActive: true,
-      createdAt: new Date(now.getTime() - 2400000), // 40 minutes ago
-      updatedAt: new Date(now.getTime() - 600000),
-    };
-
-    // Debug Conversation 3: Multi-party Support Session
-    const debugConv3: Conversation = {
-      id: 'debug-conv-multiparty-support-001',
-      participantIds: [
-        'debug-user-customer-002',
-        'debug-user-agent-002',
-        'debug-user-supervisor-001',
-      ],
-      participantRoles: [
-        UserRole.CUSTOMER,
-        UserRole.AGENT,
-        UserRole.SUPERVISOR,
-      ],
-      messageCount: 5,
-      lastMessageAt: new Date(now.getTime() - 120000), // 2 minutes ago
-      isActive: true,
-      createdAt: new Date(now.getTime() - 3600000), // 1 hour ago
-      updatedAt: new Date(now.getTime() - 120000),
-    };
-
-    // Debug Conversation 4: Robot Integration Test
-    const debugConv4: Conversation = {
-      id: 'debug-conv-robot-integration-001',
-      participantIds: ['debug-user-agent-001', 'debug-robot-001'],
-      participantRoles: [UserRole.AGENT, UserRole.ROBOT],
-      messageCount: 4,
-      lastMessageAt: new Date(now.getTime() - 60000), // 1 minute ago
-      isActive: true,
-      createdAt: new Date(now.getTime() - 900000), // 15 minutes ago
-      updatedAt: new Date(now.getTime() - 60000),
-    };
-
-    // Store debug conversations
-    this.conversations.set(debugConv1.id, debugConv1);
-    this.conversations.set(debugConv2.id, debugConv2);
-    this.conversations.set(debugConv3.id, debugConv3);
-    this.conversations.set(debugConv4.id, debugConv4);
-
-    // Initialize participants for debug conversations
-    this.initializeDebugParticipants();
-
-    // Initialize some debug messages
-    this.initializeDebugMessages();
+  // Method to set the gateway reference (called by the gateway)
+  setGateway(gateway: any) {
+    this.gateway = gateway;
   }
 
-  private initializeDebugParticipants(): void {
-    const now = new Date();
-
-    // Participants for debug conversation 1
-    this.participants.set('debug-conv-customer-support-001', [
-      {
-        userId: 'debug-user-customer-001',
-        userRole: UserRole.CUSTOMER,
-        joinedAt: new Date(now.getTime() - 1800000),
-      },
-      {
-        userId: 'debug-user-agent-001',
-        userRole: UserRole.AGENT,
-        joinedAt: new Date(now.getTime() - 1800000),
-      },
-    ]);
-
-    // Participants for debug conversation 2
-    this.participants.set('debug-conv-agent-supervisor-001', [
-      {
-        userId: 'debug-user-agent-001',
-        userRole: UserRole.AGENT,
-        joinedAt: new Date(now.getTime() - 2400000),
-      },
-      {
-        userId: 'debug-user-supervisor-001',
-        userRole: UserRole.SUPERVISOR,
-        joinedAt: new Date(now.getTime() - 2400000),
-      },
-    ]);
-
-    // Participants for debug conversation 3
-    this.participants.set('debug-conv-multiparty-support-001', [
-      {
-        userId: 'debug-user-customer-002',
-        userRole: UserRole.CUSTOMER,
-        joinedAt: new Date(now.getTime() - 3600000),
-      },
-      {
-        userId: 'debug-user-agent-002',
-        userRole: UserRole.AGENT,
-        joinedAt: new Date(now.getTime() - 3600000),
-      },
-      {
-        userId: 'debug-user-supervisor-001',
-        userRole: UserRole.SUPERVISOR,
-        joinedAt: new Date(now.getTime() - 3000000),
-      },
-    ]);
-
-    // Participants for debug conversation 4
-    this.participants.set('debug-conv-robot-integration-001', [
-      {
-        userId: 'debug-user-agent-001',
-        userRole: UserRole.AGENT,
-        joinedAt: new Date(now.getTime() - 900000),
-      },
-      {
-        userId: 'debug-robot-001',
-        userRole: UserRole.ROBOT,
-        joinedAt: new Date(now.getTime() - 900000),
-      },
-    ]);
-  }
-
-  private initializeDebugMessages(): void {
-    const now = new Date();
-
-    // Messages for debug conversation 1
-    const debugMessages1: Message[] = [
-      {
-        id: 'debug-msg-001',
-        content: 'Hi, I need help with my billing account',
-        conversationId: 'debug-conv-customer-support-001',
-        fromUserId: 'debug-user-customer-001',
-        fromRole: UserRole.CUSTOMER,
-        toRole: UserRole.AGENT,
-        messageType: MessageType.TEXT,
-        createdAt: new Date(now.getTime() - 1800000),
-        updatedAt: new Date(now.getTime() - 1800000),
-      },
-      {
-        id: 'debug-msg-002',
-        content:
-          'server response to: Hello! I can help you with your billing. What specific issue are you experiencing?',
-        conversationId: 'debug-conv-customer-support-001',
-        fromUserId: 'debug-user-agent-001',
-        fromRole: UserRole.AGENT,
-        toRole: UserRole.CUSTOMER,
-        messageType: MessageType.TEXT,
-        createdAt: new Date(now.getTime() - 1500000),
-        updatedAt: new Date(now.getTime() - 1500000),
-      },
-      {
-        id: 'debug-msg-003',
-        content: 'I was charged twice for the same service this month',
-        conversationId: 'debug-conv-customer-support-001',
-        fromUserId: 'debug-user-customer-001',
-        fromRole: UserRole.CUSTOMER,
-        toRole: UserRole.AGENT,
-        messageType: MessageType.TEXT,
-        createdAt: new Date(now.getTime() - 300000),
-        updatedAt: new Date(now.getTime() - 300000),
-      },
-    ];
-
-    // Messages for debug conversation 2
-    const debugMessages2: Message[] = [
-      {
-        id: 'debug-msg-004',
-        content: 'I need help with this billing dispute case',
-        conversationId: 'debug-conv-agent-supervisor-001',
-        fromUserId: 'debug-user-agent-001',
-        fromRole: UserRole.AGENT,
-        toRole: UserRole.SUPERVISOR,
-        messageType: MessageType.TEXT,
-        createdAt: new Date(now.getTime() - 1200000),
-        updatedAt: new Date(now.getTime() - 1200000),
-      },
-      {
-        id: 'debug-msg-005',
-        content:
-          'server response to: I can help you with that. Please provide the case details.',
-        conversationId: 'debug-conv-agent-supervisor-001',
-        fromUserId: 'debug-user-supervisor-001',
-        fromRole: UserRole.SUPERVISOR,
-        toRole: UserRole.AGENT,
-        messageType: MessageType.TEXT,
-        createdAt: new Date(now.getTime() - 600000),
-        updatedAt: new Date(now.getTime() - 600000),
-      },
-    ];
-
-    // Messages for debug conversation 4 (Robot Integration)
-    const debugMessages4: Message[] = [
-      {
-        id: 'debug-msg-006',
-        content: 'Can you help me analyze this customer data?',
-        conversationId: 'debug-conv-robot-integration-001',
-        fromUserId: 'debug-user-agent-001',
-        fromRole: UserRole.AGENT,
-        toRole: UserRole.ROBOT,
-        messageType: MessageType.TEXT,
-        createdAt: new Date(now.getTime() - 900000),
-        updatedAt: new Date(now.getTime() - 900000),
-      },
-      {
-        id: 'debug-msg-007',
-        content:
-          'server response to: I can help you analyze customer data. Please provide the specific data you would like me to examine.',
-        conversationId: 'debug-conv-robot-integration-001',
-        fromUserId: 'debug-robot-001',
-        fromRole: UserRole.ROBOT,
-        toRole: UserRole.AGENT,
-        messageType: MessageType.ROBOT,
-        createdAt: new Date(now.getTime() - 600000),
-        updatedAt: new Date(now.getTime() - 600000),
-      },
-    ];
-
-    // Store all debug messages
-    [...debugMessages1, ...debugMessages2, ...debugMessages4].forEach(
-      (message) => {
-        this.messages.set(message.id, message);
-      },
-    );
-  }
-
-  async createMessage(createMessageDto: CreateMessageDto): Promise<Message> {
+  /**
+   * Add a message to a conversation
+   * This is the core method - all messages go through here
+   */
+  async addMessage(createMessageDto: CreateMessageDto): Promise<Message> {
     const messageId = this.generateId();
     const now = new Date();
 
-    // Add server echo prefix to all messages
-    const echoContent = `server response to: ${createMessageDto.content}`;
-
     const message: Message = {
       id: messageId,
-      content: echoContent,
+      content: createMessageDto.content,
       conversationId: createMessageDto.conversationId,
       fromUserId: createMessageDto.fromUserId,
       fromRole: createMessageDto.fromRole,
@@ -286,24 +53,78 @@ export class ChatManagerService {
       updatedAt: now,
     };
 
+    // Store the message
     this.messages.set(messageId, message);
+
+    // Update conversation activity
     await this.updateConversationActivity(createMessageDto.conversationId);
+
+    // Broadcast message to WebSocket subscribers
+    if (this.gateway) {
+      this.gateway.broadcastToConversation(
+        createMessageDto.conversationId,
+        'new_message',
+        {
+          message,
+          timestamp: now.toISOString(),
+        },
+      );
+    }
 
     return message;
   }
 
+  /**
+   * Legacy method for backward compatibility
+   * Redirects to addMessage
+   */
+  async createMessage(createMessageDto: CreateMessageDto): Promise<Message> {
+    return this.addMessage(createMessageDto);
+  }
+
+  /**
+   * Add a message from external sources (Slack, API, etc.)
+   * Simplified version of addMessage with sensible defaults
+   */
+  async addExternalMessage(
+    conversationId: string,
+    fromUserId: string,
+    content: string,
+    messageType: MessageType = MessageType.TEXT,
+    fromRole: UserRole = UserRole.CUSTOMER,
+    toRole: UserRole = UserRole.AGENT,
+  ): Promise<Message> {
+    return this.addMessage({
+      content,
+      conversationId,
+      fromUserId,
+      fromRole,
+      toRole,
+      messageType,
+    });
+  }
+
+  /**
+   * Get all conversations
+   */
   async getConversations(userId?: string): Promise<Conversation[]> {
-    const conversations = Array.from(this.conversations.values());
+    let conversations = Array.from(this.conversations.values());
 
     if (userId) {
-      return conversations.filter((conv) =>
+      // Filter conversations where user is a participant
+      conversations = conversations.filter((conv) =>
         conv.participantIds.includes(userId),
       );
     }
 
-    return conversations.filter((conv) => conv.isActive);
+    return conversations.sort(
+      (a, b) => b.lastMessageAt.getTime() - a.lastMessageAt.getTime(),
+    );
   }
 
+  /**
+   * Get messages for a conversation with filtering and pagination
+   */
   async getMessages(
     conversationId: string,
     query: GetMessagesDto,
@@ -334,6 +155,9 @@ export class ChatManagerService {
     return filteredMessages.slice(startIndex, endIndex);
   }
 
+  /**
+   * Get the last N messages from a conversation
+   */
   async getLastMessages(
     conversationId: string,
     count: number,
@@ -346,62 +170,135 @@ export class ChatManagerService {
     return messages.reverse(); // Return in chronological order
   }
 
+  /**
+   * Join a conversation as a participant
+   */
   async joinConversation(
     conversationId: string,
     joinRoomDto: JoinRoomDto,
   ): Promise<Participant> {
+    const conversation = this.conversations.get(conversationId);
+    if (!conversation) {
+      throw new Error(`Conversation ${conversationId} not found`);
+    }
+
     const participant: Participant = {
       userId: joinRoomDto.userId,
       userRole: joinRoomDto.userRole,
       joinedAt: new Date(),
     };
 
+    // Get existing participants or create new array
     const existingParticipants = this.participants.get(conversationId) || [];
-    const isAlreadyParticipant = existingParticipants.some(
+
+    // Check if user is already a participant
+    const existingParticipant = existingParticipants.find(
       (p) => p.userId === joinRoomDto.userId,
     );
 
-    if (!isAlreadyParticipant) {
+    if (!existingParticipant) {
+      // Add new participant
       existingParticipants.push(participant);
       this.participants.set(conversationId, existingParticipants);
 
-      // Update conversation participant list
-      const conversation = this.conversations.get(conversationId);
-      if (conversation) {
+      // Update conversation participant lists
+      if (!conversation.participantIds.includes(joinRoomDto.userId)) {
         conversation.participantIds.push(joinRoomDto.userId);
         conversation.participantRoles.push(joinRoomDto.userRole);
         this.conversations.set(conversationId, conversation);
       }
+
+      // Broadcast participant added event to dashboard
+      if (this.gateway) {
+        this.gateway.broadcastToDashboard('conversation_participant_added', {
+          conversationId,
+          participant,
+          action: 'added',
+          timestamp: new Date().toISOString(),
+        });
+      }
     }
 
-    return participant;
+    return existingParticipant || participant;
   }
 
+  /**
+   * Get participants of a conversation
+   */
   async getParticipants(conversationId: string): Promise<Participant[]> {
     return this.participants.get(conversationId) || [];
   }
 
-  async getDashboardStats(): Promise<DashboardStats> {
-    const activeConversations = Array.from(this.conversations.values()).filter(
-      (c) => c.isActive,
+  /**
+   * Remove a participant from a conversation
+   */
+  async leaveConversation(
+    conversationId: string,
+    userId: string,
+  ): Promise<boolean> {
+    const existingParticipants = this.participants.get(conversationId) || [];
+    const participantIndex = existingParticipants.findIndex(
+      (p) => p.userId === userId,
     );
-    const totalMessages = this.messages.size;
-    const allParticipants = new Set();
 
-    this.participants.forEach((participantList) => {
-      participantList.forEach((p) => allParticipants.add(p.userId));
-    });
+    if (participantIndex === -1) {
+      return false; // User wasn't a participant
+    }
+
+    // Remove participant
+    const removedParticipant = existingParticipants[participantIndex];
+    existingParticipants.splice(participantIndex, 1);
+    this.participants.set(conversationId, existingParticipants);
+
+    // Update conversation participant lists
+    const conversation = this.conversations.get(conversationId);
+    if (conversation) {
+      const userIndex = conversation.participantIds.indexOf(userId);
+      if (userIndex !== -1) {
+        conversation.participantIds.splice(userIndex, 1);
+        conversation.participantRoles.splice(userIndex, 1);
+        this.conversations.set(conversationId, conversation);
+      }
+    }
+
+    // Broadcast participant removed event to dashboard
+    if (this.gateway) {
+      this.gateway.broadcastToDashboard('conversation_participant_removed', {
+        conversationId,
+        participant: removedParticipant,
+        action: 'removed',
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    return true;
+  }
+
+  /**
+   * Get dashboard statistics
+   */
+  async getDashboardStats(): Promise<DashboardStats> {
+    const now = new Date();
+    const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+
+    const conversations = Array.from(this.conversations.values());
+    const messages = Array.from(this.messages.values());
+
+    const activeConversations = conversations.filter((c) => c.isActive).length;
+    const recentMessages = messages.filter((m) => m.createdAt > oneHourAgo);
+    const activeUsers = new Set(recentMessages.map((m) => m.fromUserId)).size;
 
     return {
-      activeConversations: activeConversations.length,
-      totalMessages,
-      activeUsers: allParticipants.size,
-      queuedConversations: activeConversations.filter(
-        (c) => c.participantIds.length === 1,
-      ).length,
+      activeConversations,
+      totalMessages: messages.length,
+      activeUsers,
+      queuedConversations: 0, // Could be enhanced based on your needs
     };
   }
 
+  /**
+   * Start a new conversation
+   */
   async startConversation(
     startConversationDto: StartConversationDto,
   ): Promise<Conversation> {
@@ -419,80 +316,148 @@ export class ChatManagerService {
       updatedAt: now,
     };
 
+    // Store conversation
     this.conversations.set(conversationId, conversation);
 
-    // Add the creator as a participant
+    // Add creator as participant
     const creatorParticipant: Participant = {
       userId: startConversationDto.createdBy,
       userRole: startConversationDto.createdByRole,
       joinedAt: now,
     };
 
-    this.participants.set(conversationId, [creatorParticipant]);
+    const participantList = [creatorParticipant];
 
-    // If there are initial participants, add them as well
-    if (
-      startConversationDto.initialParticipants &&
-      startConversationDto.initialParticipants.length > 0
-    ) {
-      const existingParticipants = this.participants.get(conversationId) || [];
-
+    // Add initial participants if provided
+    if (startConversationDto.initialParticipants) {
       for (const participantId of startConversationDto.initialParticipants) {
-        // Don't add the creator again
         if (participantId !== startConversationDto.createdBy) {
-          const participant: Participant = {
+          participantList.push({
             userId: participantId,
-            userRole: UserRole.CUSTOMER, // Default role for invited participants
+            userRole: UserRole.CUSTOMER, // Default role for additional participants
             joinedAt: now,
-          };
+          });
 
-          existingParticipants.push(participant);
-
-          // Update conversation participant tracking
           conversation.participantIds.push(participantId);
           conversation.participantRoles.push(UserRole.CUSTOMER);
         }
       }
+    }
 
-      this.participants.set(conversationId, existingParticipants);
+    this.participants.set(conversationId, participantList);
+
+    // Broadcast conversation created event to dashboard
+    if (this.gateway) {
+      this.gateway.broadcastToDashboard('conversation_created', {
+        conversation,
+        createdBy: startConversationDto.createdBy,
+        initialParticipants: startConversationDto.initialParticipants || [],
+        timestamp: now.toISOString(),
+      });
     }
 
     return conversation;
   }
 
-  // Helper methods
+  /**
+   * Get or create a conversation from external source (like Slack)
+   */
+  async getOrCreateExternalConversation(
+    externalConversationId: string,
+    createdBy: string,
+    source: string = 'external',
+    channelName?: string,
+  ): Promise<Conversation> {
+    // Check if conversation already exists
+    const existingConversation = this.conversations.get(externalConversationId);
+    if (existingConversation) {
+      return existingConversation;
+    }
+
+    // Create new conversation
+    const now = new Date();
+    const displayName = channelName
+      ? `${source} - ${channelName}`
+      : `${source} - ${externalConversationId}`;
+
+    const conversation: Conversation = {
+      id: externalConversationId,
+      participantIds: [createdBy],
+      participantRoles: [UserRole.CUSTOMER], // External users start as customers
+      messageCount: 0,
+      lastMessageAt: now,
+      isActive: true,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    this.conversations.set(externalConversationId, conversation);
+
+    // Add the creator as a participant
+    const creatorParticipant: Participant = {
+      userId: createdBy,
+      userRole: UserRole.CUSTOMER,
+      joinedAt: now,
+    };
+
+    this.participants.set(externalConversationId, [creatorParticipant]);
+
+    // Broadcast conversation created event to dashboard
+    if (this.gateway) {
+      this.gateway.broadcastToDashboard('conversation_created', {
+        conversation,
+        createdBy,
+        source,
+        displayName,
+        timestamp: now.toISOString(),
+      });
+    }
+
+    return conversation;
+  }
+
+  // Private helper methods
+
   private generateId(): string {
-    return Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
+    return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   }
 
   private async updateConversationActivity(
     conversationId: string,
   ): Promise<void> {
-    let conversation = this.conversations.get(conversationId);
-
+    const conversation = this.conversations.get(conversationId);
     if (!conversation) {
-      conversation = {
-        id: conversationId,
-        participantIds: [],
-        participantRoles: [],
-        messageCount: 0,
-        lastMessageAt: new Date(),
-        isActive: true,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
+      return;
     }
 
+    // Update conversation statistics
     conversation.messageCount += 1;
-    conversation.lastMessageAt = new Date();
-    conversation.updatedAt = new Date();
+    const now = new Date();
+    conversation.lastMessageAt = now;
+    conversation.updatedAt = now;
 
     this.conversations.set(conversationId, conversation);
+
+    // Broadcast conversation updated event to dashboard
+    if (this.gateway) {
+      this.gateway.broadcastToDashboard('conversation_updated', {
+        conversationId,
+        changes: {
+          messageCount: conversation.messageCount,
+          lastMessageAt: conversation.lastMessageAt,
+          updatedAt: conversation.updatedAt,
+        },
+        timestamp: now.toISOString(),
+      });
+    }
   }
 
   private isMessageVisibleToUser(message: Message, userId: string): boolean {
-    // Implement message visibility rules based on your business logic
-    // This is a simplified version - you'll want to implement proper role-based visibility
-    return true;
+    // Simple visibility logic - can be enhanced based on your requirements
+    return (
+      message.fromUserId === userId ||
+      message.toRole === UserRole.CUSTOMER ||
+      message.fromRole === UserRole.CUSTOMER
+    );
   }
 }

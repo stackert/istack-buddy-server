@@ -24,7 +24,10 @@ export class ChatManagerGateway
   @WebSocketServer()
   server: Server;
 
-  constructor(private readonly chatManagerService: ChatManagerService) {}
+  constructor(private readonly chatManagerService: ChatManagerService) {
+    // Set the gateway reference in the service so it can broadcast messages
+    this.chatManagerService.setGateway(this);
+  }
 
   handleConnection(client: Socket) {
     console.log(`Client connected: ${client.id}`);
@@ -91,15 +94,21 @@ export class ChatManagerGateway
 
   @SubscribeMessage('leave_room')
   async handleLeaveRoom(
-    @MessageBody() data: { conversationId: string },
+    @MessageBody() data: { conversationId: string; userId?: string },
     @ConnectedSocket() client: Socket,
   ) {
-    const { conversationId } = data;
+    const { conversationId, userId } = data;
     await client.leave(conversationId);
+
+    // If userId is provided, remove them from conversation participants
+    if (userId) {
+      await this.chatManagerService.leaveConversation(conversationId, userId);
+    }
 
     client.to(conversationId).emit('user_left', {
       conversationId,
       socketId: client.id,
+      userId,
     });
 
     return { success: true };
@@ -177,8 +186,38 @@ export class ChatManagerGateway
     };
   }
 
+  @SubscribeMessage('join_dashboard')
+  async handleJoinDashboard(@ConnectedSocket() client: Socket) {
+    try {
+      console.log(`Client ${client.id} joining dashboard`);
+      await client.join('dashboard');
+      return { success: true, message: 'Joined dashboard room' };
+    } catch (error) {
+      console.error('Error joining dashboard:', error);
+      return { success: false, error: 'Failed to join dashboard' };
+    }
+  }
+
+  @SubscribeMessage('leave_dashboard')
+  async handleLeaveDashboard(@ConnectedSocket() client: Socket) {
+    try {
+      console.log(`Client ${client.id} leaving dashboard`);
+      await client.leave('dashboard');
+      return { success: true, message: 'Left dashboard room' };
+    } catch (error) {
+      console.error('Error leaving dashboard:', error);
+      return { success: false, error: 'Failed to leave dashboard' };
+    }
+  }
+
   // Method to broadcast to specific conversation
   broadcastToConversation(conversationId: string, event: string, data: any) {
     this.server.to(conversationId).emit(event, data);
+  }
+
+  // Method to broadcast to dashboard listeners
+  broadcastToDashboard(event: string, data: any) {
+    console.log(`📊 Broadcasting dashboard event: ${event}`);
+    this.server.to('dashboard').emit(event, data);
   }
 }

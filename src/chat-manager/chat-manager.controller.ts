@@ -72,4 +72,16 @@ export class ChatManagerController {
   async startConversation(@Body() startConversationDto: StartConversationDto) {
     return this.chatManagerService.startConversation(startConversationDto);
   }
+
+  @Post('conversations/:conversationId/leave')
+  async leaveConversation(
+    @Param('conversationId') conversationId: string,
+    @Body() data: { userId: string },
+  ) {
+    const success = await this.chatManagerService.leaveConversation(
+      conversationId,
+      data.userId,
+    );
+    return { success, conversationId, userId: data.userId };
+  }
 }

@@ -44,4 +44,24 @@ export class IstackBuddySlackApiController {
     // Delegate to the Slack service to handle the event
     return this.istackBuddySlackApiService.handleSlackEvent(req, res);
   }
+
+  @Post('istack-buddy/slack-integration/test-reaction')
+  async testReaction(@Req() req: Request) {
+    const { channel, timestamp, emoji = 'thumbsup' } = req.body;
+
+    if (!channel || !timestamp) {
+      return {
+        success: false,
+        error: 'Missing required fields: channel, timestamp',
+        usage:
+          'POST with body: { "channel": "C1234567890", "timestamp": "1234567890.123456", "emoji": "thumbsup" }',
+      };
+    }
+
+    return this.istackBuddySlackApiService.testReaction(
+      channel,
+      timestamp,
+      emoji,
+    );
+  }
 }

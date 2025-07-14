@@ -1,12 +1,12 @@
 import { Module } from '@nestjs/common';
 import { IstackBuddySlackApiService } from './istack-buddy-slack-api.service';
 import { IstackBuddySlackApiController } from './istack-buddy-slack-api.controller';
-import { ConversationListServiceModule } from '../ConversationLists';
-import { RobotModule } from '../robots/robot.module';
+import { ChatManagerModule } from '../chat-manager/chat-manager.module';
 
 @Module({
-  imports: [ConversationListServiceModule, RobotModule],
+  imports: [ChatManagerModule],
   controllers: [IstackBuddySlackApiController],
   providers: [IstackBuddySlackApiService],
+  exports: [IstackBuddySlackApiService],
 })
 export class IstackBuddySlackApiModule {}

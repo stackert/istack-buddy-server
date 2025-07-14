@@ -1,4 +1,4 @@
-import { TAnthropicIstackToolSet } from 'src/robots/types';
+import { TAnthropicIstackToolSet } from '../../types';
 import { FsRestrictedApiRoutesEnum } from './types';
 import { performMarvToolCall } from './performMarvToolCall';
 import { marvToolDefinitions } from './marvToolDefinitions';

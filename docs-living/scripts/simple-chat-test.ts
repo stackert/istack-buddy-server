@@ -6,7 +6,7 @@
  * Usage: npx ts-node docs-living/scripts/simple-chat-test.ts
  *
  * What it does:
- * 1. Connects to WebSocket server on localhost:3000
+ * 1. Connects to WebSocket server on localhost:3500
  * 2. Joins a test room
  * 3. Sends a message
  * 4. Waits for echo response
@@ -15,7 +15,7 @@
 
 import { io } from 'socket.io-client';
 
-const socket = io('http://localhost:3000');
+const socket = io('http://localhost:3500');
 
 socket.on('connect', () => {
   console.log('✅ Connected to server');

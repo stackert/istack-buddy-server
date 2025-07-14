@@ -1,6 +1,6 @@
 // TAnthropicIstackToolSet
 
-import { TAnthropicIstackToolSet } from 'src/robots/types';
+import { TAnthropicIstackToolSet } from '../../types';
 import { marvToolDefinitions } from './marvToolDefinitions';
 import { performMarvToolCall } from './performMarvToolCall';
 

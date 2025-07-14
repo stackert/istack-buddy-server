@@ -1,0 +1,12 @@
+{
+  "slack@istack.buddy": {
+    "slackUserId": "U0700000000",
+    "name": "Slack Application, as User",
+    "email": "application@example.com"
+  },
+  "t.chambers@istack.buddy": {
+    "slackUserId": "U091Y5UF14P",
+    "name": "T. Chambers",
+    "email": "t.chambers@formstack.com"
+  }
+}

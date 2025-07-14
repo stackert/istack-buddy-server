@@ -40,12 +40,21 @@ const anthropicToolSet = createCompositeToolSet(
   slackyToolSet,
   formOverviewToolSet,
 );
+
+// Comprehensive tool set for Slack integration with ALL anthropic tools
+const slackyComprehensiveToolSet = createCompositeToolSet(
+  slackyToolSet,
+  marvToolSet,
+  formOverviewToolSet,
+);
+
 const slackyOnlyToolSet = createCompositeToolSet(slackyToolSet);
 const marvOnlyToolSet = createCompositeToolSet(marvToolSet);
 
 export {
   createCompositeToolSet,
   anthropicToolSet,
+  slackyComprehensiveToolSet,
   slackyOnlyToolSet,
   marvOnlyToolSet,
 };

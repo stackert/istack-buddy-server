@@ -108,8 +108,21 @@ Please provide helpful, accurate, and detailed responses to user questions. If y
     toolName: string,
     toolArgs: any,
   ): Promise<string> {
-    const result = anthropicToolSet.executeToolCall(toolName, toolArgs);
-    return typeof result === 'string' ? result : await result;
+    console.log(`🔧 Executing tool: ${toolName} with args:`, toolArgs);
+    try {
+      const result = anthropicToolSet.executeToolCall(toolName, toolArgs);
+      const finalResult = typeof result === 'string' ? result : await result;
+      console.log(
+        `✅ Tool ${toolName} executed successfully. Result type:`,
+        typeof finalResult,
+      );
+      const jsonResult = JSON.stringify(finalResult, null, 2);
+      console.log(`📄 Complete tool result:`, jsonResult);
+      return jsonResult;
+    } catch (error) {
+      console.error(`❌ Tool ${toolName} execution failed:`, error);
+      return `Tool execution failed: ${error instanceof Error ? error.message : 'Unknown error'}`;
+    }
   }
 
   /**
@@ -213,18 +226,40 @@ Please provide helpful, accurate, and detailed responses to user questions. If y
         }
       }
 
+      console.log(
+        `📝 Initial robot response text (${responseText.length} chars):`,
+        responseText,
+      );
+      console.log(`🔧 Found ${toolUses.length} tool calls to execute`);
+
       // Execute any tool calls
       for (const toolUse of toolUses) {
+        console.log(`\n🎯 === TOOL CALL ${toolUse.name} ===`);
+        console.log(`📥 Tool input:`, JSON.stringify(toolUse.input, null, 2));
+
         try {
           const toolResult = await this.executeToolCall(
             toolUse.name,
             toolUse.input,
           );
+          console.log(
+            `📤 Tool result (${toolResult.length} chars):`,
+            toolResult,
+          );
           responseText += `\n\n${toolResult}`;
         } catch (error) {
-          responseText += `\n\nError executing tool ${toolUse.name}: ${error instanceof Error ? error.message : 'Unknown error'}`;
+          const errorMsg = `Error executing tool ${toolUse.name}: ${error instanceof Error ? error.message : 'Unknown error'}`;
+          console.log(`❌ Tool execution error:`, errorMsg);
+          responseText += `\n\n${errorMsg}`;
         }
+        console.log(`🏁 === END TOOL CALL ${toolUse.name} ===\n`);
       }
+
+      console.log(
+        `📋 Final robot response (${responseText.length} chars):`,
+        responseText.substring(0, 500) +
+          (responseText.length > 500 ? '...' : ''),
+      );
 
       // Create response envelope
       const responseEnvelope: TConversationTextMessageEnvelope = {
