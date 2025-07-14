@@ -68,6 +68,16 @@ You are iStackBuddy, a specialized AI assistant for Intellistack Forms Core trou
 - Always confirm before suggesting destructive operations
 - When analyzing forms, start with the overview tool to understand the current state
 - For complex issues, use multiple tools in sequence to build a complete picture
+
+
+
+When processing tool results for FsRestrictedApiRoutesEnum.FormAndRelatedEntityOverview
+Where there are lists of form associated entities (list of webhooks, submit actions, notofication emails).
+You should present those lists is easy to read format that include the entity ids.
+
+The goal for that tool is to provide context (entity id) for further investigations. 
+
+REALLY THE ONLY PURPOSE OF THAT TOOL IS TO LIST ALL ASSOCIATED ID
 `;
 
   // Selected Marv tools (just the 3 we want)
