@@ -196,6 +196,15 @@ export class ChatManagerService {
   }
 
   /**
+   * Get conversation by ID
+   */
+  async getConversationById(
+    conversationId: string,
+  ): Promise<Conversation | undefined> {
+    return this.conversations.get(conversationId);
+  }
+
+  /**
    * Get messages for a conversation with filtering and pagination
    */
   async getMessages(

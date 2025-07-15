@@ -1,165 +1,372 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { IstackBuddySlackApiService } from './istack-buddy-slack-api.service';
-import { ConversationListServiceModule } from '../ConversationLists';
-import { RobotModule } from '../robots/robot.module';
+import { ChatManagerService } from '../chat-manager/chat-manager.service';
+import { RobotProcessorService } from '../chat-manager/robot-processor.service';
+import { UserRole } from '../chat-manager/dto/create-message.dto';
 
 describe('IstackBuddySlackApiService', () => {
   let service: IstackBuddySlackApiService;
+  let chatManagerService: jest.Mocked<ChatManagerService>;
+  let robotProcessorService: jest.Mocked<RobotProcessorService>;
+
+  const mockConversation = {
+    id: 'test-conversation-id',
+    participantIds: ['test-user'],
+    participantRoles: [UserRole.CUSTOMER],
+    messageCount: 0,
+    lastMessageAt: new Date(),
+    isActive: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
 
   beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      imports: [ConversationListServiceModule, RobotModule],
-      providers: [IstackBuddySlackApiService],
-    }).compile();
+    // Mock setInterval to prevent hanging tests
+    jest.spyOn(global, 'setInterval').mockImplementation(() => ({}) as any);
 
-    // Ensure module initialization is complete
-    await module.init();
+    const mockChatManagerService = {
+      startConversation: jest.fn(),
+      getConversationById: jest.fn(),
+      addExternalMessage: jest.fn(),
+    };
+
+    const mockRobotProcessorService = {
+      processSlackMention: jest.fn(),
+    };
+
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        IstackBuddySlackApiService,
+        {
+          provide: ChatManagerService,
+          useValue: mockChatManagerService,
+        },
+        {
+          provide: RobotProcessorService,
+          useValue: mockRobotProcessorService,
+        },
+      ],
+    }).compile();
 
     service = module.get<IstackBuddySlackApiService>(
       IstackBuddySlackApiService,
     );
+    chatManagerService = module.get(ChatManagerService);
+    robotProcessorService = module.get(RobotProcessorService);
+  });
+
+  afterEach(() => {
+    // Restore setInterval
+    jest.restoreAllMocks();
   });
 
   it('should be defined', () => {
     expect(service).toBeDefined();
   });
 
-  it('should integrate with ConversationListService', () => {
-    // Test that the service has access to the conversation service
-    expect(service['conversationService']).toBeDefined();
-  });
-
-  describe('handleSlackEvent', () => {
-    let mockResponse: any;
-
+  describe('getOrCreateConversationForContext', () => {
     beforeEach(() => {
-      mockResponse = {
-        status: jest.fn().mockReturnThis(),
-        json: jest.fn(),
-      };
+      // Clear the internal mapping before each test
+      (service as any).slackThreadToConversationMap = {};
     });
 
-    it('should handle URL verification challenge', async () => {
-      const mockRequest = {
-        body: {
-          type: 'url_verification',
-          challenge: 'test-challenge-123',
-        },
-      };
+    describe('new conversation detection', () => {
+      it('should create new conversation when no thread_ts and event_ts equals ts', async () => {
+        // Arrange
+        const event = {
+          user: 'test-user',
+          ts: '1234567890.123456',
+          event_ts: '1234567890.123456',
+          text: 'Hello @istackbuddy',
+          // No thread_ts property
+        };
 
-      await service.handleSlackEvent(mockRequest, mockResponse);
+        chatManagerService.startConversation.mockResolvedValue(
+          mockConversation,
+        );
 
-      expect(mockResponse.status).toHaveBeenCalledWith(200);
-      expect(mockResponse.json).toHaveBeenCalledWith({
-        challenge: 'test-challenge-123',
+        // Act
+        const result = await (service as any).getOrCreateConversationForContext(
+          event,
+        );
+
+        // Assert
+        expect(result).toEqual(mockConversation);
+        expect(chatManagerService.startConversation).toHaveBeenCalledWith({
+          createdBy: 'test-user',
+          createdByRole: UserRole.CUSTOMER,
+          title: 'Slack Channel Conversation',
+          description: 'Slack conversation from channel mention',
+          initialParticipants: ['test-user'],
+        });
+
+        // Verify mapping was created
+        const mapping = (service as any).slackThreadToConversationMap;
+        expect(mapping['1234567890.123456']).toBe('test-conversation-id');
+      });
+
+      it('should create new conversation when thread_ts is undefined and event_ts equals ts', async () => {
+        // Arrange
+        const event = {
+          user: 'test-user',
+          ts: '1234567890.123456',
+          event_ts: '1234567890.123456',
+          text: 'Hello @istackbuddy',
+          thread_ts: undefined,
+        };
+
+        chatManagerService.startConversation.mockResolvedValue(
+          mockConversation,
+        );
+
+        // Act
+        const result = await (service as any).getOrCreateConversationForContext(
+          event,
+        );
+
+        // Assert
+        expect(result).toEqual(mockConversation);
+        expect(chatManagerService.startConversation).toHaveBeenCalledTimes(1);
+      });
+
+      it('should create new conversation when thread_ts is null and event_ts equals ts', async () => {
+        // Arrange
+        const event = {
+          user: 'test-user',
+          ts: '1234567890.123456',
+          event_ts: '1234567890.123456',
+          text: 'Hello @istackbuddy',
+          thread_ts: null,
+        };
+
+        chatManagerService.startConversation.mockResolvedValue(
+          mockConversation,
+        );
+
+        // Act
+        const result = await (service as any).getOrCreateConversationForContext(
+          event,
+        );
+
+        // Assert
+        expect(result).toEqual(mockConversation);
+        expect(chatManagerService.startConversation).toHaveBeenCalledTimes(1);
       });
     });
 
-    it('should handle event callback with app mention', async () => {
-      // Mock fetch globally
-      global.fetch = jest.fn().mockResolvedValue({
-        ok: true,
-        status: 200,
-        json: () => Promise.resolve({ ok: true }),
+    describe('existing conversation detection', () => {
+      it('should return null when thread_ts exists but not found in mapping', async () => {
+        // Arrange
+        const event = {
+          user: 'test-user',
+          ts: '1234567890.123456',
+          event_ts: '1234567890.123456',
+          text: 'Reply in thread',
+          thread_ts: '1234567889.111111', // Different from ts
+        };
+
+        // Act
+        const result = await (service as any).getOrCreateConversationForContext(
+          event,
+        );
+
+        // Assert
+        expect(result).toBeNull();
+        expect(chatManagerService.startConversation).not.toHaveBeenCalled();
+        expect(chatManagerService.getConversationById).not.toHaveBeenCalled();
       });
 
-      const mockRequest = {
-        body: {
-          type: 'event_callback',
-          event: {
-            type: 'app_mention',
-            user: 'U123456789',
-            channel: 'C987654321',
-            text: '<@UBOT123456> Hello there!',
-            ts: '1234567890.123456',
-          },
-        },
-      };
+      it('should return conversation when thread_ts exists and found in mapping', async () => {
+        // Arrange
+        const threadTs = '1234567889.111111';
+        const conversationId = 'existing-conversation-id';
 
-      // Get conversation service to verify conversation creation
-      const conversationService = service['conversationService'];
-      const initialConversationCount =
-        conversationService.getConversationCount();
+        // Pre-populate the mapping
+        (service as any).slackThreadToConversationMap[threadTs] =
+          conversationId;
 
-      await service.handleSlackEvent(mockRequest, mockResponse);
+        const event = {
+          user: 'test-user',
+          ts: '1234567890.123456',
+          event_ts: '1234567890.123456',
+          text: 'Reply in thread',
+          thread_ts: threadTs,
+        };
 
-      // Verify response
-      expect(mockResponse.status).toHaveBeenCalledWith(200);
-      expect(mockResponse.json).toHaveBeenCalledWith({ ok: true });
+        const existingConversation = {
+          ...mockConversation,
+          id: conversationId,
+        };
+        chatManagerService.getConversationById.mockResolvedValue(
+          existingConversation,
+        );
 
-      // Verify conversation was created/updated
-      const finalConversationCount = conversationService.getConversationCount();
-      expect(finalConversationCount).toBeGreaterThanOrEqual(
-        initialConversationCount,
-      );
+        // Act
+        const result = await (service as any).getOrCreateConversationForContext(
+          event,
+        );
 
-      // Verify conversation exists and has messages
-      const conversationId = 'slack-channel-C987654321';
-      const conversation =
-        conversationService.getConversationById(conversationId);
+        // Assert
+        expect(result).toEqual(existingConversation);
+        expect(chatManagerService.getConversationById).toHaveBeenCalledWith(
+          conversationId,
+        );
+        expect(chatManagerService.startConversation).not.toHaveBeenCalled();
+      });
 
-      expect(conversation).toBeDefined();
-      expect(conversation!.getMessageCount()).toBeGreaterThan(0);
+      it('should return null when conversation found in mapping but not in ChatManager', async () => {
+        // Arrange
+        const threadTs = '1234567889.111111';
+        const conversationId = 'missing-conversation-id';
 
-      // Verify fetch was called to send response to Slack
-      expect(global.fetch).toHaveBeenCalledWith(
-        'https://slack.com/api/chat.postMessage',
-        expect.objectContaining({
-          method: 'POST',
-          headers: expect.objectContaining({
-            'Content-Type': 'application/json',
-          }),
-          body: expect.stringContaining('C987654321'),
-        }),
-      );
+        // Pre-populate the mapping
+        (service as any).slackThreadToConversationMap[threadTs] =
+          conversationId;
 
-      // Clean up
-      (global.fetch as jest.Mock).mockRestore();
+        const event = {
+          user: 'test-user',
+          ts: '1234567890.123456',
+          event_ts: '1234567890.123456',
+          text: 'Reply in thread',
+          thread_ts: threadTs,
+        };
+
+        // Return undefined (conversation not found)
+        chatManagerService.getConversationById.mockResolvedValue(undefined);
+
+        // Act
+        const result = await (service as any).getOrCreateConversationForContext(
+          event,
+        );
+
+        // Assert
+        expect(result).toBeNull();
+        expect(chatManagerService.getConversationById).toHaveBeenCalledWith(
+          conversationId,
+        );
+        expect(chatManagerService.startConversation).not.toHaveBeenCalled();
+      });
     });
 
-    it('should handle network errors gracefully', async () => {
-      // Mock fetch to throw an error
-      global.fetch = jest.fn().mockRejectedValue(new Error('Network error'));
+    describe('edge cases', () => {
+      it('should not create new conversation when thread_ts exists even if event_ts equals ts', async () => {
+        // Arrange
+        const event = {
+          user: 'test-user',
+          ts: '1234567890.123456',
+          event_ts: '1234567890.123456',
+          text: 'Reply in existing thread',
+          thread_ts: '1234567889.111111', // Has thread_ts, so not new
+        };
 
-      const mockRequest = {
-        body: {
-          type: 'event_callback',
-          event: {
-            type: 'app_mention',
-            user: 'U123456789',
-            channel: 'C987654321',
-            text: '<@UBOT123456> Hello there!',
-            ts: '1234567890.123456',
-          },
-        },
-      };
+        // Act
+        const result = await (service as any).getOrCreateConversationForContext(
+          event,
+        );
 
-      await service.handleSlackEvent(mockRequest, mockResponse);
+        // Assert
+        expect(result).toBeNull(); // Should return null because thread not in mapping
+        expect(chatManagerService.startConversation).not.toHaveBeenCalled();
+      });
 
-      // Even with errors in handleAppMention, the main handler should return 200
-      // to acknowledge receipt of the event (Slack requirement)
-      expect(mockResponse.status).toHaveBeenCalledWith(200);
-      expect(mockResponse.json).toHaveBeenCalledWith({ ok: true });
+      it('should not create new conversation when event_ts does not equal ts', async () => {
+        // Arrange
+        const event = {
+          user: 'test-user',
+          ts: '1234567890.123456',
+          event_ts: '1234567890.999999', // Different from ts
+          text: 'Hello @istackbuddy',
+          // No thread_ts
+        };
 
-      // Clean up
-      (global.fetch as jest.Mock).mockRestore();
+        // Act
+        const result = await (service as any).getOrCreateConversationForContext(
+          event,
+        );
+
+        // Assert
+        expect(result).toBeNull(); // Should return null because condition not met
+        expect(chatManagerService.startConversation).not.toHaveBeenCalled();
+      });
+
+      it('should handle empty string thread_ts as existing conversation attempt', async () => {
+        // Arrange
+        const event = {
+          user: 'test-user',
+          ts: '1234567890.123456',
+          event_ts: '1234567890.123456',
+          text: 'Reply in thread',
+          thread_ts: '', // Empty string - should be treated as existing conversation
+        };
+
+        // Mock to ensure we don't accidentally call startConversation
+        chatManagerService.startConversation.mockResolvedValue(
+          mockConversation,
+        );
+
+        // Act
+        const result = await (service as any).getOrCreateConversationForContext(
+          event,
+        );
+
+        // Assert
+        expect(result).toBeNull(); // Should return null because empty string not in mapping
+        expect(chatManagerService.startConversation).not.toHaveBeenCalled();
+        expect(chatManagerService.getConversationById).not.toHaveBeenCalled();
+      });
     });
 
-    it('should handle unknown event types gracefully', async () => {
-      const mockRequest = {
-        body: {
-          type: 'event_callback',
-          event: {
-            type: 'unknown_event_type',
-            // Unknown event type should be handled gracefully
-          },
-        },
-      };
+    describe('mapping management', () => {
+      it('should correctly map thread timestamp to conversation ID for new conversations', async () => {
+        // Arrange
+        const event = {
+          user: 'test-user',
+          ts: '1234567890.123456',
+          event_ts: '1234567890.123456',
+          text: 'Hello @istackbuddy',
+        };
 
-      await service.handleSlackEvent(mockRequest, mockResponse);
+        chatManagerService.startConversation.mockResolvedValue(
+          mockConversation,
+        );
 
-      expect(mockResponse.status).toHaveBeenCalledWith(200);
-      expect(mockResponse.json).toHaveBeenCalledWith({ ok: true });
+        // Act
+        await (service as any).getOrCreateConversationForContext(event);
+
+        // Assert
+        const mapping = (service as any).slackThreadToConversationMap;
+        expect(mapping[event.ts]).toBe(mockConversation.id);
+      });
+
+      it('should preserve existing mappings when looking up conversations', async () => {
+        // Arrange
+        const existingMapping = {
+          '1111111111.111111': 'conv-1',
+          '2222222222.222222': 'conv-2',
+        };
+        (service as any).slackThreadToConversationMap = { ...existingMapping };
+
+        const threadTs = '2222222222.222222';
+        const event = {
+          user: 'test-user',
+          ts: '1234567890.123456',
+          event_ts: '1234567890.123456',
+          text: 'Reply in thread',
+          thread_ts: threadTs,
+        };
+
+        const existingConversation = { ...mockConversation, id: 'conv-2' };
+        chatManagerService.getConversationById.mockResolvedValue(
+          existingConversation,
+        );
+
+        // Act
+        await (service as any).getOrCreateConversationForContext(event);
+
+        // Assert
+        const mapping = (service as any).slackThreadToConversationMap;
+        expect(mapping).toEqual(existingMapping); // Should be unchanged
+      });
     });
   });
 });

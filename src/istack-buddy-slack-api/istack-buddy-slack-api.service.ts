@@ -102,7 +102,7 @@ export class IstackBuddySlackApiService {
    */
   async handleSlackEvent(req: any, res: any): Promise<void> {
     try {
-      // 📝 LOG ALL INCOMING EVENTS FIRST (before any processing)
+      // LOG ALL INCOMING EVENTS FIRST (before any processing)
       const body = req.body;
       await this.logSlackEvent(body);
 
@@ -127,7 +127,7 @@ export class IstackBuddySlackApiService {
 
       // Handle app mention events
       if (body.event && body.event.type === 'app_mention') {
-        this.logger.log('📢 Received app mention event');
+        this.logger.log('Received app mention event');
         await this.handleAppMention(body.event, body.event_time, body.event_id);
         res.status(200).json({ status: 'ok' });
         return;
@@ -164,7 +164,7 @@ export class IstackBuddySlackApiService {
       this.logger.log(
         `Received mention from user ${event.user} in channel ${event.channel}`,
       );
-      this.logger.log(`📄 Message text: "${event.text}"`);
+      this.logger.log(`Message text: "${event.text}"`);
 
       // DETERMINE CONVERSATION CONTEXT
       conversationContext = this.determineConversationContext(event);
@@ -180,13 +180,15 @@ export class IstackBuddySlackApiService {
       // IMMEDIATE ACKNOWLEDGMENT - Add thinking emoji reaction
       await this.addSlackReaction('thinking_face', event.channel, event.ts);
 
-      // 🏠 STEP 1: Create/get conversation in ChatManager
-      const conversation = await this.getOrCreateConversationForContext(
-        conversationContext,
-        event.user,
-      );
+      // STEP 1: Create/get conversation in ChatManager
+      const conversation = await this.getOrCreateConversationForContext(event);
 
-      // 📝 STEP 2: Add user message to conversation
+      if (!conversation) {
+        this.logger.error('Failed to get or create conversation for event.');
+        return;
+      }
+
+      // STEP 2: Add user message to conversation
       const userMessage = await this.chatManagerService.addExternalMessage(
         conversation.id,
         event.user,
@@ -241,7 +243,7 @@ export class IstackBuddySlackApiService {
 
       this.logger.log(`Robot message added: ${robotMessage.id}`);
 
-      // 📲 STEP 5: Send robot response to Slack (in correct thread)
+      // STEP 5: Send robot response to Slack (in correct thread)
       this.logger.log('Sending response to Slack...');
       const responseThreadTs = conversationContext.responseThreadTs || event.ts;
       this.logger.log(`Response will be sent to thread: ${responseThreadTs}`);
@@ -358,7 +360,7 @@ export class IstackBuddySlackApiService {
    */
   async testReaction(channelId: string, timestamp: string, emojiName: string) {
     this.logger.log(
-      `🧪 Testing reaction API with channel: ${channelId}, timestamp: ${timestamp}, emoji: ${emojiName}`,
+      `Testing reaction API with channel: ${channelId}, timestamp: ${timestamp}, emoji: ${emojiName}`,
     );
 
     try {
@@ -426,55 +428,57 @@ export class IstackBuddySlackApiService {
   }
 
   /**
-   * Create or get conversation based on context
+   * Create or get conversation based on event
    */
   private async getOrCreateConversationForContext(
-    context: ConversationContext,
-    userId: string,
-  ): Promise<Conversation> {
-    if (context.action === 'Adding to existing' && context.conversationId) {
-      // Try to get existing conversation
-      const conversations = await this.chatManagerService.getConversations();
+    event: any,
+  ): Promise<Conversation | null> {
+    const isNewConversation =
+      event.thread_ts == null && event.event_ts === event.ts;
 
-      //      WE SHOULD NOT BE SEARCHING OVER ALL CONVERSATIONS - THAT IS A FUNCTION OF THE SERVICES
+    if (isNewConversation) {
+      // Create new conversation - let ChatManager generate the ID
+      const conversation = await this.chatManagerService.startConversation({
+        createdBy: event.user,
+        createdByRole: UserRole.CUSTOMER,
+        title: 'Slack Channel Conversation',
+        description: `Slack conversation from channel mention`,
+        initialParticipants: [event.user],
+      });
 
-      const existingConversation = conversations.find(
-        (c) => c.id === context.conversationId,
+      // Map the Slack thread to this conversation ID for future lookups
+      this.slackThreadToConversationMap[event.ts] = conversation.id;
+
+      this.logger.log(`Created new conversation: ${conversation.id}`);
+      this.logger.log(
+        `Mapped Slack thread ${event.ts} to conversation ${conversation.id}`,
       );
 
-      if (existingConversation) {
-        return existingConversation;
-      } else {
-        this.logger.log(
-          `Expected existing conversation not found, creating new one`,
+      return conversation;
+    } else {
+      // Try to get existing conversation from our mapping
+      const conversationId = this.slackThreadToConversationMap[event.thread_ts];
+
+      if (!conversationId) {
+        this.logger.error(
+          `Expected existing conversation for thread ${event.thread_ts} but not found in mapping`,
         );
+        return null;
       }
+
+      // Get the conversation from ChatManager
+      const existingConversation =
+        await this.chatManagerService.getConversationById(conversationId);
+
+      if (!existingConversation) {
+        this.logger.error(
+          `Conversation ${conversationId} found in mapping but not in ChatManager`,
+        );
+        return null;
+      }
+
+      return existingConversation;
     }
-
-    // Create new conversation - let ChatManager generate the ID
-    const displayName = this.getDisplayNameForContext(context);
-
-    const conversation = await this.chatManagerService.startConversation({
-      createdBy: userId,
-      createdByRole: UserRole.CUSTOMER,
-      title: displayName,
-      description: `Slack conversation from ${context.type}`,
-      initialParticipants: [userId],
-    });
-
-    // Map the Slack thread to this conversation ID for future lookups
-    this.slackThreadToConversationMap[context.slackThreadTs] = conversation.id;
-    // this.slackThreadToConversationMap.set(
-    //   context.slackThreadTs,
-    //   conversation.id,
-    // );
-
-    this.logger.log(`Created new conversation: ${conversation.id}`);
-    this.logger.log(
-      `Mapped Slack thread ${context.slackThreadTs} to conversation ${conversation.id}`,
-    );
-
-    return conversation;
   }
 
   /**
