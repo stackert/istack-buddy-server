@@ -3,12 +3,25 @@ import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as cookieParser from 'cookie-parser';
 import * as dotenv from 'dotenv';
+import { json } from 'express';
 
 // Load environment variables from .env file
 dotenv.config();
 
 export async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // Configure raw body parsing for Slack webhooks
+  app.use(
+    '/istack-buddy/slack-integration/slack/events',
+    json({
+      verify: (req: any, res, buf) => {
+        // Store raw body for Slack signature verification and logging
+        req.rawBody = buf;
+        req.rawBodyString = buf.toString();
+      },
+    }),
+  );
 
   // CORS configuration for client communication - TEMPORARY: Allow all origins
   app.enableCors({

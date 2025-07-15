@@ -25,25 +25,54 @@ export class RobotService implements OnModuleInit {
    * Initialize all available robots
    */
   private initializeRobots(): void {
-    const robotInstances: AbstractRobot[] = [
-      new ChatRobotParrot(),
-      new AgentRobotParrot(),
-      new RobotChatOpenAI(),
-      new RobotChatAnthropic(),
-      new SlackyAnthropicAgent(),
-      // new PseudoRobotRouter(),
-      // new PseudoRobotRouterSuggestions(),
-      // new PseudoRobotDocumentationSuggestions(),
-      new SlackAgentCoreFormsParrot(),
-      new SlackAgentCoreFormsSsoAutofillParrot(),
-    ];
+    // Check if fake parrot robot mode is enabled
+    const useFakeParrotRobot = process.env.USE_FAKE_PARROT_ROBOT !== undefined;
 
-    robotInstances.forEach((robot) => {
-      this.robots.set(robot.name, robot);
-      this.logger.debug(
-        `Registered robot: ${robot.name} v${robot.getVersion()}`,
+    if (useFakeParrotRobot) {
+      this.logger.log(
+        '🦜 USE_FAKE_PARROT_ROBOT detected - using AgentRobotParrot for all robots',
       );
-    });
+
+      // Create AgentRobotParrot instances with the names of real robots
+      const robotNames = [
+        'ChatRobotParrot',
+        'AgentRobotParrot',
+        'RobotChatOpenAI',
+        'RobotChatAnthropic',
+        'SlackyAnthropicAgent',
+        'SlackAgentCoreFormsParrot',
+        'SlackAgentCoreFormsSsoAutofillParrot',
+      ];
+
+      robotNames.forEach((robotName) => {
+        const parrotRobot = new AgentRobotParrot();
+        // Override the name to match the real robot
+        (parrotRobot as any).name = robotName;
+        this.robots.set(robotName, parrotRobot);
+        this.logger.debug(`Registered fake parrot robot: ${robotName}`);
+      });
+    } else {
+      // Normal robot initialization
+      const robotInstances: AbstractRobot[] = [
+        new ChatRobotParrot(),
+        new AgentRobotParrot(),
+        new RobotChatOpenAI(),
+        new RobotChatAnthropic(),
+        new SlackyAnthropicAgent(),
+        // new PseudoRobotRouter(),
+        // new PseudoRobotRouterSuggestions(),
+        // new PseudoRobotDocumentationSuggestions(),
+        new SlackAgentCoreFormsParrot(),
+        new SlackAgentCoreFormsSsoAutofillParrot(),
+      ];
+
+      robotInstances.forEach((robot) => {
+        this.robots.set(robot.name, robot);
+        this.logger.debug(
+          `Registered robot: ${robot.name} v${robot.getVersion()}`,
+        );
+      });
+    }
   }
 
   /**

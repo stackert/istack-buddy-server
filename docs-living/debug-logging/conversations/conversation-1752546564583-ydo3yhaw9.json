@@ -1,0 +1,94 @@
+{
+  "conversationId": "1752546564583-ydo3yhaw9",
+  "timestamp": "2025-07-15T02:30:14.654Z",
+  "conversation": {
+    "id": "1752546564583-ydo3yhaw9",
+    "participantIds": [
+      "U091Y5UF14P"
+    ],
+    "participantRoles": [
+      "cx-customer"
+    ],
+    "messageCount": 6,
+    "lastMessageAt": "2025-07-15T02:30:14.653Z",
+    "isActive": true,
+    "createdAt": "2025-07-15T02:29:24.583Z",
+    "updatedAt": "2025-07-15T02:30:14.653Z"
+  },
+  "participants": [
+    {
+      "userId": "U091Y5UF14P",
+      "userRole": "cx-customer",
+      "joinedAt": "2025-07-15T02:29:24.583Z"
+    }
+  ],
+  "messageCount": 6,
+  "messages": [
+    {
+      "id": "1752546564583-jdwb6qbsj",
+      "content": "<@U092RRN555X> tell me about form: 5375703",
+      "conversationId": "1752546564583-ydo3yhaw9",
+      "fromUserId": "U091Y5UF14P",
+      "fromRole": "cx-customer",
+      "toRole": "cx-agent",
+      "messageType": "text",
+      "createdAt": "2025-07-15T02:29:24.583Z",
+      "updatedAt": "2025-07-15T02:29:24.583Z"
+    },
+    {
+      "id": "1752546569703-y7yt58hzf",
+      "content": "**Tool: fsRestrictedApiFormAndRelatedEntityOverview**\n\n{\"isSuccess\":true,\"response\":{\"formId\":\"5375703\",\"submissions\":\"2\",\"version\":\"4\",\"submissionsToday\":0,\"lastSubmissionId\":\"1239418206\",\"url\":\"https://terarychambers.formstack.com/forms/miscellaneous_broken_logic\",\"encrypted\":false,\"isActive\":true,\"timezone\":\"US/Eastern\",\"isOneQuestionAtATime\":false,\"hasApprovers\":false,\"isWorkflowForm\":false,\"fieldCount\":56,\"submitActions\":[{\"id\":\"6803746\",\"name\":\"Circular Logic\"},{\"id\":\"6803747\",\"name\":\"Switzerland\"},{\"id\":\"6803748\",\"name\":\"Two mutually Exclusive Trees (both with circular logic)\"},{\"id\":\"6803749\",\"name\":\"No Logic\"},{\"id\":\"6803988\",\"name\":\"Two Panel With Conflicting Logic\"},{\"id\":\"6804041\",\"name\":\"A) Big Dipper\"},{\"id\":\"6804042\",\"name\":\"B) Big Dipper\"},{\"id\":\"6804044\",\"name\":\"A & B - Big Dipper\"}],\"notificationEmails\":[{\"id\":\"8450140\",\"name\":\"Circular Logic\"},{\"id\":\"8450281\",\"name\":\"Switzerland\"},{\"id\":\"8450282\",\"name\":\"Two mutually Exclusive Trees (both with circular logic)\"},{\"id\":\"8450287\",\"name\":\"No Logic\"}],\"confirmationEmails\":[{\"id\":\"2711441\",\"name\":\"Circular Logic\"},{\"id\":\"2711442\",\"name\":\"Switzerland\"},{\"id\":\"2711443\",\"name\":\"Two mutually Exclusive Trees (both with circular logic)\"},{\"id\":\"2711444\",\"name\":\"No Logic\"}]},\"errorItems\":null}",
+      "conversationId": "1752546564583-ydo3yhaw9",
+      "fromUserId": "SlackyAnthropicAgent",
+      "fromRole": "cx-agent",
+      "toRole": "cx-customer",
+      "messageType": "text",
+      "createdAt": "2025-07-15T02:29:29.703Z",
+      "updatedAt": "2025-07-15T02:29:29.703Z"
+    },
+    {
+      "id": "1752546574869-nqq3i5chs",
+      "content": "📊 Here's an overview of Form #5375703:\n\n**Basic Info:**\n- Form URL: https://terarychambers.formstack.com/forms/miscellaneous_broken_logic\n- Status: Active ✅\n- Fields: 56\n- Version: 4\n- Timezone: US/Eastern\n\n**Submission Stats:**\n- Total Submissions: 2\n- Submissions Today: 0\n- Last Submission ID: 1239418206\n\n**Submit Actions (IDs):**\n1. Circular Logic (6803746)\n2. Switzerland (6803747)\n3. Two mutually Exclusive Trees (6803748)\n4. No Logic (6803749)\n5. Two Panel With Conflicting Logic (6803988)\n6. A) Big Dipper (6804041)\n7. B) Big Dipper (6804042)\n8. A & B - Big Dipper (6804044)\n\n**Notification Emails (IDs):**\n1. Circular Logic (8450140)\n2. Switzerland (8450281)\n3. Two mutually Exclusive Trees (8450282)\n4. No Logic (8450287)\n\n**Confirmation Emails (IDs):**\n1. Circular Logic (2711441)\n2. Switzerland (2711442)\n3. Two mutually Exclusive Trees (2711443)\n4. No Logic (2711444)\n\n**Additional Settings:**\n- Encryption: No\n- One Question at a Time: No\n- Workflow Form: No\n- Approvers: No\n\nWould you like me to investigate anything specific about this form? I can help with logic analysis, calculation validation, or other specific aspects! 🔍",
+      "conversationId": "1752546564583-ydo3yhaw9",
+      "fromUserId": "SlackyAnthropicAgent",
+      "fromRole": "cx-agent",
+      "toRole": "cx-customer",
+      "messageType": "text",
+      "createdAt": "2025-07-15T02:29:34.869Z",
+      "updatedAt": "2025-07-15T02:29:34.869Z"
+    },
+    {
+      "id": "1752546609169-x1udyt18q",
+      "content": "<@U092RRN555X> please analyze the logic",
+      "conversationId": "1752546564583-ydo3yhaw9",
+      "fromUserId": "U091Y5UF14P",
+      "fromRole": "cx-customer",
+      "toRole": "cx-agent",
+      "messageType": "text",
+      "createdAt": "2025-07-15T02:30:09.169Z",
+      "updatedAt": "2025-07-15T02:30:09.169Z"
+    },
+    {
+      "id": "1752546613822-87hj7n6v4",
+      "content": "**Tool: fsRestrictedApiFormAndRelatedEntityOverview**\n\n{\"isSuccess\":true,\"response\":{\"formId\":\"5375703\",\"submissions\":\"2\",\"version\":\"4\",\"submissionsToday\":0,\"lastSubmissionId\":\"1239418206\",\"url\":\"https://terarychambers.formstack.com/forms/miscellaneous_broken_logic\",\"encrypted\":false,\"isActive\":true,\"timezone\":\"US/Eastern\",\"isOneQuestionAtATime\":false,\"hasApprovers\":false,\"isWorkflowForm\":false,\"fieldCount\":56,\"submitActions\":[{\"id\":\"6803746\",\"name\":\"Circular Logic\"},{\"id\":\"6803747\",\"name\":\"Switzerland\"},{\"id\":\"6803748\",\"name\":\"Two mutually Exclusive Trees (both with circular logic)\"},{\"id\":\"6803749\",\"name\":\"No Logic\"},{\"id\":\"6803988\",\"name\":\"Two Panel With Conflicting Logic\"},{\"id\":\"6804041\",\"name\":\"A) Big Dipper\"},{\"id\":\"6804042\",\"name\":\"B) Big Dipper\"},{\"id\":\"6804044\",\"name\":\"A & B - Big Dipper\"}],\"notificationEmails\":[{\"id\":\"8450140\",\"name\":\"Circular Logic\"},{\"id\":\"8450281\",\"name\":\"Switzerland\"},{\"id\":\"8450282\",\"name\":\"Two mutually Exclusive Trees (both with circular logic)\"},{\"id\":\"8450287\",\"name\":\"No Logic\"}],\"confirmationEmails\":[{\"id\":\"2711441\",\"name\":\"Circular Logic\"},{\"id\":\"2711442\",\"name\":\"Switzerland\"},{\"id\":\"2711443\",\"name\":\"Two mutually Exclusive Trees (both with circular logic)\"},{\"id\":\"2711444\",\"name\":\"No Logic\"}]},\"errorItems\":null}",
+      "conversationId": "1752546564583-ydo3yhaw9",
+      "fromUserId": "SlackyAnthropicAgent",
+      "fromRole": "cx-agent",
+      "toRole": "cx-customer",
+      "messageType": "text",
+      "createdAt": "2025-07-15T02:30:13.822Z",
+      "updatedAt": "2025-07-15T02:30:13.822Z"
+    },
+    {
+      "id": "1752546614653-crjlw63xt",
+      "content": "2️⃣ Now, let's analyze the form's logic:\n\n",
+      "conversationId": "1752546564583-ydo3yhaw9",
+      "fromUserId": "SlackyAnthropicAgent",
+      "fromRole": "cx-agent",
+      "toRole": "cx-customer",
+      "messageType": "text",
+      "createdAt": "2025-07-15T02:30:14.653Z",
+      "updatedAt": "2025-07-15T02:30:14.653Z"
+    }
+  ]
+}

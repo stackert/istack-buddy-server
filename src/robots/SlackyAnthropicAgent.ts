@@ -1,5 +1,7 @@
 import { AbstractRobotChat } from './AbstractRobotChat';
 import type { TConversationTextMessageEnvelope } from './types';
+import { Message } from '../chat-manager/interfaces/message.interface';
+import { UserRole } from '../chat-manager/dto/create-message.dto';
 import Anthropic from '@anthropic-ai/sdk';
 import { slackyToolSet } from './tool-definitions/slacky';
 import {
@@ -7,6 +9,7 @@ import {
   performMarvToolCall,
   FsRestrictedApiRoutesEnum,
 } from './tool-definitions/marv';
+import { createCompositeToolSet } from './tool-definitions/toolCatalog';
 
 /**
  * Slack-specific Anthropic Claude Chat Robot implementation
@@ -89,11 +92,24 @@ REALLY THE ONLY PURPOSE OF THAT TOOL IS TO LIST ALL ASSOCIATED ID
         tool.name === FsRestrictedApiRoutesEnum.FormAndRelatedEntityOverview,
     );
 
+  // Create a minimal marv tool catalog with just our selected tools
+  private readonly selectedMarvToolSet = {
+    toolDefinitions: this.selectedMarvTools,
+    executeToolCall: performMarvToolCall,
+  };
+
+  // Create composite tool set using the existing pattern
+  private readonly compositeToolSet = createCompositeToolSet(
+    slackyToolSet,
+    this.selectedMarvToolSet,
+  );
+
   // Composite tool definitions - slacky tools + selected marv tools
-  private readonly tools: Anthropic.Messages.Tool[] = [
-    ...slackyToolSet.toolDefinitions,
-    ...this.selectedMarvTools,
-  ];
+  private readonly tools: Anthropic.Messages.Tool[] =
+    this.compositeToolSet.toolDefinitions;
+
+  // Store conversation history for context
+  private conversationHistory: Message[] = [];
 
   /**
    * Simple token estimation - roughly 4 characters per token for Claude
@@ -121,34 +137,18 @@ REALLY THE ONLY PURPOSE OF THAT TOOL IS TO LIST ALL ASSOCIATED ID
   }
 
   /**
-   * Execute a tool call using both slacky and marv tool executors
+   * Execute a tool call using the composite tool set
    */
   private async executeToolCall(
     toolName: string,
     toolArgs: any,
   ): Promise<string> {
     try {
-      // Try slacky tools first
-      const slackyResult = slackyToolSet.executeToolCall(toolName, toolArgs);
-      if (slackyResult !== undefined) {
-        const result = await slackyResult;
-        return typeof result === 'string' ? result : JSON.stringify(result);
-      }
-
-      // If slacky doesn't handle it, try marv tools (for our 3 selected tools)
-      if (
-        toolName === FsRestrictedApiRoutesEnum.FormLogicValidation ||
-        toolName === FsRestrictedApiRoutesEnum.FormCalculationValidation ||
-        toolName === FsRestrictedApiRoutesEnum.FormAndRelatedEntityOverview
-      ) {
-        const marvResult = await performMarvToolCall(toolName, toolArgs);
-        return typeof marvResult === 'string'
-          ? marvResult
-          : JSON.stringify(marvResult);
-      }
-
-      // No executor handled this tool
-      throw new Error(`Unknown tool: ${toolName}`);
+      const result = await this.compositeToolSet.executeToolCall(
+        toolName,
+        toolArgs,
+      );
+      return typeof result === 'string' ? result : JSON.stringify(result);
     } catch (error) {
       console.error(`Error executing tool ${toolName}:`, error);
       return `Error executing tool ${toolName}: ${error instanceof Error ? error.message : 'Unknown error'}`;
@@ -281,6 +281,43 @@ REALLY THE ONLY PURPOSE OF THAT TOOL IS TO LIST ALL ASSOCIATED ID
   }
 
   /**
+   * Set conversation history for context-aware responses
+   */
+  public setConversationHistory(history: Message[]): void {
+    this.conversationHistory = history;
+  }
+
+  /**
+   * Convert conversation history to Claude message format
+   */
+  private buildClaudeMessageHistory(currentMessage: string): any[] {
+    const messages: any[] = [];
+
+    // Add conversation history
+    for (const msg of this.conversationHistory) {
+      if (msg.fromRole === UserRole.CUSTOMER) {
+        messages.push({
+          role: 'user',
+          content: msg.content,
+        });
+      } else if (msg.fromRole === UserRole.ROBOT) {
+        messages.push({
+          role: 'assistant',
+          content: msg.content,
+        });
+      }
+    }
+
+    // Add current message
+    messages.push({
+      role: 'user',
+      content: currentMessage,
+    });
+
+    return messages;
+  }
+
+  /**
    * Get immediate response from Anthropic API with proper tool result handling
    */
   public async acceptMessageImmediateResponse(
@@ -290,17 +327,15 @@ REALLY THE ONLY PURPOSE OF THAT TOOL IS TO LIST ALL ASSOCIATED ID
     const userMessage = messageEnvelope.envelopePayload.content.payload;
 
     try {
-      // Initial request to Claude
+      // Build conversation history for Claude
+      const messages = this.buildClaudeMessageHistory(userMessage);
+
+      // Initial request to Claude with conversation history
       const initialResponse = (await client.messages.create({
         model: this.LLModelName,
         max_tokens: 1024,
         system: this.robotRole,
-        messages: [
-          {
-            role: 'user',
-            content: userMessage,
-          },
-        ],
+        messages: messages,
         tools: this.tools,
       })) as Anthropic.Messages.Message;
 
@@ -334,9 +369,8 @@ REALLY THE ONLY PURPOSE OF THAT TOOL IS TO LIST ALL ASSOCIATED ID
         };
       }
 
-      // Execute tools and collect results
+      // If tools were used, execute them and get Claude's final response
       const toolResultMessages: any[] = [];
-      let rawToolResults = '';
 
       for (const toolUse of toolUses) {
         try {
@@ -345,41 +379,28 @@ REALLY THE ONLY PURPOSE OF THAT TOOL IS TO LIST ALL ASSOCIATED ID
             toolUse.input,
           );
 
-          // Collect raw results for user visibility
-          rawToolResults += `\n\n**Tool: ${toolUse.name}**\n${toolResult}`;
-
-          // Collect for Claude processing
           toolResultMessages.push({
             type: 'tool_result',
             tool_use_id: toolUse.id,
             content: toolResult,
           });
         } catch (error) {
-          const errorMsg = `Error executing tool ${toolUse.name}: ${error instanceof Error ? error.message : 'Unknown error'}`;
-
-          // Collect raw error for user visibility
-          rawToolResults += `\n\n**Tool Error: ${toolUse.name}**\n${errorMsg}`;
-
-          // Collect for Claude processing
           toolResultMessages.push({
             type: 'tool_result',
             tool_use_id: toolUse.id,
-            content: errorMsg,
+            content: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
             is_error: true,
           });
         }
       }
 
-      // Send follow-up request to Claude with tool results for final processing
+      // Get Claude's final response with tool results
       const finalResponse = (await client.messages.create({
         model: this.LLModelName,
         max_tokens: 1024,
         system: this.robotRole,
         messages: [
-          {
-            role: 'user',
-            content: userMessage,
-          },
+          ...messages,
           {
             role: 'assistant',
             content: initialResponse.content,
@@ -391,21 +412,12 @@ REALLY THE ONLY PURPOSE OF THAT TOOL IS TO LIST ALL ASSOCIATED ID
         ],
       })) as Anthropic.Messages.Message;
 
-      // Extract final response text from Claude
-      let claudeInterpretation = '';
+      let finalResponseText = '';
       for (const content of finalResponse.content) {
         if (content.type === 'text') {
-          claudeInterpretation += content.text;
+          finalResponseText += content.text;
         }
       }
-
-      // Combine: initial response + raw tool results + Claude's interpretation
-      const combinedResponse =
-        responseText +
-        rawToolResults +
-        (claudeInterpretation
-          ? `\n\n---\n\n**Analysis:**\n${claudeInterpretation}`
-          : '');
 
       return {
         messageId: `slacky-response-${Date.now()}`,
@@ -415,15 +427,14 @@ REALLY THE ONLY PURPOSE OF THAT TOOL IS TO LIST ALL ASSOCIATED ID
           author_role: 'assistant',
           content: {
             type: 'text/plain',
-            payload: combinedResponse,
+            payload: finalResponseText,
           },
           created_at: new Date().toISOString(),
-          estimated_token_count: this.estimateTokens(combinedResponse),
+          estimated_token_count: this.estimateTokens(finalResponseText),
         },
       };
     } catch (error) {
-      console.error('Error in immediate response:', error);
-      const errorMessage = `Error generating response: ${error instanceof Error ? error.message : 'Unknown error'}`;
+      const errorMessage = `Error: ${error instanceof Error ? error.message : 'Unknown error occurred'}`;
 
       return {
         messageId: `slacky-error-${Date.now()}`,
@@ -455,17 +466,15 @@ REALLY THE ONLY PURPOSE OF THAT TOOL IS TO LIST ALL ASSOCIATED ID
     const userMessage = messageEnvelope.envelopePayload.content.payload;
 
     try {
-      // Initial request to Claude
+      // Build conversation history for Claude
+      const messages = this.buildClaudeMessageHistory(userMessage);
+
+      // Initial request to Claude with conversation history
       const initialResponse = (await client.messages.create({
         model: this.LLModelName,
         max_tokens: 1024,
         system: this.robotRole,
-        messages: [
-          {
-            role: 'user',
-            content: userMessage,
-          },
-        ],
+        messages: messages,
         tools: this.tools,
       })) as Anthropic.Messages.Message;
 
@@ -499,79 +508,56 @@ REALLY THE ONLY PURPOSE OF THAT TOOL IS TO LIST ALL ASSOCIATED ID
         };
       }
 
-      // Execute tools and collect results, sending progress updates
+      // Execute tools and send raw results immediately
       const toolResultMessages: any[] = [];
 
       for (const toolUse of toolUses) {
         try {
-          // Send tool execution notification
-          const toolStartResponse: TConversationTextMessageEnvelope = {
-            messageId: `slacky-tool-start-${Date.now()}-${Math.random()}`,
-            requestOrResponse: 'response',
-            envelopePayload: {
-              messageId: `slacky-tool-start-msg-${Date.now()}-${Math.random()}`,
-              author_role: 'assistant',
-              content: {
-                type: 'text/plain',
-                payload: `🔧 Executing ${toolUse.name}...`,
-              },
-              created_at: new Date().toISOString(),
-              estimated_token_count: this.estimateTokens(
-                `Executing ${toolUse.name}...`,
-              ),
-            },
-          };
-          delayedMessageCallback(toolStartResponse);
-
           const toolResult = await this.executeToolCall(
             toolUse.name,
             toolUse.input,
           );
 
-          // Send tool result as delayed message
-          const toolResponse: TConversationTextMessageEnvelope = {
-            messageId: `slacky-tool-${Date.now()}-${Math.random()}`,
+          // Send raw tool result immediately via delayed callback
+          delayedMessageCallback({
+            messageId: `slacky-tool-result-${Date.now()}`,
             requestOrResponse: 'response',
             envelopePayload: {
-              messageId: `slacky-tool-msg-${Date.now()}-${Math.random()}`,
+              messageId: `slacky-tool-msg-${Date.now()}`,
               author_role: 'assistant',
               content: {
                 type: 'text/plain',
-                payload: `**Tool Result (${toolUse.name}):**\n${toolResult}`,
+                payload: `**Tool: ${toolUse.name}**\n\n${toolResult}`,
               },
               created_at: new Date().toISOString(),
               estimated_token_count: this.estimateTokens(toolResult),
             },
-          };
-          delayedMessageCallback(toolResponse);
+          });
 
-          // Collect for final Claude processing
           toolResultMessages.push({
             type: 'tool_result',
             tool_use_id: toolUse.id,
             content: toolResult,
           });
         } catch (error) {
-          const errorMsg = `Error executing tool ${toolUse.name}: ${error instanceof Error ? error.message : 'Unknown error'}`;
+          const errorMsg = `Error: ${error instanceof Error ? error.message : 'Unknown error'}`;
 
-          // Send error as delayed message
-          const errorResponse: TConversationTextMessageEnvelope = {
-            messageId: `slacky-tool-error-${Date.now()}-${Math.random()}`,
+          // Send raw tool error immediately via delayed callback
+          delayedMessageCallback({
+            messageId: `slacky-tool-error-${Date.now()}`,
             requestOrResponse: 'response',
             envelopePayload: {
-              messageId: `slacky-tool-error-msg-${Date.now()}-${Math.random()}`,
+              messageId: `slacky-tool-error-msg-${Date.now()}`,
               author_role: 'assistant',
               content: {
                 type: 'text/plain',
-                payload: `❌ Tool Error (${toolUse.name}): ${errorMsg}`,
+                payload: `**Tool Error: ${toolUse.name}**\n\n${errorMsg}`,
               },
               created_at: new Date().toISOString(),
               estimated_token_count: this.estimateTokens(errorMsg),
             },
-          };
-          delayedMessageCallback(errorResponse);
+          });
 
-          // Collect for final Claude processing
           toolResultMessages.push({
             type: 'tool_result',
             tool_use_id: toolUse.id,
@@ -581,16 +567,13 @@ REALLY THE ONLY PURPOSE OF THAT TOOL IS TO LIST ALL ASSOCIATED ID
         }
       }
 
-      // Send follow-up request to Claude with tool results for final processing
+      // Get Claude's final analysis with tool results
       const finalResponse = (await client.messages.create({
         model: this.LLModelName,
         max_tokens: 1024,
         system: this.robotRole,
         messages: [
-          {
-            role: 'user',
-            content: userMessage,
-          },
+          ...messages,
           {
             role: 'assistant',
             content: initialResponse.content,
@@ -602,7 +585,6 @@ REALLY THE ONLY PURPOSE OF THAT TOOL IS TO LIST ALL ASSOCIATED ID
         ],
       })) as Anthropic.Messages.Message;
 
-      // Extract final response text from Claude
       let finalResponseText = '';
       for (const content of finalResponse.content) {
         if (content.type === 'text') {
@@ -610,12 +592,12 @@ REALLY THE ONLY PURPOSE OF THAT TOOL IS TO LIST ALL ASSOCIATED ID
         }
       }
 
-      // Return Claude's final analysis/summary
+      // Return Claude's analysis as the main response
       return {
-        messageId: `slacky-multipart-${Date.now()}`,
+        messageId: `slacky-analysis-${Date.now()}`,
         requestOrResponse: 'response',
         envelopePayload: {
-          messageId: `slacky-multipart-msg-${Date.now()}`,
+          messageId: `slacky-analysis-msg-${Date.now()}`,
           author_role: 'assistant',
           content: {
             type: 'text/plain',
@@ -626,14 +608,13 @@ REALLY THE ONLY PURPOSE OF THAT TOOL IS TO LIST ALL ASSOCIATED ID
         },
       };
     } catch (error) {
-      console.error('Error in multi-part response:', error);
-      const errorMessage = `Error generating response: ${error instanceof Error ? error.message : 'Unknown error'}`;
+      const errorMessage = `Error: ${error instanceof Error ? error.message : 'Unknown error occurred'}`;
 
       return {
-        messageId: `slacky-multipart-error-${Date.now()}`,
+        messageId: `slacky-error-${Date.now()}`,
         requestOrResponse: 'response',
         envelopePayload: {
-          messageId: `slacky-multipart-error-msg-${Date.now()}`,
+          messageId: `slacky-error-msg-${Date.now()}`,
           author_role: 'assistant',
           content: {
             type: 'text/plain',

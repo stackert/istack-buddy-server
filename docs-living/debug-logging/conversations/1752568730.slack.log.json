@@ -1,0 +1,50 @@
+{
+  "token": "7J4eJt3gPOCpmoch80JVpUK6",
+  "team_id": "T091Y5UF0NB",
+  "api_app_id": "A0926QG35FG",
+  "event": {
+    "user": "U091Y5UF14P",
+    "type": "app_mention",
+    "ts": "1752568726.456419",
+    "client_msg_id": "3b78ad0d-ae08-4953-88c3-550192205bfb",
+    "text": "<@U092RRN555X> in channel I",
+    "team": "T091Y5UF0NB",
+    "blocks": [
+      {
+        "type": "rich_text",
+        "block_id": "REpKO",
+        "elements": [
+          {
+            "type": "rich_text_section",
+            "elements": [
+              {
+                "type": "user",
+                "user_id": "U092RRN555X"
+              },
+              {
+                "type": "text",
+                "text": " in channel I"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "channel": "C091Y5UNA1M",
+    "event_ts": "1752568726.456419"
+  },
+  "type": "event_callback",
+  "event_id": "Ev095TQX3RS9",
+  "event_time": 1752568726,
+  "authorizations": [
+    {
+      "enterprise_id": null,
+      "team_id": "T091Y5UF0NB",
+      "user_id": "U092RRN555X",
+      "is_bot": true,
+      "is_enterprise_install": false
+    }
+  ],
+  "is_ext_shared_channel": false,
+  "event_context": "4-eyJldCI6ImFwcF9tZW50aW9uIiwidGlkIjoiVDA5MVk1VUYwTkIiLCJhaWQiOiJBMDkyNlFHMzVGRyIsImNpZCI6IkMwOTFZNVVOQTFNIn0"
+}

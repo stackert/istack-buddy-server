@@ -1,0 +1,83 @@
+{
+  "conversationId": "1752556177182-jmqf5bzop",
+  "timestamp": "2025-07-15T05:09:38.045Z",
+  "conversation": {
+    "id": "1752556177182-jmqf5bzop",
+    "participantIds": [
+      "U091Y5UF14P"
+    ],
+    "participantRoles": [
+      "cx-customer"
+    ],
+    "messageCount": 3,
+    "lastMessageAt": "2025-07-15T05:09:38.044Z",
+    "isActive": true,
+    "createdAt": "2025-07-15T05:09:37.182Z",
+    "updatedAt": "2025-07-15T05:09:38.044Z"
+  },
+  "participants": [
+    {
+      "userId": "U091Y5UF14P",
+      "userRole": "cx-customer",
+      "joinedAt": "2025-07-15T05:09:37.182Z"
+    }
+  ],
+  "messageCount": 3,
+  "deduplicationInfo": {
+    "totalContentHashes": 3,
+    "duplicateGroups": 0,
+    "duplicateDetails": []
+  },
+  "messages": [
+    {
+      "id": "msg_1752556177183_lqg0ydglu",
+      "content": "<@U092RRN555X> tell me about form: 6201623",
+      "conversationId": "1752556177182-jmqf5bzop",
+      "fromUserId": "U091Y5UF14P",
+      "fromRole": "cx-customer",
+      "toRole": "cx-agent",
+      "messageType": "text",
+      "createdAt": "2025-07-15T05:09:37.183Z",
+      "updatedAt": "2025-07-15T05:09:37.183Z"
+    },
+    {
+      "id": "msg_1752556177184_wddp8ef73",
+      "content": "(6778) <@U092RRN555X> tell me about form: 6201623",
+      "conversationId": "1752556177182-jmqf5bzop",
+      "fromUserId": "SlackyAnthropicAgent",
+      "fromRole": "robot",
+      "toRole": "system:debug",
+      "messageType": "text",
+      "createdAt": "2025-07-15T05:09:37.184Z",
+      "updatedAt": "2025-07-15T05:09:37.184Z"
+    },
+    {
+      "id": "msg_1752556178044_ev5ma23t4",
+      "content": "(6778) - complete: <@U092RRN555X> tell me about form: 6201623",
+      "conversationId": "1752556177182-jmqf5bzop",
+      "fromUserId": "SlackyAnthropicAgent",
+      "fromRole": "robot",
+      "toRole": "system:debug",
+      "messageType": "text",
+      "createdAt": "2025-07-15T05:09:38.044Z",
+      "updatedAt": "2025-07-15T05:09:38.044Z"
+    }
+  ],
+  "messageHashes": [
+    {
+      "messageId": "msg_1752556177183_lqg0ydglu",
+      "contentHash": "c418b8ed01b4a8e4ea707472330b79ec",
+      "timestamp": "2025-07-15T05:09:37.183Z"
+    },
+    {
+      "messageId": "msg_1752556177184_wddp8ef73",
+      "contentHash": "43395068e58943b0aef28372fe4dc526",
+      "timestamp": "2025-07-15T05:09:37.184Z"
+    },
+    {
+      "messageId": "msg_1752556178044_ev5ma23t4",
+      "contentHash": "83054dfc2178ed29f778053372cd419d",
+      "timestamp": "2025-07-15T05:09:38.044Z"
+    }
+  ]
+}

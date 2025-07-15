@@ -11,6 +11,7 @@ export enum UserRole {
   AGENT = 'cx-agent',
   SUPERVISOR = 'cx-supervisor',
   ROBOT = 'robot',
+  SYSTEM_DEBUG = 'system:debug',
 }
 
 export class CreateMessageDto {

@@ -1,5 +1,7 @@
 import { AbstractRobotChat } from './AbstractRobotChat';
 import type { TConversationTextMessageEnvelope } from './types';
+import { Message } from '../chat-manager/interfaces/message.interface';
+import { UserRole } from '../chat-manager/dto/create-message.dto';
 import Anthropic from '@anthropic-ai/sdk';
 //import { slackyToolSet } from './tool-definitions/RobotChatAnthropicTools';
 import { anthropicToolSet } from './tool-definitions/toolCatalog';
@@ -14,6 +16,9 @@ export class RobotChatAnthropic extends AbstractRobotChat {
   public readonly LLModelVersion: string = '20241022';
   public readonly name: string = 'RobotChatAnthropic';
   public readonly version: string = '1.0.0';
+
+  // Store conversation history for context
+  private conversationHistory: Message[] = [];
 
   // Static descriptions
   static descriptionShort =
@@ -55,6 +60,43 @@ Please provide helpful, accurate, and detailed responses to user questions. If y
     anthropicToolSet.toolDefinitions;
 
   /**
+   * Set conversation history for context-aware responses
+   */
+  public setConversationHistory(history: Message[]): void {
+    this.conversationHistory = history;
+  }
+
+  /**
+   * Convert conversation history to Claude message format
+   */
+  private buildClaudeMessageHistory(currentMessage: string): any[] {
+    const messages: any[] = [];
+
+    // Add conversation history
+    for (const msg of this.conversationHistory) {
+      if (msg.fromRole === UserRole.CUSTOMER) {
+        messages.push({
+          role: 'user',
+          content: msg.content,
+        });
+      } else if (msg.fromRole === UserRole.ROBOT) {
+        messages.push({
+          role: 'assistant',
+          content: msg.content,
+        });
+      }
+    }
+
+    // Add current message
+    messages.push({
+      role: 'user',
+      content: currentMessage,
+    });
+
+    return messages;
+  }
+
+  /**
    * Simple token estimation - roughly 4 characters per token for Claude
    */
   public estimateTokens(message: string): number {
@@ -80,23 +122,19 @@ Please provide helpful, accurate, and detailed responses to user questions. If y
   }
 
   /**
-   * Convert our message envelope to Anthropic format
+   * Convert our message envelope to Anthropic format with conversation history
    */
   private createAnthropicMessageRequest(
     messageEnvelope: TConversationTextMessageEnvelope,
   ): Anthropic.Messages.MessageCreateParams {
     const userMessage = messageEnvelope.envelopePayload.content.payload;
+    const messages = this.buildClaudeMessageHistory(userMessage);
 
     return {
       model: this.LLModelName,
       max_tokens: 1024,
       system: this.robotRole,
-      messages: [
-        {
-          role: 'user',
-          content: userMessage,
-        },
-      ],
+      messages: messages,
       tools: this.tools,
     };
   }

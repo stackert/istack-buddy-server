@@ -1,10 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { RobotService } from '../robots/robot.service';
+import { ChatManagerService } from './chat-manager.service';
 import { SlackyAnthropicAgent } from '../robots/SlackyAnthropicAgent';
 import { RobotChatAnthropic } from '../robots/RobotChatAnthropic';
 import { ChatRobotParrot } from '../robots/ChatRobotParrot';
 import { TConversationTextMessageEnvelope } from '../robots/types';
 import { UserRole, MessageType } from './dto/create-message.dto';
+import { Message } from './interfaces/message.interface';
 
 export interface RobotProcessingRequest {
   content: string;
@@ -24,8 +26,12 @@ export interface RobotProcessingResponse {
 @Injectable()
 export class RobotProcessorService {
   private readonly logger = new Logger(RobotProcessorService.name);
+  private currentConversationHistory: Message[] = [];
 
-  constructor(private readonly robotService: RobotService) {}
+  constructor(
+    private readonly robotService: RobotService,
+    private readonly chatManagerService: ChatManagerService,
+  ) {}
 
   /**
    * Process a message with appropriate robot
@@ -54,8 +60,14 @@ export class RobotProcessorService {
         };
       }
 
-      // Create message envelope for robot
-      const messageEnvelope = this.createMessageEnvelope(request);
+      // Create message envelope with conversation history
+      const messageEnvelope =
+        await this.createMessageEnvelopeWithHistory(request);
+
+      // Set conversation history for robots to use
+      if (robotInfo.robot.setConversationHistory) {
+        robotInfo.robot.setConversationHistory(this.currentConversationHistory);
+      }
 
       // Process with robot
       let robotResponse: string;
@@ -123,14 +135,86 @@ export class RobotProcessorService {
     content: string,
     fromUserId: string,
     conversationId: string,
+    delayedMessageCallback?: (
+      response: RobotProcessingResponse,
+    ) => Promise<void>,
   ): Promise<RobotProcessingResponse> {
-    return this.processMessage({
-      content,
-      fromUserId,
-      fromRole: UserRole.CUSTOMER,
-      conversationId,
-      messageType: MessageType.TEXT,
-    });
+    this.logger.log(
+      `🤖 Processing Slack mention for conversation ${conversationId}`,
+    );
+
+    try {
+      // Determine which robot to use based on content
+      const robotInfo = this.selectRobot(content);
+
+      this.logger.log(`🎯 Selected robot: ${robotInfo.name}`);
+
+      if (!robotInfo.robot) {
+        return {
+          response: 'Robot service not available at this time.',
+          robotName: robotInfo.name,
+          processed: false,
+          error: 'Robot not found',
+        };
+      }
+
+      // Create message envelope with conversation history
+      const messageEnvelope = await this.createMessageEnvelopeWithHistory({
+        content,
+        fromUserId,
+        fromRole: UserRole.CUSTOMER,
+        conversationId,
+        messageType: MessageType.TEXT,
+      });
+
+      // Set conversation history for robots to use
+      if (robotInfo.robot.setConversationHistory) {
+        robotInfo.robot.setConversationHistory(this.currentConversationHistory);
+      }
+
+      // Process with robot using multi-part for enhanced responses
+      if (robotInfo.useMultiPart && delayedMessageCallback) {
+        const response = await robotInfo.robot.acceptMessageMultiPartResponse(
+          messageEnvelope,
+          async (delayedResponse: TConversationTextMessageEnvelope) => {
+            this.logger.log(
+              `📥 Received delayed response from ${robotInfo.name}: ${delayedResponse.envelopePayload.content.payload.substring(0, 100)}...`,
+            );
+
+            // Send delayed response back to Slack
+            await delayedMessageCallback({
+              response: delayedResponse.envelopePayload.content.payload,
+              robotName: robotInfo.name,
+              processed: true,
+            });
+          },
+        );
+
+        return {
+          response: response.envelopePayload.content.payload,
+          robotName: robotInfo.name,
+          processed: true,
+        };
+      } else {
+        // Fallback to immediate response
+        const response =
+          await robotInfo.robot.acceptMessageImmediateResponse(messageEnvelope);
+        return {
+          response: response.envelopePayload.content.payload,
+          robotName: robotInfo.name,
+          processed: true,
+        };
+      }
+    } catch (error) {
+      this.logger.error(`❌ Error processing Slack mention:`, error);
+
+      return {
+        response: `Sorry, I encountered an error processing your request: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        robotName: 'SlackyAnthropicAgent',
+        processed: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
   }
 
   // Private helper methods
@@ -140,6 +224,17 @@ export class RobotProcessorService {
     name: string;
     useMultiPart: boolean;
   } {
+    // For Slack mentions, ALWAYS use the specialized Slack robot with multi-part processing
+    if (this.isSlackContext(content)) {
+      return {
+        robot: this.robotService.getRobotByName<SlackyAnthropicAgent>(
+          'SlackyAnthropicAgent',
+        ),
+        name: 'SlackyAnthropicAgent',
+        useMultiPart: true, // Enable multi-part to send tool results + analysis
+      };
+    }
+
     // Check for form-related content that needs multi-part processing
     const containsFormId = /(formId|form):\s*\{?\d+\}?/i.test(content);
 
@@ -151,17 +246,6 @@ export class RobotProcessorService {
           ),
         name: 'RobotChatAnthropic',
         useMultiPart: true,
-      };
-    }
-
-    // For Slack mentions, use the specialized Slack robot
-    if (this.isSlackContext(content)) {
-      return {
-        robot: this.robotService.getRobotByName<SlackyAnthropicAgent>(
-          'SlackyAnthropicAgent',
-        ),
-        name: 'SlackyAnthropicAgent',
-        useMultiPart: false,
       };
     }
 
@@ -183,10 +267,77 @@ export class RobotProcessorService {
     );
   }
 
-  private createMessageEnvelope(
+  /**
+   * Filter messages to only include those relevant to robot processing
+   * Excludes short-circuit messages like tool responses, system messages
+   */
+  private filterRobotRelevantMessages(messages: Message[]): Message[] {
+    return messages.filter((message) => {
+      // Include human messages
+      if (message.fromRole === UserRole.CUSTOMER) {
+        return true;
+      }
+
+      // Include robot responses (but not tool responses)
+      if (
+        message.fromRole === UserRole.ROBOT &&
+        message.messageType === MessageType.TEXT
+      ) {
+        // Exclude short-circuit tool responses (they usually start with raw JSON or tool identifiers)
+        const content = message.content.trim();
+
+        // Skip if it looks like a raw tool response (starts with { or contains tool execution markers)
+        if (
+          content.startsWith('{') ||
+          content.includes('🔧 Executing') ||
+          content.includes('**Tool:')
+        ) {
+          return false;
+        }
+
+        return true;
+      }
+
+      // Exclude system messages and other message types
+      return false;
+    });
+  }
+
+  /**
+   * Create message envelope with full conversation history
+   * This replaces the simple createMessageEnvelope method
+   */
+  private async createMessageEnvelopeWithHistory(
     request: RobotProcessingRequest,
-  ): TConversationTextMessageEnvelope {
-    return {
+  ): Promise<TConversationTextMessageEnvelope> {
+    // Get conversation history - get last 20 messages to provide context
+    const conversationHistory = await this.chatManagerService.getLastMessages(
+      request.conversationId,
+      20,
+    );
+
+    // Filter out short-circuit messages (tool responses, system messages)
+    const filteredHistory =
+      this.filterRobotRelevantMessages(conversationHistory);
+
+    // Store filtered history for robots to use
+    this.currentConversationHistory = filteredHistory;
+
+    // Log conversation history for debugging
+    this.logger.log(
+      `📚 Retrieved ${conversationHistory.length} messages, filtered to ${filteredHistory.length} relevant messages`,
+    );
+
+    // Log trimmed conversation history for dev/debug
+    filteredHistory.forEach((msg, index) => {
+      const trimmedContent = this.trimMessageForDebug(msg.content);
+      this.logger.log(
+        `📝 Message ${index + 1}: [${msg.fromRole}] ${trimmedContent}`,
+      );
+    });
+
+    // Create the envelope with the current message
+    const messageEnvelope: TConversationTextMessageEnvelope = {
       messageId: `robot-request-${Date.now()}`,
       requestOrResponse: 'request',
       envelopePayload: {
@@ -200,6 +351,19 @@ export class RobotProcessorService {
         estimated_token_count: this.estimateTokenCount(request.content),
       },
     };
+
+    return messageEnvelope;
+  }
+
+  /**
+   * Trim message content to 100 characters for dev/debug
+   * NOTE: This is only for dev/debug purposes to keep logs readable
+   */
+  private trimMessageForDebug(content: string): string {
+    if (content.length > 100) {
+      return content.substring(0, 100) + '...';
+    }
+    return content;
   }
 
   private estimateTokenCount(text: string): number {

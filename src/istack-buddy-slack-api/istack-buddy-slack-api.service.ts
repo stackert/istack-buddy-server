@@ -4,6 +4,9 @@ import { RobotProcessorService } from '../chat-manager/robot-processor.service';
 import { MessageType, UserRole } from '../chat-manager/dto/create-message.dto';
 import { StartConversationDto } from '../chat-manager/dto/start-conversation.dto';
 import { Conversation } from '../chat-manager/interfaces/message.interface';
+import { createHash } from 'crypto';
+import { writeFileSync, existsSync, mkdirSync } from 'fs';
+import { join } from 'path';
 
 // Types for conversation context
 interface ConversationContext {
@@ -15,6 +18,15 @@ interface ConversationContext {
   isNewConversation: boolean;
 }
 
+// Enhanced event deduplication information
+interface EventDeduplicationInfo {
+  eventId: string;
+  contentHash: string;
+  timestamp: number;
+  eventTime?: number;
+  processedAt: number;
+}
+
 /**
  * Slack API Service
  * Handles webhook events from Slack workspace
@@ -24,24 +36,64 @@ interface ConversationContext {
 export class IstackBuddySlackApiService {
   private readonly logger = new Logger(IstackBuddySlackApiService.name);
 
-  // Event deduplication to prevent duplicate processing
-  private readonly processedEvents = new Set<string>();
+  // private readonly processedEvents = new Map<string, EventDeduplicationInfo>();
   private readonly eventCleanupInterval = 60000; // 1 minute
+  private readonly eventRetentionTime = 300000; // 5 minutes (300 seconds)
 
   // Map Slack thread timestamps to ChatManager conversation IDs
-  private readonly slackThreadToConversationMap = new Map<string, string>();
+  private readonly slackThreadToConversationMap: Record<string, string> = {};
 
   constructor(
     private readonly chatManagerService: ChatManagerService,
     private readonly robotProcessorService: RobotProcessorService,
   ) {
-    this.logger.log('🚀 Initializing Slack service...');
+    // Ensure logging directory exists
+    this.ensureLoggingDirectoryExists();
 
     // Clean up old processed events and slack mappings every minute
     setInterval(() => {
-      this.cleanupOldEvents();
-      this.cleanupSlackMappings();
+      this.routineGarbageCollection();
     }, this.eventCleanupInterval);
+  }
+
+  /**
+   * Ensure the logging directory exists
+   */
+  private ensureLoggingDirectoryExists(): void {
+    const loggingDir = join(
+      process.cwd(),
+      'docs-living',
+      'debug-logging',
+      'conversations',
+    );
+
+    if (!existsSync(loggingDir)) {
+      mkdirSync(loggingDir, { recursive: true });
+      this.logger.log(`Created logging directory: ${loggingDir}`);
+    }
+  }
+
+  /**
+   * Log ALL incoming Slack events to file system
+   * Captures RAW request data before any processing
+   */
+  private async logSlackEvent(body: any): Promise<void> {
+    try {
+      const unixTimestamp = Math.floor(Date.now() / 1000);
+      const logFilename = `${unixTimestamp}.slack.log.json`;
+      const logPath = join(
+        process.cwd(),
+        'docs-living',
+        'debug-logging',
+        'conversations',
+        logFilename,
+      );
+
+      // Write to file
+      writeFileSync(logPath, JSON.stringify(body, null, 2), 'utf8');
+    } catch (error) {
+      this.logger.error('Error logging Slack event:', error);
+    }
   }
 
   /**
@@ -50,30 +102,43 @@ export class IstackBuddySlackApiService {
    */
   async handleSlackEvent(req: any, res: any): Promise<void> {
     try {
+      // 📝 LOG ALL INCOMING EVENTS FIRST (before any processing)
       const body = req.body;
+      await this.logSlackEvent(body);
 
       // Handle URL verification challenge
       if (body.challenge) {
-        this.logger.log('🔐 Received URL verification challenge');
+        // Slack initiation/setup requirement to verify URL
         res.status(200).json({ challenge: body.challenge });
         return;
       }
 
+      // Enhanced logging of full event structure for debugging
+      this.logger.log('Received Slack event:', {
+        eventType: body.event?.type,
+        eventId: body.event_id,
+        eventTime: body.event_time,
+        teamId: body.team_id,
+        eventTs: body.event?.ts,
+        eventUser: body.event?.user,
+        eventChannel: body.event?.channel,
+        eventText: body.event?.text?.substring(0, 100) + '...',
+      });
+
       // Handle app mention events
       if (body.event && body.event.type === 'app_mention') {
         this.logger.log('📢 Received app mention event');
-        await this.handleAppMention(body.event);
+        await this.handleAppMention(body.event, body.event_time, body.event_id);
         res.status(200).json({ status: 'ok' });
         return;
       }
 
       // Handle other event types
-      this.logger.log(
-        `📋 Received event type: ${body.event?.type || 'unknown'}`,
-      );
+      // this gets logged above
+      // this.logger.log(`Received event type: ${body.event?.type || 'unknown'}`);
       res.status(200).json({ status: 'ok' });
     } catch (error) {
-      this.logger.error('❌ Error handling Slack event:', error);
+      this.logger.error('Error handling Slack event:', error);
       res.status(500).json({ error: 'Internal server error' });
     }
   }
@@ -85,58 +150,43 @@ export class IstackBuddySlackApiService {
    * - Mention in our thread → Add to existing conversation
    * - Mention in external thread → New conversation
    */
-  private async handleAppMention(event: any): Promise<void> {
+  private async handleAppMention(
+    event: any,
+    eventTime?: number,
+    eventId?: string,
+  ): Promise<void> {
     // Declare conversationContext outside try block for error handling access
     let conversationContext: ConversationContext | undefined;
 
     try {
-      // Create unique event ID for deduplication
-      const eventId = `${event.channel}-${event.ts}-${event.user}`;
-
-      // Check if we've already processed this event
-      if (this.processedEvents.has(eventId)) {
-        this.logger.log(`⚠️ Skipping duplicate event: ${eventId}`);
-        return;
-      }
-
       // Mark event as processed
-      this.processedEvents.add(eventId);
 
       this.logger.log(
-        `🎯 Received mention from user ${event.user} in channel ${event.channel}`,
+        `Received mention from user ${event.user} in channel ${event.channel}`,
       );
       this.logger.log(`📄 Message text: "${event.text}"`);
-      this.logger.log(`🔑 Event ID: ${eventId}`);
 
-      // 🧵 DETERMINE CONVERSATION CONTEXT
+      // DETERMINE CONVERSATION CONTEXT
       conversationContext = this.determineConversationContext(event);
-      this.logger.log(`🧵 Conversation context: ${conversationContext.type}`);
-      this.logger.log(
-        `🆔 Conversation ID: ${conversationContext.conversationId}`,
-      );
+      this.logger.log(`Conversation context: ${conversationContext.type}`);
+      this.logger.log(`Conversation ID: ${conversationContext.conversationId}`);
 
-      this.logger.log(
-        `🧵 Slack thread timestamp: ${conversationContext.slackThreadTs}`,
-      );
       if (!conversationContext.isNewConversation) {
         this.logger.log(
-          `🔗 Existing conversation: ${conversationContext.conversationId}`,
+          `Existing conversation: ${conversationContext.conversationId}`,
         );
       }
 
-      // 🚀 IMMEDIATE ACKNOWLEDGMENT - Add thinking emoji reaction
-      this.logger.log('⚡ Adding immediate acknowledgment reaction...');
+      // IMMEDIATE ACKNOWLEDGMENT - Add thinking emoji reaction
       await this.addSlackReaction('thinking_face', event.channel, event.ts);
 
       // 🏠 STEP 1: Create/get conversation in ChatManager
-      this.logger.log(`🏠 ${conversationContext.action} conversation...`);
       const conversation = await this.getOrCreateConversationForContext(
         conversationContext,
         event.user,
       );
 
       // 📝 STEP 2: Add user message to conversation
-      this.logger.log('📝 Adding user message to conversation...');
       const userMessage = await this.chatManagerService.addExternalMessage(
         conversation.id,
         event.user,
@@ -146,49 +196,64 @@ export class IstackBuddySlackApiService {
         UserRole.AGENT,
       );
 
-      this.logger.log(`✅ User message added: ${userMessage.id}`);
-
-      // 🤖 STEP 3: Process message with robot (external)
-      this.logger.log('🤖 Processing message with robot...');
+      // STEP 3: Process message with robot (external)
+      this.logger.log('Processing message with robot...');
       const robotResponse =
         await this.robotProcessorService.processSlackMention(
           event.text,
           event.user,
           conversation.id,
+          async (delayedResponse) => {
+            // Handle delayed responses (tool results) - send immediately to Slack
+            this.logger.log('Sending delayed response to Slack...');
+            await this.sendSlackMessage(
+              delayedResponse.response,
+              event.channel,
+              conversationContext?.responseThreadTs || event.ts,
+            );
+
+            // Also add to conversation for tracking
+            await this.chatManagerService.addExternalMessage(
+              conversation.id,
+              delayedResponse.robotName,
+              delayedResponse.response,
+              MessageType.TEXT,
+              UserRole.ROBOT,
+              UserRole.SYSTEM_DEBUG,
+            );
+          },
         );
 
       this.logger.log(
-        `🎯 Robot response: ${robotResponse.robotName} (${robotResponse.processed ? 'success' : 'failed'})`,
+        `Robot response: ${robotResponse.robotName} (${robotResponse.processed ? 'success' : 'failed'})`,
       );
 
-      // 📤 STEP 4: Add robot response to conversation
-      this.logger.log('📤 Adding robot response to conversation...');
+      // STEP 4: Add robot response to conversation
+      this.logger.log('Adding robot response to conversation...');
       const robotMessage = await this.chatManagerService.addExternalMessage(
         conversation.id,
         robotResponse.robotName,
         robotResponse.response,
         MessageType.TEXT,
-        UserRole.AGENT,
-        UserRole.CUSTOMER,
+        UserRole.ROBOT,
+        UserRole.SYSTEM_DEBUG,
       );
 
-      this.logger.log(`✅ Robot message added: ${robotMessage.id}`);
+      this.logger.log(`Robot message added: ${robotMessage.id}`);
 
       // 📲 STEP 5: Send robot response to Slack (in correct thread)
-      this.logger.log('📲 Sending response to Slack...');
+      this.logger.log('Sending response to Slack...');
       const responseThreadTs = conversationContext.responseThreadTs || event.ts;
-      this.logger.log(
-        `🧵 Response will be sent to thread: ${responseThreadTs}`,
-      );
+      this.logger.log(`Response will be sent to thread: ${responseThreadTs}`);
       await this.sendSlackMessage(
         robotResponse.response,
         event.channel,
         responseThreadTs,
       );
 
-      this.logger.log('🎉 App mention processing completed successfully');
+      this.logger.log('App mention processing completed successfully');
     } catch (error) {
-      this.logger.error('❌ Error handling app mention:', error);
+      this.logger.error('Error handling app mention:', error);
 
       // Send error message to Slack (in correct thread)
       try {
@@ -200,10 +265,7 @@ export class IstackBuddySlackApiService {
           responseThreadTs,
         );
       } catch (sendError) {
-        this.logger.error(
-          '❌ Failed to send error message to Slack:',
-          sendError,
-        );
+        this.logger.error('Failed to send error message to Slack:', sendError);
       }
     }
   }
@@ -233,17 +295,17 @@ export class IstackBuddySlackApiService {
       if (response.ok) {
         const responseData = await response.json();
         if (responseData.ok) {
-          this.logger.log(`✅ Message sent to Slack channel ${channelId}`);
+          this.logger.log(`Message sent to Slack channel ${channelId}`);
         } else {
-          this.logger.error(`❌ Slack API error: ${responseData.error}`);
+          this.logger.error(`Slack API error: ${responseData.error}`);
         }
       } else {
         this.logger.error(
-          `❌ HTTP error: ${response.status} ${response.statusText}`,
+          `HTTP error: ${response.status} ${response.statusText}`,
         );
       }
     } catch (error) {
-      this.logger.error('❌ Error sending message to Slack:', error);
+      this.logger.error('Error sending message to Slack:', error);
     }
   }
 
@@ -257,7 +319,7 @@ export class IstackBuddySlackApiService {
   ) {
     try {
       this.logger.log(
-        `🎭 Adding reaction :${emojiName}: to message ${timestamp} in channel ${channelId}`,
+        `Adding reaction :${emojiName}: to message ${timestamp} in channel ${channelId}`,
       );
 
       const response = await fetch('https://slack.com/api/reactions.add', {
@@ -277,17 +339,17 @@ export class IstackBuddySlackApiService {
 
       if (response.ok && responseData.ok) {
         this.logger.log(
-          `✅ Added reaction :${emojiName}: to message in channel ${channelId}`,
+          `Added reaction :${emojiName}: to message in channel ${channelId}`,
         );
       } else {
         this.logger.error(
-          `❌ Failed to add reaction: ${responseData.error || 'Unknown error'}`,
+          `Failed to add reaction: ${responseData.error || 'Unknown error'}`,
         );
-        this.logger.error(`❌ Response status: ${response.status}`);
-        this.logger.error(`❌ Response data:`, responseData);
+        this.logger.error(`Response status: ${response.status}`);
+        this.logger.error(`Response data:`, responseData);
       }
     } catch (error) {
-      this.logger.error('❌ Error adding reaction:', error);
+      this.logger.error('Error adding reaction:', error);
     }
   }
 
@@ -313,17 +375,10 @@ export class IstackBuddySlackApiService {
     }
   }
 
-  /**
-   * Clean up old processed events to prevent memory leaks
-   */
-  private cleanupOldEvents(): void {
-    // In a real implementation, you might want to store timestamps
-    // and remove events older than X minutes. For now, we'll just
-    // clear the set periodically to prevent memory buildup.
-    if (this.processedEvents.size > 1000) {
-      this.logger.log('🧹 Cleaning up old processed events...');
-      this.processedEvents.clear();
-    }
+  private routineGarbageCollection(): void {
+    //  at this time we're doing nothing.
+    // we need to figure out how garbage collection will work in
+    // conversations and how that impacts us (mapping slack conversation to internal conversation)
   }
 
   /**
@@ -345,9 +400,8 @@ export class IstackBuddySlackApiService {
     }
 
     // This is a thread message - check if we have an existing conversation for this thread
-    const existingConversationId = this.slackThreadToConversationMap.get(
-      event.thread_ts,
-    );
+    const existingConversationId =
+      this.slackThreadToConversationMap[event.thread_ts];
 
     if (existingConversationId) {
       // Mention in our existing thread → Add to existing conversation
@@ -381,18 +435,18 @@ export class IstackBuddySlackApiService {
     if (context.action === 'Adding to existing' && context.conversationId) {
       // Try to get existing conversation
       const conversations = await this.chatManagerService.getConversations();
+
+      //      WE SHOULD NOT BE SEARCHING OVER ALL CONVERSATIONS - THAT IS A FUNCTION OF THE SERVICES
+
       const existingConversation = conversations.find(
         (c) => c.id === context.conversationId,
       );
 
       if (existingConversation) {
-        this.logger.log(
-          `✅ Found existing conversation: ${context.conversationId}`,
-        );
         return existingConversation;
       } else {
         this.logger.log(
-          `⚠️ Expected existing conversation not found, creating new one`,
+          `Expected existing conversation not found, creating new one`,
         );
       }
     }
@@ -409,28 +463,18 @@ export class IstackBuddySlackApiService {
     });
 
     // Map the Slack thread to this conversation ID for future lookups
-    this.slackThreadToConversationMap.set(
-      context.slackThreadTs,
-      conversation.id,
-    );
+    this.slackThreadToConversationMap[context.slackThreadTs] = conversation.id;
+    // this.slackThreadToConversationMap.set(
+    //   context.slackThreadTs,
+    //   conversation.id,
+    // );
 
-    this.logger.log(`✅ Created new conversation: ${conversation.id}`);
+    this.logger.log(`Created new conversation: ${conversation.id}`);
     this.logger.log(
-      `🔗 Mapped Slack thread ${context.slackThreadTs} to conversation ${conversation.id}`,
+      `Mapped Slack thread ${context.slackThreadTs} to conversation ${conversation.id}`,
     );
 
     return conversation;
-  }
-
-  /**
-   * Clean up Slack thread mappings periodically to prevent memory leaks
-   */
-  private cleanupSlackMappings(): void {
-    if (this.slackThreadToConversationMap.size > 1000) {
-      this.logger.log('🧹 Cleaning up old Slack thread mappings...');
-      // In production, you might want to clean based on timestamp
-      this.slackThreadToConversationMap.clear();
-    }
   }
 
   /**
@@ -447,13 +491,5 @@ export class IstackBuddySlackApiService {
       default:
         return 'Slack Conversation';
     }
-  }
-
-  /**
-   * Estimate token count for a text string
-   */
-  private estimateTokenCount(text: string): number {
-    // Simple estimation: roughly 4 characters per token
-    return Math.ceil(text.length / 4);
   }
 }

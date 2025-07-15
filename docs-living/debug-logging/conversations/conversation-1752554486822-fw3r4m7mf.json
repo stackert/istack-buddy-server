@@ -1,0 +1,131 @@
+{
+  "conversationId": "1752554486822-fw3r4m7mf",
+  "timestamp": "2025-07-15T04:42:10.855Z",
+  "conversation": {
+    "id": "1752554486822-fw3r4m7mf",
+    "participantIds": [
+      "U091Y5UF14P"
+    ],
+    "participantRoles": [
+      "cx-customer"
+    ],
+    "messageCount": 6,
+    "lastMessageAt": "2025-07-15T04:42:10.855Z",
+    "isActive": true,
+    "createdAt": "2025-07-15T04:41:26.822Z",
+    "updatedAt": "2025-07-15T04:42:10.855Z"
+  },
+  "participants": [
+    {
+      "userId": "U091Y5UF14P",
+      "userRole": "cx-customer",
+      "joinedAt": "2025-07-15T04:41:26.822Z"
+    }
+  ],
+  "messageCount": 6,
+  "deduplicationInfo": {
+    "totalContentHashes": 6,
+    "duplicateGroups": 0,
+    "duplicateDetails": []
+  },
+  "messages": [
+    {
+      "id": "msg_1752554486823_4mnqgmjo9",
+      "content": "<@U092RRN555X> tell me about form: 6201623",
+      "conversationId": "1752554486822-fw3r4m7mf",
+      "fromUserId": "U091Y5UF14P",
+      "fromRole": "cx-customer",
+      "toRole": "cx-agent",
+      "messageType": "text",
+      "createdAt": "2025-07-15T04:41:26.823Z",
+      "updatedAt": "2025-07-15T04:41:26.823Z"
+    },
+    {
+      "id": "msg_1752554486824_bkuefw4h2",
+      "content": "(8177) <@U092RRN555X> tell me about form: 6201623",
+      "conversationId": "1752554486822-fw3r4m7mf",
+      "fromUserId": "SlackyAnthropicAgent",
+      "fromRole": "robot",
+      "toRole": "system:debug",
+      "messageType": "text",
+      "createdAt": "2025-07-15T04:41:26.824Z",
+      "updatedAt": "2025-07-15T04:41:26.824Z"
+    },
+    {
+      "id": "msg_1752554487718_8t2im9avx",
+      "content": "(8177) - complete: <@U092RRN555X> tell me about form: 6201623",
+      "conversationId": "1752554486822-fw3r4m7mf",
+      "fromUserId": "SlackyAnthropicAgent",
+      "fromRole": "robot",
+      "toRole": "system:debug",
+      "messageType": "text",
+      "createdAt": "2025-07-15T04:41:27.718Z",
+      "updatedAt": "2025-07-15T04:41:27.718Z"
+    },
+    {
+      "id": "msg_1752554529944_xn5d2nnot",
+      "content": "<@U092RRN555X> test message in thread",
+      "conversationId": "1752554486822-fw3r4m7mf",
+      "fromUserId": "U091Y5UF14P",
+      "fromRole": "cx-customer",
+      "toRole": "cx-agent",
+      "messageType": "text",
+      "createdAt": "2025-07-15T04:42:09.944Z",
+      "updatedAt": "2025-07-15T04:42:09.944Z"
+    },
+    {
+      "id": "msg_1752554529945_2l6t4ad4y",
+      "content": "(4969) <@U092RRN555X> test message in thread",
+      "conversationId": "1752554486822-fw3r4m7mf",
+      "fromUserId": "SlackyAnthropicAgent",
+      "fromRole": "robot",
+      "toRole": "system:debug",
+      "messageType": "text",
+      "createdAt": "2025-07-15T04:42:09.945Z",
+      "updatedAt": "2025-07-15T04:42:09.945Z"
+    },
+    {
+      "id": "msg_1752554530855_rgy6pmdzs",
+      "content": "(4969) - complete: <@U092RRN555X> test message in thread",
+      "conversationId": "1752554486822-fw3r4m7mf",
+      "fromUserId": "SlackyAnthropicAgent",
+      "fromRole": "robot",
+      "toRole": "system:debug",
+      "messageType": "text",
+      "createdAt": "2025-07-15T04:42:10.855Z",
+      "updatedAt": "2025-07-15T04:42:10.855Z"
+    }
+  ],
+  "messageHashes": [
+    {
+      "messageId": "msg_1752554486823_4mnqgmjo9",
+      "contentHash": "be356e87155f8c4eaa0a27cf316e1eeb",
+      "timestamp": "2025-07-15T04:41:26.823Z"
+    },
+    {
+      "messageId": "msg_1752554486824_bkuefw4h2",
+      "contentHash": "ce2b46749949385a8028417a185b8225",
+      "timestamp": "2025-07-15T04:41:26.824Z"
+    },
+    {
+      "messageId": "msg_1752554487718_8t2im9avx",
+      "contentHash": "12e3e3c360f2d82d6246b068751f4dbb",
+      "timestamp": "2025-07-15T04:41:27.718Z"
+    },
+    {
+      "messageId": "msg_1752554529944_xn5d2nnot",
+      "contentHash": "1a80b6880e9440ebee1ff948d47acc37",
+      "timestamp": "2025-07-15T04:42:09.944Z"
+    },
+    {
+      "messageId": "msg_1752554529945_2l6t4ad4y",
+      "contentHash": "98eef45482340cd89582d53211b7cd2a",
+      "timestamp": "2025-07-15T04:42:09.945Z"
+    },
+    {
+      "messageId": "msg_1752554530855_rgy6pmdzs",
+      "contentHash": "749d7a051f74b9cfbf1857c78ec364ff",
+      "timestamp": "2025-07-15T04:42:10.855Z"
+    }
+  ]
+}

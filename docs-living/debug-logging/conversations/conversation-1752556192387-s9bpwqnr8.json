@@ -1,0 +1,179 @@
+{
+  "conversationId": "1752556192387-s9bpwqnr8",
+  "timestamp": "2025-07-15T05:10:36.418Z",
+  "conversation": {
+    "id": "1752556192387-s9bpwqnr8",
+    "participantIds": [
+      "U091Y5UF14P"
+    ],
+    "participantRoles": [
+      "cx-customer"
+    ],
+    "messageCount": 9,
+    "lastMessageAt": "2025-07-15T05:10:36.418Z",
+    "isActive": true,
+    "createdAt": "2025-07-15T05:09:52.387Z",
+    "updatedAt": "2025-07-15T05:10:36.418Z"
+  },
+  "participants": [
+    {
+      "userId": "U091Y5UF14P",
+      "userRole": "cx-customer",
+      "joinedAt": "2025-07-15T05:09:52.387Z"
+    }
+  ],
+  "messageCount": 9,
+  "deduplicationInfo": {
+    "totalContentHashes": 9,
+    "duplicateGroups": 0,
+    "duplicateDetails": []
+  },
+  "messages": [
+    {
+      "id": "msg_1752556192388_5flxflx4v",
+      "content": "<@U092RRN555X> message in channel",
+      "conversationId": "1752556192387-s9bpwqnr8",
+      "fromUserId": "U091Y5UF14P",
+      "fromRole": "cx-customer",
+      "toRole": "cx-agent",
+      "messageType": "text",
+      "createdAt": "2025-07-15T05:09:52.388Z",
+      "updatedAt": "2025-07-15T05:09:52.388Z"
+    },
+    {
+      "id": "msg_1752556192388_p2afpgwsv",
+      "content": "(5725) <@U092RRN555X> message in channel",
+      "conversationId": "1752556192387-s9bpwqnr8",
+      "fromUserId": "SlackyAnthropicAgent",
+      "fromRole": "robot",
+      "toRole": "system:debug",
+      "messageType": "text",
+      "createdAt": "2025-07-15T05:09:52.388Z",
+      "updatedAt": "2025-07-15T05:09:52.388Z"
+    },
+    {
+      "id": "msg_1752556193251_xm1riwq2u",
+      "content": "(5725) - complete: <@U092RRN555X> message in channel",
+      "conversationId": "1752556192387-s9bpwqnr8",
+      "fromUserId": "SlackyAnthropicAgent",
+      "fromRole": "robot",
+      "toRole": "system:debug",
+      "messageType": "text",
+      "createdAt": "2025-07-15T05:09:53.251Z",
+      "updatedAt": "2025-07-15T05:09:53.251Z"
+    },
+    {
+      "id": "msg_1752556224030_g4ebf5lou",
+      "content": "<@U092RRN555X> first message in thread",
+      "conversationId": "1752556192387-s9bpwqnr8",
+      "fromUserId": "U091Y5UF14P",
+      "fromRole": "cx-customer",
+      "toRole": "cx-agent",
+      "messageType": "text",
+      "createdAt": "2025-07-15T05:10:24.030Z",
+      "updatedAt": "2025-07-15T05:10:24.030Z"
+    },
+    {
+      "id": "msg_1752556224031_dlf0n8o80",
+      "content": "(3232) <@U092RRN555X> first message in thread",
+      "conversationId": "1752556192387-s9bpwqnr8",
+      "fromUserId": "SlackyAnthropicAgent",
+      "fromRole": "robot",
+      "toRole": "system:debug",
+      "messageType": "text",
+      "createdAt": "2025-07-15T05:10:24.031Z",
+      "updatedAt": "2025-07-15T05:10:24.031Z"
+    },
+    {
+      "id": "msg_1752556224940_76wunsfgw",
+      "content": "(3232) - complete: <@U092RRN555X> first message in thread",
+      "conversationId": "1752556192387-s9bpwqnr8",
+      "fromUserId": "SlackyAnthropicAgent",
+      "fromRole": "robot",
+      "toRole": "system:debug",
+      "messageType": "text",
+      "createdAt": "2025-07-15T05:10:24.940Z",
+      "updatedAt": "2025-07-15T05:10:24.940Z"
+    },
+    {
+      "id": "msg_1752556235544_i52udzmnz",
+      "content": "<@U092RRN555X> second user message in thread.",
+      "conversationId": "1752556192387-s9bpwqnr8",
+      "fromUserId": "U091Y5UF14P",
+      "fromRole": "cx-customer",
+      "toRole": "cx-agent",
+      "messageType": "text",
+      "createdAt": "2025-07-15T05:10:35.544Z",
+      "updatedAt": "2025-07-15T05:10:35.544Z"
+    },
+    {
+      "id": "msg_1752556235545_wx4djrabd",
+      "content": "(4627) <@U092RRN555X> second user message in thread.",
+      "conversationId": "1752556192387-s9bpwqnr8",
+      "fromUserId": "SlackyAnthropicAgent",
+      "fromRole": "robot",
+      "toRole": "system:debug",
+      "messageType": "text",
+      "createdAt": "2025-07-15T05:10:35.545Z",
+      "updatedAt": "2025-07-15T05:10:35.545Z"
+    },
+    {
+      "id": "msg_1752556236418_1jh1lrsy1",
+      "content": "(4627) - complete: <@U092RRN555X> second user message in thread.",
+      "conversationId": "1752556192387-s9bpwqnr8",
+      "fromUserId": "SlackyAnthropicAgent",
+      "fromRole": "robot",
+      "toRole": "system:debug",
+      "messageType": "text",
+      "createdAt": "2025-07-15T05:10:36.418Z",
+      "updatedAt": "2025-07-15T05:10:36.418Z"
+    }
+  ],
+  "messageHashes": [
+    {
+      "messageId": "msg_1752556192388_5flxflx4v",
+      "contentHash": "79a49706d92fcf0aa87eef7dd4dd1d74",
+      "timestamp": "2025-07-15T05:09:52.388Z"
+    },
+    {
+      "messageId": "msg_1752556192388_p2afpgwsv",
+      "contentHash": "0aa3909db41d4bcf296fc345ff72b11b",
+      "timestamp": "2025-07-15T05:09:52.388Z"
+    },
+    {
+      "messageId": "msg_1752556193251_xm1riwq2u",
+      "contentHash": "c35264af41d10543d7700f59c5d72d6f",
+      "timestamp": "2025-07-15T05:09:53.251Z"
+    },
+    {
+      "messageId": "msg_1752556224030_g4ebf5lou",
+      "contentHash": "5ad443af8c4ba0884e51f899be246d56",
+      "timestamp": "2025-07-15T05:10:24.030Z"
+    },
+    {
+      "messageId": "msg_1752556224031_dlf0n8o80",
+      "contentHash": "6a1a9281b152226208cbbaf23b9cb131",
+      "timestamp": "2025-07-15T05:10:24.031Z"
+    },
+    {
+      "messageId": "msg_1752556224940_76wunsfgw",
+      "contentHash": "52cd328639c310ba68f139ded1c18398",
+      "timestamp": "2025-07-15T05:10:24.940Z"
+    },
+    {
+      "messageId": "msg_1752556235544_i52udzmnz",
+      "contentHash": "0f0bedada523fbe2f4f1c71d5c705f50",
+      "timestamp": "2025-07-15T05:10:35.544Z"
+    },
+    {
+      "messageId": "msg_1752556235545_wx4djrabd",
+      "contentHash": "85a1f87d49658b7ed3e3b25b3cd54b17",
+      "timestamp": "2025-07-15T05:10:35.545Z"
+    },
+    {
+      "messageId": "msg_1752556236418_1jh1lrsy1",
+      "contentHash": "21dc4aad1954cee2f5f8e3c411db0a45",
+      "timestamp": "2025-07-15T05:10:36.418Z"
+    }
+  ]
+}

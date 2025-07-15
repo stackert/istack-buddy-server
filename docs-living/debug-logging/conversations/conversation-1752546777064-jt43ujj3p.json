@@ -1,0 +1,94 @@
+{
+  "conversationId": "1752546777064-jt43ujj3p",
+  "timestamp": "2025-07-15T02:34:15.674Z",
+  "conversation": {
+    "id": "1752546777064-jt43ujj3p",
+    "participantIds": [
+      "U091Y5UF14P"
+    ],
+    "participantRoles": [
+      "cx-customer"
+    ],
+    "messageCount": 6,
+    "lastMessageAt": "2025-07-15T02:34:15.674Z",
+    "isActive": true,
+    "createdAt": "2025-07-15T02:32:57.064Z",
+    "updatedAt": "2025-07-15T02:34:15.674Z"
+  },
+  "participants": [
+    {
+      "userId": "U091Y5UF14P",
+      "userRole": "cx-customer",
+      "joinedAt": "2025-07-15T02:32:57.064Z"
+    }
+  ],
+  "messageCount": 6,
+  "messages": [
+    {
+      "id": "1752546777064-b0l7xqobn",
+      "content": "<@U092RRN555X> tell me about form: 6201623",
+      "conversationId": "1752546777064-jt43ujj3p",
+      "fromUserId": "U091Y5UF14P",
+      "fromRole": "cx-customer",
+      "toRole": "cx-agent",
+      "messageType": "text",
+      "createdAt": "2025-07-15T02:32:57.064Z",
+      "updatedAt": "2025-07-15T02:32:57.064Z"
+    },
+    {
+      "id": "1752546817913-l89kjzdxn",
+      "content": "**Tool: fsRestrictedApiFormAndRelatedEntityOverview**\n\n{\"isSuccess\":true,\"response\":{\"formId\":\"6201623\",\"submissions\":\"0\",\"version\":\"4\",\"submissionsToday\":0,\"lastSubmissionId\":null,\"url\":\"https://terarychambers.formstack.com/forms/simple_circular_references\",\"encrypted\":false,\"isActive\":true,\"timezone\":\"US/Eastern\",\"isOneQuestionAtATime\":false,\"hasApprovers\":false,\"isWorkflowForm\":false,\"fieldCount\":83,\"submitActions\":[],\"notificationEmails\":[{\"id\":\"9272574\",\"name\":\"Notification Email\"}],\"confirmationEmails\":[]},\"errorItems\":null}",
+      "conversationId": "1752546777064-jt43ujj3p",
+      "fromUserId": "SlackyAnthropicAgent",
+      "fromRole": "cx-agent",
+      "toRole": "cx-customer",
+      "messageType": "text",
+      "createdAt": "2025-07-15T02:33:37.913Z",
+      "updatedAt": "2025-07-15T02:33:37.913Z"
+    },
+    {
+      "id": "1752546821197-ulmb3enwy",
+      "content": "📊 **Form Overview for ID: 6201623**\n\n**Basic Details:**\n- Form URL: terarychambers.formstack.com/forms/simple_circular_references\n- Status: Active ✅\n- Version: 4\n- Timezone: US/Eastern\n\n**Statistics:**\n- Total Fields: 83\n- Total Submissions: 0\n- Submissions Today: 0\n\n**Associated Entities:**\n- Notification Emails:\n  • ID: 9272574 - \"Notification Email\"\n\n**Configuration:**\n- Encryption: No\n- One Question at a Time: No\n- Workflow Form: No\n- Approvers: No\n\n**Submit Actions:** None configured\n\nWould you like me to investigate anything specific about this form? I can help with:\n- Field configurations\n- Logic validation\n- Calculation validation\n- Or any other aspects of the form",
+      "conversationId": "1752546777064-jt43ujj3p",
+      "fromUserId": "SlackyAnthropicAgent",
+      "fromRole": "cx-agent",
+      "toRole": "cx-customer",
+      "messageType": "text",
+      "createdAt": "2025-07-15T02:33:41.197Z",
+      "updatedAt": "2025-07-15T02:33:41.197Z"
+    },
+    {
+      "id": "1752546849580-1dq451v13",
+      "content": "<@U092RRN555X> please analyze the calculations",
+      "conversationId": "1752546777064-jt43ujj3p",
+      "fromUserId": "U091Y5UF14P",
+      "fromRole": "cx-customer",
+      "toRole": "cx-agent",
+      "messageType": "text",
+      "createdAt": "2025-07-15T02:34:09.580Z",
+      "updatedAt": "2025-07-15T02:34:09.580Z"
+    },
+    {
+      "id": "1752546854571-6uvli64aq",
+      "content": "**Tool: fsRestrictedApiFormAndRelatedEntityOverview**\n\n{\"isSuccess\":true,\"response\":{\"formId\":\"6201623\",\"submissions\":\"0\",\"version\":\"4\",\"submissionsToday\":0,\"lastSubmissionId\":null,\"url\":\"https://terarychambers.formstack.com/forms/simple_circular_references\",\"encrypted\":false,\"isActive\":true,\"timezone\":\"US/Eastern\",\"isOneQuestionAtATime\":false,\"hasApprovers\":false,\"isWorkflowForm\":false,\"fieldCount\":83,\"submitActions\":[],\"notificationEmails\":[{\"id\":\"9272574\",\"name\":\"Notification Email\"}],\"confirmationEmails\":[]},\"errorItems\":null}",
+      "conversationId": "1752546777064-jt43ujj3p",
+      "fromUserId": "SlackyAnthropicAgent",
+      "fromRole": "cx-agent",
+      "toRole": "cx-customer",
+      "messageType": "text",
+      "createdAt": "2025-07-15T02:34:14.571Z",
+      "updatedAt": "2025-07-15T02:34:14.571Z"
+    },
+    {
+      "id": "1752546855674-15krc0yix",
+      "content": "Now, let me analyze the calculations in this form:\n\n",
+      "conversationId": "1752546777064-jt43ujj3p",
+      "fromUserId": "SlackyAnthropicAgent",
+      "fromRole": "cx-agent",
+      "toRole": "cx-customer",
+      "messageType": "text",
+      "createdAt": "2025-07-15T02:34:15.674Z",
+      "updatedAt": "2025-07-15T02:34:15.674Z"
+    }
+  ]
+}
