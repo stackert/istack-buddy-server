@@ -34,11 +34,14 @@ interface EventDeduplicationInfo {
  */
 @Injectable()
 export class IstackBuddySlackApiService {
+  // AI - DO NOT REMOVE THIS COMMENT
+  // I *thought* logger is a service provided?  Why are we creating a new instance?
+  // does it matter? Logger(IstackBuddySlackApiService.name) - different animal?
   private readonly logger = new Logger(IstackBuddySlackApiService.name);
 
+  private uniqueEventList: Record<string, any> = {};
   // private readonly processedEvents = new Map<string, EventDeduplicationInfo>();
   private readonly eventCleanupInterval = 60000; // 1 minute
-  private readonly eventRetentionTime = 300000; // 5 minutes (300 seconds)
 
   // Map Slack thread timestamps to ChatManager conversation IDs
   private readonly slackThreadToConversationMap: Record<string, string> = {};
@@ -96,46 +99,62 @@ export class IstackBuddySlackApiService {
     }
   }
 
+  private makeSimplifiedEvent(event: any): {
+    eventType: string;
+    conversationId: string;
+    message: string;
+    eventTs: string;
+  } {
+    if (!event.thread_ts) {
+      return {
+        eventType: 'conversation_start',
+        conversationId: event.ts,
+        message: event.text,
+        eventTs: event.ts,
+      };
+    } else {
+      return {
+        eventType: 'thread_reply',
+        conversationId: event.thread_ts,
+        message: event.text,
+        eventTs: event.ts,
+        //        parentUser: event.parent_user_id,
+      };
+    }
+  }
+
   /**
    * Handle incoming Slack events
    * Main entry point for all Slack webhook events
    */
   async handleSlackEvent(req: any, res: any): Promise<void> {
-    try {
-      // LOG ALL INCOMING EVENTS FIRST (before any processing)
-      const body = req.body;
-      await this.logSlackEvent(body);
+    const simpleEvent = this.makeSimplifiedEvent(req.body.event);
 
-      // Handle URL verification challenge
+    const body = req.body;
+    if (this.uniqueEventList[simpleEvent.eventTs]) {
+      this.logger.log(`Duplicate event detected: ${body.event_id}`);
+      res.status(200).json({ status: 'ok' });
+      return;
+    }
+    this.uniqueEventList[simpleEvent.eventTs] = body;
+
+    try {
+      // Handle URL verification challenge (Slack App setup)
       if (body.challenge) {
         // Slack initiation/setup requirement to verify URL
         res.status(200).json({ challenge: body.challenge });
         return;
       }
 
-      // Enhanced logging of full event structure for debugging
-      this.logger.log('Received Slack event:', {
-        eventType: body.event?.type,
-        eventId: body.event_id,
-        eventTime: body.event_time,
-        teamId: body.team_id,
-        eventTs: body.event?.ts,
-        eventUser: body.event?.user,
-        eventChannel: body.event?.channel,
-        eventText: body.event?.text?.substring(0, 100) + '...',
-      });
-
       // Handle app mention events
       if (body.event && body.event.type === 'app_mention') {
         this.logger.log('Received app mention event');
-        await this.handleAppMention(body.event, body.event_time, body.event_id);
+        await this.handleAppMention(body.event);
         res.status(200).json({ status: 'ok' });
         return;
       }
 
-      // Handle other event types
-      // this gets logged above
-      // this.logger.log(`Received event type: ${body.event?.type || 'unknown'}`);
+      // it wasn't a mention - we're done, goodbye
       res.status(200).json({ status: 'ok' });
     } catch (error) {
       this.logger.error('Error handling Slack event:', error);
@@ -150,11 +169,80 @@ export class IstackBuddySlackApiService {
    * - Mention in our thread → Add to existing conversation
    * - Mention in external thread → New conversation
    */
-  private async handleAppMention(
-    event: any,
-    eventTime?: number,
-    eventId?: string,
-  ): Promise<void> {
+  private async handleAppMention(event: any): Promise<void> {
+    const simpleEvent = this.makeSimplifiedEvent(event);
+
+    try {
+      if (simpleEvent.eventType === 'conversation_start') {
+        // IMMEDIATE ACKNOWLEDGMENT - Add thinking emoji reaction
+        await this.addSlackReaction('thinking_face', event.channel, event.ts);
+
+        const conversation = await this.chatManagerService.startConversation({
+          createdBy: event.user,
+          createdByRole: UserRole.CUSTOMER,
+          title: 'Slack Channel Conversation',
+          description: `Slack conversation from channel mention`,
+          initialParticipants: [event.user],
+        });
+
+        const userMessage = await this.chatManagerService.addMessage({
+          conversationId: conversation.id,
+          fromUserId: event.user,
+          content: event.text,
+          messageType: MessageType.TEXT,
+          fromRole: UserRole.CUSTOMER,
+          toRole: UserRole.AGENT,
+        });
+
+        // Map the Slack thread to this conversation ID for future lookups
+        this.slackThreadToConversationMap[event.ts] = conversation.id;
+
+        // Send acknowledgment message to create thread
+        await this.sendSlackMessage(
+          'I see your message. Thread created.',
+          event.channel,
+          event.ts,
+        );
+
+        return;
+      } else if (simpleEvent.eventType === 'thread_reply') {
+        // Thread message with existing mapping - ADD message to conversation
+        const conversationId =
+          this.slackThreadToConversationMap[event.thread_ts];
+
+        const userMessage = await this.chatManagerService.addMessage({
+          conversationId: conversationId,
+          fromUserId: event.user,
+          content: event.text,
+          messageType: MessageType.TEXT,
+          fromRole: UserRole.CUSTOMER,
+          toRole: UserRole.AGENT,
+        });
+      } else {
+        // looks like it was not a channel or thread mention - we're done, goodbye
+        // Unknown scenario - log and ignore
+        this.logger.log(
+          `Ignoring event - thread_ts: ${event.thread_ts}, no mapping found or unrecognized pattern`,
+        );
+      }
+    } catch (error) {
+      this.logger.error('Error handling app mention:', error);
+
+      // Send error message to Slack (in correct thread)
+      try {
+        const responseThreadTs = event.thread_ts || event.ts;
+        await this.sendSlackMessage(
+          `Sorry, I encountered an error processing your request: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          event.channel,
+          responseThreadTs,
+        );
+      } catch (sendError) {
+        this.logger.error('Failed to send error message to Slack:', sendError);
+      }
+    }
+  }
+
+  private async save_handleAppMention(event: any): Promise<void> {
     // Declare conversationContext outside try block for error handling access
     let conversationContext: ConversationContext | undefined;
 
@@ -189,14 +277,14 @@ export class IstackBuddySlackApiService {
       }
 
       // STEP 2: Add user message to conversation
-      const userMessage = await this.chatManagerService.addExternalMessage(
-        conversation.id,
-        event.user,
-        event.text,
-        MessageType.TEXT,
-        UserRole.CUSTOMER,
-        UserRole.AGENT,
-      );
+      const userMessage = await this.chatManagerService.addMessage({
+        conversationId: conversation.id,
+        fromUserId: event.user,
+        content: event.text,
+        messageType: MessageType.TEXT,
+        fromRole: UserRole.CUSTOMER,
+        toRole: UserRole.AGENT,
+      });
 
       // STEP 3: Process message with robot (external)
       this.logger.log('Processing message with robot...');
@@ -215,14 +303,14 @@ export class IstackBuddySlackApiService {
             );
 
             // Also add to conversation for tracking
-            await this.chatManagerService.addExternalMessage(
-              conversation.id,
-              delayedResponse.robotName,
-              delayedResponse.response,
-              MessageType.TEXT,
-              UserRole.ROBOT,
-              UserRole.SYSTEM_DEBUG,
-            );
+            await this.chatManagerService.addMessage({
+              conversationId: conversation.id,
+              fromUserId: delayedResponse.robotName,
+              content: delayedResponse.response,
+              messageType: MessageType.TEXT,
+              fromRole: UserRole.ROBOT,
+              toRole: UserRole.SYSTEM_DEBUG,
+            });
           },
         );
 
@@ -232,14 +320,14 @@ export class IstackBuddySlackApiService {
 
       // STEP 4: Add robot response to conversation
       this.logger.log('Adding robot response to conversation...');
-      const robotMessage = await this.chatManagerService.addExternalMessage(
-        conversation.id,
-        robotResponse.robotName,
-        robotResponse.response,
-        MessageType.TEXT,
-        UserRole.ROBOT,
-        UserRole.SYSTEM_DEBUG,
-      );
+      const robotMessage = await this.chatManagerService.addMessage({
+        conversationId: conversation.id,
+        fromUserId: robotResponse.robotName,
+        content: robotResponse.response,
+        messageType: MessageType.TEXT,
+        fromRole: UserRole.ROBOT,
+        toRole: UserRole.SYSTEM_DEBUG,
+      });
 
       this.logger.log(`Robot message added: ${robotMessage.id}`);
 
@@ -388,7 +476,6 @@ export class IstackBuddySlackApiService {
    */
   private determineConversationContext(event: any): ConversationContext {
     const isThreadMessage = !!event.thread_ts;
-    const slackThreadTs = isThreadMessage ? event.thread_ts : event.ts;
 
     if (!isThreadMessage) {
       // Mention in main channel → Create new conversation and track thread
@@ -471,7 +558,17 @@ export class IstackBuddySlackApiService {
         await this.chatManagerService.getConversationById(conversationId);
 
       if (!existingConversation) {
-        this.logger.error(
+        // AI - DO NOT REMOVE THIS COMMENT
+        // TODO:  - resolve this issue
+        // ChatManager will likely have garbage collection which will lead
+        // to conditions where the conversation does not exist.
+        // We create conversations from slack events based on the event shape.
+        // We should NOT do something like `if (converation_does_note_exist) -> create it`
+        // instead we do 'this message is the begining of a new converation'.
+        // This will lead to issues regard stale converations.  Suppose someone
+        // asks a follow  question after garbage collection?
+        //
+        this.logger.log(
           `Conversation ${conversationId} found in mapping but not in ChatManager`,
         );
         return null;

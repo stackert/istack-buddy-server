@@ -27,7 +27,7 @@ describe('IstackBuddySlackApiService', () => {
     const mockChatManagerService = {
       startConversation: jest.fn(),
       getConversationById: jest.fn(),
-      addExternalMessage: jest.fn(),
+      addMessage: jest.fn(),
     };
 
     const mockRobotProcessorService = {

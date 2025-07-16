@@ -42,14 +42,14 @@ async function testSingleChatSystem() {
 
     // Test 2: Add user message
     console.log('\n💬 Test 2: Adding user message...');
-    const userMessage = await chatManagerService.addExternalMessage(
-      conversation.id,
-      'user123',
-      '@istackbuddy help me with form validation',
-      MessageType.TEXT,
-      UserRole.CUSTOMER,
-      UserRole.AGENT,
-    );
+    const userMessage = await chatManagerService.addMessage({
+      conversationId: conversation.id,
+      fromUserId: 'user123',
+      content: '@istackbuddy help me with form validation',
+      messageType: MessageType.TEXT,
+      fromRole: UserRole.CUSTOMER,
+      toRole: UserRole.AGENT,
+    });
 
     console.log(`✅ User message added: ${userMessage.id}`);
     console.log(`   - Content: "${userMessage.content}"`);

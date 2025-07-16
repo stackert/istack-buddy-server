@@ -8,7 +8,7 @@ import { ConversationListSlackApp } from './ConversationListSlackApp';
  */
 @Injectable()
 class ConversationListService<T extends AbstractConversationMessageList<any>> {
-  private conversations: Map<string, T> = new Map();
+  conversations: Record<string, T> = {};
   private conversationFactory: (
     id: string,
     name: string,
@@ -27,7 +27,7 @@ class ConversationListService<T extends AbstractConversationMessageList<any>> {
    * @returns The conversation if found, undefined otherwise
    */
   getConversationById(conversationId: string): T | undefined {
-    return this.conversations.get(conversationId);
+    return this.conversations[conversationId];
   }
 
   /**
@@ -43,21 +43,18 @@ class ConversationListService<T extends AbstractConversationMessageList<any>> {
     conversationId: string,
     name: string = `Conversation ${conversationId}`,
     description: string = `Auto-created conversation for ${conversationId}`,
-    acceptKey?: string,
+    acceptKey?: string, // what is the point of 'acceptKey'?
   ): T {
     // Check if conversation already exists
-    const existingConversation = this.conversations.get(conversationId);
+    const existingConversation = this.conversations[conversationId];
     if (existingConversation) {
       return existingConversation;
     }
 
     // TODO: Implement acceptKey validation logic here
     // This is where you would validate the acceptKey before allowing creation
-    // For now, we'll just log a warning if acceptKey is provided but not validated
     if (acceptKey) {
-      console.warn(
-        `AcceptKey provided but validation not implemented: ${acceptKey}`,
-      );
+      // For now, we'll just log a warning if acceptKey is provided but not validated
       // Throw error if you want to require acceptKey validation:
       // throw new Error('AcceptKey validation required for conversation creation');
     }
@@ -68,7 +65,7 @@ class ConversationListService<T extends AbstractConversationMessageList<any>> {
       name,
       description,
     );
-    this.conversations.set(conversationId, newConversation);
+    this.conversations[conversationId] = newConversation;
 
     return newConversation;
   }
@@ -79,7 +76,7 @@ class ConversationListService<T extends AbstractConversationMessageList<any>> {
    * @returns True if the conversation exists, false otherwise
    */
   hasConversation(conversationId: string): boolean {
-    return this.conversations.has(conversationId);
+    return conversationId in this.conversations;
   }
 
   /**
@@ -88,7 +85,11 @@ class ConversationListService<T extends AbstractConversationMessageList<any>> {
    * @returns True if the conversation was removed, false if it didn't exist
    */
   removeConversation(conversationId: string): boolean {
-    return this.conversations.delete(conversationId);
+    if (conversationId in this.conversations) {
+      delete this.conversations[conversationId];
+      return true;
+    }
+    return false;
   }
 
   /**
@@ -96,7 +97,7 @@ class ConversationListService<T extends AbstractConversationMessageList<any>> {
    * @returns Array of all conversation IDs
    */
   getAllConversationIds(): string[] {
-    return Array.from(this.conversations.keys());
+    return Object.keys(this.conversations);
   }
 
   /**
@@ -104,7 +105,7 @@ class ConversationListService<T extends AbstractConversationMessageList<any>> {
    * @returns Array of all conversation instances
    */
   getAllConversations(): T[] {
-    return Array.from(this.conversations.values());
+    return Object.values(this.conversations);
   }
 
   /**
@@ -112,7 +113,7 @@ class ConversationListService<T extends AbstractConversationMessageList<any>> {
    * @returns The count of conversations
    */
   getConversationCount(): number {
-    return this.conversations.size;
+    return Object.keys(this.conversations).length;
   }
 
   /**
@@ -120,7 +121,7 @@ class ConversationListService<T extends AbstractConversationMessageList<any>> {
    * Use with caution - this will remove all conversation data
    */
   clearAllConversations(): void {
-    this.conversations.clear();
+    this.conversations = {};
   }
 }
 

@@ -16,25 +16,74 @@ import {
   Participant,
   DashboardStats,
 } from './interfaces/message.interface';
+import { v4 as uuidv4 } from 'uuid';
+import { ConversationListSlackAppService } from '../ConversationLists/ConversationListService';
+import {
+  TConversationMessageEnvelope,
+  TConversationTextMessage,
+  TConversationTextMessageEnvelope,
+} from '../ConversationLists/types';
 
 @Injectable()
 export class ChatManagerService {
-  // In-memory storage for conversations and messages
-  private messages: Map<string, Message> = new Map();
-  private conversations: Map<string, Conversation> = new Map();
+  // In-memory storage for conversation metadata and participants
+  private conversationMetadata: Record<string, Conversation> = {};
   private participants: Map<string, Participant[]> = new Map();
   private gateway: any; // Will be set by the gateway
 
   // Message deduplication tracking
   private messageContentHashes: Map<string, string> = new Map(); // contentHash -> messageId
 
-  constructor() {
-    // Clean constructor - no robot dependencies
-  }
+  constructor(
+    private readonly conversationListService: ConversationListSlackAppService,
+  ) {}
 
   // Method to set the gateway reference (called by the gateway)
   setGateway(gateway: any) {
     this.gateway = gateway;
+  }
+
+  /**
+   * Convert Message to TConversationMessageEnvelope format for storage
+   */
+  private messageToEnvelope(
+    message: Message,
+  ): TConversationTextMessageEnvelope {
+    const conversationMessage: TConversationTextMessage = {
+      messageId: message.id,
+      author_role: message.fromRole,
+      content: {
+        type: 'text/plain',
+        payload: message.content,
+      },
+      created_at: message.createdAt.toISOString(),
+      estimated_token_count: Math.ceil(message.content.length / 4), // Rough token estimate
+    };
+
+    return {
+      messageId: message.id,
+      requestOrResponse:
+        message.fromRole === UserRole.CUSTOMER ? 'request' : 'response',
+      envelopePayload: conversationMessage,
+    };
+  }
+
+  /**
+   * Convert TConversationMessageEnvelope back to Message format
+   */
+  private envelopeToMessage(envelope: any, conversationId: string): Message {
+    const payload = envelope.envelope.envelopePayload;
+    return {
+      id: payload.messageId,
+      content: payload.content.payload,
+      conversationId: conversationId,
+      fromUserId: 'unknown', // This info is lost in conversion - may need to store separately
+      fromRole: payload.author_role as UserRole,
+      toRole: UserRole.AGENT, // Default, may need to store separately
+      messageType: MessageType.TEXT,
+      createdAt: new Date(payload.created_at),
+      updatedAt: new Date(payload.created_at),
+    };
   }
 
   /**
@@ -67,10 +116,12 @@ export class ChatManagerService {
     const existingMessageId = this.messageContentHashes.get(contentHash);
 
     if (existingMessageId) {
-      const existingMessage = this.messages.get(existingMessageId);
+      // Check if message exists in conversation list
+      const conversationList =
+        this.conversationListService.getConversationById(conversationId);
       if (
-        existingMessage &&
-        existingMessage.conversationId === conversationId
+        conversationList &&
+        conversationList.hasMessageEnvelope(existingMessageId)
       ) {
         return true;
       }
@@ -84,27 +135,48 @@ export class ChatManagerService {
    * This is the core method - all messages go through here
    */
   async addMessage(createMessageDto: CreateMessageDto): Promise<Message> {
-    const messageId = `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const messageId = uuidv4();
     const now = new Date();
 
     // Generate content hash for deduplication
     const contentHash = this.generateMessageContentHash(createMessageDto);
 
+    // AI - DO NOT REMOVE THIS COMMENT
+    // I think we dont care.  I *think* our logic/code is goofed (we're failing to properly parse events)
+    // if we're finding duplicates.  Eg: if we have duplication issues it was upstream and that is where it
+    // needs to be fixed.  This is a consequence of the Slacky robot.
     // Check for duplicate message
     if (this.isDuplicateMessage(contentHash, createMessageDto.conversationId)) {
       const existingMessageId = this.messageContentHashes.get(contentHash);
-      console.log(
-        `⚠️ Duplicate message detected in conversation ${createMessageDto.conversationId}:`,
-      );
-      console.log(`   Content Hash: ${contentHash}`);
-      console.log(`   Existing Message ID: ${existingMessageId}`);
-      console.log(
-        `   New Message Content: ${createMessageDto.content.substring(0, 100)}...`,
-      );
+      console.log(`Duplicate message detected in conversation ${createMessageDto.conversationId}:
+        Content Hash: ${contentHash}
+        Existing Message ID: ${existingMessageId}
+        New Message Content: ${createMessageDto.content.substring(0, 100)}...`);
 
-      // Return existing message instead of creating duplicate
-      return this.messages.get(existingMessageId!)!;
+      // Get existing message from conversation list and return it
+      const conversationList = this.conversationListService.getConversationById(
+        createMessageDto.conversationId,
+      );
+      if (conversationList) {
+        const envelope = conversationList.getMessageEnvelopeById(
+          existingMessageId!,
+        );
+        if (envelope) {
+          return this.envelopeToMessage(
+            envelope,
+            createMessageDto.conversationId,
+          );
+        }
+      }
     }
+
+    // Ensure conversation exists in conversation list service
+    const conversationList =
+      this.conversationListService.getConversationOrCreate(
+        createMessageDto.conversationId,
+        `Conversation ${createMessageDto.conversationId}`,
+        `Auto-created conversation for ${createMessageDto.conversationId}`,
+      );
 
     const message: Message = {
       id: messageId,
@@ -116,12 +188,15 @@ export class ChatManagerService {
       messageType: createMessageDto.messageType || MessageType.TEXT,
       threadId: createMessageDto.threadId,
       originalMessageId: createMessageDto.originalMessageId,
-      createdAt: now,
+      createdAt: now, // this is 'our' time - the message may have a different creation time
+      // using our time makes sense.  The calling code should be guarding
+      // against create time overwite - if that turns out to a an issue
       updatedAt: now,
     };
 
-    // Store the message
-    this.messages.set(messageId, message);
+    // Store the message in conversation list
+    const envelope = this.messageToEnvelope(message);
+    conversationList.addMessageEnvelope(envelope);
 
     // Store content hash for deduplication
     this.messageContentHashes.set(contentHash, messageId);
@@ -156,32 +231,10 @@ export class ChatManagerService {
   }
 
   /**
-   * Add a message from external sources (Slack, API, etc.)
-   * Simplified version of addMessage with sensible defaults
-   */
-  async addExternalMessage(
-    conversationId: string,
-    fromUserId: string,
-    content: string,
-    messageType: MessageType = MessageType.TEXT,
-    fromRole: UserRole = UserRole.CUSTOMER,
-    toRole: UserRole = UserRole.AGENT,
-  ): Promise<Message> {
-    return this.addMessage({
-      content,
-      conversationId,
-      fromUserId,
-      fromRole,
-      toRole,
-      messageType,
-    });
-  }
-
-  /**
    * Get all conversations
    */
   async getConversations(userId?: string): Promise<Conversation[]> {
-    let conversations = Array.from(this.conversations.values());
+    let conversations = Object.values(this.conversationMetadata);
 
     if (userId) {
       // Filter conversations where user is a participant
@@ -201,7 +254,7 @@ export class ChatManagerService {
   async getConversationById(
     conversationId: string,
   ): Promise<Conversation | undefined> {
-    return this.conversations.get(conversationId);
+    return this.conversationMetadata[conversationId];
   }
 
   /**
@@ -211,8 +264,16 @@ export class ChatManagerService {
     conversationId: string,
     query: GetMessagesDto,
   ): Promise<Message[]> {
-    const allMessages = Array.from(this.messages.values())
-      .filter((msg) => msg.conversationId === conversationId)
+    const conversationList =
+      this.conversationListService.getConversationById(conversationId);
+    if (!conversationList) {
+      return [];
+    }
+
+    // Get all envelopes and convert to messages
+    const allEnvelopes = conversationList.getLastAddedEnvelopes();
+    const allMessages = allEnvelopes
+      .map((envelope) => this.envelopeToMessage(envelope, conversationId))
       .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
 
     let filteredMessages = allMessages;
@@ -244,10 +305,16 @@ export class ChatManagerService {
     conversationId: string,
     count: number,
   ): Promise<Message[]> {
-    const messages = Array.from(this.messages.values())
-      .filter((msg) => msg.conversationId === conversationId)
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-      .slice(0, count);
+    const conversationList =
+      this.conversationListService.getConversationById(conversationId);
+    if (!conversationList) {
+      return [];
+    }
+
+    const envelopes = conversationList.getLastAddedEnvelopes().slice(0, count);
+    const messages = envelopes
+      .map((envelope) => this.envelopeToMessage(envelope, conversationId))
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
     return messages.reverse(); // Return in chronological order
   }
@@ -259,7 +326,7 @@ export class ChatManagerService {
     conversationId: string,
     joinRoomDto: JoinRoomDto,
   ): Promise<Participant> {
-    const conversation = this.conversations.get(conversationId);
+    const conversation = this.conversationMetadata[conversationId];
     if (!conversation) {
       throw new Error(`Conversation ${conversationId} not found`);
     }
@@ -287,7 +354,7 @@ export class ChatManagerService {
       if (!conversation.participantIds.includes(joinRoomDto.userId)) {
         conversation.participantIds.push(joinRoomDto.userId);
         conversation.participantRoles.push(joinRoomDto.userRole);
-        this.conversations.set(conversationId, conversation);
+        this.conversationMetadata[conversationId] = conversation;
       }
 
       // Broadcast participant added event to dashboard
@@ -333,13 +400,13 @@ export class ChatManagerService {
     this.participants.set(conversationId, existingParticipants);
 
     // Update conversation participant lists
-    const conversation = this.conversations.get(conversationId);
+    const conversation = this.conversationMetadata[conversationId];
     if (conversation) {
       const userIndex = conversation.participantIds.indexOf(userId);
       if (userIndex !== -1) {
         conversation.participantIds.splice(userIndex, 1);
         conversation.participantRoles.splice(userIndex, 1);
-        this.conversations.set(conversationId, conversation);
+        this.conversationMetadata[conversationId] = conversation;
       }
     }
 
@@ -363,16 +430,35 @@ export class ChatManagerService {
     const now = new Date();
     const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
 
-    const conversations = Array.from(this.conversations.values());
-    const messages = Array.from(this.messages.values());
+    const conversations = Object.values(this.conversationMetadata);
+
+    // Count total messages across all conversations
+    let totalMessages = 0;
+    const recentUserIds = new Set<string>();
+
+    for (const conversationId of this.conversationListService.getAllConversationIds()) {
+      const conversationList =
+        this.conversationListService.getConversationById(conversationId);
+      if (conversationList) {
+        totalMessages += conversationList.getMessageCount();
+
+        // Check for recent messages to count active users
+        const envelopes = conversationList.getLastAddedEnvelopes();
+        for (const envelope of envelopes) {
+          const message = this.envelopeToMessage(envelope, conversationId);
+          if (message.createdAt > oneHourAgo) {
+            recentUserIds.add(message.fromUserId);
+          }
+        }
+      }
+    }
 
     const activeConversations = conversations.filter((c) => c.isActive).length;
-    const recentMessages = messages.filter((m) => m.createdAt > oneHourAgo);
-    const activeUsers = new Set(recentMessages.map((m) => m.fromUserId)).size;
+    const activeUsers = recentUserIds.size;
 
     return {
       activeConversations,
-      totalMessages: messages.length,
+      totalMessages,
       activeUsers,
       queuedConversations: 0, // Could be enhanced based on your needs
     };
@@ -387,6 +473,14 @@ export class ChatManagerService {
     const conversationId = this.generateId();
     const now = new Date();
 
+    // Create conversation in conversation list service
+    const conversationList =
+      this.conversationListService.getConversationOrCreate(
+        conversationId,
+        `Conversation ${conversationId}`,
+        `Conversation created by ${startConversationDto.createdBy}`,
+      );
+
     const conversation: Conversation = {
       id: conversationId,
       participantIds: [startConversationDto.createdBy],
@@ -398,8 +492,8 @@ export class ChatManagerService {
       updatedAt: now,
     };
 
-    // Store conversation
-    this.conversations.set(conversationId, conversation);
+    // Store conversation metadata
+    this.conversationMetadata[conversationId] = conversation;
 
     // Add creator as participant
     const creatorParticipant: Participant = {
@@ -451,16 +545,26 @@ export class ChatManagerService {
     channelName?: string,
   ): Promise<Conversation> {
     // Check if conversation already exists
-    const existingConversation = this.conversations.get(externalConversationId);
+    const existingConversation =
+      this.conversationMetadata[externalConversationId];
     if (existingConversation) {
       return existingConversation;
     }
 
-    // Create new conversation
-    const now = new Date();
+    // Create conversation in conversation list service
     const displayName = channelName
       ? `${source} - ${channelName}`
       : `${source} - ${externalConversationId}`;
+
+    const conversationList =
+      this.conversationListService.getConversationOrCreate(
+        externalConversationId,
+        displayName,
+        `External conversation from ${source}`,
+      );
+
+    // Create new conversation metadata
+    const now = new Date();
 
     const conversation: Conversation = {
       id: externalConversationId,
@@ -473,7 +577,7 @@ export class ChatManagerService {
       updatedAt: now,
     };
 
-    this.conversations.set(externalConversationId, conversation);
+    this.conversationMetadata[externalConversationId] = conversation;
 
     // Add the creator as a participant
     const creatorParticipant: Participant = {
@@ -507,7 +611,7 @@ export class ChatManagerService {
   private async updateConversationActivity(
     conversationId: string,
   ): Promise<void> {
-    const conversation = this.conversations.get(conversationId);
+    const conversation = this.conversationMetadata[conversationId];
     if (!conversation) {
       return;
     }
@@ -518,7 +622,7 @@ export class ChatManagerService {
     conversation.lastMessageAt = now;
     conversation.updatedAt = now;
 
-    this.conversations.set(conversationId, conversation);
+    this.conversationMetadata[conversationId] = conversation;
 
     // Broadcast conversation updated event to dashboard
     if (this.gateway) {
@@ -540,13 +644,20 @@ export class ChatManagerService {
    */
   private async logConversation(conversationId: string): Promise<void> {
     try {
-      // Get all messages for this conversation
-      const conversationMessages = Array.from(this.messages.values())
-        .filter((msg) => msg.conversationId === conversationId)
+      // Get all messages for this conversation from conversation list
+      const conversationList =
+        this.conversationListService.getConversationById(conversationId);
+      if (!conversationList) {
+        return;
+      }
+
+      const envelopes = conversationList.getLastAddedEnvelopes();
+      const conversationMessages = envelopes
+        .map((envelope) => this.envelopeToMessage(envelope, conversationId))
         .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
 
       // Get conversation metadata
-      const conversation = this.conversations.get(conversationId);
+      const conversation = this.conversationMetadata[conversationId];
       const participants = this.participants.get(conversationId) || [];
 
       // Calculate content hashes for all messages in this conversation
@@ -609,21 +720,20 @@ export class ChatManagerService {
       writeFileSync(logFile, JSON.stringify(logData, null, 2), 'utf8');
 
       console.log(
-        `📝 Conversation logged: ${logFile} (${conversationMessages.length} messages, ${duplicateGroups.length} duplicate groups)`,
+        `Conversation logged: ${logFile} (${conversationMessages.length} messages, ${duplicateGroups.length} duplicate groups)`,
       );
 
       if (duplicateGroups.length > 0) {
-        console.log(
-          `⚠️ Duplicate message groups found in conversation ${conversationId}:`,
-        );
-        duplicateGroups.forEach(({ contentHash, messageIds }) => {
-          console.log(
-            `   Hash: ${contentHash} -> Messages: ${messageIds.join(', ')}`,
-          );
-        });
+        console.log(`Duplicate message groups found in conversation ${conversationId}:
+${duplicateGroups
+  .map(
+    ({ contentHash, messageIds }) =>
+      `Hash: ${contentHash} -> Messages: ${messageIds.join(', ')}`,
+  )
+  .join('\n')}`);
       }
     } catch (error) {
-      console.error('❌ Error logging conversation:', error);
+      console.error('Error logging conversation:', error);
     }
   }
 
