@@ -4,9 +4,12 @@ import { RobotProcessorService } from '../chat-manager/robot-processor.service';
 import { MessageType, UserRole } from '../chat-manager/dto/create-message.dto';
 import { StartConversationDto } from '../chat-manager/dto/start-conversation.dto';
 import { Conversation } from '../chat-manager/interfaces/message.interface';
-import { createHash } from 'crypto';
+import { v4 as uuidv4 } from 'uuid';
+import { TConversationTextMessageEnvelope } from '../robots/types';
 import { writeFileSync, existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
+import { SlackyAnthropicAgent } from 'src/robots/SlackyAnthropicAgent';
+import { RobotService } from 'src/robots/robot.service';
 
 // Types for conversation context
 interface ConversationContext {
@@ -49,6 +52,7 @@ export class IstackBuddySlackApiService {
   constructor(
     private readonly chatManagerService: ChatManagerService,
     private readonly robotProcessorService: RobotProcessorService,
+    private readonly robotService: RobotService,
   ) {
     // Ensure logging directory exists
     this.ensureLoggingDirectoryExists();
@@ -218,6 +222,36 @@ export class IstackBuddySlackApiService {
           fromRole: UserRole.CUSTOMER,
           toRole: UserRole.AGENT,
         });
+
+        // --------------------
+        const robot = this.robotService.getRobotByName<SlackyAnthropicAgent>(
+          'SlackyAnthropicAgent',
+        )!; // DO NOT REMOVE THIS COMMENT '!' should not be here, only for dev purpose TODO
+
+        const messageEnvelope = await this.createMessageEnvelopeWithHistory({
+          conversationId: conversationId,
+          fromUserId: event.user,
+          content: event.text,
+        });
+
+        const response = await robot.acceptMessageMultiPartResponse(
+          messageEnvelope,
+          async (delayedResponse: TConversationTextMessageEnvelope) => {
+            // Send delayed response back to Slack
+            await this.sendSlackMessage(
+              delayedResponse.envelopePayload.content.payload,
+              event.channel,
+              event.thread_ts,
+            );
+
+            // await delayedMessageCallback({
+            //   response: delayedResponse.envelopePayload.content.payload,
+            //   robotName: robotInfo.name,
+            //   processed: true,
+            // });
+          },
+        );
+        // ----------------------
       } else {
         // looks like it was not a channel or thread mention - we're done, goodbye
         // Unknown scenario - log and ignore
@@ -579,18 +613,48 @@ export class IstackBuddySlackApiService {
   }
 
   /**
-   * Generate display name for conversation context
+   * Create message envelope with full conversation history
+   * This replaces the simple createMessageEnvelope method
    */
-  private getDisplayNameForContext(context: ConversationContext): string {
-    switch (context.type) {
-      case 'channel_mention':
-        return `Slack Channel Conversation`;
-      case 'thread_reply':
-        return `Slack Thread (Continued)`;
-      case 'external_thread':
-        return `Slack Thread (New)`;
-      default:
-        return 'Slack Conversation';
-    }
+  private async createMessageEnvelopeWithHistory(
+    request: { conversationId: string; fromUserId: string; content: string }, // RobotProcessingRequest,
+  ): Promise<TConversationTextMessageEnvelope> {
+    // Get conversation history - get last 20 messages to provide context
+    const conversationHistory = await this.chatManagerService.getLastMessages(
+      request.conversationId,
+      20,
+    );
+
+    // Filter out short-circuit messages (tool responses, system messages)
+    const filteredHistory = conversationHistory; // this.filterRobotRelevantMessages(conversationHistory);
+
+    // Store filtered history for robots to use
+    // this.currentConversationHistory = filteredHistory;
+
+    // Log trimmed conversation history for dev/debug
+    filteredHistory.forEach((msg: any, index: number) => {
+      const trimmedContent = msg.content; // this.trimMessageForDebug(msg.content);
+      this.logger.log(
+        `Message ${index + 1}: [${msg.fromRole}] ${trimmedContent}`,
+      );
+    });
+
+    // Create the envelope with the current message
+    const messageEnvelope: TConversationTextMessageEnvelope = {
+      messageId: uuidv4(),
+      requestOrResponse: 'request',
+      envelopePayload: {
+        messageId: uuidv4(), //`msg-${Date.now()}`,
+        author_role: request.fromUserId,
+        content: {
+          type: 'text/plain',
+          payload: request.content,
+        },
+        created_at: new Date().toISOString(),
+        estimated_token_count: -1, // DO NOT REMOVE THIS COMMENT this.estimateTokenCount(request.content),
+      },
+    };
+
+    return messageEnvelope;
   }
 }

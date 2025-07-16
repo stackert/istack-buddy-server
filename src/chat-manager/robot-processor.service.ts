@@ -41,15 +41,15 @@ export class RobotProcessorService {
     request: RobotProcessingRequest,
   ): Promise<RobotProcessingResponse> {
     this.logger.log(
-      `🤖 Processing message for conversation ${request.conversationId}`,
+      `Processing message for conversation ${request.conversationId}`,
     );
-    this.logger.log(`📝 Content: "${request.content}"`);
+    this.logger.log(`Content: "${request.content}"`);
 
     try {
       // Determine which robot to use based on content
       const robotInfo = this.selectRobot(request.content);
 
-      this.logger.log(`🎯 Selected robot: ${robotInfo.name}`);
+      this.logger.log(`Selected robot: ${robotInfo.name}`);
 
       if (!robotInfo.robot) {
         return {
@@ -79,7 +79,7 @@ export class RobotProcessorService {
           (delayedResponse: TConversationTextMessageEnvelope) => {
             // Handle delayed responses - could emit events here if needed
             this.logger.log(
-              `📥 Received delayed response: ${delayedResponse.envelopePayload.content.payload.substring(0, 100)}...`,
+              `Received delayed response: ${delayedResponse.envelopePayload.content.payload.substring(0, 100)}...`,
             );
           },
         );
@@ -92,7 +92,7 @@ export class RobotProcessorService {
       }
 
       this.logger.log(
-        `✅ Robot response generated (${robotResponse.length} chars)`,
+        `Robot response generated (${robotResponse.length} chars)`,
       );
 
       return {
@@ -101,7 +101,7 @@ export class RobotProcessorService {
         processed: true,
       };
     } catch (error) {
-      this.logger.error(`❌ Error processing with robot:`, error);
+      this.logger.error(`Error processing with robot:`, error);
 
       return {
         response: `Sorry, I encountered an error processing your request: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -140,14 +140,14 @@ export class RobotProcessorService {
     ) => Promise<void>,
   ): Promise<RobotProcessingResponse> {
     this.logger.log(
-      `🤖 Processing Slack mention for conversation ${conversationId}`,
+      `Processing Slack mention for conversation ${conversationId}`,
     );
 
     try {
       // Determine which robot to use based on content
       const robotInfo = this.selectRobot(content);
 
-      this.logger.log(`🎯 Selected robot: ${robotInfo.name}`);
+      this.logger.log(`Selected robot: ${robotInfo.name}`);
 
       if (!robotInfo.robot) {
         return {
@@ -178,7 +178,7 @@ export class RobotProcessorService {
           messageEnvelope,
           async (delayedResponse: TConversationTextMessageEnvelope) => {
             this.logger.log(
-              `📥 Received delayed response from ${robotInfo.name}: ${delayedResponse.envelopePayload.content.payload.substring(0, 100)}...`,
+              `Received delayed response from ${robotInfo.name}: ${delayedResponse.envelopePayload.content.payload.substring(0, 100)}...`,
             );
 
             // Send delayed response back to Slack
@@ -206,7 +206,7 @@ export class RobotProcessorService {
         };
       }
     } catch (error) {
-      this.logger.error(`❌ Error processing Slack mention:`, error);
+      this.logger.error(`Error processing Slack mention:`, error);
 
       return {
         response: `Sorry, I encountered an error processing your request: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -325,14 +325,14 @@ export class RobotProcessorService {
 
     // Log conversation history for debugging
     this.logger.log(
-      `📚 Retrieved ${conversationHistory.length} messages, filtered to ${filteredHistory.length} relevant messages`,
+      `Retrieved ${conversationHistory.length} messages, filtered to ${filteredHistory.length} relevant messages`,
     );
 
     // Log trimmed conversation history for dev/debug
     filteredHistory.forEach((msg, index) => {
       const trimmedContent = this.trimMessageForDebug(msg.content);
       this.logger.log(
-        `📝 Message ${index + 1}: [${msg.fromRole}] ${trimmedContent}`,
+        `Message ${index + 1}: [${msg.fromRole}] ${trimmedContent}`,
       );
     });
 

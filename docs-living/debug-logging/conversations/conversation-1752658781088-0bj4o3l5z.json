@@ -1,0 +1,67 @@
+{
+  "conversationId": "1752658781088-0bj4o3l5z",
+  "timestamp": "2025-07-16T09:40:40.932Z",
+  "conversation": {
+    "id": "1752658781088-0bj4o3l5z",
+    "participantIds": [
+      "U091Y5UF14P"
+    ],
+    "participantRoles": [
+      "cx-customer"
+    ],
+    "messageCount": 2,
+    "lastMessageAt": "2025-07-16T09:40:40.931Z",
+    "isActive": true,
+    "createdAt": "2025-07-16T09:39:41.089Z",
+    "updatedAt": "2025-07-16T09:40:40.931Z"
+  },
+  "participants": [
+    {
+      "userId": "U091Y5UF14P",
+      "userRole": "cx-customer",
+      "joinedAt": "2025-07-16T09:39:41.089Z"
+    }
+  ],
+  "messageCount": 2,
+  "deduplicationInfo": {
+    "totalContentHashes": 2,
+    "duplicateGroups": 0,
+    "duplicateDetails": []
+  },
+  "messages": [
+    {
+      "id": "d1daf7ee-01c5-4023-8b1b-8459d8dc333f",
+      "content": "<@U092RRN555X> channel mention",
+      "conversationId": "1752658781088-0bj4o3l5z",
+      "fromUserId": "unknown",
+      "fromRole": "cx-customer",
+      "toRole": "cx-agent",
+      "messageType": "text",
+      "createdAt": "2025-07-16T09:39:41.089Z",
+      "updatedAt": "2025-07-16T09:39:41.089Z"
+    },
+    {
+      "id": "8d93562c-b0c2-45b8-b137-4cff4c83aa3e",
+      "content": "<@U092RRN555X> robot?",
+      "conversationId": "1752658781088-0bj4o3l5z",
+      "fromUserId": "unknown",
+      "fromRole": "cx-customer",
+      "toRole": "cx-agent",
+      "messageType": "text",
+      "createdAt": "2025-07-16T09:40:40.931Z",
+      "updatedAt": "2025-07-16T09:40:40.931Z"
+    }
+  ],
+  "messageHashes": [
+    {
+      "messageId": "d1daf7ee-01c5-4023-8b1b-8459d8dc333f",
+      "contentHash": "312e3f1fdf832deafb372899f80e9dd1",
+      "timestamp": "2025-07-16T09:39:41.089Z"
+    },
+    {
+      "messageId": "8d93562c-b0c2-45b8-b137-4cff4c83aa3e",
+      "contentHash": "6d6f90e30320091f5587c52ad7fee535",
+      "timestamp": "2025-07-16T09:40:40.931Z"
+    }
+  ]
+}
