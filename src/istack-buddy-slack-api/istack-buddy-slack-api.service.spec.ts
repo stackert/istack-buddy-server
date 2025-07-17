@@ -1,13 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { IstackBuddySlackApiService } from './istack-buddy-slack-api.service';
 import { ChatManagerService } from '../chat-manager/chat-manager.service';
-import { RobotProcessorService } from '../chat-manager/robot-processor.service';
 import { UserRole } from '../chat-manager/dto/create-message.dto';
 
 describe('IstackBuddySlackApiService', () => {
   let service: IstackBuddySlackApiService;
   let chatManagerService: jest.Mocked<ChatManagerService>;
-  let robotProcessorService: jest.Mocked<RobotProcessorService>;
 
   const mockConversation = {
     id: 'test-conversation-id',
@@ -30,20 +28,12 @@ describe('IstackBuddySlackApiService', () => {
       addMessage: jest.fn(),
     };
 
-    const mockRobotProcessorService = {
-      processSlackMention: jest.fn(),
-    };
-
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         IstackBuddySlackApiService,
         {
           provide: ChatManagerService,
           useValue: mockChatManagerService,
-        },
-        {
-          provide: RobotProcessorService,
-          useValue: mockRobotProcessorService,
         },
       ],
     }).compile();
@@ -52,7 +42,6 @@ describe('IstackBuddySlackApiService', () => {
       IstackBuddySlackApiService,
     );
     chatManagerService = module.get(ChatManagerService);
-    robotProcessorService = module.get(RobotProcessorService);
   });
 
   afterEach(() => {
