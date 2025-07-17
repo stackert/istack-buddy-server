@@ -158,6 +158,17 @@ export class IstackBuddySlackApiService {
         const sendConversationResponseToSlack = async (
           delayedResponse: TConversationTextMessageEnvelope,
         ) => {
+          // Add robot response to conversation history
+          await this.chatManagerService.addMessage({
+            conversationId: conversation.id,
+            fromUserId: 'cx-slack-robot',
+            content: delayedResponse.envelopePayload.content.payload,
+            messageType: MessageType.ROBOT,
+            fromRole: UserRole.ROBOT,
+            toRole: UserRole.CUSTOMER,
+          });
+
+          // Send message to Slack
           await this.sendSlackMessage(
             delayedResponse.envelopePayload.content.payload,
             event.channel,

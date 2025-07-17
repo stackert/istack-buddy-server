@@ -33,7 +33,7 @@ class ConversationListService<T extends AbstractConversationMessageList<any>> {
   /**
    * Get a conversation by ID, or create it if it doesn't exist
    * @param conversationId The unique identifier of the conversation
-   * @param name The name for the conversation (used only if creating new)
+   * @param name The name for the conversation (used only if creating negetConversationByIdw)
    * @param description The description for the conversation (used only if creating new)
    * @param acceptKey Optional security key for conversation creation (implement your validation logic)
    * @returns The existing or newly created conversation

@@ -21,8 +21,20 @@ describe('IstackBuddySlackApiService', () => {
   };
 
   beforeEach(async () => {
-    // Mock setInterval to prevent hanging tests
-    jest.spyOn(global, 'setInterval').mockImplementation(() => ({}) as any);
+    // Clear all timers and mock setInterval to prevent hanging tests
+    jest.clearAllTimers();
+    jest.useFakeTimers();
+    jest.spyOn(global, 'setInterval').mockImplementation(
+      () =>
+        ({
+          unref: jest.fn(),
+          ref: jest.fn(),
+          hasRef: jest.fn().mockReturnValue(false),
+          refresh: jest.fn(),
+          [Symbol.toPrimitive]: jest.fn(),
+          [Symbol.dispose]: jest.fn(),
+        }) as any,
+    );
 
     const mockRobot = {
       acceptMessageMultiPartResponse: jest
@@ -87,7 +99,9 @@ describe('IstackBuddySlackApiService', () => {
   });
 
   afterEach(() => {
-    // Restore setInterval
+    // Clear all timers and restore original functions
+    jest.clearAllTimers();
+    jest.useRealTimers();
     jest.restoreAllMocks();
   });
 
@@ -156,29 +170,47 @@ describe('IstackBuddySlackApiService', () => {
       expect(conversation.participantIds).toContain('U091Y5UF14P');
       expect(conversation.isActive).toBe(true);
 
-      // Verify messages were actually stored
+      // Verify messages were actually stored (3 user messages + 3 robot responses = 6 total)
       const messages = await chatManagerService.getMessages(
         conversation.id,
         {},
       );
-      expect(messages).toHaveLength(3);
+      expect(messages).toHaveLength(6);
 
-      // Verify message content in order
-      expect(messages[0].content).toBe(
+      // Filter user and robot messages
+      const userMessages = messages.filter(
+        (msg) => msg.fromRole === UserRole.CUSTOMER,
+      );
+      const robotMessages = messages.filter(
+        (msg) => msg.fromRole === UserRole.ROBOT,
+      );
+
+      expect(userMessages).toHaveLength(3);
+      expect(robotMessages).toHaveLength(3);
+
+      // Verify user message content in order
+      expect(userMessages[0].content).toBe(
         '<@U092RRN555X> test message 1 - channel mention',
       );
-      expect(messages[0].fromUserId).toBe('cx-slack-robot'); // Generic Slack robot user
-      expect(messages[0].fromRole).toBe(UserRole.CUSTOMER);
+      expect(userMessages[0].fromUserId).toBe('cx-slack-robot'); // Generic Slack robot user
+      expect(userMessages[0].fromRole).toBe(UserRole.CUSTOMER);
 
-      expect(messages[1].content).toBe(
+      expect(userMessages[1].content).toBe(
         '<@U092RRN555X> test message 2 - thread reply 1',
       );
-      expect(messages[1].fromUserId).toBe('cx-slack-robot'); // Generic Slack robot user
+      expect(userMessages[1].fromUserId).toBe('cx-slack-robot'); // Generic Slack robot user
 
-      expect(messages[2].content).toBe(
+      expect(userMessages[2].content).toBe(
         '<@U092RRN555X> test message 3 - thread reply 2',
       );
-      expect(messages[2].fromUserId).toBe('cx-slack-robot'); // Generic Slack robot user
+      expect(userMessages[2].fromUserId).toBe('cx-slack-robot'); // Generic Slack robot user
+
+      // Verify robot responses
+      robotMessages.forEach((robotMsg) => {
+        expect(robotMsg.content).toBe('Mock robot response from callback');
+        expect(robotMsg.messageType).toBe(MessageType.ROBOT);
+        expect(robotMsg.fromRole).toBe(UserRole.ROBOT);
+      });
 
       // Verify conversation mapping
       const mapping = (service as any).slackThreadToConversationMap;
@@ -287,10 +319,10 @@ describe('IstackBuddySlackApiService', () => {
         {},
       );
 
-      // One conversation should have 3 messages, the other should have 3 messages
-      expect(conv1Messages.length + conv2Messages.length).toBe(6);
-      expect(conv1Messages).toHaveLength(3);
-      expect(conv2Messages).toHaveLength(3);
+      // Each conversation should have 6 messages (3 user + 3 robot responses)
+      expect(conv1Messages.length + conv2Messages.length).toBe(12);
+      expect(conv1Messages).toHaveLength(6);
+      expect(conv2Messages).toHaveLength(6);
 
       // Verify conversations are mapped correctly
       const mapping = (service as any).slackThreadToConversationMap;
@@ -308,7 +340,7 @@ describe('IstackBuddySlackApiService', () => {
       ).toBe('function');
     });
 
-    it('should invoke robot callback which calls sendSlackMessage', async () => {
+    it('should invoke robot callback which calls sendSlackMessage and adds message to conversation', async () => {
       // Arrange - Create a single channel mention event
       const channelEvent = createChannelMentionEvent({
         ts: '1752568742.663279',
@@ -346,6 +378,29 @@ describe('IstackBuddySlackApiService', () => {
       const callArgs =
         mockRobotService.acceptMessageMultiPartResponse.mock.calls[0];
       expect(typeof callArgs[1]).toBe('function'); // Second argument should be the callback function
+
+      // NEW: Verify robot response was added to conversation history
+      const conversations = await chatManagerService.getConversations();
+      expect(conversations).toHaveLength(1);
+
+      const conversation = conversations[0];
+      const messages = await chatManagerService.getMessages(
+        conversation.id,
+        {},
+      );
+
+      // Should have 2 messages: user input + robot response
+      expect(messages).toHaveLength(2);
+
+      // Verify robot response message
+      const robotMessage = messages.find(
+        (msg) => msg.fromRole === UserRole.ROBOT,
+      );
+      expect(robotMessage).toBeDefined();
+      expect(robotMessage!.content).toBe('Mock robot response from callback');
+      expect(robotMessage!.messageType).toBe(MessageType.ROBOT);
+      expect(robotMessage!.fromUserId).toBe('cx-slack-robot');
+      expect(robotMessage!.toRole).toBe(UserRole.CUSTOMER);
     });
   });
 

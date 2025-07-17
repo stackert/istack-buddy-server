@@ -1,6 +1,6 @@
 import { AbstractRobotChat } from './AbstractRobotChat';
 import type { TConversationTextMessageEnvelope } from './types';
-import { Message } from '../chat-manager/interfaces/message.interface';
+import { IConversationMessage } from '../chat-manager/interfaces/message.interface';
 import { UserRole } from '../chat-manager/dto/create-message.dto';
 import Anthropic from '@anthropic-ai/sdk';
 //import { slackyToolSet } from './tool-definitions/RobotChatAnthropicTools';
@@ -18,7 +18,7 @@ export class RobotChatAnthropic extends AbstractRobotChat {
   public readonly version: string = '1.0.0';
 
   // Store conversation history for context
-  private conversationHistory: Message[] = [];
+  private conversationHistory: IConversationMessage[] = [];
 
   // Static descriptions
   static descriptionShort =
@@ -62,7 +62,7 @@ Please provide helpful, accurate, and detailed responses to user questions. If y
   /**
    * Set conversation history for context-aware responses
    */
-  public setConversationHistory(history: Message[]): void {
+  public setConversationHistory(history: IConversationMessage[]): void {
     this.conversationHistory = history;
   }
 
