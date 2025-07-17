@@ -1,10 +1,10 @@
 import { MessageType, UserRole } from '../dto/create-message.dto';
 
-export interface Message {
+export interface IConversationMessage {
   id: string;
   content: string;
   conversationId: string;
-  fromUserId: string;
+  fromUserId: string | null;
   fromRole: UserRole;
   toRole: UserRole;
   messageType: MessageType;

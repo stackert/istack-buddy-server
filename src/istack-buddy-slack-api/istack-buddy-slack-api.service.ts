@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { ChatManagerService } from '../chat-manager/chat-manager.service';
 import { MessageType, UserRole } from '../chat-manager/dto/create-message.dto';
 import { TConversationTextMessageEnvelope } from '../robots/types';
-
+import type { IConversationMessage } from '../chat-manager';
 // Types for conversation context
 interface ConversationContext {
   type: 'channel_mention' | 'thread_reply' | 'external_thread';
@@ -68,6 +68,24 @@ export class IstackBuddySlackApiService {
         //        parentUser: event.parent_user_id,
       };
     }
+  }
+
+  /**
+   * Send robot response back to Slack in the appropriate channel/thread
+   * @param delayedResponse The robot's response envelope
+   * @param channel The Slack channel ID
+   * @param threadTs The thread timestamp (event.ts for new threads, event.thread_ts for replies)
+   */
+  private async sendRobotResponseToSlack(
+    delayedResponse: TConversationTextMessageEnvelope,
+    channel: string,
+    threadTs: string,
+  ): Promise<void> {
+    await this.sendSlackMessage(
+      delayedResponse.envelopePayload.content.payload,
+      channel,
+      threadTs,
+    );
   }
 
   /**
@@ -134,7 +152,7 @@ export class IstackBuddySlackApiService {
 
         const userMessage = await this.chatManagerService.addMessage({
           conversationId: conversation.id,
-          fromUserId: event.user,
+          fromUserId: 'cx-slack-robot', // Generic Slack robot user - actual Slack user not tracked
           content: event.text,
           messageType: MessageType.TEXT,
           fromRole: UserRole.CUSTOMER,
@@ -164,14 +182,12 @@ export class IstackBuddySlackApiService {
 
         const response = await robot.acceptMessageMultiPartResponse(
           messageEnvelope,
-          async (delayedResponse: TConversationTextMessageEnvelope) => {
-            // Send delayed response back to Slack
-            await this.sendSlackMessage(
-              delayedResponse.envelopePayload.content.payload,
+          (delayedResponse: TConversationTextMessageEnvelope) =>
+            this.sendRobotResponseToSlack(
+              delayedResponse,
               event.channel,
-              event.ts, // this is what creates the thread
-            );
-          },
+              event.ts,
+            ), // this is what creates the thread
         );
         // ----------------------
 
@@ -183,7 +199,7 @@ export class IstackBuddySlackApiService {
 
         const userMessage = await this.chatManagerService.addMessage({
           conversationId: conversationId,
-          fromUserId: event.user,
+          fromUserId: 'cx-slack-robot', // Generic Slack robot user - actual Slack user not tracked
           content: event.text,
           messageType: MessageType.TEXT,
           fromRole: UserRole.CUSTOMER,
@@ -203,14 +219,12 @@ export class IstackBuddySlackApiService {
 
         const response = await robot.acceptMessageMultiPartResponse(
           messageEnvelope,
-          async (delayedResponse: TConversationTextMessageEnvelope) => {
-            // Send delayed response back to Slack
-            await this.sendSlackMessage(
-              delayedResponse.envelopePayload.content.payload,
+          (delayedResponse: TConversationTextMessageEnvelope) =>
+            this.sendRobotResponseToSlack(
+              delayedResponse,
               event.channel,
               event.thread_ts,
-            );
-          },
+            ),
         );
         // ----------------------
       } else {
@@ -234,6 +248,7 @@ export class IstackBuddySlackApiService {
       } catch (sendError) {
         this.logger.error('Failed to send error message to Slack:', sendError);
       }
+      throw error; // dev debug - we do want to handle the error but for dev we throw. TODO: remove this
     }
   }
 
@@ -356,11 +371,11 @@ export class IstackBuddySlackApiService {
     request: { conversationId: string; fromUserId: string; content: string }, // RobotProcessingRequest,
   ): Promise<TConversationTextMessageEnvelope> {
     // Get conversation history - get last 20 messages to provide context
-    const conversationHistory = await this.chatManagerService.getLastMessages(
-      request.conversationId,
-      20,
-    );
-
+    // const conversationHistory = await this.chatManagerService.getLastMessages(
+    //   request.conversationId,
+    //   20,
+    // );
+    const conversationHistory = [] as IConversationMessage[]; // TODO: remove this
     // Filter out short-circuit messages (tool responses, system messages)
     const filteredHistory = conversationHistory; // this.filterRobotRelevantMessages(conversationHistory);
 

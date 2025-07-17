@@ -40,6 +40,7 @@ type TConversationMessageContent =
 type TConversationListMessage<T = TConversationMessageContent> = {
   messageId: string;
   author_role: string;
+  fromUserId?: string | null; // Optional user identifier (e.g., 'cx-slack-robot' for Slack)
   content: T;
   created_at: string;
   estimated_token_count: number;

@@ -24,8 +24,8 @@ export class CreateMessageDto {
   conversationId: string;
 
   @IsString()
-  @IsNotEmpty()
-  fromUserId: string;
+  @IsOptional()
+  fromUserId: string | null;
 
   @IsEnum(UserRole)
   fromRole: UserRole;

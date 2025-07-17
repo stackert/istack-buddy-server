@@ -11,7 +11,7 @@ import { JoinRoomDto } from './dto/join-room.dto';
 import { GetMessagesDto } from './dto/get-messages.dto';
 import { StartConversationDto } from './dto/start-conversation.dto';
 import {
-  Message,
+  IConversationMessage,
   Conversation,
   Participant,
   DashboardStats,
@@ -47,11 +47,12 @@ export class ChatManagerService {
    * Convert Message to TConversationMessageEnvelope format for storage
    */
   private messageToEnvelope(
-    message: Message,
+    message: IConversationMessage,
   ): TConversationTextMessageEnvelope {
     const conversationMessage: TConversationTextMessage = {
       messageId: message.id,
       author_role: message.fromRole,
+      fromUserId: message.fromUserId, // Preserve the original fromUserId
       content: {
         type: 'text/plain',
         payload: message.content,
@@ -71,13 +72,16 @@ export class ChatManagerService {
   /**
    * Convert TConversationMessageEnvelope back to Message format
    */
-  private envelopeToMessage(envelope: any, conversationId: string): Message {
+  private envelopeToMessage(
+    envelope: any,
+    conversationId: string,
+  ): IConversationMessage {
     const payload = envelope.envelope.envelopePayload;
     return {
       id: payload.messageId,
       content: payload.content.payload,
       conversationId: conversationId,
-      fromUserId: 'unknown', // This info is lost in conversion - may need to store separately
+      fromUserId: payload.fromUserId || null, // Use preserved fromUserId or null as fallback
       fromRole: payload.author_role as UserRole,
       toRole: UserRole.AGENT, // Default, may need to store separately
       messageType: MessageType.TEXT,
@@ -134,7 +138,9 @@ export class ChatManagerService {
    * Add a message to a conversation
    * This is the core method - all messages go through here
    */
-  async addMessage(createMessageDto: CreateMessageDto): Promise<Message> {
+  async addMessage(
+    createMessageDto: CreateMessageDto,
+  ): Promise<IConversationMessage> {
     const messageId = uuidv4();
     const now = new Date();
 
@@ -178,7 +184,7 @@ export class ChatManagerService {
         `Auto-created conversation for ${createMessageDto.conversationId}`,
       );
 
-    const message: Message = {
+    const message: IConversationMessage = {
       id: messageId,
       content: createMessageDto.content,
       conversationId: createMessageDto.conversationId,
@@ -226,7 +232,9 @@ export class ChatManagerService {
    * Legacy method for backward compatibility
    * Redirects to addMessage
    */
-  async createMessage(createMessageDto: CreateMessageDto): Promise<Message> {
+  async createMessage(
+    createMessageDto: CreateMessageDto,
+  ): Promise<IConversationMessage> {
     return this.addMessage(createMessageDto);
   }
 
@@ -263,7 +271,7 @@ export class ChatManagerService {
   async getMessages(
     conversationId: string,
     query: GetMessagesDto,
-  ): Promise<Message[]> {
+  ): Promise<IConversationMessage[]> {
     const conversationList =
       this.conversationListService.getConversationById(conversationId);
     if (!conversationList) {
@@ -304,7 +312,7 @@ export class ChatManagerService {
   async getLastMessages(
     conversationId: string,
     count: number,
-  ): Promise<Message[]> {
+  ): Promise<IConversationMessage[]> {
     const conversationList =
       this.conversationListService.getConversationById(conversationId);
     if (!conversationList) {
@@ -446,7 +454,7 @@ export class ChatManagerService {
         const envelopes = conversationList.getLastAddedEnvelopes();
         for (const envelope of envelopes) {
           const message = this.envelopeToMessage(envelope, conversationId);
-          if (message.createdAt > oneHourAgo) {
+          if (message.createdAt > oneHourAgo && message.fromUserId) {
             recentUserIds.add(message.fromUserId);
           }
         }
@@ -737,7 +745,10 @@ ${duplicateGroups
     }
   }
 
-  private isMessageVisibleToUser(message: Message, userId: string): boolean {
+  private isMessageVisibleToUser(
+    message: IConversationMessage,
+    userId: string,
+  ): boolean {
     // Simple visibility logic - can be enhanced based on your requirements
     return (
       message.fromUserId === userId ||

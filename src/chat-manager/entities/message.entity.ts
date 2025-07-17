@@ -4,7 +4,7 @@ export class MessageEntity {
   id: string;
   content: string;
   conversationId: string;
-  fromUserId: string;
+  fromUserId: string | null;
   fromRole: UserRole;
   toRole: UserRole;
   messageType: MessageType;
