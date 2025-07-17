@@ -49,7 +49,7 @@ export class ChatManagerService {
   private messageToEnvelope(
     message: IConversationMessage,
   ): TConversationTextMessageEnvelope {
-    const conversationMessage: TConversationTextMessage = {
+    const conversationMessage: any = {
       messageId: message.id,
       author_role: message.fromRole,
       fromUserId: message.fromUserId, // Preserve the original fromUserId
@@ -59,6 +59,8 @@ export class ChatManagerService {
       },
       created_at: message.createdAt.toISOString(),
       estimated_token_count: Math.ceil(message.content.length / 4), // Rough token estimate
+      messageType: message.messageType, // Preserve messageType
+      toRole: message.toRole, // Preserve toRole
     };
 
     return {
@@ -83,8 +85,8 @@ export class ChatManagerService {
       conversationId: conversationId,
       fromUserId: payload.fromUserId || null, // Use preserved fromUserId or null as fallback
       fromRole: payload.author_role as UserRole,
-      toRole: UserRole.AGENT, // Default, may need to store separately
-      messageType: MessageType.TEXT,
+      toRole: payload.toRole || UserRole.AGENT, // Use preserved toRole or default to AGENT
+      messageType: payload.messageType || MessageType.TEXT, // Use preserved messageType or default to TEXT
       createdAt: new Date(payload.created_at),
       updatedAt: new Date(payload.created_at),
     };
@@ -322,6 +324,113 @@ export class ChatManagerService {
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
     return messages.reverse(); // Return in chronological order
+  }
+
+  /**
+   * Get filtered messages from a conversation based on filter options
+   */
+  async getFilteredMessages(
+    conversationId: string,
+    filterOptions: Partial<Omit<IConversationMessage, 'conversationId'>>,
+  ): Promise<IConversationMessage[]> {
+    const conversationList =
+      this.conversationListService.getConversationById(conversationId);
+    if (!conversationList) {
+      return [];
+    }
+
+    // Get all envelopes and convert to messages
+    const allEnvelopes = conversationList.getLastAddedEnvelopes();
+    const allMessages = allEnvelopes
+      .map((envelope) => this.envelopeToMessage(envelope, conversationId))
+      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+
+    // Apply filters
+    let filteredMessages = allMessages;
+
+    Object.entries(filterOptions).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        filteredMessages = filteredMessages.filter((message) => {
+          const messageValue = (message as any)[key];
+
+          // Handle Date objects
+          if (value instanceof Date && messageValue instanceof Date) {
+            return messageValue.getTime() === value.getTime();
+          }
+
+          // Handle string/primitive comparisons
+          return messageValue === value;
+        });
+      }
+    });
+
+    return filteredMessages;
+  }
+
+  /**
+   * Get filtered robot messages from a conversation
+   * Returns messages to/from any known robots
+   */
+  async getFilteredRobotMessages(
+    conversationId: string,
+  ): Promise<IConversationMessage[]> {
+    const conversationList =
+      this.conversationListService.getConversationById(conversationId);
+    if (!conversationList) {
+      return [];
+    }
+
+    // Get all envelopes and convert to messages
+    const allEnvelopes = conversationList.getLastAddedEnvelopes();
+    const allMessages = allEnvelopes
+      .map((envelope) => this.envelopeToMessage(envelope, conversationId))
+      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+
+    // Filter for robot messages
+    const robotMessages = allMessages.filter((message) => {
+      const isRobotRole =
+        message.fromRole === UserRole.ROBOT ||
+        message.toRole === UserRole.ROBOT;
+      const isRobotType = message.messageType === MessageType.ROBOT;
+      const isKnownRobotUserId =
+        message.fromUserId &&
+        (message.fromUserId.includes('robot') ||
+          message.fromUserId === 'cx-slack-robot');
+
+      return isRobotRole || isRobotType || isKnownRobotUserId;
+    });
+
+    return robotMessages;
+  }
+
+  /**
+   * Get filtered messages from multiple conversations
+   */
+  async getFilteredConversationMessages(
+    conversationIds: string[],
+  ): Promise<IConversationMessage[]> {
+    const allMessages: IConversationMessage[] = [];
+
+    for (const conversationId of conversationIds) {
+      const conversationList =
+        this.conversationListService.getConversationById(conversationId);
+      if (!conversationList) {
+        continue;
+      }
+
+      // Get all envelopes and convert to messages
+      const allEnvelopes = conversationList.getLastAddedEnvelopes();
+      const messages = allEnvelopes.map((envelope) =>
+        this.envelopeToMessage(envelope, conversationId),
+      );
+
+      allMessages.push(...messages);
+    }
+
+    // Sort all messages by creation time
+    return allMessages.sort(
+      (a, b) => a.createdAt.getTime() - b.createdAt.getTime(),
+    );
   }
 
   /**

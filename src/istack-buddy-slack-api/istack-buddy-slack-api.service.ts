@@ -365,11 +365,12 @@ export class IstackBuddySlackApiService {
     request: { conversationId: string; fromUserId: string; content: string }, // RobotProcessingRequest,
   ): Promise<TConversationTextMessageEnvelope> {
     // Get conversation history - get last 20 messages to provide context
-    // const conversationHistory = await this.chatManagerService.getLastMessages(
-    //   request.conversationId,
-    //   20,
-    // );
-    const conversationHistory = [] as IConversationMessage[]; // TODO: remove this
+    const conversationHistory = await this.chatManagerService.getLastMessages(
+      request.conversationId,
+      20,
+    );
+    //    const conversationHistory = [] as IConversationMessage[]; // TODO: remove this
+
     // Filter out short-circuit messages (tool responses, system messages)
     const filteredHistory = conversationHistory; // this.filterRobotRelevantMessages(conversationHistory);
 

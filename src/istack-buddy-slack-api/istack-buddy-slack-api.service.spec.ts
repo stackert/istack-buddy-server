@@ -348,4 +348,322 @@ describe('IstackBuddySlackApiService', () => {
       expect(typeof callArgs[1]).toBe('function'); // Second argument should be the callback function
     });
   });
+
+  describe('createMessageEnvelopeWithHistory', () => {
+    let testConversationId: string;
+
+    beforeEach(async () => {
+      // Create a test conversation for each test
+      const conversation = await chatManagerService.startConversation({
+        createdBy: 'test-user',
+        createdByRole: UserRole.CUSTOMER,
+      });
+      testConversationId = conversation.id;
+    });
+
+    it('should create envelope with history containing robot messages', async () => {
+      // Arrange - Add various message types to conversation history
+      await chatManagerService.addMessage({
+        conversationId: testConversationId,
+        fromUserId: 'user1',
+        content: 'User message 1',
+        fromRole: UserRole.CUSTOMER,
+        toRole: UserRole.AGENT,
+        messageType: MessageType.TEXT,
+      });
+
+      await chatManagerService.addMessage({
+        conversationId: testConversationId,
+        fromUserId: 'robot-assistant',
+        content: 'Robot response 1',
+        fromRole: UserRole.ROBOT,
+        toRole: UserRole.CUSTOMER,
+        messageType: MessageType.ROBOT,
+      });
+
+      await chatManagerService.addMessage({
+        conversationId: testConversationId,
+        fromUserId: 'cx-slack-robot',
+        content: 'Slack robot message',
+        fromRole: UserRole.CUSTOMER,
+        toRole: UserRole.AGENT,
+        messageType: MessageType.TEXT,
+      });
+
+      await chatManagerService.addMessage({
+        conversationId: testConversationId,
+        fromUserId: 'user2',
+        content: 'User message 2',
+        fromRole: UserRole.CUSTOMER,
+        toRole: UserRole.AGENT,
+        messageType: MessageType.TEXT,
+      });
+
+      // Act - Create message envelope with history
+      const envelope = await (service as any).createMessageEnvelopeWithHistory({
+        conversationId: testConversationId,
+        fromUserId: 'test-user',
+        content: 'New test message',
+      });
+
+      // Assert - Verify envelope structure
+      expect(envelope).toBeDefined();
+      expect(envelope.messageId).toBeDefined();
+      expect(envelope.requestOrResponse).toBe('request');
+      expect(envelope.envelopePayload.author_role).toBe('test-user');
+      expect(envelope.envelopePayload.content.payload).toBe('New test message');
+      expect(envelope.envelopePayload.content.type).toBe('text/plain');
+
+      // Verify history was retrieved (should contain all 4 messages)
+      const history = await chatManagerService.getLastMessages(
+        testConversationId,
+        20,
+      );
+      expect(history).toHaveLength(4);
+
+      // Verify robot messages are properly identified in history
+      const robotMessages =
+        await chatManagerService.getFilteredRobotMessages(testConversationId);
+      expect(robotMessages).toHaveLength(2); // Robot assistant + Slack robot
+
+      const robotMessageContents = robotMessages.map((msg) => msg.content);
+      expect(robotMessageContents).toContain('Robot response 1');
+      expect(robotMessageContents).toContain('Slack robot message');
+    });
+
+    it('should create envelope with history containing no robot messages', async () => {
+      // Arrange - Add only user messages to conversation history
+      await chatManagerService.addMessage({
+        conversationId: testConversationId,
+        fromUserId: 'user1',
+        content: 'User message 1',
+        fromRole: UserRole.CUSTOMER,
+        toRole: UserRole.AGENT,
+        messageType: MessageType.TEXT,
+      });
+
+      await chatManagerService.addMessage({
+        conversationId: testConversationId,
+        fromUserId: 'user2',
+        content: 'User message 2',
+        fromRole: UserRole.CUSTOMER,
+        toRole: UserRole.AGENT,
+        messageType: MessageType.TEXT,
+      });
+
+      await chatManagerService.addMessage({
+        conversationId: testConversationId,
+        fromUserId: 'agent1',
+        content: 'Agent response',
+        fromRole: UserRole.AGENT,
+        toRole: UserRole.CUSTOMER,
+        messageType: MessageType.TEXT,
+      });
+
+      // Act - Create message envelope with history
+      const envelope = await (service as any).createMessageEnvelopeWithHistory({
+        conversationId: testConversationId,
+        fromUserId: 'test-user',
+        content: 'New test message with no robot history',
+      });
+
+      // Assert - Verify envelope structure
+      expect(envelope).toBeDefined();
+      expect(envelope.messageId).toBeDefined();
+      expect(envelope.requestOrResponse).toBe('request');
+      expect(envelope.envelopePayload.author_role).toBe('test-user');
+      expect(envelope.envelopePayload.content.payload).toBe(
+        'New test message with no robot history',
+      );
+
+      // Verify history was retrieved (should contain all 3 messages)
+      const history = await chatManagerService.getLastMessages(
+        testConversationId,
+        20,
+      );
+      expect(history).toHaveLength(3);
+
+      // Verify no robot messages exist in history
+      const robotMessages =
+        await chatManagerService.getFilteredRobotMessages(testConversationId);
+      expect(robotMessages).toHaveLength(0);
+
+      // Verify all messages are user/agent messages
+      const userMessages = await chatManagerService.getFilteredMessages(
+        testConversationId,
+        {
+          fromRole: UserRole.CUSTOMER,
+        },
+      );
+      const agentMessages = await chatManagerService.getFilteredMessages(
+        testConversationId,
+        {
+          fromRole: UserRole.AGENT,
+        },
+      );
+      expect(userMessages.length + agentMessages.length).toBe(3);
+    });
+
+    it('should create envelope with mixed robot roles (to and from)', async () => {
+      // Arrange - Add messages with robots as both sender and receiver
+      await chatManagerService.addMessage({
+        conversationId: testConversationId,
+        fromUserId: 'user1',
+        content: 'User asks question',
+        fromRole: UserRole.CUSTOMER,
+        toRole: UserRole.ROBOT, // User talking TO robot
+        messageType: MessageType.TEXT,
+      });
+
+      await chatManagerService.addMessage({
+        conversationId: testConversationId,
+        fromUserId: 'robot-assistant',
+        content: 'Robot answers question',
+        fromRole: UserRole.ROBOT, // Robot talking FROM robot role
+        toRole: UserRole.CUSTOMER,
+        messageType: MessageType.ROBOT,
+      });
+
+      await chatManagerService.addMessage({
+        conversationId: testConversationId,
+        fromUserId: 'supervisor1',
+        content: 'Supervisor message to robot',
+        fromRole: UserRole.SUPERVISOR,
+        toRole: UserRole.ROBOT, // Supervisor talking TO robot
+        messageType: MessageType.TEXT,
+      });
+
+      await chatManagerService.addMessage({
+        conversationId: testConversationId,
+        fromUserId: 'robot-escalation',
+        content: 'Robot escalation response',
+        fromRole: UserRole.ROBOT, // Robot talking FROM robot role
+        toRole: UserRole.SUPERVISOR,
+        messageType: MessageType.ROBOT,
+      });
+
+      // Act - Create message envelope with history
+      const envelope = await (service as any).createMessageEnvelopeWithHistory({
+        conversationId: testConversationId,
+        fromUserId: 'test-user',
+        content: 'New message in robot conversation',
+      });
+
+      // Assert - Verify envelope structure
+      expect(envelope).toBeDefined();
+      expect(envelope.envelopePayload.content.payload).toBe(
+        'New message in robot conversation',
+      );
+
+      // Verify history contains all messages
+      const history = await chatManagerService.getLastMessages(
+        testConversationId,
+        20,
+      );
+      expect(history).toHaveLength(4);
+
+      // Verify robot messages are properly identified (should include TO and FROM robot)
+      const robotMessages =
+        await chatManagerService.getFilteredRobotMessages(testConversationId);
+      expect(robotMessages).toHaveLength(4); // All messages involve robots either as to or from
+
+      // Verify specific robot message types
+      const robotFromMessages = await chatManagerService.getFilteredMessages(
+        testConversationId,
+        {
+          fromRole: UserRole.ROBOT,
+        },
+      );
+      expect(robotFromMessages).toHaveLength(2); // Messages FROM robots
+
+      const robotToMessages = await chatManagerService.getFilteredMessages(
+        testConversationId,
+        {
+          toRole: UserRole.ROBOT,
+        },
+      );
+      expect(robotToMessages).toHaveLength(2); // Messages TO robots
+    });
+
+    it('should handle empty conversation history gracefully', async () => {
+      // Act - Create envelope for conversation with no history (just the initial conversation)
+      const envelope = await (service as any).createMessageEnvelopeWithHistory({
+        conversationId: testConversationId,
+        fromUserId: 'first-user',
+        content: 'First message in conversation',
+      });
+
+      // Assert - Verify envelope is created correctly
+      expect(envelope).toBeDefined();
+      expect(envelope.messageId).toBeDefined();
+      expect(envelope.requestOrResponse).toBe('request');
+      expect(envelope.envelopePayload.author_role).toBe('first-user');
+      expect(envelope.envelopePayload.content.payload).toBe(
+        'First message in conversation',
+      );
+
+      // Verify history is empty (no messages added yet)
+      const history = await chatManagerService.getLastMessages(
+        testConversationId,
+        20,
+      );
+      expect(history).toHaveLength(0);
+
+      // Verify no robot messages
+      const robotMessages =
+        await chatManagerService.getFilteredRobotMessages(testConversationId);
+      expect(robotMessages).toHaveLength(0);
+    });
+
+    it('should handle large conversation history (20+ messages)', async () => {
+      // Arrange - Add more than 20 messages to test history limit
+      for (let i = 1; i <= 25; i++) {
+        const isRobot = i % 3 === 0; // Every 3rd message is from robot
+        await chatManagerService.addMessage({
+          conversationId: testConversationId,
+          fromUserId: isRobot ? `robot-${i}` : `user-${i}`,
+          content: `Message ${i}`,
+          fromRole: isRobot ? UserRole.ROBOT : UserRole.CUSTOMER,
+          toRole: isRobot ? UserRole.CUSTOMER : UserRole.AGENT,
+          messageType: isRobot ? MessageType.ROBOT : MessageType.TEXT,
+        });
+      }
+
+      // Act - Create message envelope with history
+      const envelope = await (service as any).createMessageEnvelopeWithHistory({
+        conversationId: testConversationId,
+        fromUserId: 'test-user',
+        content: 'New message with large history',
+      });
+
+      // Assert - Verify envelope structure
+      expect(envelope).toBeDefined();
+      expect(envelope.envelopePayload.content.payload).toBe(
+        'New message with large history',
+      );
+
+      // Verify history limit (should retrieve last 20 messages, not all 25)
+      const history = await chatManagerService.getLastMessages(
+        testConversationId,
+        20,
+      );
+      expect(history).toHaveLength(20);
+
+      // Verify robot messages in the retrieved history
+      const robotMessages =
+        await chatManagerService.getFilteredRobotMessages(testConversationId);
+      expect(robotMessages.length).toBeGreaterThan(0); // Should have some robot messages
+
+      // Robot messages should be every 3rd message, so in 25 messages: 3,6,9,12,15,18,21,24 = 8 robot messages
+      const allMessages = await chatManagerService.getMessages(
+        testConversationId,
+        { limit: 100 },
+      );
+      expect(allMessages).toHaveLength(25);
+
+      const allRobotMessages =
+        await chatManagerService.getFilteredRobotMessages(testConversationId);
+      expect(allRobotMessages).toHaveLength(8); // Every 3rd of 25 messages
+    });
+  });
 });
