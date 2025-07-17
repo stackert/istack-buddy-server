@@ -81,6 +81,9 @@ describe('IstackBuddySlackApiService', () => {
 
     // Spy on sendSlackMessage to verify callback behavior
     jest.spyOn(service as any, 'sendSlackMessage').mockResolvedValue(undefined);
+
+    // Mock addSlackReaction to prevent real Slack API calls during tests
+    jest.spyOn(service as any, 'addSlackReaction').mockResolvedValue(undefined);
   });
 
   afterEach(() => {

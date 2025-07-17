@@ -1,51 +1,10 @@
-// Load environment variables from .env files for tests
-const path = require('path');
-const fs = require('fs');
+// ========================================
+// SECURITY: Load ONLY .env.jest (contains FAKE keys)
+// NEVER load .env.live (contains real keys)
+// ========================================
 
-// Try multiple dotenv loading strategies BEFORE mocking fs
-console.log('🔧 Jest setup: Loading environment variables...');
-
-// First, try loading .env.jest
-const envJestPath = path.resolve(__dirname, '.env.jest');
-if (fs.existsSync(envJestPath)) {
-  console.log('📁 Loading .env.jest file...');
-  require('dotenv').config({ path: envJestPath });
-}
-
-// Then try the main .env file
-const envPath = path.resolve(__dirname, '.env');
-if (fs.existsSync(envPath)) {
-  console.log('📁 Loading .env file...');
-  require('dotenv').config({ path: envPath });
-}
-
-// Fallback: Set environment variables directly if dotenv failed
-if (!process.env.ANTHROPIC_API_KEY) {
-  console.log('🔧 Setting ANTHROPIC_API_KEY directly...');
-  process.env.ANTHROPIC_API_KEY =
-    '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';
-}
-
-// Debug: Show what we have
-console.log('🔍 Environment check:');
-console.log(
-  `  ANTHROPIC_API_KEY: ${process.env.ANTHROPIC_API_KEY ? 'SET' : 'NOT SET'}`,
-);
-console.log(
-  `  CORE_FORMS_API_V2_KEY: ${process.env.CORE_FORMS_API_V2_KEY ? 'SET' : 'NOT SET'}`,
-);
-
-// Ensure critical environment variables are set for tests
-if (
-  !process.env.ANTHROPIC_API_KEY ||
-  process.env.ANTHROPIC_API_KEY === '_FAKE_KEY_'
-) {
-  console.warn('⚠️  ANTHROPIC_API_KEY not properly set for tests');
-}
-
-if (!process.env.CORE_FORMS_API_V2_KEY) {
-  console.warn('⚠️  CORE_FORMS_API_V2_KEY not set for tests');
-}
+// Load .env.jest which contains FAKE keys for testing
+require('dotenv').config({ path: '.env.jest' });
 
 // Global Jest setup for performance optimizations
 
