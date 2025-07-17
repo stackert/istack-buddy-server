@@ -179,7 +179,15 @@ describe('IstackBuddySlackApiService', () => {
 
       // Verify conversation mapping
       const mapping = (service as any).slackThreadToConversationMap;
-      expect(mapping['1752568742.663279']).toBe(conversation.id);
+      expect(mapping['1752568742.663279'].internalConversationId).toBe(
+        conversation.id,
+      );
+      expect(mapping['1752568742.663279'].slackConversationId).toBe(
+        '1752568742.663279',
+      );
+      expect(
+        typeof mapping['1752568742.663279'].sendConversationResponseToSlack,
+      ).toBe('function');
       expect(Object.keys(mapping)).toHaveLength(1);
 
       // Verify that sendSlackMessage callback was called 3 times (once per event)
@@ -286,9 +294,15 @@ describe('IstackBuddySlackApiService', () => {
       expect(Object.keys(mapping)).toHaveLength(2);
       expect(mapping['1752568742.111111']).toBeDefined();
       expect(mapping['1752568742.222222']).toBeDefined();
-      expect(mapping['1752568742.111111']).not.toBe(
-        mapping['1752568742.222222'],
+      expect(mapping['1752568742.111111'].internalConversationId).not.toBe(
+        mapping['1752568742.222222'].internalConversationId,
       );
+      expect(
+        typeof mapping['1752568742.111111'].sendConversationResponseToSlack,
+      ).toBe('function');
+      expect(
+        typeof mapping['1752568742.222222'].sendConversationResponseToSlack,
+      ).toBe('function');
     });
 
     it('should invoke robot callback which calls sendSlackMessage', async () => {

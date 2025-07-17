@@ -154,10 +154,10 @@ export class ChatManagerService {
     // Check for duplicate message
     if (this.isDuplicateMessage(contentHash, createMessageDto.conversationId)) {
       const existingMessageId = this.messageContentHashes.get(contentHash);
-      console.log(`Duplicate message detected in conversation ${createMessageDto.conversationId}:
-        Content Hash: ${contentHash}
-        Existing Message ID: ${existingMessageId}
-        New Message Content: ${createMessageDto.content.substring(0, 100)}...`);
+      // console.log(`Duplicate message detected in conversation ${createMessageDto.conversationId}:
+      //   Content Hash: ${contentHash}
+      //   Existing Message ID: ${existingMessageId}
+      //   New Message Content: ${createMessageDto.content.substring(0, 100)}...`);
 
       // Get existing message from conversation list and return it
       const conversationList = this.conversationListService.getConversationById(
@@ -209,9 +209,6 @@ export class ChatManagerService {
 
     // Update conversation activity
     await this.updateConversationActivity(createMessageDto.conversationId);
-
-    // Log entire conversation to JSON file
-    await this.logConversation(createMessageDto.conversationId);
 
     // Broadcast message to WebSocket subscribers
     if (this.gateway) {
@@ -643,105 +640,6 @@ export class ChatManagerService {
         },
         timestamp: now.toISOString(),
       });
-    }
-  }
-
-  /**
-   * Log entire conversation to JSON file for debugging
-   * Enhanced with deduplication information
-   */
-  private async logConversation(conversationId: string): Promise<void> {
-    try {
-      // Get all messages for this conversation from conversation list
-      const conversationList =
-        this.conversationListService.getConversationById(conversationId);
-      if (!conversationList) {
-        return;
-      }
-
-      const envelopes = conversationList.getLastAddedEnvelopes();
-      const conversationMessages = envelopes
-        .map((envelope) => this.envelopeToMessage(envelope, conversationId))
-        .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
-
-      // Get conversation metadata
-      const conversation = this.conversationMetadata[conversationId];
-      const participants = this.participants.get(conversationId) || [];
-
-      // Calculate content hashes for all messages in this conversation
-      const messageHashes = conversationMessages.map((msg) => {
-        const contentToHash = {
-          content: msg.content,
-          conversationId: msg.conversationId,
-          fromUserId: msg.fromUserId,
-          fromRole: msg.fromRole,
-          toRole: msg.toRole,
-          messageType: msg.messageType,
-        };
-        return {
-          messageId: msg.id,
-          contentHash: createHash('md5')
-            .update(JSON.stringify(contentToHash))
-            .digest('hex'),
-          timestamp: msg.createdAt.toISOString(),
-        };
-      });
-
-      // Detect potential duplicates within conversation
-      const duplicateHashes = new Map<string, string[]>();
-      messageHashes.forEach(({ messageId, contentHash }) => {
-        if (!duplicateHashes.has(contentHash)) {
-          duplicateHashes.set(contentHash, []);
-        }
-        duplicateHashes.get(contentHash)!.push(messageId);
-      });
-
-      const duplicateGroups = Array.from(duplicateHashes.entries())
-        .filter(([_, messageIds]) => messageIds.length > 1)
-        .map(([contentHash, messageIds]) => ({ contentHash, messageIds }));
-
-      // Create enhanced log object
-      const logData = {
-        conversationId,
-        timestamp: new Date().toISOString(),
-        conversation: conversation || null,
-        participants,
-        messageCount: conversationMessages.length,
-        deduplicationInfo: {
-          totalContentHashes: messageHashes.length,
-          duplicateGroups: duplicateGroups.length,
-          duplicateDetails: duplicateGroups,
-        },
-        messages: conversationMessages,
-        messageHashes,
-      };
-
-      // Write to JSON file
-      const logDir = join(
-        process.cwd(),
-        'docs-living',
-        'debug-logging',
-        'conversations',
-      );
-      const logFile = join(logDir, `conversation-${conversationId}.json`);
-
-      writeFileSync(logFile, JSON.stringify(logData, null, 2), 'utf8');
-
-      console.log(
-        `Conversation logged: ${logFile} (${conversationMessages.length} messages, ${duplicateGroups.length} duplicate groups)`,
-      );
-
-      if (duplicateGroups.length > 0) {
-        console.log(`Duplicate message groups found in conversation ${conversationId}:
-${duplicateGroups
-  .map(
-    ({ contentHash, messageIds }) =>
-      `Hash: ${contentHash} -> Messages: ${messageIds.join(', ')}`,
-  )
-  .join('\n')}`);
-      }
-    } catch (error) {
-      console.error('Error logging conversation:', error);
     }
   }
 

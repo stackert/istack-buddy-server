@@ -6,6 +6,16 @@ import { ChatManagerService } from '../chat-manager/chat-manager.service';
 import { MessageType, UserRole } from '../chat-manager/dto/create-message.dto';
 import { TConversationTextMessageEnvelope } from '../robots/types';
 import type { IConversationMessage } from '../chat-manager';
+
+// Interface for storing Slack conversation mapping and callback
+interface TSlackInterfaceRecord {
+  internalConversationId: string;
+  slackConversationId: string; // Slack thread timestamp
+  sendConversationResponseToSlack: (
+    delayedResponse: TConversationTextMessageEnvelope,
+  ) => Promise<void>;
+}
+
 // Types for conversation context
 interface ConversationContext {
   type: 'channel_mention' | 'thread_reply' | 'external_thread';
@@ -32,8 +42,11 @@ export class IstackBuddySlackApiService {
   // private readonly processedEvents = new Map<string, EventDeduplicationInfo>();
   private readonly eventCleanupInterval = 60000; // 1 minute
 
-  // Map Slack thread timestamps to ChatManager conversation IDs
-  private readonly slackThreadToConversationMap: Record<string, string> = {};
+  // Map Slack thread timestamps to conversation records with callbacks
+  private readonly slackThreadToConversationMap: Record<
+    string,
+    TSlackInterfaceRecord
+  > = {};
 
   constructor(
     private readonly chatManagerService: ChatManagerService,
@@ -68,24 +81,6 @@ export class IstackBuddySlackApiService {
         //        parentUser: event.parent_user_id,
       };
     }
-  }
-
-  /**
-   * Send robot response back to Slack in the appropriate channel/thread
-   * @param delayedResponse The robot's response envelope
-   * @param channel The Slack channel ID
-   * @param threadTs The thread timestamp (event.ts for new threads, event.thread_ts for replies)
-   */
-  private async sendRobotResponseToSlack(
-    delayedResponse: TConversationTextMessageEnvelope,
-    channel: string,
-    threadTs: string,
-  ): Promise<void> {
-    await this.sendSlackMessage(
-      delayedResponse.envelopePayload.content.payload,
-      channel,
-      threadTs,
-    );
   }
 
   /**
@@ -159,15 +154,24 @@ export class IstackBuddySlackApiService {
           toRole: UserRole.AGENT,
         });
 
-        // Map the Slack thread to this conversation ID for future lookups
-        this.slackThreadToConversationMap[event.ts] = conversation.id;
+        // Create callback function for this specific conversation
+        const sendConversationResponseToSlack = async (
+          delayedResponse: TConversationTextMessageEnvelope,
+        ) => {
+          await this.sendSlackMessage(
+            delayedResponse.envelopePayload.content.payload,
+            event.channel,
+            event.ts, // this is what creates the thread
+          );
+        };
 
-        // Send acknowledgment message to create thread
-        // await this.sendSlackMessage(
-        //   'I see your message. Thread created.',
-        //   event.channel,
-        //   event.ts,
-        // );
+        // Map the Slack thread to conversation record with callback for future lookups
+        this.slackThreadToConversationMap[event.ts] = {
+          internalConversationId: conversation.id,
+          slackConversationId: event.ts,
+          sendConversationResponseToSlack,
+        };
+
         // --------------------
         const robot = this.robotService.getRobotByName<SlackyAnthropicAgent>(
           'SlackyAnthropicAgent',
@@ -182,23 +186,18 @@ export class IstackBuddySlackApiService {
 
         const response = await robot.acceptMessageMultiPartResponse(
           messageEnvelope,
-          (delayedResponse: TConversationTextMessageEnvelope) =>
-            this.sendRobotResponseToSlack(
-              delayedResponse,
-              event.channel,
-              event.ts,
-            ), // this is what creates the thread
+          sendConversationResponseToSlack,
         );
         // ----------------------
 
         return;
       } else if (simpleEvent.eventType === 'thread_reply') {
         // Thread message with existing mapping - ADD message to conversation
-        const conversationId =
+        const conversationRecord =
           this.slackThreadToConversationMap[event.thread_ts];
 
         const userMessage = await this.chatManagerService.addMessage({
-          conversationId: conversationId,
+          conversationId: conversationRecord.internalConversationId,
           fromUserId: 'cx-slack-robot', // Generic Slack robot user - actual Slack user not tracked
           content: event.text,
           messageType: MessageType.TEXT,
@@ -212,19 +211,14 @@ export class IstackBuddySlackApiService {
         )!; // DO NOT REMOVE THIS COMMENT '!' should not be here, only for dev purpose TODO
 
         const messageEnvelope = await this.createMessageEnvelopeWithHistory({
-          conversationId: conversationId,
+          conversationId: conversationRecord.internalConversationId,
           fromUserId: event.user,
           content: event.text, // this maybe should be userMessage?
         });
 
         const response = await robot.acceptMessageMultiPartResponse(
           messageEnvelope,
-          (delayedResponse: TConversationTextMessageEnvelope) =>
-            this.sendRobotResponseToSlack(
-              delayedResponse,
-              event.channel,
-              event.thread_ts,
-            ),
+          conversationRecord.sendConversationResponseToSlack,
         );
         // ----------------------
       } else {
