@@ -665,5 +665,108 @@ describe('IstackBuddySlackApiService', () => {
         await chatManagerService.getFilteredRobotMessages(testConversationId);
       expect(allRobotMessages).toHaveLength(8); // Every 3rd of 25 messages
     });
+
+    it('should send correct envelope structure to robot acceptMessageMultiPartResponse', async () => {
+      // Arrange - Add some conversation history to make it realistic
+      await chatManagerService.addMessage({
+        conversationId: testConversationId,
+        fromUserId: 'user1',
+        content: 'Previous user message',
+        fromRole: UserRole.CUSTOMER,
+        toRole: UserRole.AGENT,
+        messageType: MessageType.TEXT,
+      });
+
+      await chatManagerService.addMessage({
+        conversationId: testConversationId,
+        fromUserId: 'robot-assistant',
+        content: 'Previous robot response',
+        fromRole: UserRole.ROBOT,
+        toRole: UserRole.CUSTOMER,
+        messageType: MessageType.ROBOT,
+      });
+
+      // Capture what gets sent to the robot
+      let capturedEnvelope: any = null;
+      let capturedCallback: any = null;
+
+      // Mock the robot to capture the arguments
+      const mockRobot = {
+        acceptMessageMultiPartResponse: jest
+          .fn()
+          .mockImplementation(async (envelope, callback) => {
+            capturedEnvelope = envelope;
+            capturedCallback = callback;
+
+            // Return a mock response
+            return {
+              envelopePayload: {
+                content: {
+                  payload: 'Mock robot response for inspection',
+                },
+              },
+            };
+          }),
+      };
+
+      // Replace the robot service mock for this test
+      const originalGetRobotByName = (service as any).robotService
+        .getRobotByName;
+      (service as any).robotService.getRobotByName = jest
+        .fn()
+        .mockReturnValue(mockRobot);
+
+      // Act - Trigger the actual robot call through handleAppMention
+      const channelEvent = createChannelMentionEvent({
+        ts: '1752568742.999999',
+        event_ts: '1752568742.999999',
+        text: '<@U092RRN555X> What is the current status?',
+        user: 'U091Y5UF14P',
+        channel: 'C091Y5UNA1M',
+      });
+
+      await (service as any).handleAppMention(channelEvent);
+
+      // Assert - Inspect the envelope sent to the robot
+      expect(capturedEnvelope).toBeDefined();
+      expect(capturedCallback).toBeDefined();
+      expect(typeof capturedCallback).toBe('function');
+
+      // Verify envelope structure
+      console.log('📋 ENVELOPE SENT TO ROBOT:');
+      console.log('messageId:', capturedEnvelope.messageId);
+      console.log('requestOrResponse:', capturedEnvelope.requestOrResponse);
+      console.log(
+        'envelopePayload:',
+        JSON.stringify(capturedEnvelope.envelopePayload, null, 2),
+      );
+
+      // Test envelope properties
+      expect(capturedEnvelope.messageId).toBeDefined();
+      expect(typeof capturedEnvelope.messageId).toBe('string');
+      expect(capturedEnvelope.requestOrResponse).toBe('request');
+
+      // Test payload properties
+      const payload = capturedEnvelope.envelopePayload;
+      expect(payload.messageId).toBeDefined();
+      expect(payload.author_role).toBe('U091Y5UF14P'); // The user who sent the message
+      expect(payload.content.type).toBe('text/plain');
+      expect(payload.content.payload).toBe(
+        '<@U092RRN555X> What is the current status?',
+      );
+      expect(payload.created_at).toBeDefined();
+      expect(new Date(payload.created_at)).toBeInstanceOf(Date);
+      expect(payload.estimated_token_count).toBe(-1); // As per implementation
+
+      // Verify the robot method was called exactly once
+      expect(mockRobot.acceptMessageMultiPartResponse).toHaveBeenCalledTimes(1);
+      expect(mockRobot.acceptMessageMultiPartResponse).toHaveBeenCalledWith(
+        capturedEnvelope,
+        capturedCallback,
+      );
+
+      // Restore original mock
+      (service as any).robotService.getRobotByName = originalGetRobotByName;
+    });
   });
 });
