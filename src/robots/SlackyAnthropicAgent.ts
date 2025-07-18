@@ -16,6 +16,11 @@ import { createCompositeToolSet } from './tool-definitions/toolCatalog';
  * Specialized for Slack integration with comprehensive tool support
  */
 export class SlackyAnthropicAgent extends AbstractRobotChat {
+  constructor() {
+    super();
+    console.log('🚀 SlackyAnthropicAgent constructor called - class loaded');
+  }
+
   // Required properties from AbstractRobot
   public readonly contextWindowSizeInTokens: number = 200000;
   public readonly LLModelName: string = 'claude-3-5-sonnet-20241022';
@@ -116,6 +121,60 @@ REALLY THE ONLY PURPOSE OF THAT TOOL IS TO LIST ALL ASSOCIATED ID
    */
   public estimateTokens(message: string): number {
     return Math.ceil(message.length / 4);
+  }
+
+  /**
+   * Get user help text specific to SlackyAnthropicAgent capabilities
+   */
+  public getUserHelpText(): string {
+    return `🤖 **iStackBuddy (Slacky) - Help**
+
+I'm your AI assistant specialized in **Intellistack Forms Core** troubleshooting and support.
+
+## 🛠️ **What I Can Help With:**
+
+**Forms Core Troubleshooting:**
+• SSO troubleshooting (Forms Password Protected/SSO Protected)
+• Form configuration issues (fields, sections, visibility logic)
+• Form rendering and display problems
+• Calculation and logic debugging
+• Form integration (submitActions) issues
+
+**Advanced Analysis Tools:**
+• 📊 **Sumo Logic Queries** - Analyze submission logs and trace data
+• 🔐 **SSO Auto-fill Assistance** - Diagnose SSO configuration issues
+• 📋 **Form Validation** - Check logic and calculation errors
+• 🔍 **Form Overviews** - Get comprehensive form statistics and configurations
+
+## 📚 **Knowledge Base Coverage:**
+
+I'm backed by specialized knowledge bases depending on the channel:
+• **#forms-sso** → Forms SSO-specific knowledge base
+• **#cx-formstack** → General Forms Core knowledge base
+• **Other channels** → General troubleshooting knowledge
+
+## 💬 **How to Use:**
+
+**Ask Questions:**
+\`@istack-buddy How do I fix form validation errors?\`
+\`@istack-buddy Why isn't my SSO auto-fill working?\`
+\`@istack-buddy Can you analyze submission logs for form 12345?\`
+
+**Give Feedback:**
+\`@istack-buddy /feedback [your feedback]\`
+\`@istack-buddy /rating [+5 to -5] [optional comment]\`
+
+**Get Help:**
+\`@istack-buddy /help\` (shows this message)
+
+## 🎯 **Specialized Features:**
+
+• **Thread Support** - Works in channels and thread replies
+• **Context Aware** - Understands your troubleshooting context
+• **Tool Integration** - Can perform advanced analysis and lookups
+• **Immediate Responses** - Fast feedback and rating collection
+
+I'm designed to help you solve Forms Core issues quickly and effectively. Just ask me anything about forms, SSO, troubleshooting, or data analysis!`;
   }
 
   /**
@@ -318,13 +377,145 @@ REALLY THE ONLY PURPOSE OF THAT TOOL IS TO LIST ALL ASSOCIATED ID
   }
 
   /**
+   * Handle direct feedback/rating commands from the user
+   */
+  private async handleDirectFeedbackCommands(
+    message: string,
+  ): Promise<string | null> {
+    const trimmedMessage = message.trim();
+
+    // TEMPORARY DEBUG LOGGING
+    console.log('🔍 SLACK DEBUG - Direct command check:');
+    console.log('  Raw message:', JSON.stringify(message));
+    console.log('  Trimmed message:', JSON.stringify(trimmedMessage));
+
+    // Check for @istack-buddy /help pattern (supports both @istack-buddy and <@USERID> formats)
+    const helpMatch = trimmedMessage.match(
+      /(?:@istack-buddy|<@[^>]+>)\s+\/help(?:\s|$)/i,
+    );
+    console.log('  Help regex result:', helpMatch ? 'MATCHED' : 'NO MATCH');
+    if (helpMatch) {
+      console.log('  ✅ HELP COMMAND DETECTED');
+      return this.getUserHelpText();
+    }
+
+    // Check for @istack-buddy /feedback pattern (supports both @istack-buddy and <@USERID> formats)
+    const feedbackMatch = trimmedMessage.match(
+      /(?:@istack-buddy|<@[^>]+>)\s+\/feedback\s+(.+)/i,
+    );
+    console.log(
+      '  Feedback regex result:',
+      feedbackMatch ? 'MATCHED' : 'NO MATCH',
+    );
+    if (feedbackMatch) {
+      console.log('  ✅ FEEDBACK COMMAND DETECTED');
+      const feedbackContent = feedbackMatch[1].trim();
+
+      // Call the feedback tool
+      try {
+        const toolResult = await this.executeToolCall('collect_user_feedback', {
+          feedback: feedbackContent,
+          category: 'other', // Default category since user didn't specify
+        });
+
+        return `📝 Thank you for your feedback! We appreciate your input to help improve our service.`;
+      } catch (error) {
+        console.error('Error processing feedback:', error);
+        return `📝 Thank you for your feedback! We appreciate your input to help improve our service.`;
+      }
+    }
+
+    // Check for @istack-buddy /rating pattern (supports both @istack-buddy and <@USERID> formats)
+    const ratingMatch = trimmedMessage.match(
+      /(?:@istack-buddy|<@[^>]+>)\s+\/rating\s+([+-]?\d+)(?:\s+(.+))?/i,
+    );
+    console.log('  Rating regex result:', ratingMatch ? 'MATCHED' : 'NO MATCH');
+    if (ratingMatch) {
+      console.log('  ✅ RATING COMMAND DETECTED');
+      const rating = parseInt(ratingMatch[1]);
+      const comment = ratingMatch[2]?.trim() || '';
+
+      // Validate rating range
+      if (rating < -5 || rating > 5) {
+        return `❌ **Invalid Rating**
+
+Ratings must be between -5 and +5. Please provide a rating in this range.
+
+**Examples:**
+• \`@istack-buddy /rating +4 Very helpful!\`
+• \`@istack-buddy /rating -2 Information was wrong\`
+• \`@istack-buddy /rating 0\`
+
+**Rating Scale:**
+• -5: World War III bad  
+• -2: Misleading or just wrong  
+• -1: Information had inaccuracies
+• 0: Not good/not bad
+• +1: A little helpful
+• +2: Helpful, will use again
+• +5: Nominate iStackBuddy for world peace prize`;
+      }
+
+      // Call the rating tool
+      try {
+        const toolResult = await this.executeToolCall('collect_user_rating', {
+          rating: rating,
+          context: 'overall_service',
+          comment: comment || undefined,
+        });
+
+        const ratingEmoji =
+          rating >= 3
+            ? '🌟'
+            : rating >= 1
+              ? '👍'
+              : rating === 0
+                ? '😐'
+                : rating >= -2
+                  ? '👎'
+                  : '💥';
+
+        return `${ratingEmoji} Thank you for your rating of ${rating >= 0 ? '+' : ''}${rating}/5! We appreciate your feedback to help us improve our service.`;
+      } catch (error) {
+        console.error('Error processing rating:', error);
+        return `⭐ Thank you for your rating! We appreciate your feedback to help us improve our service.`;
+      }
+    }
+
+    console.log('  ❌ NO DIRECT COMMANDS DETECTED - will go to Claude');
+    return null;
+  }
+
+  /**
    * Get immediate response from Anthropic API with proper tool result handling
    */
   public async acceptMessageImmediateResponse(
     messageEnvelope: TConversationTextMessageEnvelope,
   ): Promise<TConversationTextMessageEnvelope> {
-    const client = this.getClient();
     const userMessage = messageEnvelope.envelopePayload.content.payload;
+
+    // Check for direct feedback/rating commands FIRST (before needing API key)
+    const directCommandResult =
+      await this.handleDirectFeedbackCommands(userMessage);
+    if (directCommandResult) {
+      return {
+        messageId: `slacky-direct-${Date.now()}`,
+        requestOrResponse: 'response',
+        envelopePayload: {
+          messageId: `slacky-direct-msg-${Date.now()}`,
+          author_role: 'assistant',
+          content: {
+            type: 'text/plain',
+            payload: directCommandResult,
+          },
+          created_at: new Date().toISOString(),
+          estimated_token_count: this.estimateTokens(directCommandResult),
+        },
+      };
+    }
+
+    // Only initialize client if we need Claude for normal conversation
+    const client = this.getClient();
 
     try {
       // Build conversation history for Claude
@@ -435,7 +626,6 @@ REALLY THE ONLY PURPOSE OF THAT TOOL IS TO LIST ALL ASSOCIATED ID
       };
     } catch (error) {
       const errorMessage = `Error: ${error instanceof Error ? error.message : 'Unknown error occurred'}`;
-
       return {
         messageId: `slacky-error-${Date.now()}`,
         requestOrResponse: 'response',
@@ -462,8 +652,39 @@ REALLY THE ONLY PURPOSE OF THAT TOOL IS TO LIST ALL ASSOCIATED ID
       response: TConversationTextMessageEnvelope,
     ) => void,
   ): Promise<TConversationTextMessageEnvelope> {
-    const client = this.getClient();
     const userMessage = messageEnvelope.envelopePayload.content.payload;
+
+    // TEMPORARY DEBUG LOGGING
+    console.log('🔍 MULTIPART DEBUG - acceptMessageMultiPartResponse called');
+    console.log('  User message content:', JSON.stringify(userMessage));
+
+    // Check for direct feedback/rating commands FIRST (before needing API key)
+    const directCommandResult =
+      await this.handleDirectFeedbackCommands(userMessage);
+    console.log(
+      '  Direct command result:',
+      directCommandResult ? 'FOUND COMMAND' : 'NO COMMAND',
+    );
+    if (directCommandResult) {
+      console.log('  ✅ RETURNING DIRECT COMMAND RESPONSE');
+      return {
+        messageId: `slacky-direct-multipart-${Date.now()}`,
+        requestOrResponse: 'response',
+        envelopePayload: {
+          messageId: `slacky-direct-multipart-msg-${Date.now()}`,
+          author_role: 'assistant',
+          content: {
+            type: 'text/plain',
+            payload: directCommandResult,
+          },
+          created_at: new Date().toISOString(),
+          estimated_token_count: this.estimateTokens(directCommandResult),
+        },
+      };
+    }
+
+    // Only initialize client if we need Claude for normal conversation
+    const client = this.getClient();
 
     try {
       // Build conversation history for Claude
@@ -611,10 +832,10 @@ REALLY THE ONLY PURPOSE OF THAT TOOL IS TO LIST ALL ASSOCIATED ID
       const errorMessage = `Error: ${error instanceof Error ? error.message : 'Unknown error occurred'}`;
 
       return {
-        messageId: `slacky-error-${Date.now()}`,
+        messageId: `slacky-multipart-error-${Date.now()}`,
         requestOrResponse: 'response',
         envelopePayload: {
-          messageId: `slacky-error-msg-${Date.now()}`,
+          messageId: `slacky-multipart-error-msg-${Date.now()}`,
           author_role: 'assistant',
           content: {
             type: 'text/plain',

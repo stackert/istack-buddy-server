@@ -7,6 +7,8 @@ export type {
   TAnthropicIstackToolSet,
   ISumoLogicQueryArgs,
   ISsoAutofillAssistanceArgs,
+  ICollectUserFeedbackArgs,
+  ICollectUserRatingArgs,
 } from './types';
 
 // Export enums

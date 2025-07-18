@@ -21,7 +21,9 @@
     "db:create": "ts-node docs-living/database/scripts/create-database.ts",
     "db:seed": "ts-node docs-living/database/scripts/seed-database.ts",
     "robot:anth:test": "ts-node docs-living/scripts/test-anthropic-robot.ts",
-    "re:import": "cp ../istack-buddy-utilities/istack-buddy-utilities-1.0.0.tgz .  && npm uninstall istack-buddy-utilities && npm install istack-buddy-utilities-1.0.0.tgz"
+    "re:import": "cp ../istack-buddy-utilities/istack-buddy-utilities-1.0.0.tgz .  && npm uninstall istack-buddy-utilities && npm install istack-buddy-utilities-1.0.0.tgz",
+    "test:feedback-tools": "ts-node docs-living/scripts/test-feedback-tools.ts",
+    "test:direct-commands": "ts-node docs-living/scripts/test-direct-feedback-commands.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.54.0",

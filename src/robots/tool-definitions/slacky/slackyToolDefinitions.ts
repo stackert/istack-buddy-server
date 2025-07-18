@@ -54,6 +54,59 @@ const slackyToolDefinitions: Anthropic.Messages.Tool[] = [
       required: ['formId', 'accountId'],
     },
   },
+  {
+    name: SlackyToolsEnum.CollectUserFeedback,
+    description:
+      'Collect text feedback from users about iStackBuddy interactions or general service. Use when users want to provide feedback or when you want to proactively collect feedback after helping them.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        feedback: {
+          type: 'string',
+          description: 'The user feedback text content',
+        },
+        category: {
+          type: 'string',
+          description: 'Feedback category',
+          enum: [
+            'conversation',
+            'service',
+            'feature_request',
+            'bug_report',
+            'other',
+          ],
+        },
+      },
+      required: ['feedback', 'category'],
+    },
+  },
+  {
+    name: SlackyToolsEnum.CollectUserRating,
+    description:
+      'Collect numerical rating from users about iStackBuddy interactions. Use when users want to rate their experience or when you want to gauge satisfaction.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        rating: {
+          type: 'integer',
+          description:
+            'Rating from -5 to +5 where -5=terrible, 0=neutral, +5=excellent',
+          minimum: -5,
+          maximum: 5,
+        },
+        context: {
+          type: 'string',
+          description:
+            'What the rating is about: conversation, response_quality, helpfulness, overall_service',
+        },
+        comment: {
+          type: 'string',
+          description: 'Optional comment explaining the rating',
+        },
+      },
+      required: ['rating', 'context'],
+    },
+  },
 ];
 
 export { slackyToolDefinitions };
