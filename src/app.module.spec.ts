@@ -2,7 +2,6 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AppModule } from './app.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { IstackBuddyDataProxyModule } from './istack-buddy-data-proxy/istack-buddy-data-proxy.module';
 import { DevDebugModule } from './dev-debug/dev-debug.module';
 import { AuthModule } from './auth/auth.module';
 import { AuthenticationUserModule } from './authentication-user/authentication-user.module';
@@ -70,10 +69,6 @@ describe('AppModule', () => {
 
     it('should import AuthenticationUserModule', () => {
       expect(() => module.get(AuthenticationUserModule)).not.toThrow();
-    });
-
-    it('should import IstackBuddyDataProxyModule', () => {
-      expect(() => module.get(IstackBuddyDataProxyModule)).not.toThrow();
     });
 
     it('should import DevDebugModule', () => {
@@ -157,7 +152,6 @@ describe('AppModule', () => {
         LoggerModule,
         AuthModule,
         AuthenticationUserModule,
-        IstackBuddyDataProxyModule,
         DevDebugModule,
       ];
 
@@ -188,7 +182,6 @@ describe('AppModule', () => {
         module.get(LoggerModule);
         module.get(AuthModule);
         module.get(AuthenticationUserModule);
-        module.get(IstackBuddyDataProxyModule);
         module.get(DevDebugModule);
       }).not.toThrow();
     });

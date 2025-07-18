@@ -2,7 +2,6 @@ import { Module } from '@nestjs/common';
 import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { IstackBuddyDataProxyModule } from './istack-buddy-data-proxy/istack-buddy-data-proxy.module';
 import { DevDebugModule } from './dev-debug/dev-debug.module';
 import { AuthModule } from './auth/auth.module';
 import { AuthenticationUserModule } from './authentication-user/authentication-user.module';
@@ -20,7 +19,6 @@ import { RobotModule } from './robots/robot.module';
     LoggerModule,
     AuthModule,
     AuthenticationUserModule,
-    IstackBuddyDataProxyModule,
     DevDebugModule,
     ChatManagerModule,
     IstackBuddySlackApiModule,
