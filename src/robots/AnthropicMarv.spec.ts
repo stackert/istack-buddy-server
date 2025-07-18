@@ -81,6 +81,13 @@ describe('AnthropicMarv', () => {
     jest.clearAllMocks();
     process.env = { ...originalEnv };
     marv = new AnthropicMarv();
+
+    // Mock the getClient method to avoid API key requirement in tests
+    jest.spyOn(marv as any, 'getClient').mockReturnValue({
+      messages: {
+        create: mockCreate,
+      },
+    });
   });
 
   afterEach(() => {

@@ -9,8 +9,8 @@ describe('slackyToolSet', () => {
       expect(typeof slackyToolSet.executeToolCall).toBe('function');
     });
 
-    it('should have exactly 2 tool definitions', () => {
-      expect(slackyToolSet.toolDefinitions).toHaveLength(2);
+    it('should have exactly 4 tool definitions', () => {
+      expect(slackyToolSet.toolDefinitions).toHaveLength(4);
     });
 
     it('should have expected tool names', () => {
@@ -18,6 +18,8 @@ describe('slackyToolSet', () => {
       expect(toolNames).toEqual([
         SlackyToolsEnum.SumoLogicQuery,
         SlackyToolsEnum.SsoAutofillAssistance,
+        SlackyToolsEnum.CollectUserFeedback,
+        SlackyToolsEnum.CollectUserRating,
       ]);
     });
 
@@ -93,6 +95,54 @@ describe('slackyToolSet', () => {
         });
       });
     });
+
+    describe(SlackyToolsEnum.CollectUserFeedback, () => {
+      const feedbackTool = slackyToolSet.toolDefinitions.find(
+        (tool) => tool.name === SlackyToolsEnum.CollectUserFeedback,
+      )!;
+
+      it('should have correct structure', () => {
+        expect(feedbackTool.name).toBe(SlackyToolsEnum.CollectUserFeedback);
+        expect(feedbackTool.description).toContain('feedback');
+        expect(feedbackTool.input_schema.required).toEqual([
+          'feedback',
+          'category',
+        ]);
+      });
+
+      it('should have all expected properties', () => {
+        const props = feedbackTool.input_schema.properties as Record<
+          string,
+          any
+        >;
+        expect(props).toHaveProperty('feedback');
+        expect(props).toHaveProperty('category');
+        expect(props.feedback.type).toBe('string');
+        expect(props.category.type).toBe('string');
+      });
+    });
+
+    describe(SlackyToolsEnum.CollectUserRating, () => {
+      const ratingTool = slackyToolSet.toolDefinitions.find(
+        (tool) => tool.name === SlackyToolsEnum.CollectUserRating,
+      )!;
+
+      it('should have correct structure', () => {
+        expect(ratingTool.name).toBe(SlackyToolsEnum.CollectUserRating);
+        expect(ratingTool.description).toContain('rating');
+        expect(ratingTool.input_schema.required).toEqual(['rating', 'context']);
+      });
+
+      it('should have all expected properties', () => {
+        const props = ratingTool.input_schema.properties as Record<string, any>;
+        expect(props).toHaveProperty('rating');
+        expect(props).toHaveProperty('context');
+        expect(props).toHaveProperty('comment');
+        expect(props.rating.type).toBe('integer');
+        expect(props.context.type).toBe('string');
+        expect(props.comment.type).toBe('string');
+      });
+    });
   });
 
   describe('executeToolCall', () => {
@@ -128,6 +178,33 @@ describe('slackyToolSet', () => {
       expect(result).toContain('SSO Auto-fill Configuration Analysis');
       expect(result).toContain('12345');
       expect(result).toContain('98765');
+    });
+
+    it('should route to correct handler for collect_user_feedback', () => {
+      const result = slackyToolSet.executeToolCall(
+        SlackyToolsEnum.CollectUserFeedback,
+        {
+          feedback: 'This tool is very helpful!',
+          category: 'conversation',
+        },
+      );
+
+      expect(typeof result).toBe('string');
+      expect(result).toContain('feedback');
+    });
+
+    it('should route to correct handler for collect_user_rating', () => {
+      const result = slackyToolSet.executeToolCall(
+        SlackyToolsEnum.CollectUserRating,
+        {
+          rating: 5,
+          context: 'overall_service',
+          comment: 'Excellent service!',
+        },
+      );
+
+      expect(typeof result).toBe('string');
+      expect(result).toContain('rating');
     });
 
     it('should return undefined for unknown tool', () => {

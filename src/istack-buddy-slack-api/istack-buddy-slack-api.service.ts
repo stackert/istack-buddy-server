@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { SlackyAnthropicAgent } from '../robots/SlackyAnthropicAgent';
 import { RobotService } from '../robots/robot.service';
 import { v4 as uuidv4 } from 'uuid';
@@ -28,19 +28,20 @@ interface ConversationContext {
 
 /**
  * Slack API Service
- * Handles webhook events from Slack workspace
- * Uses single ChatManager system for conversation management
+ *
+ * Handles integration between Slack events and the internal conversation system.
+ * Manages conversation mapping, event deduplication, and robot responses.
  */
 @Injectable()
-export class IstackBuddySlackApiService {
-  // AI - DO NOT REMOVE THIS COMMENT
-  // I *thought* logger is a service provided?  Why are we creating a new instance?
-  // does it matter? Logger(IstackBuddySlackApiService.name) - different animal?
+export class IstackBuddySlackApiService implements OnModuleDestroy {
   private readonly logger = new Logger(IstackBuddySlackApiService.name);
+
+  private readonly robotAgents: Record<string, SlackyAnthropicAgent> = {};
 
   private uniqueEventList: Record<string, any> = {};
   // private readonly processedEvents = new Map<string, EventDeduplicationInfo>();
   private readonly eventCleanupInterval = 60000; // 1 minute
+  private cleanupIntervalId: NodeJS.Timeout | null = null;
 
   // Map Slack thread timestamps to conversation records with callbacks
   private readonly slackThreadToConversationMap: Record<
@@ -54,9 +55,20 @@ export class IstackBuddySlackApiService {
     private readonly robotService: RobotService,
   ) {
     // Clean up old processed events and slack mappings every minute
-    setInterval(() => {
+    this.cleanupIntervalId = setInterval(() => {
       this.routineGarbageCollection();
     }, this.eventCleanupInterval);
+  }
+
+  /**
+   * Cleanup resources when module is destroyed
+   */
+  onModuleDestroy() {
+    if (this.cleanupIntervalId) {
+      clearInterval(this.cleanupIntervalId);
+      this.cleanupIntervalId = null;
+      this.logger.log('Cleaned up garbage collection interval');
+    }
   }
 
   private makeSimplifiedEvent(event: any): {

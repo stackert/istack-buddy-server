@@ -83,14 +83,20 @@ describe('Main Bootstrap Function', () => {
       expect(mockApp.enableCors).toHaveBeenCalledWith({
         origin: true,
         credentials: true,
-        methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+        methods: '*',
         allowedHeaders: [
           'Content-Type',
           'Authorization',
           'Accept',
           'Origin',
           'X-Requested-With',
+          'Accept-Language',
+          'Content-Language',
+          'Cookie',
         ],
+        exposedHeaders: ['Set-Cookie', 'Authorization'],
+        optionsSuccessStatus: 200,
+        preflightContinue: false,
       });
     });
 
@@ -114,31 +120,31 @@ describe('Main Bootstrap Function', () => {
       );
     });
 
-    it('should start listening on default port 3000', async () => {
-      const originalEnv = process.env.PORT;
-      delete process.env.PORT;
+    it('should start listening on default port 3500', async () => {
+      const originalEnv = process.env.ISTACK_BUDDY_BACKEND_SERVER_HOST_PORT;
+      delete process.env.ISTACK_BUDDY_BACKEND_SERVER_HOST_PORT;
 
       await bootstrap();
-      expect(mockApp.listen).toHaveBeenCalledWith(3000);
+      expect(mockApp.listen).toHaveBeenCalledWith(3500);
 
       // Restore original environment
       if (originalEnv) {
-        process.env.PORT = originalEnv;
+        process.env.ISTACK_BUDDY_BACKEND_SERVER_HOST_PORT = originalEnv;
       }
     });
 
     it('should start listening on configured port from environment', async () => {
-      const originalEnv = process.env.PORT;
-      process.env.PORT = '4000';
+      const originalEnv = process.env.ISTACK_BUDDY_BACKEND_SERVER_HOST_PORT;
+      process.env.ISTACK_BUDDY_BACKEND_SERVER_HOST_PORT = '4000';
 
       await bootstrap();
       expect(mockApp.listen).toHaveBeenCalledWith('4000');
 
       // Restore original environment
       if (originalEnv) {
-        process.env.PORT = originalEnv;
+        process.env.ISTACK_BUDDY_BACKEND_SERVER_HOST_PORT = originalEnv;
       } else {
-        delete process.env.PORT;
+        delete process.env.ISTACK_BUDDY_BACKEND_SERVER_HOST_PORT;
       }
     });
   });
@@ -220,45 +226,45 @@ describe('Main Bootstrap Function', () => {
 
   describe('Environment Configuration', () => {
     it('should handle undefined PORT environment variable', async () => {
-      const originalPort = process.env.PORT;
-      delete process.env.PORT;
+      const originalPort = process.env.ISTACK_BUDDY_BACKEND_SERVER_HOST_PORT;
+      delete process.env.ISTACK_BUDDY_BACKEND_SERVER_HOST_PORT;
 
       await bootstrap();
-      expect(mockApp.listen).toHaveBeenCalledWith(3000);
+      expect(mockApp.listen).toHaveBeenCalledWith(3500);
 
       // Restore
       if (originalPort) {
-        process.env.PORT = originalPort;
+        process.env.ISTACK_BUDDY_BACKEND_SERVER_HOST_PORT = originalPort;
       }
     });
 
     it('should handle empty PORT environment variable', async () => {
-      const originalPort = process.env.PORT;
-      process.env.PORT = '';
+      const originalPort = process.env.ISTACK_BUDDY_BACKEND_SERVER_HOST_PORT;
+      process.env.ISTACK_BUDDY_BACKEND_SERVER_HOST_PORT = '';
 
       await bootstrap();
-      expect(mockApp.listen).toHaveBeenCalledWith('');
+      expect(mockApp.listen).toHaveBeenCalledWith(3500);
 
       // Restore
       if (originalPort) {
-        process.env.PORT = originalPort;
+        process.env.ISTACK_BUDDY_BACKEND_SERVER_HOST_PORT = originalPort;
       } else {
-        delete process.env.PORT;
+        delete process.env.ISTACK_BUDDY_BACKEND_SERVER_HOST_PORT;
       }
     });
 
     it('should handle custom port from environment', async () => {
-      const originalPort = process.env.PORT;
-      process.env.PORT = '8080';
+      const originalPort = process.env.ISTACK_BUDDY_BACKEND_SERVER_HOST_PORT;
+      process.env.ISTACK_BUDDY_BACKEND_SERVER_HOST_PORT = '8080';
 
       await bootstrap();
       expect(mockApp.listen).toHaveBeenCalledWith('8080');
 
       // Restore
       if (originalPort) {
-        process.env.PORT = originalPort;
+        process.env.ISTACK_BUDDY_BACKEND_SERVER_HOST_PORT = originalPort;
       } else {
-        delete process.env.PORT;
+        delete process.env.ISTACK_BUDDY_BACKEND_SERVER_HOST_PORT;
       }
     });
   });
@@ -314,6 +320,7 @@ describe('Main Bootstrap Function', () => {
       await bootstrap();
       expect(callOrder).toEqual([
         'create',
+        'use',
         'enableCors',
         'use',
         'createDocument',
@@ -328,7 +335,7 @@ describe('Main Bootstrap Function', () => {
       // Verify all major bootstrap steps were called
       expect(mockNestFactory.create).toHaveBeenCalledTimes(1);
       expect(mockApp.enableCors).toHaveBeenCalledTimes(1);
-      expect(mockApp.use).toHaveBeenCalledTimes(1);
+      expect(mockApp.use).toHaveBeenCalledTimes(2);
       expect(mockSwaggerModule.createDocument).toHaveBeenCalledTimes(1);
       expect(mockSwaggerModule.setup).toHaveBeenCalledTimes(1);
       expect(mockApp.listen).toHaveBeenCalledTimes(1);
