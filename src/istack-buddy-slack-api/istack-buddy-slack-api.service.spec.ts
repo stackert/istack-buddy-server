@@ -3,6 +3,7 @@ import { IstackBuddySlackApiService } from './istack-buddy-slack-api.service';
 import { ChatManagerService } from '../chat-manager/chat-manager.service';
 import { RobotService } from '../robots/robot.service';
 import { ConversationListSlackAppService } from '../ConversationLists/ConversationListService';
+import { ChatConversationListService } from '../ConversationLists/ChatConversationListService';
 import { UserRole, MessageType } from '../chat-manager/dto/create-message.dto';
 
 describe('IstackBuddySlackApiService', () => {
@@ -72,6 +73,7 @@ describe('IstackBuddySlackApiService', () => {
         IstackBuddySlackApiService,
         ChatManagerService, // Real ChatManagerService
         ConversationListSlackAppService, // Real ConversationListSlackAppService
+        ChatConversationListService, // Required by ChatManagerService
         {
           provide: RobotService,
           useValue: mockRobotService,

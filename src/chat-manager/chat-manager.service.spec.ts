@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ChatManagerService } from './chat-manager.service';
 import { ConversationListSlackAppService } from '../ConversationLists/ConversationListService';
+import { ChatConversationListService } from '../ConversationLists/ChatConversationListService';
 import { UserRole, MessageType } from './dto/create-message.dto';
 
 describe('ChatManagerService', () => {
@@ -8,7 +9,11 @@ describe('ChatManagerService', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [ChatManagerService, ConversationListSlackAppService],
+      providers: [
+        ChatManagerService,
+        ConversationListSlackAppService,
+        ChatConversationListService,
+      ],
     }).compile();
 
     service = module.get<ChatManagerService>(ChatManagerService);

@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ChatManagerGateway } from './chat-manager.gateway';
 import { ChatManagerService } from './chat-manager.service';
 import { ConversationListSlackAppService } from '../ConversationLists/ConversationListService';
+import { ChatConversationListService } from '../ConversationLists/ChatConversationListService';
 
 describe('ChatManagerGateway', () => {
   let gateway: ChatManagerGateway;
@@ -12,6 +13,7 @@ describe('ChatManagerGateway', () => {
         ChatManagerGateway,
         ChatManagerService,
         ConversationListSlackAppService,
+        ChatConversationListService,
       ],
     }).compile();
 

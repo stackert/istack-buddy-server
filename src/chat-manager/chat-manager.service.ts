@@ -18,6 +18,7 @@ import {
 } from './interfaces/message.interface';
 import { v4 as uuidv4 } from 'uuid';
 import { ConversationListSlackAppService } from '../ConversationLists/ConversationListService';
+import { ChatConversationListService } from '../ConversationLists/ChatConversationListService';
 import {
   TConversationMessageEnvelope,
   TConversationTextMessage,
@@ -36,6 +37,7 @@ export class ChatManagerService {
 
   constructor(
     private readonly conversationListService: ConversationListSlackAppService,
+    private readonly chatConversationListService: ChatConversationListService,
   ) {}
 
   // Method to set the gateway reference (called by the gateway)
@@ -206,6 +208,12 @@ export class ChatManagerService {
     const envelope = this.messageToEnvelope(message);
     conversationList.addMessageEnvelope(envelope);
 
+    // Also store the message in the chat conversation list service
+    this.chatConversationListService.addMessageToConversation(
+      createMessageDto.conversationId,
+      message,
+    );
+
     // Store content hash for deduplication
     this.messageContentHashes.set(contentHash, messageId);
 
@@ -333,38 +341,10 @@ export class ChatManagerService {
     conversationId: string,
     filterOptions: Partial<Omit<IConversationMessage, 'conversationId'>>,
   ): Promise<IConversationMessage[]> {
-    const conversationList =
-      this.conversationListService.getConversationById(conversationId);
-    if (!conversationList) {
-      return [];
-    }
-
-    // Get all envelopes and convert to messages
-    const allEnvelopes = conversationList.getLastAddedEnvelopes();
-    const allMessages = allEnvelopes
-      .map((envelope) => this.envelopeToMessage(envelope, conversationId))
-      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
-
-    // Apply filters
-    let filteredMessages = allMessages;
-
-    Object.entries(filterOptions).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        filteredMessages = filteredMessages.filter((message) => {
-          const messageValue = (message as any)[key];
-
-          // Handle Date objects
-          if (value instanceof Date && messageValue instanceof Date) {
-            return messageValue.getTime() === value.getTime();
-          }
-
-          // Handle string/primitive comparisons
-          return messageValue === value;
-        });
-      }
-    });
-
-    return filteredMessages;
+    return this.chatConversationListService.getFilteredMessages(
+      conversationId,
+      filterOptions,
+    );
   }
 
   /**
@@ -374,33 +354,9 @@ export class ChatManagerService {
   async getFilteredRobotMessages(
     conversationId: string,
   ): Promise<IConversationMessage[]> {
-    const conversationList =
-      this.conversationListService.getConversationById(conversationId);
-    if (!conversationList) {
-      return [];
-    }
-
-    // Get all envelopes and convert to messages
-    const allEnvelopes = conversationList.getLastAddedEnvelopes();
-    const allMessages = allEnvelopes
-      .map((envelope) => this.envelopeToMessage(envelope, conversationId))
-      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
-
-    // Filter for robot messages
-    const robotMessages = allMessages.filter((message) => {
-      const isRobotRole =
-        message.fromRole === UserRole.ROBOT ||
-        message.toRole === UserRole.ROBOT;
-      const isRobotType = message.messageType === MessageType.ROBOT;
-      const isKnownRobotUserId =
-        message.fromUserId &&
-        (message.fromUserId.includes('robot') ||
-          message.fromUserId === 'cx-slack-robot');
-
-      return isRobotRole || isRobotType || isKnownRobotUserId;
-    });
-
-    return robotMessages;
+    return this.chatConversationListService.getFilteredRobotMessages(
+      conversationId,
+    );
   }
 
   /**
