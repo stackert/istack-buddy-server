@@ -259,7 +259,8 @@ const marvToolDefinitions: Anthropic.Messages.Tool[] = [
     - Provides detailed information about form setup and current status.
     - It should provide a detailed list of each entity with entity id.
        Example, list of webhooks with webhook id. list of confirmation emails with confirmation email id.
-    `,
+    
+    MARV ENABLED FORMS`,
     input_schema: {
       type: 'object',
       properties: {
