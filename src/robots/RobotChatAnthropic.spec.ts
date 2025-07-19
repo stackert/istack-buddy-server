@@ -1,6 +1,8 @@
 import { RobotChatAnthropic } from './RobotChatAnthropic';
 import { AbstractRobotChat } from './AbstractRobotChat';
 import { slackyToolSet } from './tool-definitions';
+import { anthropicToolSet } from './tool-definitions/toolCatalog';
+import { UserRole } from '../chat-manager/dto/create-message.dto';
 
 import { marvToolSet } from './tool-definitions/marv';
 import type { TConversationTextMessageEnvelope } from './types';
@@ -22,6 +24,25 @@ jest.mock('./tool-definitions', () => ({
       },
     ],
     executeToolCall: jest.fn(),
+  },
+}));
+
+jest.mock('./tool-definitions/toolCatalog', () => ({
+  anthropicToolSet: {
+    toolDefinitions: [
+      {
+        name: 'test_tool',
+        description: 'A test tool',
+        input_schema: {
+          type: 'object',
+          properties: {
+            param1: { type: 'string' },
+          },
+          required: ['param1'],
+        },
+      },
+    ],
+    executeToolCall: jest.fn().mockResolvedValue('Tool executed successfully'),
   },
 }));
 
@@ -58,6 +79,9 @@ jest.mock('@anthropic-ai/sdk', () => {
 
 // Get the mocked modules
 const mockslackyToolSet = slackyToolSet as jest.Mocked<typeof slackyToolSet>;
+const mockAnthropicToolSet = anthropicToolSet as jest.Mocked<
+  typeof anthropicToolSet
+>;
 const mockExecuteToolCall = marvToolSet.executeToolCall as jest.MockedFunction<
   typeof marvToolSet.executeToolCall
 >;
@@ -120,6 +144,11 @@ describe('RobotChatAnthropic', () => {
     it('should have fsApiClient available for API operations', () => {
       expect(mockFsApiClient).toBeDefined();
     });
+
+    it('should have tools property initialized', () => {
+      expect((robot as any).tools).toBeDefined();
+      expect(Array.isArray((robot as any).tools)).toBe(true);
+    });
   });
 
   describe('estimateTokens', () => {
@@ -143,6 +172,21 @@ describe('RobotChatAnthropic', () => {
         apiKey: 'sk-ant-api03-test-key-for-testing',
       });
       expect(client).toBeDefined();
+    });
+
+    it('should throw error when API key is missing', () => {
+      // Temporarily remove API key
+      const originalKey = process.env.ANTHROPIC_API_KEY;
+      delete process.env.ANTHROPIC_API_KEY;
+
+      expect(() => (robot as any).getClient()).toThrow(
+        'ANTHROPIC_API_KEY environment variable is required but not set',
+      );
+
+      // Restore API key
+      if (originalKey) {
+        process.env.ANTHROPIC_API_KEY = originalKey;
+      }
     });
   });
 
@@ -176,11 +220,137 @@ describe('RobotChatAnthropic', () => {
       expect(request.system).toContain('SSO troubleshooting');
       expect(request.system).toContain('Sumo Logic Queries');
     });
+
+    it('should build Claude message history with conversation history', () => {
+      const history = [
+        {
+          fromRole: UserRole.CUSTOMER,
+          content: 'User message 1',
+        } as any,
+        {
+          fromRole: UserRole.ROBOT,
+          content: 'Robot response 1',
+        } as any,
+        {
+          fromRole: UserRole.CUSTOMER,
+          content: 'User message 2',
+        } as any,
+      ];
+
+      robot.setConversationHistory(history);
+      const messages = (robot as any).buildClaudeMessageHistory(
+        'Current message',
+      );
+
+      expect(messages).toHaveLength(4); // 3 history + 1 current
+      expect(messages[0]).toEqual({
+        role: 'user',
+        content: 'User message 1',
+      });
+      expect(messages[1]).toEqual({
+        role: 'assistant',
+        content: 'Robot response 1',
+      });
+      expect(messages[2]).toEqual({
+        role: 'user',
+        content: 'User message 2',
+      });
+      expect(messages[3]).toEqual({
+        role: 'user',
+        content: 'Current message',
+      });
+    });
+
+    it('should build Claude message history with only current message when no history', () => {
+      robot.setConversationHistory([]);
+      const messages = (robot as any).buildClaudeMessageHistory(
+        'Current message',
+      );
+
+      expect(messages).toHaveLength(1);
+      expect(messages[0]).toEqual({
+        role: 'user',
+        content: 'Current message',
+      });
+    });
+
+    it('should build Claude message history ignoring non-CUSTOMER/ROBOT roles', () => {
+      const history = [
+        {
+          fromRole: UserRole.CUSTOMER,
+          content: 'User message',
+        } as any,
+        {
+          fromRole: UserRole.AGENT,
+          content: 'Agent message', // Should be ignored
+        } as any,
+        {
+          fromRole: UserRole.ROBOT,
+          content: 'Robot response',
+        } as any,
+      ];
+
+      robot.setConversationHistory(history);
+      const messages = (robot as any).buildClaudeMessageHistory(
+        'Current message',
+      );
+
+      expect(messages).toHaveLength(3); // 2 valid history + 1 current
+      expect(messages[0].role).toBe('user');
+      expect(messages[1].role).toBe('assistant');
+      expect(messages[2].role).toBe('user');
+    });
+
+    it('should execute tool call with string result', async () => {
+      mockAnthropicToolSet.executeToolCall.mockResolvedValue('String result');
+
+      const result = await (robot as any).executeToolCall('test_tool', {
+        param: 'value',
+      });
+
+      expect(result).toBe('"String result"');
+      expect(mockAnthropicToolSet.executeToolCall).toHaveBeenCalledWith(
+        'test_tool',
+        { param: 'value' },
+      );
+    });
+
+    it('should execute tool call with Promise result', async () => {
+      mockAnthropicToolSet.executeToolCall.mockResolvedValue('Promise result');
+
+      const result = await (robot as any).executeToolCall('test_tool', {
+        param: 'value',
+      });
+
+      expect(result).toBe('"Promise result"');
+    });
+
+    it('should handle tool execution error', async () => {
+      mockAnthropicToolSet.executeToolCall.mockRejectedValue(
+        new Error('Tool error'),
+      );
+
+      const result = await (robot as any).executeToolCall('failing_tool', {
+        param: 'value',
+      });
+
+      expect(result).toBe('Error executing tool failing_tool: Tool error');
+    });
+
+    it('should handle tool execution error with non-Error object', async () => {
+      mockAnthropicToolSet.executeToolCall.mockRejectedValue('String error');
+
+      const result = await (robot as any).executeToolCall('failing_tool', {
+        param: 'value',
+      });
+
+      expect(result).toBe('Error executing tool failing_tool: Unknown error');
+    });
   });
 
-  describe.skip('Tool Execution', () => {
+  describe('Tool Execution', () => {
     it('should execute tool call and return string result', async () => {
-      mockslackyToolSet.executeToolCall.mockReturnValue(
+      mockAnthropicToolSet.executeToolCall.mockResolvedValue(
         'Tool executed successfully',
       );
 
@@ -188,23 +358,23 @@ describe('RobotChatAnthropic', () => {
         param1: 'value1',
       });
 
-      expect(mockslackyToolSet.executeToolCall).toHaveBeenCalledWith(
+      expect(mockAnthropicToolSet.executeToolCall).toHaveBeenCalledWith(
         'test_tool',
         { param1: 'value1' },
       );
-      expect(result).toBe('Tool executed successfully');
+      expect(result).toBe('"Tool executed successfully"');
     });
 
     it('should execute tool call and await Promise result', async () => {
-      mockslackyToolSet.executeToolCall.mockReturnValue(
-        Promise.resolve('Async tool result'),
+      mockAnthropicToolSet.executeToolCall.mockResolvedValue(
+        'Async tool result',
       );
 
       const result = await (robot as any).executeToolCall('async_tool', {
         param1: 'value1',
       });
 
-      expect(result).toBe('Async tool result');
+      expect(result).toBe('"Async tool result"');
     });
   });
 
@@ -247,7 +417,7 @@ describe('RobotChatAnthropic', () => {
       expect(chunkCallback).toHaveBeenCalledWith('world!');
     });
 
-    it.skip('should handle tool use in streaming response with complete flow', async () => {
+    it('should handle tool use in streaming response with complete flow', async () => {
       const mockStream = {
         [Symbol.asyncIterator]: jest.fn(() => {
           let chunkIndex = 0;
@@ -291,7 +461,7 @@ describe('RobotChatAnthropic', () => {
       };
 
       mockCreate.mockResolvedValue(mockStream);
-      mockslackyToolSet.executeToolCall.mockResolvedValue(
+      mockAnthropicToolSet.executeToolCall.mockResolvedValue(
         'Tool result from streaming',
       );
 
@@ -301,12 +471,12 @@ describe('RobotChatAnthropic', () => {
         chunkCallback,
       );
 
-      expect(mockslackyToolSet.executeToolCall).toHaveBeenCalledWith(
+      expect(mockAnthropicToolSet.executeToolCall).toHaveBeenCalledWith(
         'test_tool',
         { param1: 'test_value' },
       );
       expect(chunkCallback).toHaveBeenCalledWith(
-        '\n\nTool result from streaming',
+        '\n\n"Tool result from streaming"',
       );
     });
 
@@ -397,7 +567,7 @@ describe('RobotChatAnthropic', () => {
       );
     });
 
-    it.skip('should handle tool execution error in streaming', async () => {
+    it('should handle tool execution error in streaming', async () => {
       const mockStream = {
         [Symbol.asyncIterator]: jest.fn(() => {
           let chunkIndex = 0;
@@ -434,7 +604,7 @@ describe('RobotChatAnthropic', () => {
       };
 
       mockCreate.mockResolvedValue(mockStream);
-      mockslackyToolSet.executeToolCall.mockRejectedValue(
+      mockAnthropicToolSet.executeToolCall.mockRejectedValue(
         new Error('Tool execution failed'),
       );
 
@@ -451,7 +621,7 @@ describe('RobotChatAnthropic', () => {
       );
     });
 
-    it.skip('should handle tool execution error with non-Error object', async () => {
+    it('should handle tool execution error with non-Error object', async () => {
       const mockStream = {
         [Symbol.asyncIterator]: jest.fn(() => {
           let chunkIndex = 0;
@@ -488,7 +658,7 @@ describe('RobotChatAnthropic', () => {
       };
 
       mockCreate.mockResolvedValue(mockStream);
-      mockslackyToolSet.executeToolCall.mockRejectedValue('String error');
+      mockAnthropicToolSet.executeToolCall.mockRejectedValue('String error');
 
       const chunkCallback = jest.fn();
       await robot.acceptMessageStreamResponse(
@@ -503,7 +673,7 @@ describe('RobotChatAnthropic', () => {
       );
     });
 
-    it.skip('should handle mixed content and tool use in streaming', async () => {
+    it('should handle mixed content and tool use in streaming', async () => {
       const mockStream = {
         [Symbol.asyncIterator]: jest.fn(() => {
           let chunkIndex = 0;
@@ -548,7 +718,7 @@ describe('RobotChatAnthropic', () => {
       };
 
       mockCreate.mockResolvedValue(mockStream);
-      mockslackyToolSet.executeToolCall.mockResolvedValue(
+      mockAnthropicToolSet.executeToolCall.mockResolvedValue(
         'Tool analysis results',
       );
 
@@ -559,7 +729,7 @@ describe('RobotChatAnthropic', () => {
       );
 
       expect(chunkCallback).toHaveBeenCalledWith('Let me help you. ');
-      expect(chunkCallback).toHaveBeenCalledWith('\n\nTool analysis results');
+      expect(chunkCallback).toHaveBeenCalledWith('\n\n"Tool analysis results"');
       expect(chunkCallback).toHaveBeenCalledWith('Analysis complete.');
     });
 
@@ -597,7 +767,7 @@ describe('RobotChatAnthropic', () => {
   });
 
   describe('Immediate Response - Complete Tool Coverage', () => {
-    it.skip('should handle response with tool use and successful execution', async () => {
+    it('should handle response with tool use and successful execution', async () => {
       const mockResponse = {
         content: [
           {
@@ -614,7 +784,7 @@ describe('RobotChatAnthropic', () => {
       };
 
       mockCreate.mockResolvedValue(mockResponse);
-      mockslackyToolSet.executeToolCall.mockResolvedValue(
+      mockAnthropicToolSet.executeToolCall.mockResolvedValue(
         'Tool executed successfully',
       );
 
@@ -625,15 +795,15 @@ describe('RobotChatAnthropic', () => {
         'Let me help you with that form issue.',
       );
       expect(result.envelopePayload.content.payload).toContain(
-        'Tool executed successfully',
+        '"Tool executed successfully"',
       );
-      expect(mockslackyToolSet.executeToolCall).toHaveBeenCalledWith(
+      expect(mockAnthropicToolSet.executeToolCall).toHaveBeenCalledWith(
         'test_tool',
         { param1: 'test_value' },
       );
     });
 
-    it.skip('should handle tool execution error in immediate response', async () => {
+    it('should handle tool execution error in immediate response', async () => {
       const mockResponse = {
         content: [
           {
@@ -646,7 +816,7 @@ describe('RobotChatAnthropic', () => {
       };
 
       mockCreate.mockResolvedValue(mockResponse);
-      mockslackyToolSet.executeToolCall.mockRejectedValue(
+      mockAnthropicToolSet.executeToolCall.mockRejectedValue(
         new Error('Tool failed'),
       );
 
@@ -658,7 +828,7 @@ describe('RobotChatAnthropic', () => {
       );
     });
 
-    it.skip('should handle tool execution error with non-Error object', async () => {
+    it('should handle tool execution error with non-Error object', async () => {
       const mockResponse = {
         content: [
           {
@@ -671,7 +841,7 @@ describe('RobotChatAnthropic', () => {
       };
 
       mockCreate.mockResolvedValue(mockResponse);
-      mockslackyToolSet.executeToolCall.mockRejectedValue('String error');
+      mockAnthropicToolSet.executeToolCall.mockRejectedValue('String error');
 
       const result =
         await robot.acceptMessageImmediateResponse(mockMessageEnvelope);
@@ -681,7 +851,7 @@ describe('RobotChatAnthropic', () => {
       );
     });
 
-    it.skip('should handle multiple tool uses in immediate response', async () => {
+    it('should handle multiple tool uses in immediate response', async () => {
       const mockResponse = {
         content: [
           {
@@ -704,7 +874,7 @@ describe('RobotChatAnthropic', () => {
       };
 
       mockCreate.mockResolvedValue(mockResponse);
-      mockslackyToolSet.executeToolCall
+      mockAnthropicToolSet.executeToolCall
         .mockResolvedValueOnce('Result from tool one')
         .mockResolvedValueOnce('Result from tool two');
 
@@ -715,12 +885,12 @@ describe('RobotChatAnthropic', () => {
         'Processing your request...',
       );
       expect(result.envelopePayload.content.payload).toContain(
-        'Result from tool one',
+        '"Result from tool one"',
       );
       expect(result.envelopePayload.content.payload).toContain(
-        'Result from tool two',
+        '"Result from tool two"',
       );
-      expect(mockslackyToolSet.executeToolCall).toHaveBeenCalledTimes(2);
+      expect(mockAnthropicToolSet.executeToolCall).toHaveBeenCalledTimes(2);
     });
 
     it('should generate proper response structure', async () => {
@@ -783,6 +953,105 @@ describe('RobotChatAnthropic', () => {
 
       expect(result.envelopePayload.content.payload).toContain(
         'Unknown error occurred',
+      );
+    });
+
+    it('should handle response with mixed content types', async () => {
+      const mockResponse = {
+        content: [
+          {
+            type: 'text',
+            text: 'Part 1. ',
+          },
+          {
+            type: 'unknown_type',
+            data: 'ignored', // Should be ignored
+          },
+          {
+            type: 'text',
+            text: 'Part 2.',
+          },
+        ],
+      };
+
+      mockCreate.mockResolvedValue(mockResponse);
+
+      const result =
+        await robot.acceptMessageImmediateResponse(mockMessageEnvelope);
+
+      expect(result.envelopePayload.content.payload).toBe('Part 1. Part 2.');
+    });
+
+    it('should handle response with only tool use content', async () => {
+      const mockResponse = {
+        content: [
+          {
+            type: 'tool_use',
+            id: 'tool_use_123',
+            name: 'test_tool',
+            input: { param1: 'test_value' },
+          },
+        ],
+      };
+
+      mockCreate.mockResolvedValue(mockResponse);
+      mockAnthropicToolSet.executeToolCall.mockResolvedValue(
+        'Tool executed successfully',
+      );
+
+      const result =
+        await robot.acceptMessageImmediateResponse(mockMessageEnvelope);
+
+      expect(result.envelopePayload.content.payload).toBe(
+        '\n\n"Tool executed successfully"',
+      );
+    });
+
+    it('should handle response with tool use error', async () => {
+      const mockResponse = {
+        content: [
+          {
+            type: 'tool_use',
+            id: 'tool_use_123',
+            name: 'failing_tool',
+            input: { param1: 'test' },
+          },
+        ],
+      };
+
+      mockCreate.mockResolvedValue(mockResponse);
+      mockAnthropicToolSet.executeToolCall.mockRejectedValue(
+        new Error('Tool failed'),
+      );
+
+      const result =
+        await robot.acceptMessageImmediateResponse(mockMessageEnvelope);
+
+      expect(result.envelopePayload.content.payload).toContain(
+        'Error executing tool failing_tool: Tool failed',
+      );
+    });
+
+    it('should handle response with tool use non-Error error', async () => {
+      const mockResponse = {
+        content: [
+          {
+            type: 'tool_use',
+            id: 'tool_use_123',
+            name: 'failing_tool',
+            input: { param1: 'test' },
+          },
+        ],
+      };
+
+      mockCreate.mockResolvedValue(mockResponse);
+      mockAnthropicToolSet.executeToolCall.mockRejectedValue('String error');
+
+      const result =
+        await robot.acceptMessageImmediateResponse(mockMessageEnvelope);
+
+      expect(result.envelopePayload.content.payload).toContain(
+        'Error executing tool failing_tool: Unknown error',
       );
     });
   });
@@ -981,6 +1250,77 @@ describe('RobotChatAnthropic', () => {
         }),
       );
     });
+
+    it('should handle delayed response with only non-text content', async () => {
+      const immediateResponse = {
+        content: [{ type: 'text', text: 'Immediate response' }],
+      };
+
+      const followUpResponse = {
+        content: [
+          { type: 'tool_use', id: 'tool_1', name: 'test_tool', input: {} },
+          { type: 'unknown_type', data: 'ignored' },
+        ],
+      };
+
+      mockCreate
+        .mockResolvedValueOnce(immediateResponse)
+        .mockResolvedValueOnce(followUpResponse);
+
+      const delayedCallback = jest.fn();
+
+      await robot.acceptMessageMultiPartResponse(
+        mockMessageEnvelope,
+        delayedCallback,
+      );
+
+      jest.advanceTimersByTime(2000);
+      await Promise.resolve();
+
+      expect(delayedCallback).toHaveBeenCalledWith(
+        expect.objectContaining({
+          envelopePayload: expect.objectContaining({
+            content: expect.objectContaining({
+              payload: '', // No text content
+            }),
+          }),
+        }),
+      );
+    });
+
+    it('should handle delayed response with empty content array', async () => {
+      const immediateResponse = {
+        content: [{ type: 'text', text: 'Immediate response' }],
+      };
+
+      const followUpResponse = {
+        content: [],
+      };
+
+      mockCreate
+        .mockResolvedValueOnce(immediateResponse)
+        .mockResolvedValueOnce(followUpResponse);
+
+      const delayedCallback = jest.fn();
+
+      await robot.acceptMessageMultiPartResponse(
+        mockMessageEnvelope,
+        delayedCallback,
+      );
+
+      jest.advanceTimersByTime(2000);
+      await Promise.resolve();
+
+      expect(delayedCallback).toHaveBeenCalledWith(
+        expect.objectContaining({
+          envelopePayload: expect.objectContaining({
+            content: expect.objectContaining({
+              payload: '', // Empty content
+            }),
+          }),
+        }),
+      );
+    });
   });
 
   describe('Integration Tests', () => {
@@ -1002,7 +1342,7 @@ describe('RobotChatAnthropic', () => {
       expect(request.messages[0].role).toBe('user');
     });
 
-    it.skip('should handle complex integration scenario with all features', async () => {
+    it('should handle complex integration scenario with all features', async () => {
       // Test streaming with tools, immediate response with tools, and multi-part
       const streamResponse = {
         [Symbol.asyncIterator]: jest.fn(() => {
@@ -1044,7 +1384,7 @@ describe('RobotChatAnthropic', () => {
       };
 
       mockCreate.mockResolvedValueOnce(streamResponse);
-      mockslackyToolSet.executeToolCall.mockResolvedValue(
+      mockAnthropicToolSet.executeToolCall.mockResolvedValue(
         'Integration test successful',
       );
 
@@ -1056,9 +1396,9 @@ describe('RobotChatAnthropic', () => {
 
       expect(chunkCallback).toHaveBeenCalledWith('Analyzing... ');
       expect(chunkCallback).toHaveBeenCalledWith(
-        '\n\nIntegration test successful',
+        '\n\n"Integration test successful"',
       );
-      expect(mockslackyToolSet.executeToolCall).toHaveBeenCalledWith(
+      expect(mockAnthropicToolSet.executeToolCall).toHaveBeenCalledWith(
         'analysis_tool',
         { query: 'test' },
       );

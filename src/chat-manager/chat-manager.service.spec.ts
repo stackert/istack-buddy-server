@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ChatManagerService } from './chat-manager.service';
-import { ConversationListSlackAppService } from '../ConversationLists/ConversationListService';
+import { ConversationListSlackAppService } from '../ConversationLists/ConversationListSlackAppService';
 import { ChatConversationListService } from '../ConversationLists/ChatConversationListService';
 import { UserRole, MessageType } from './dto/create-message.dto';
 import { JoinRoomDto } from './dto/join-room.dto';

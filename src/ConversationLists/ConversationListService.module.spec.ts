@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConversationListServiceModule } from './ConversationListService.module';
-import { ConversationListSlackAppService } from './ConversationListService';
+import { ConversationListSlackAppService } from './ConversationListSlackAppService';
 
 describe('ConversationListServiceModule', () => {
   let module: TestingModule;

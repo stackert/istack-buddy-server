@@ -17,7 +17,7 @@ import {
   DashboardStats,
 } from './interfaces/message.interface';
 import { v4 as uuidv4 } from 'uuid';
-import { ConversationListSlackAppService } from '../ConversationLists/ConversationListService';
+import { ConversationListSlackAppService } from '../ConversationLists/ConversationListSlackAppService';
 import { ChatConversationListService } from '../ConversationLists/ChatConversationListService';
 import {
   TConversationMessageEnvelope,

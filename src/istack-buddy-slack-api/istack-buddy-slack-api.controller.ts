@@ -4,12 +4,12 @@ import { IstackBuddySlackApiService } from './istack-buddy-slack-api.service';
 
 @Controller()
 export class IstackBuddySlackApiController {
-  constructor(
+  public constructor(
     private readonly istackBuddySlackApiService: IstackBuddySlackApiService,
   ) {}
 
   @Get('istack-buddy/slack-integration/health')
-  getHealth(): { status: string; timestamp: string } {
+  public getHealth(): { status: string; timestamp: string } {
     return {
       status: 'ok',
       timestamp: new Date().toISOString(),
@@ -17,7 +17,7 @@ export class IstackBuddySlackApiController {
   }
 
   @Get('istack-buddy/slack-integration/debug')
-  getDebugInfo(): {
+  public getDebugInfo(): {
     slackConfigured: boolean;
     endpoints: string[];
     environment: any;
@@ -40,7 +40,7 @@ export class IstackBuddySlackApiController {
   }
 
   @Post('istack-buddy/slack-integration/slack/events')
-  async handleSlackEvents(@Req() req: Request, @Res() res: Response) {
+  public async handleSlackEvents(@Req() req: Request, @Res() res: Response) {
     // Delegate to the Slack service to handle the event
     return this.istackBuddySlackApiService.handleSlackEvent(req, res);
   }

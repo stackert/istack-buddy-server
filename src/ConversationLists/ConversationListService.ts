@@ -1,13 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { AbstractConversationMessageList } from './AbstractConversationMessageList';
-import { ConversationListSlackApp } from './ConversationListSlackApp';
 
 /**
  * Generic service for managing conversation lists
  * Maintains an in-memory dictionary of conversations by their ID
  */
 @Injectable()
-class ConversationListService<T extends AbstractConversationMessageList<any>> {
+export class ConversationListService<
+  T extends AbstractConversationMessageList<any>,
+> {
   conversations: Record<string, T> = {};
   private conversationFactory: (
     id: string,
@@ -33,7 +34,7 @@ class ConversationListService<T extends AbstractConversationMessageList<any>> {
   /**
    * Get a conversation by ID, or create it if it doesn't exist
    * @param conversationId The unique identifier of the conversation
-   * @param name The name for the conversation (used only if creating negetConversationByIdw)
+   * @param name The name for the conversation (used only if creating new)
    * @param description The description for the conversation (used only if creating new)
    * @param acceptKey Optional security key for conversation creation (implement your validation logic)
    * @returns The existing or newly created conversation
@@ -124,63 +125,3 @@ class ConversationListService<T extends AbstractConversationMessageList<any>> {
     this.conversations = {};
   }
 }
-
-/**
- * Concrete implementation of ConversationListService for Slack App conversations
- */
-@Injectable()
-class ConversationListSlackAppService extends ConversationListService<ConversationListSlackApp> {
-  constructor() {
-    super((id: string, name: string, description: string) => {
-      return new ConversationListSlackApp();
-    });
-  }
-
-  /**
-   * Create a customer support conversation with predefined naming conventions
-   * @param conversationId The unique identifier of the conversation
-   * @param customerId The customer ID for context
-   * @param acceptKey Optional security key for conversation creation
-   * @returns The existing or newly created conversation
-   */
-  getCustomerSupportConversationOrCreate(
-    conversationId: string,
-    customerId: string,
-    acceptKey?: string,
-  ): ConversationListSlackApp {
-    const name = `Customer Support - ${customerId}`;
-    const description = `Customer support conversation for customer ${customerId}`;
-
-    return this.getConversationOrCreate(
-      conversationId,
-      name,
-      description,
-      acceptKey,
-    );
-  }
-
-  /**
-   * Create a team conversation with predefined naming conventions
-   * @param conversationId The unique identifier of the conversation
-   * @param teamName The team name for context
-   * @param acceptKey Optional security key for conversation creation
-   * @returns The existing or newly created conversation
-   */
-  getTeamConversationOrCreate(
-    conversationId: string,
-    teamName: string,
-    acceptKey?: string,
-  ): ConversationListSlackApp {
-    const name = `Team Chat - ${teamName}`;
-    const description = `Team conversation for ${teamName}`;
-
-    return this.getConversationOrCreate(
-      conversationId,
-      name,
-      description,
-      acceptKey,
-    );
-  }
-}
-
-export { ConversationListService, ConversationListSlackAppService };

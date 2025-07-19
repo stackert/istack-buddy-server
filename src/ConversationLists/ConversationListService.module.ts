@@ -1,8 +1,6 @@
 import { Module } from '@nestjs/common';
-import {
-  ConversationListService,
-  ConversationListSlackAppService,
-} from './ConversationListService';
+import { ConversationListService } from './ConversationListService';
+import { ConversationListSlackAppService } from './ConversationListSlackAppService';
 
 @Module({
   providers: [ConversationListSlackAppService],

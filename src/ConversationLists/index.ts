@@ -1,8 +1,6 @@
 // Export the core services
-export {
-  ConversationListService,
-  ConversationListSlackAppService,
-} from './ConversationListService';
+export { ConversationListService } from './ConversationListService';
+export { ConversationListSlackAppService } from './ConversationListSlackAppService';
 
 // Export the NestJS module
 export { ConversationListServiceModule } from './ConversationListService.module';

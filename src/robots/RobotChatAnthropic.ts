@@ -159,7 +159,7 @@ Please provide helpful, accurate, and detailed responses to user questions. If y
       return jsonResult;
     } catch (error) {
       console.error(`❌ Tool ${toolName} execution failed:`, error);
-      return `Tool execution failed: ${error instanceof Error ? error.message : 'Unknown error'}`;
+      return `Error executing tool ${toolName}: ${error instanceof Error ? error.message : 'Unknown error'}`;
     }
   }
 

@@ -10,7 +10,7 @@ import { JoinRoomDto } from './dto/join-room.dto';
 import { GetMessagesDto } from './dto/get-messages.dto';
 import { StartConversationDto } from './dto/start-conversation.dto';
 import { IConversationMessage } from './interfaces/message.interface';
-import { ConversationListSlackAppService } from '../ConversationLists/ConversationListService';
+import { ConversationListSlackAppService } from '../ConversationLists/ConversationListSlackAppService';
 import { ChatConversationListService } from '../ConversationLists/ChatConversationListService';
 
 describe('ChatManagerController', () => {

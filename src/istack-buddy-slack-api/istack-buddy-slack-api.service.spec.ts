@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { IstackBuddySlackApiService } from './istack-buddy-slack-api.service';
 import { ChatManagerService } from '../chat-manager/chat-manager.service';
 import { RobotService } from '../robots/robot.service';
-import { ConversationListSlackAppService } from '../ConversationLists/ConversationListService';
+import { ConversationListSlackAppService } from '../ConversationLists/ConversationListSlackAppService';
 import { ChatConversationListService } from '../ConversationLists/ChatConversationListService';
 import { UserRole, MessageType } from '../chat-manager/dto/create-message.dto';
 
@@ -824,6 +824,578 @@ describe('IstackBuddySlackApiService', () => {
 
       // Restore original mock
       (service as any).robotService.getRobotByName = originalGetRobotByName;
+    });
+  });
+
+  describe('handleSlackEvent', () => {
+    it('should handle URL verification challenge', async () => {
+      const mockReq = {
+        body: {
+          challenge: 'test-challenge-string',
+          event: { ts: '1752568742.663279', text: 'test' }, // Add event to prevent undefined error
+        },
+      };
+      const mockRes = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      };
+
+      await service.handleSlackEvent(mockReq as any, mockRes as any);
+
+      expect(mockRes.status).toHaveBeenCalledWith(200);
+      expect(mockRes.json).toHaveBeenCalledWith({
+        challenge: 'test-challenge-string',
+      });
+    });
+
+    it('should handle duplicate events', async () => {
+      const mockEvent = {
+        ts: '1752568742.663279',
+        text: 'test message',
+      };
+      const mockReq = {
+        body: {
+          event: mockEvent,
+          event_id: 'test-event-id',
+        },
+      };
+      const mockRes = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      };
+
+      // First call should process the event
+      await service.handleSlackEvent(mockReq as any, mockRes as any);
+
+      // Second call with same event should be treated as duplicate
+      await service.handleSlackEvent(mockReq as any, mockRes as any);
+
+      expect(mockRes.status).toHaveBeenCalledWith(200);
+      expect(mockRes.json).toHaveBeenCalledWith({ status: 'ok' });
+    });
+
+    it('should handle non-app_mention events', async () => {
+      const mockReq = {
+        body: {
+          event: {
+            type: 'message',
+            ts: '1752568742.663279',
+            text: 'regular message',
+          },
+        },
+      };
+      const mockRes = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      };
+
+      await service.handleSlackEvent(mockReq as any, mockRes as any);
+
+      expect(mockRes.status).toHaveBeenCalledWith(200);
+      expect(mockRes.json).toHaveBeenCalledWith({ status: 'ok' });
+    });
+
+    it('should handle app_mention events', async () => {
+      const mockReq = {
+        body: {
+          event: {
+            type: 'app_mention',
+            user: 'U091Y5UF14P',
+            ts: '1752568742.663279',
+            text: '<@U092RRN555X> test mention',
+            channel: 'C091Y5UNA1M',
+          },
+        },
+      };
+      const mockRes = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      };
+
+      await service.handleSlackEvent(mockReq as any, mockRes as any);
+
+      expect(mockRes.status).toHaveBeenCalledWith(200);
+      expect(mockRes.json).toHaveBeenCalledWith({ status: 'ok' });
+    });
+
+    it('should handle errors during event processing', async () => {
+      const mockReq = {
+        body: {
+          event: {
+            type: 'app_mention',
+            user: 'U091Y5UF14P',
+            ts: '1752568742.663279',
+            text: '<@U092RRN555X> test mention',
+            channel: 'C091Y5UNA1M',
+          },
+        },
+      };
+      const mockRes = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      };
+
+      // Mock chatManagerService to throw an error
+      jest
+        .spyOn(chatManagerService, 'startConversation')
+        .mockRejectedValue(new Error('Test error'));
+
+      await service.handleSlackEvent(mockReq as any, mockRes as any);
+
+      expect(mockRes.status).toHaveBeenCalledWith(500);
+      expect(mockRes.json).toHaveBeenCalledWith({
+        error: 'Internal server error',
+      });
+    });
+  });
+
+  describe('makeSimplifiedEvent', () => {
+    it('should create conversation_start event for channel mention', () => {
+      const event = {
+        ts: '1752568742.663279',
+        text: 'test message',
+      };
+
+      const result = (service as any).makeSimplifiedEvent(event);
+
+      expect(result).toEqual({
+        eventType: 'conversation_start',
+        conversationId: '1752568742.663279',
+        message: 'test message',
+        eventTs: '1752568742.663279',
+      });
+    });
+
+    it('should create thread_reply event for thread message', () => {
+      const event = {
+        ts: '1752568827.543239',
+        thread_ts: '1752568742.663279',
+        text: 'thread reply',
+      };
+
+      const result = (service as any).makeSimplifiedEvent(event);
+
+      expect(result).toEqual({
+        eventType: 'thread_reply',
+        conversationId: '1752568742.663279',
+        message: 'thread reply',
+        eventTs: '1752568827.543239',
+      });
+    });
+  });
+
+  describe('handleAppMention error handling', () => {
+    it('should handle errors and send error message to Slack', async () => {
+      const event = {
+        user: 'U091Y5UF14P',
+        type: 'app_mention',
+        ts: '1752568742.663279',
+        text: '<@U092RRN555X> test mention',
+        channel: 'C091Y5UNA1M',
+      };
+
+      // Mock chatManagerService to throw an error
+      jest
+        .spyOn(chatManagerService, 'startConversation')
+        .mockRejectedValue(new Error('Test error'));
+
+      // Mock sendSlackMessage to verify it's called
+      const sendSlackMessageSpy = jest
+        .spyOn(service as any, 'sendSlackMessage')
+        .mockResolvedValue(undefined);
+
+      await expect((service as any).handleAppMention(event)).rejects.toThrow(
+        'Test error',
+      );
+
+      expect(sendSlackMessageSpy).toHaveBeenCalledWith(
+        'Sorry, I encountered an error processing your request: Test error',
+        'C091Y5UNA1M',
+        '1752568742.663279',
+      );
+    });
+
+    it('should handle sendSlackMessage errors gracefully', async () => {
+      const event = {
+        user: 'U091Y5UF14P',
+        type: 'app_mention',
+        ts: '1752568742.663279',
+        text: '<@U092RRN555X> test mention',
+        channel: 'C091Y5UNA1M',
+      };
+
+      // Mock chatManagerService to throw an error
+      jest
+        .spyOn(chatManagerService, 'startConversation')
+        .mockRejectedValue(new Error('Test error'));
+
+      // Mock sendSlackMessage to throw an error
+      jest
+        .spyOn(service as any, 'sendSlackMessage')
+        .mockRejectedValue(new Error('Slack API error'));
+
+      const loggerSpy = jest.spyOn((service as any).logger, 'error');
+
+      await expect((service as any).handleAppMention(event)).rejects.toThrow(
+        'Test error',
+      );
+
+      expect(loggerSpy).toHaveBeenCalledWith(
+        'Failed to send error message to Slack:',
+        expect.any(Error),
+      );
+    });
+
+    it('should handle thread reply with missing conversation mapping', async () => {
+      const event = {
+        user: 'U091Y5UF14P',
+        type: 'app_mention',
+        ts: '1752568827.543239',
+        thread_ts: '1752568742.663279', // Thread timestamp
+        text: '<@U092RRN555X> thread reply',
+        channel: 'C091Y5UNA1M',
+      };
+
+      // Clear the conversation mapping
+      (service as any).slackThreadToConversationMap = {};
+
+      const loggerSpy = jest.spyOn((service as any).logger, 'log');
+
+      await (service as any).handleAppMention(event);
+
+      expect(loggerSpy).toHaveBeenCalledWith(
+        'Ignoring event - thread_ts: 1752568742.663279, no mapping found or unrecognized pattern',
+      );
+    });
+  });
+
+  describe('sendSlackMessage', () => {
+    beforeEach(() => {
+      // Restore the original sendSlackMessage method
+      jest.restoreAllMocks();
+    });
+
+    it('should successfully send message to Slack', async () => {
+      const mockResponse = {
+        ok: true,
+        channel: 'C091Y5UNA1M',
+      };
+
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: jest.fn().mockResolvedValue(mockResponse),
+      });
+
+      const loggerSpy = jest.spyOn((service as any).logger, 'log');
+
+      await (service as any).sendSlackMessage(
+        'Test message',
+        'C091Y5UNA1M',
+        '1752568742.663279',
+      );
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        'https://slack.com/api/chat.postMessage',
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${process.env.SLACK_BOT_TOKEN}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            channel: 'C091Y5UNA1M',
+            text: 'Test message',
+            thread_ts: '1752568742.663279',
+          }),
+        },
+      );
+
+      expect(loggerSpy).toHaveBeenCalledWith(
+        'Message sent to Slack channel C091Y5UNA1M',
+      );
+    });
+
+    it('should handle Slack API errors', async () => {
+      const mockResponse = {
+        ok: false,
+        error: 'channel_not_found',
+      };
+
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: jest.fn().mockResolvedValue(mockResponse),
+      });
+
+      const loggerSpy = jest.spyOn((service as any).logger, 'error');
+
+      await (service as any).sendSlackMessage(
+        'Test message',
+        'C091Y5UNA1M',
+        '1752568742.663279',
+      );
+
+      expect(loggerSpy).toHaveBeenCalledWith(
+        'Slack API error: channel_not_found',
+      );
+    });
+
+    it('should handle HTTP errors', async () => {
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        statusText: 'Internal Server Error',
+      });
+
+      const loggerSpy = jest.spyOn((service as any).logger, 'error');
+
+      await (service as any).sendSlackMessage(
+        'Test message',
+        'C091Y5UNA1M',
+        '1752568742.663279',
+      );
+
+      expect(loggerSpy).toHaveBeenCalledWith(
+        'HTTP error: 500 Internal Server Error',
+      );
+    });
+
+    it('should handle fetch errors', async () => {
+      global.fetch = jest.fn().mockRejectedValue(new Error('Network error'));
+
+      const loggerSpy = jest.spyOn((service as any).logger, 'error');
+
+      await (service as any).sendSlackMessage(
+        'Test message',
+        'C091Y5UNA1M',
+        '1752568742.663279',
+      );
+
+      expect(loggerSpy).toHaveBeenCalledWith(
+        'Error sending message to Slack:',
+        expect.any(Error),
+      );
+    });
+  });
+
+  describe('addSlackReaction', () => {
+    beforeEach(() => {
+      // Restore the original addSlackReaction method
+      jest.restoreAllMocks();
+    });
+
+    it('should successfully add reaction to Slack message', async () => {
+      const mockResponse = {
+        ok: true,
+      };
+
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: jest.fn().mockResolvedValue(mockResponse),
+      });
+
+      const loggerSpy = jest.spyOn((service as any).logger, 'log');
+
+      await (service as any).addSlackReaction(
+        'thinking_face',
+        'C091Y5UNA1M',
+        '1752568742.663279',
+      );
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        'https://slack.com/api/reactions.add',
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${process.env.SLACK_BOT_TOKEN}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            channel: 'C091Y5UNA1M',
+            name: 'thinking_face',
+            timestamp: '1752568742.663279',
+          }),
+        },
+      );
+
+      expect(loggerSpy).toHaveBeenCalledWith(
+        'Adding reaction :thinking_face: to message 1752568742.663279 in channel C091Y5UNA1M',
+      );
+      expect(loggerSpy).toHaveBeenCalledWith(
+        'Added reaction :thinking_face: to message in channel C091Y5UNA1M',
+      );
+    });
+
+    it('should handle reaction API errors', async () => {
+      const mockResponse = {
+        ok: false,
+        error: 'message_not_found',
+      };
+
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: jest.fn().mockResolvedValue(mockResponse),
+      });
+
+      const loggerSpy = jest.spyOn((service as any).logger, 'error');
+
+      await (service as any).addSlackReaction(
+        'thinking_face',
+        'C091Y5UNA1M',
+        '1752568742.663279',
+      );
+
+      expect(loggerSpy).toHaveBeenCalledWith(
+        'Failed to add reaction: message_not_found',
+      );
+      expect(loggerSpy).toHaveBeenCalledWith('Response status: 200');
+      expect(loggerSpy).toHaveBeenCalledWith('Response data:', mockResponse);
+    });
+
+    it('should handle HTTP errors in reaction API', async () => {
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: false,
+        status: 404,
+        statusText: 'Not Found',
+        json: jest
+          .fn()
+          .mockResolvedValue({ ok: false, error: 'Unknown error' }),
+      });
+
+      const loggerSpy = jest.spyOn((service as any).logger, 'error');
+
+      await (service as any).addSlackReaction(
+        'thinking_face',
+        'C091Y5UNA1M',
+        '1752568742.663279',
+      );
+
+      expect(loggerSpy).toHaveBeenCalledWith(
+        'Failed to add reaction: Unknown error',
+      );
+      expect(loggerSpy).toHaveBeenCalledWith('Response status: 404');
+    });
+
+    it('should handle fetch errors in reaction API', async () => {
+      global.fetch = jest.fn().mockRejectedValue(new Error('Network error'));
+
+      const loggerSpy = jest.spyOn((service as any).logger, 'error');
+
+      await (service as any).addSlackReaction(
+        'thinking_face',
+        'C091Y5UNA1M',
+        '1752568742.663279',
+      );
+
+      expect(loggerSpy).toHaveBeenCalledWith(
+        'Error adding reaction:',
+        expect.any(Error),
+      );
+    });
+  });
+
+  describe('testReaction', () => {
+    it('should successfully test reaction functionality', async () => {
+      const addReactionSpy = jest
+        .spyOn(service as any, 'addSlackReaction')
+        .mockResolvedValue(undefined);
+
+      const result = await service.testReaction(
+        'C091Y5UNA1M',
+        '1752568742.663279',
+        'thinking_face',
+      );
+
+      expect(addReactionSpy).toHaveBeenCalledWith(
+        'thinking_face',
+        'C091Y5UNA1M',
+        '1752568742.663279',
+      );
+
+      expect(result).toEqual({
+        success: true,
+        message:
+          'Attempted to add :thinking_face: reaction. Check server logs for details.',
+      });
+    });
+
+    it('should handle errors in test reaction', async () => {
+      jest
+        .spyOn(service as any, 'addSlackReaction')
+        .mockRejectedValue(new Error('Test error'));
+
+      const result = await service.testReaction(
+        'C091Y5UNA1M',
+        '1752568742.663279',
+        'thinking_face',
+      );
+
+      expect(result).toEqual({
+        success: false,
+        error: 'Test error',
+      });
+    });
+  });
+
+  describe('onModuleDestroy', () => {
+    it('should cleanup interval on module destroy', () => {
+      const clearIntervalSpy = jest.spyOn(global, 'clearInterval');
+      const loggerSpy = jest.spyOn((service as any).logger, 'log');
+
+      service.onModuleDestroy();
+
+      expect(clearIntervalSpy).toHaveBeenCalled();
+      expect(loggerSpy).toHaveBeenCalledWith(
+        'Cleaned up garbage collection interval',
+      );
+    });
+
+    it('should handle cleanup when interval is null', () => {
+      // Set interval to null
+      (service as any).cleanupIntervalId = null;
+
+      const clearIntervalSpy = jest.spyOn(global, 'clearInterval');
+      const loggerSpy = jest.spyOn((service as any).logger, 'log');
+
+      service.onModuleDestroy();
+
+      expect(clearIntervalSpy).not.toHaveBeenCalled();
+      // When interval is null, the logger should not be called
+      expect(loggerSpy).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('routineGarbageCollection', () => {
+    it('should clean up old events during garbage collection', () => {
+      // Add some old events to the uniqueEventList
+      const oldTimestamp = (Date.now() / 1000 - 25 * 60 * 60).toString(); // 25 hours ago
+      const recentTimestamp = (Date.now() / 1000 - 1 * 60 * 60).toString(); // 1 hour ago
+
+      (service as any).uniqueEventList = {
+        [oldTimestamp]: { event_id: 'old-event' },
+        [recentTimestamp]: { event_id: 'recent-event' },
+      };
+
+      const loggerSpy = jest.spyOn((service as any).logger, 'log');
+
+      (service as any).routineGarbageCollection();
+
+      // Old event should be removed, recent event should remain
+      expect((service as any).uniqueEventList[oldTimestamp]).toBeUndefined();
+      expect((service as any).uniqueEventList[recentTimestamp]).toBeDefined();
+      expect(loggerSpy).toHaveBeenCalledWith(
+        'Garbage collection completed. Cleaned up old events.',
+      );
+    });
+
+    it('should log completion message during garbage collection', () => {
+      const loggerSpy = jest.spyOn((service as any).logger, 'log');
+
+      (service as any).routineGarbageCollection();
+
+      expect(loggerSpy).toHaveBeenCalledWith(
+        'Garbage collection completed. Cleaned up old events.',
+      );
     });
   });
 });
