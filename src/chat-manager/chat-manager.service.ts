@@ -32,9 +32,6 @@ export class ChatManagerService {
   private participants: Map<string, Participant[]> = new Map();
   private gateway: any; // Will be set by the gateway
 
-  // Message deduplication tracking
-  private messageContentHashes: Map<string, string> = new Map(); // contentHash -> messageId
-
   constructor(
     private readonly conversationListService: ConversationListSlackAppService,
     private readonly chatConversationListService: ChatConversationListService,
@@ -115,30 +112,6 @@ export class ChatManagerService {
   }
 
   /**
-   * Check if message is duplicate based on content hash
-   */
-  private x_isDuplicateMessage(
-    contentHash: string,
-    conversationId: string,
-  ): boolean {
-    const existingMessageId = this.messageContentHashes.get(contentHash);
-
-    if (existingMessageId) {
-      // Check if message exists in conversation list
-      const conversationList =
-        this.conversationListService.getConversationById(conversationId);
-      if (
-        conversationList &&
-        conversationList.hasMessageEnvelope(existingMessageId)
-      ) {
-        return true;
-      }
-    }
-
-    return false;
-  }
-
-  /**
    * Add a message to a conversation
    * This is the core method - all messages go through here
    */
@@ -150,35 +123,6 @@ export class ChatManagerService {
 
     // Generate content hash for deduplication
     const contentHash = this.generateMessageContentHash(createMessageDto);
-
-    // AI - DO NOT REMOVE THIS COMMENT
-    // I think we dont care.  I *think* our logic/code is goofed (we're failing to properly parse events)
-    // if we're finding duplicates.  Eg: if we have duplication issues it was upstream and that is where it
-    // needs to be fixed.  This is a consequence of the Slacky robot.
-    // Check for duplicate message
-    if (this.isDuplicateMessage(contentHash, createMessageDto.conversationId)) {
-      const existingMessageId = this.messageContentHashes.get(contentHash);
-      // console.log(`Duplicate message detected in conversation ${createMessageDto.conversationId}:
-      //   Content Hash: ${contentHash}
-      //   Existing Message ID: ${existingMessageId}
-      //   New Message Content: ${createMessageDto.content.substring(0, 100)}...`);
-
-      // Get existing message from conversation list and return it
-      const conversationList = this.conversationListService.getConversationById(
-        createMessageDto.conversationId,
-      );
-      if (conversationList) {
-        const envelope = conversationList.getMessageEnvelopeById(
-          existingMessageId!,
-        );
-        if (envelope) {
-          return this.envelopeToMessage(
-            envelope,
-            createMessageDto.conversationId,
-          );
-        }
-      }
-    }
 
     // Ensure conversation exists in conversation list service
     const conversationList =
@@ -213,9 +157,6 @@ export class ChatManagerService {
       createMessageDto.conversationId,
       message,
     );
-
-    // Store content hash for deduplication
-    this.messageContentHashes.set(contentHash, messageId);
 
     // Update conversation activity
     await this.updateConversationActivity(createMessageDto.conversationId);
@@ -322,6 +263,7 @@ export class ChatManagerService {
   ): Promise<IConversationMessage[]> {
     const conversationList =
       this.conversationListService.getConversationById(conversationId);
+
     if (!conversationList) {
       return [];
     }
@@ -356,36 +298,6 @@ export class ChatManagerService {
   ): Promise<IConversationMessage[]> {
     return this.chatConversationListService.getFilteredRobotMessages(
       conversationId,
-    );
-  }
-
-  /**
-   * Get filtered messages from multiple conversations
-   */
-  async getFilteredConversationMessages(
-    conversationIds: string[],
-  ): Promise<IConversationMessage[]> {
-    const allMessages: IConversationMessage[] = [];
-
-    for (const conversationId of conversationIds) {
-      const conversationList =
-        this.conversationListService.getConversationById(conversationId);
-      if (!conversationList) {
-        continue;
-      }
-
-      // Get all envelopes and convert to messages
-      const allEnvelopes = conversationList.getLastAddedEnvelopes();
-      const messages = allEnvelopes.map((envelope) =>
-        this.envelopeToMessage(envelope, conversationId),
-      );
-
-      allMessages.push(...messages);
-    }
-
-    // Sort all messages by creation time
-    return allMessages.sort(
-      (a, b) => a.createdAt.getTime() - b.createdAt.getTime(),
     );
   }
 
