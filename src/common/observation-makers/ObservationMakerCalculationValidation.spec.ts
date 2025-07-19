@@ -2,7 +2,6 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ObservationMakerCalculationValidation } from './ObservationMakerCalculationValidation';
 import { Models } from 'istack-buddy-utilities';
 
-//import * as formJson5375703 from '../../../test-data/form-json/5375703.json';
 import * as formJson6201623 from '../../../test-data/form-json/6201623.json';
 
 describe('ObservationMakerCalculationValidation', () => {

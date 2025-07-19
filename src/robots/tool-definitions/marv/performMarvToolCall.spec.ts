@@ -49,8 +49,23 @@ const { MarvService: MockMarvService } = jest.mocked(
 ) as any;
 const mockMarvService = new MockMarvService() as jest.Mocked<any>;
 
-// Mock console.log to avoid cluttering test output
-const mockConsoleLog = jest.spyOn(console, 'log').mockImplementation(() => {});
+jest.mock('../../../common/logger/custom-logger.service', () => {
+  const mockLogger = {
+    debug: jest.fn(),
+    log: jest.fn(),
+    error: jest.fn(),
+    warn: jest.fn(),
+  };
+  return {
+    CustomLoggerService: jest.fn().mockImplementation(() => mockLogger),
+  };
+});
+
+// Get the mocked logger instance
+const {
+  CustomLoggerService,
+} = require('../../../common/logger/custom-logger.service');
+const mockLogger = new CustomLoggerService();
 
 describe('performMarvToolCall', () => {
   const mockSuccessResponse: IMarvApiUniversalResponse<any> = {
@@ -75,7 +90,7 @@ describe('performMarvToolCall', () => {
 
       await performMarvToolCall('fieldRemove', '{"fieldId":"123"}');
 
-      expect(mockConsoleLog).toHaveBeenCalledWith({
+      expect(mockLogger.debug).toHaveBeenCalledWith('Marv tool call log', {
         functionName: 'fieldRemove',
         fnParamsJson: { fieldId: '123' },
       });
@@ -86,7 +101,7 @@ describe('performMarvToolCall', () => {
 
       await performMarvToolCall('fieldRemove');
 
-      expect(mockConsoleLog).toHaveBeenCalledWith({
+      expect(mockLogger.debug).toHaveBeenCalledWith('Marv tool call log', {
         functionName: 'fieldRemove',
         fnParamsJson: {},
       });
@@ -97,7 +112,7 @@ describe('performMarvToolCall', () => {
 
       await performMarvToolCall('fieldRemove', '');
 
-      expect(mockConsoleLog).toHaveBeenCalledWith({
+      expect(mockLogger.debug).toHaveBeenCalledWith('Marv tool call log', {
         functionName: 'fieldRemove',
         fnParamsJson: {},
       });

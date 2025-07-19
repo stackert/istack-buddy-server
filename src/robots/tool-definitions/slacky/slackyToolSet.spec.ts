@@ -224,10 +224,10 @@ describe('slackyToolSet', () => {
         },
       );
 
-      expect(result).toContain('🔐 SSO Auto-fill Configuration Analysis');
-      expect(result).toContain('📋 Form ID: 12345');
-      expect(result).toContain('🏢 Account ID: 98765');
-      expect(result).toContain('🔧 SSO Auto-fill Troubleshooting:');
+      expect(result).toContain('SSO Auto-fill Configuration Analysis');
+      expect(result).toContain('Form ID: 12345');
+      expect(result).toContain('Account ID: 98765');
+      expect(result).toContain('SSO Auto-fill Troubleshooting:');
       expect(result).toContain('Common Issues to Check:');
       expect(result).toContain('Configuration Verification:');
       expect(result).toContain('Debugging Steps:');
@@ -243,8 +243,8 @@ describe('slackyToolSet', () => {
         },
       );
 
-      expect(result).toContain('📋 Form ID: 12345');
-      expect(result).toContain('🏢 Account ID: 98765');
+      expect(result).toContain('Form ID: 12345');
+      expect(result).toContain('Account ID: 98765');
     });
   });
 
@@ -260,10 +260,10 @@ describe('slackyToolSet', () => {
         },
       );
 
-      expect(result).toContain('🔍 Sumo Logic Query Analysis');
-      expect(result).toContain('📅 Date Range: 1640995200000 to 1641081600000');
-      expect(result).toContain('📋 Form ID: 12345');
-      expect(result).toContain('📄 Submission ID: 67890');
+      expect(result).toContain('Sumo Logic Query Analysis');
+      expect(result).toContain('Date Range: 1640995200000 to 1641081600000');
+      expect(result).toContain('Form ID: 12345');
+      expect(result).toContain('Submission ID: 67890');
       expect(result).toContain(
         'Submission lifecycle tracking for submission 67890',
       );
@@ -279,8 +279,8 @@ describe('slackyToolSet', () => {
         },
       );
 
-      expect(result).toContain('📋 Form ID: 12345');
-      expect(result).not.toContain('📄 Submission ID:');
+      expect(result).toContain('Form ID: 12345');
+      expect(result).not.toContain('Submission ID:');
       expect(result).toContain('All submissions for form 12345');
       expect(result).toContain('Form performance metrics');
     });
@@ -294,9 +294,9 @@ describe('slackyToolSet', () => {
         },
       );
 
-      expect(result).toContain('📅 Date Range: 1640995200000 to 1641081600000');
-      expect(result).not.toContain('📋 Form ID:');
-      expect(result).not.toContain('📄 Submission ID:');
+      expect(result).toContain('Date Range: 1640995200000 to 1641081600000');
+      expect(result).not.toContain('Form ID:');
+      expect(result).not.toContain('Submission ID:');
       expect(result).toContain('General submission activity');
       expect(result).toContain('System-wide performance metrics');
     });
@@ -311,8 +311,8 @@ describe('slackyToolSet', () => {
         },
       );
 
-      expect(result).toContain('📄 Submission ID: 67890');
-      expect(result).not.toContain('📋 Form ID:');
+      expect(result).toContain('Submission ID: 67890');
+      expect(result).not.toContain('Form ID:');
       expect(result).toContain(
         'Submission lifecycle tracking for submission 67890',
       );

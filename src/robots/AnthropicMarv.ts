@@ -126,14 +126,14 @@ Your goal is to help users efficiently manage their Formstack forms through thes
 
       // Convert the API response to a readable string format
       if (result.isSuccess) {
-        return `✅ ${toolName} completed successfully\n\nResult: ${JSON.stringify(result.response, null, 2)}`;
+        return `${toolName} completed successfully\n\nResult: ${JSON.stringify(result.response, null, 2)}`;
       } else {
-        return `❌ ${toolName} failed\n\nErrors: ${result.errorItems?.join(', ') || 'Unknown error'}`;
+        return `${toolName} failed\n\nErrors: ${result.errorItems?.join(', ') || 'Unknown error'}`;
       }
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
-      return `❌ Error executing ${toolName}: ${errorMessage}`;
+      return `Error executing ${toolName}: ${errorMessage}`;
     }
   }
 

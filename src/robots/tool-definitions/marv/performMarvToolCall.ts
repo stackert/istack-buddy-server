@@ -1,5 +1,6 @@
 import { MarvService } from './marvService';
 import { IMarvApiUniversalResponse, FsRestrictedApiRoutesEnum } from '.';
+import { CustomLoggerService } from '../../../common/logger/custom-logger.service';
 
 // Main function to handle external API calls from the robot
 const performMarvToolCall = async (
@@ -68,7 +69,9 @@ const performMarvToolCall = async (
       return marvService.fieldLogicStashApplyAndRemove(fnParamsJson?.formId);
 
     case FsRestrictedApiRoutesEnum.FieldLogicStashCreate:
-      console.log({ fieldLogicStashCreate: fnParamsJson });
+      helpers.logger.debug('Field logic stash create', {
+        fieldLogicStashCreate: fnParamsJson,
+      });
       return marvService.fieldLogicStashCreate(fnParamsJson?.formId);
 
     case FsRestrictedApiRoutesEnum.FieldLogicStashRemove:
@@ -91,6 +94,8 @@ const performMarvToolCall = async (
 
 // Helper functions
 const helpers = {
+  logger: new CustomLoggerService('MarvToolCall'),
+
   isSuccessfulResponse: (apiResponse: IMarvApiUniversalResponse<any>) =>
     apiResponse.isSuccess && apiResponse.response !== null,
 
@@ -109,14 +114,14 @@ const helpers = {
       try {
         return JSON.parse(jsonString);
       } catch (e) {
-        console.error('Error parsing JSON:', e);
+        helpers.logger.error('Error parsing JSON', e);
       }
     }
     return {};
   },
 
   pushLog: (logObject: any) => {
-    console.log(logObject);
+    helpers.logger.debug('Marv tool call log', logObject);
   },
 };
 

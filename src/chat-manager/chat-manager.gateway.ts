@@ -11,6 +11,7 @@ import { Server, Socket } from 'socket.io';
 import { ChatManagerService } from './chat-manager.service';
 import { CreateMessageDto, UserRole } from './dto/create-message.dto';
 import { JoinRoomDto } from './dto/join-room.dto';
+import { CustomLoggerService } from '../common/logger/custom-logger.service';
 
 @WebSocketGateway({
   cors: {
@@ -24,17 +25,19 @@ export class ChatManagerGateway
   @WebSocketServer()
   server: Server;
 
+  private readonly logger = new CustomLoggerService('ChatManagerGateway');
+
   constructor(private readonly chatManagerService: ChatManagerService) {
     // Set the gateway reference in the service so it can broadcast messages
     this.chatManagerService.setGateway(this);
   }
 
   handleConnection(client: Socket) {
-    console.log(`Client connected: ${client.id}`);
+    this.logger.log(`Client connected: ${client.id}`);
   }
 
   handleDisconnect(client: Socket) {
-    console.log(`Client disconnected: ${client.id}`);
+    this.logger.log(`Client disconnected: ${client.id}`);
   }
 
   @SubscribeMessage('join_room')
@@ -43,7 +46,7 @@ export class ChatManagerGateway
     @ConnectedSocket() client: Socket,
   ) {
     try {
-      console.log('Join room data received:', JSON.stringify(data, null, 2));
+      this.logger.debug('Join room data received', { data });
 
       if (!data) {
         throw new Error('No data provided');
@@ -67,7 +70,7 @@ export class ChatManagerGateway
           userId: data.userId || `anonymous_${client.id}`, // Use socket ID as fallback
           userRole: data.userRole || (UserRole.CUSTOMER as any), // Default to customer
         };
-        console.log('Applied default joinData:', joinData);
+        this.logger.debug('Applied default joinData', { joinData });
       }
 
       await client.join(conversationId);
@@ -84,7 +87,7 @@ export class ChatManagerGateway
 
       return { success: true, participant };
     } catch (error) {
-      console.error('Error in handleJoinRoom:', error);
+      this.logger.error('Error in handleJoinRoom', error);
       return {
         success: false,
         error: error.message || 'Failed to join room',
@@ -189,11 +192,11 @@ export class ChatManagerGateway
   @SubscribeMessage('join_dashboard')
   async handleJoinDashboard(@ConnectedSocket() client: Socket) {
     try {
-      console.log(`Client ${client.id} joining dashboard`);
+      this.logger.log(`Client ${client.id} joining dashboard`);
       await client.join('dashboard');
       return { success: true, message: 'Joined dashboard room' };
     } catch (error) {
-      console.error('Error joining dashboard:', error);
+      this.logger.error('Error joining dashboard', error);
       return { success: false, error: 'Failed to join dashboard' };
     }
   }
@@ -201,11 +204,11 @@ export class ChatManagerGateway
   @SubscribeMessage('leave_dashboard')
   async handleLeaveDashboard(@ConnectedSocket() client: Socket) {
     try {
-      console.log(`Client ${client.id} leaving dashboard`);
+      this.logger.log(`Client ${client.id} leaving dashboard`);
       await client.leave('dashboard');
       return { success: true, message: 'Left dashboard room' };
     } catch (error) {
-      console.error('Error leaving dashboard:', error);
+      this.logger.error('Error leaving dashboard', error);
       return { success: false, error: 'Failed to leave dashboard' };
     }
   }
@@ -217,7 +220,7 @@ export class ChatManagerGateway
 
   // Method to broadcast to dashboard listeners
   broadcastToDashboard(event: string, data: any) {
-    console.log(`📊 Broadcasting dashboard event: ${event}`);
+    this.logger.debug(`Broadcasting dashboard event: ${event}`);
     this.server.to('dashboard').emit(event, data);
   }
 }

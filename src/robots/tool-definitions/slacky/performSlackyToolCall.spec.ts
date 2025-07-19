@@ -2,6 +2,18 @@ import { performSlackyToolCall } from './performSlackyToolCall';
 import { marvToolSet } from '../marv';
 import { SlackyToolsEnum } from './types';
 
+// Mock the CustomLoggerService
+const mockLogger = {
+  debug: jest.fn(),
+  log: jest.fn(),
+  error: jest.fn(),
+  warn: jest.fn(),
+};
+
+jest.mock('../../../common/logger/custom-logger.service', () => ({
+  CustomLoggerService: jest.fn().mockImplementation(() => mockLogger),
+}));
+
 // Mock the marvToolSet
 jest.mock('../marv', () => ({
   marvToolSet: {
@@ -47,7 +59,7 @@ describe('performSlackyToolCall', () => {
         submissionId: '67890',
       });
 
-      expect(result).toContain('🔍 Sumo Logic Query Analysis');
+      expect(result).toContain('Sumo Logic Query Analysis');
       expect(result).toContain('Form ID: 12345');
       expect(result).toContain('Submission ID: 67890');
     });
@@ -58,7 +70,7 @@ describe('performSlackyToolCall', () => {
         toDate: '1641081600000',
       });
 
-      expect(result).toContain('🔍 Sumo Logic Query Analysis');
+      expect(result).toContain('Sumo Logic Query Analysis');
       expect(result).not.toContain('Form ID:');
       expect(result).not.toContain('Submission ID:');
     });
@@ -70,7 +82,7 @@ describe('performSlackyToolCall', () => {
         formId: '12345',
       });
 
-      expect(result).toContain('🔍 Sumo Logic Query Analysis');
+      expect(result).toContain('Sumo Logic Query Analysis');
       expect(result).toContain('Form ID: 12345');
       expect(result).not.toContain('Submission ID:');
     });
@@ -82,7 +94,7 @@ describe('performSlackyToolCall', () => {
         submissionId: '67890',
       });
 
-      expect(result).toContain('🔍 Sumo Logic Query Analysis');
+      expect(result).toContain('Sumo Logic Query Analysis');
       expect(result).not.toContain('Form ID:');
       expect(result).toContain('Submission ID: 67890');
     });
@@ -98,7 +110,7 @@ describe('performSlackyToolCall', () => {
         },
       );
 
-      expect(result).toContain('🔐 SSO Auto-fill Configuration Analysis');
+      expect(result).toContain('SSO Auto-fill Configuration Analysis');
       expect(result).toContain('Form ID: 12345');
       expect(result).toContain('Account ID: 98765');
       expect(result).toContain('SSO Auto-fill Troubleshooting');
@@ -115,12 +127,12 @@ describe('performSlackyToolCall', () => {
         },
       );
 
-      expect(result).toContain('📝 **Feedback Collected Successfully**');
+      expect(result).toContain('**Feedback Collected Successfully**');
       expect(result).toContain('**Category:** Conversation Quality');
       expect(result).toContain(
         '**Your Feedback:** "Great help with my form issue!"',
       );
-      expect(result).toContain('✨ Your feedback has been logged');
+      expect(result).toContain('Your feedback has been logged');
     });
 
     it('should handle feedback with service category', () => {
@@ -146,7 +158,7 @@ describe('performSlackyToolCall', () => {
 
       expect(result).toContain('**Category:** Feature Request');
       expect(result).toContain(
-        "💡 Great suggestion! I've logged this feature request",
+        "Great suggestion! I've logged this feature request",
       );
     });
 
@@ -160,7 +172,7 @@ describe('performSlackyToolCall', () => {
       );
 
       expect(result).toContain('**Category:** Bug Report');
-      expect(result).toContain("🐛 I've logged this as a bug report");
+      expect(result).toContain("I've logged this as a bug report");
     });
 
     it('should handle feedback with other category', () => {
@@ -212,10 +224,6 @@ describe('performSlackyToolCall', () => {
         throw new Error('Permission denied');
       });
 
-      const consoleSpy = jest
-        .spyOn(console, 'error')
-        .mockImplementation(() => {});
-
       const result = performSlackyToolCall(
         SlackyToolsEnum.CollectUserFeedback,
         {
@@ -224,13 +232,11 @@ describe('performSlackyToolCall', () => {
         },
       );
 
-      expect(consoleSpy).toHaveBeenCalledWith(
-        'Failed to log feedback:',
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        'Failed to log feedback',
         expect.any(Error),
       );
-      expect(result).toContain('📝 **Feedback Collected Successfully**');
-
-      consoleSpy.mockRestore();
+      expect(result).toContain('**Feedback Collected Successfully**');
     });
   });
 
@@ -242,7 +248,7 @@ describe('performSlackyToolCall', () => {
         comment: 'Excellent help!',
       });
 
-      expect(result).toContain('🌟 **Rating Received: +5/5**');
+      expect(result).toContain('**Rating Received: +5/5**');
       expect(result).toContain(
         '**Rating:** Nominate iStackBuddy for world peace prize',
       );
@@ -256,7 +262,7 @@ describe('performSlackyToolCall', () => {
         context: 'SSO assistance',
       });
 
-      expect(result).toContain('🌟 **Rating Received: +3/5**');
+      expect(result).toContain('**Rating Received: +3/5**');
       expect(result).toContain('**Rating:** Very helpful');
       expect(result).toContain("Thank you so much! I'm thrilled");
     });
@@ -267,7 +273,7 @@ describe('performSlackyToolCall', () => {
         context: 'General help',
       });
 
-      expect(result).toContain('👍 **Rating Received: +1/5**');
+      expect(result).toContain('**Rating Received: +1/5**');
       expect(result).toContain('**Rating:** A little helpful');
       expect(result).toContain('Thank you for the positive feedback!');
     });
@@ -278,7 +284,7 @@ describe('performSlackyToolCall', () => {
         context: 'Form issue',
       });
 
-      expect(result).toContain('😐 **Rating Received: +0/5**');
+      expect(result).toContain('**Rating Received: +0/5**');
       expect(result).toContain('**Rating:** Not good/not bad');
       expect(result).toContain(
         "Thank you for the honest feedback. I'll use this to understand",
@@ -291,7 +297,7 @@ describe('performSlackyToolCall', () => {
         context: 'Incorrect information',
       });
 
-      expect(result).toContain('👎 **Rating Received: -1/5**');
+      expect(result).toContain('**Rating Received: -1/5**');
       expect(result).toContain('**Rating:** Information had inaccuracies');
       expect(result).toContain(
         'Thank you for the honest feedback. I apologize',
@@ -304,7 +310,7 @@ describe('performSlackyToolCall', () => {
         context: 'Misleading help',
       });
 
-      expect(result).toContain('👎 **Rating Received: -2/5**');
+      expect(result).toContain('**Rating Received: -2/5**');
       expect(result).toContain('**Rating:** Misleading or just wrong');
     });
 
@@ -314,7 +320,7 @@ describe('performSlackyToolCall', () => {
         context: 'Terrible experience',
       });
 
-      expect(result).toContain('💥 **Rating Received: -5/5**');
+      expect(result).toContain('**Rating Received: -5/5**');
       expect(result).toContain('**Rating:** World War III bad');
     });
 
@@ -324,7 +330,7 @@ describe('performSlackyToolCall', () => {
         context: 'Great help',
       });
 
-      expect(result).toContain('🌟 **Rating Received: +4/5**');
+      expect(result).toContain('**Rating Received: +4/5**');
       expect(result).toContain('**Rating:** Excellent');
       expect(result).not.toContain('**Comment:**');
     });
@@ -335,7 +341,7 @@ describe('performSlackyToolCall', () => {
         context: 'Invalid rating',
       });
 
-      expect(result).toContain('❌ **Invalid Rating**');
+      expect(result).toContain('**Invalid Rating**');
       expect(result).toContain('Ratings must be between -5 and +5');
       expect(result).toContain('• -5: World War III bad');
       expect(result).toContain(
@@ -349,7 +355,7 @@ describe('performSlackyToolCall', () => {
         context: 'Invalid rating',
       });
 
-      expect(result).toContain('❌ **Invalid Rating**');
+      expect(result).toContain('**Invalid Rating**');
       expect(result).toContain('Ratings must be between -5 and +5');
     });
 
@@ -375,22 +381,16 @@ describe('performSlackyToolCall', () => {
         throw new Error('Permission denied');
       });
 
-      const consoleSpy = jest
-        .spyOn(console, 'error')
-        .mockImplementation(() => {});
-
       const result = performSlackyToolCall(SlackyToolsEnum.CollectUserRating, {
         rating: 3,
         context: 'Test rating',
       });
 
-      expect(consoleSpy).toHaveBeenCalledWith(
-        'Failed to log feedback:',
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        'Failed to log feedback',
         expect.any(Error),
       );
-      expect(result).toContain('🌟 **Rating Received: +3/5**');
-
-      consoleSpy.mockRestore();
+      expect(result).toContain('**Rating Received: +3/5**');
     });
   });
 

@@ -4,6 +4,7 @@ import {
   TConversationTextMessage,
 } from './types';
 import { OpenAI } from 'openai';
+import { CustomLoggerService } from '../common/logger/custom-logger.service';
 const OPEN_AI_API_KEY = '_OPEN_AI_KEY_';
 // OpenAI.Responses.Tool[]
 type OpenAiTool = OpenAI.Responses.Tool;
@@ -38,6 +39,8 @@ type TOpenAIFunctionCallRequest = {
 };
 
 class RobotChatOpenAI extends AbstractRobotChat {
+  private readonly logger = new CustomLoggerService('RobotChatOpenAI');
+
   public readonly version: string = '1.0.0-test-dev';
 
   public readonly LLModelName: string = 'o4-mini';
@@ -129,7 +132,11 @@ class RobotChatOpenAI extends AbstractRobotChat {
           call_id,
         } = toolCall;
 
-        console.log({ responseType, functionName, functionArgs });
+        this.logger.debug('OpenAI function call', {
+          responseType,
+          functionName,
+          functionArgs,
+        });
         const toolResult = this.makeToolCall(functionName, functionArgs);
         functionCallResponses.push(toolCall);
         functionCallResponses.push({
@@ -152,7 +159,7 @@ class RobotChatOpenAI extends AbstractRobotChat {
       store: true,
     });
 
-    console.log({ response2 });
+    this.logger.debug('OpenAI response', { response2 });
     // if (toolCall) {
     //   const toolName = toolCall.function.name;
     //   const toolArgs = JSON.parse(toolCall.function.arguments);

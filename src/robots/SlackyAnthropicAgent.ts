@@ -10,15 +10,18 @@ import {
   FsRestrictedApiRoutesEnum,
 } from './tool-definitions/marv';
 import { createCompositeToolSet } from './tool-definitions/toolCatalog';
+import { CustomLoggerService } from '../common/logger/custom-logger.service';
 
 /**
  * Slack-specific Anthropic Claude Chat Robot implementation
  * Specialized for Slack integration with comprehensive tool support
  */
 export class SlackyAnthropicAgent extends AbstractRobotChat {
+  private readonly logger = new CustomLoggerService('SlackyAnthropicAgent');
+
   constructor() {
     super();
-    console.log('SlackyAnthropicAgent constructor called - class loaded');
+    this.logger.log('SlackyAnthropicAgent constructor called - class loaded');
   }
 
   // Required properties from AbstractRobot
@@ -167,7 +170,7 @@ I'm backed by specialized knowledge bases depending on the channel:
 **Get Help:**
 \`@istack-buddy /help\` (shows this message)
 
-## 🎯 **Specialized Features:**
+## **Specialized Features:**
 
 • **Thread Support** - Works in channels and thread replies
 • **Context Aware** - Understands your troubleshooting context
@@ -209,7 +212,7 @@ I'm designed to help you solve Forms Core issues quickly and effectively. Just a
       );
       return typeof result === 'string' ? result : JSON.stringify(result);
     } catch (error) {
-      console.error(`Error executing tool ${toolName}:`, error);
+      this.logger.error(`Error executing tool ${toolName}`, error);
       return `Error executing tool ${toolName}: ${error instanceof Error ? error.message : 'Unknown error'}`;
     }
   }
@@ -483,18 +486,19 @@ I'm designed to help you solve Forms Core issues quickly and effectively. Just a
   ): Promise<string | null> {
     const trimmedMessage = message.trim();
 
-    // TEMPORARY DEBUG LOGGING
-    console.log('SLACK DEBUG - Direct command check:');
-    console.log('  Raw message:', JSON.stringify(message));
-    console.log('  Trimmed message:', JSON.stringify(trimmedMessage));
+    // Debug logging for direct command processing
+    this.logger.debug('Direct command check', {
+      rawMessage: message,
+      trimmedMessage: trimmedMessage,
+    });
 
     // Check for @istack-buddy /help pattern (supports both @istack-buddy and <@USERID> formats)
     const helpMatch = trimmedMessage.match(
       /(?:@istack-buddy|<@[^>]+>)\s+\/help(?:\s|$)/i,
     );
-    console.log('  Help regex result:', helpMatch ? 'MATCHED' : 'NO MATCH');
+    this.logger.debug('Help command check', { matched: !!helpMatch });
     if (helpMatch) {
-      console.log('  HELP COMMAND DETECTED');
+      this.logger.log('Help command detected');
       return this.getUserHelpText();
     }
 
@@ -502,12 +506,9 @@ I'm designed to help you solve Forms Core issues quickly and effectively. Just a
     const feedbackMatch = trimmedMessage.match(
       /(?:@istack-buddy|<@[^>]+>)\s+\/feedback\s+(.+)/i,
     );
-    console.log(
-      '  Feedback regex result:',
-      feedbackMatch ? 'MATCHED' : 'NO MATCH',
-    );
+    this.logger.debug('Feedback command check', { matched: !!feedbackMatch });
     if (feedbackMatch) {
-      console.log('  FEEDBACK COMMAND DETECTED');
+      this.logger.log('Feedback command detected');
       const feedbackContent = feedbackMatch[1].trim();
 
       // Call the feedback tool
@@ -519,7 +520,7 @@ I'm designed to help you solve Forms Core issues quickly and effectively. Just a
 
         return `Thank you for your feedback! We appreciate your input to help improve our service.`;
       } catch (error) {
-        console.error('Error processing feedback:', error);
+        this.logger.error('Error processing feedback', error);
         return `Thank you for your feedback! We appreciate your input to help improve our service.`;
       }
     }
@@ -528,9 +529,9 @@ I'm designed to help you solve Forms Core issues quickly and effectively. Just a
     const ratingMatch = trimmedMessage.match(
       /(?:@istack-buddy|<@[^>]+>)\s+\/rating\s+([+-]?\d+)(?:\s+(.+))?/i,
     );
-    console.log('  Rating regex result:', ratingMatch ? 'MATCHED' : 'NO MATCH');
+    this.logger.debug('Rating command check', { matched: !!ratingMatch });
     if (ratingMatch) {
-      console.log('  RATING COMMAND DETECTED');
+      this.logger.log('Rating command detected');
       const rating = parseInt(ratingMatch[1]);
       const comment = ratingMatch[2]?.trim() || '';
 
@@ -565,12 +566,12 @@ Ratings must be between -5 and +5. Please provide a rating in this range.
 
         return `Thank you for your rating of ${rating >= 0 ? '+' : ''}${rating}/5! We appreciate your feedback to help us improve our service.`;
       } catch (error) {
-        console.error('Error processing rating:', error);
+        this.logger.error('Error processing rating', error);
         return `Thank you for your rating! We appreciate your feedback to help us improve our service.`;
       }
     }
 
-    console.log('  NO DIRECT COMMANDS DETECTED - will go to Claude');
+    this.logger.debug('No direct commands detected - will go to Claude');
     return null;
   }
 
@@ -720,19 +721,19 @@ Ratings must be between -5 and +5. Please provide a rating in this range.
   ): Promise<TConversationTextMessageEnvelope> {
     const userMessage = messageEnvelope.envelopePayload.content.payload;
 
-    // TEMPORARY DEBUG LOGGING
-    console.log('MULTIPART DEBUG - acceptMessageMultiPartResponse called');
-    console.log('  User message content:', JSON.stringify(userMessage));
+    // Debug logging for multipart response processing
+    this.logger.debug('MultiPart response processing', {
+      userMessage: userMessage,
+    });
 
     // Check for direct feedback/rating commands FIRST (before needing API key)
     const directCommandResult =
       await this.handleDirectFeedbackCommands(userMessage);
-    console.log(
-      '  Direct command result:',
-      directCommandResult ? 'FOUND COMMAND' : 'NO COMMAND',
-    );
+    this.logger.debug('Direct command check result', {
+      hasDirectCommand: !!directCommandResult,
+    });
     if (directCommandResult) {
-      console.log('  RETURNING DIRECT COMMAND RESPONSE');
+      this.logger.log('Returning direct command response');
       return {
         messageId: `slacky-direct-multipart-${Date.now()}`,
         requestOrResponse: 'response',

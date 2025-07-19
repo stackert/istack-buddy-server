@@ -4,12 +4,14 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as cookieParser from 'cookie-parser';
 import * as dotenv from 'dotenv';
 import { json } from 'express';
+import { CustomLoggerService } from './common/logger/custom-logger.service';
 
 // Load environment variables from .env.live file (real keys for development/production)
 dotenv.config({ path: '.env.live' });
 
 export async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  const logger = new CustomLoggerService('Bootstrap');
 
   // Configure raw body parsing for Slack webhooks
   app.use(
@@ -71,11 +73,9 @@ export async function bootstrap() {
   const port = process.env.ISTACK_BUDDY_BACKEND_SERVER_HOST_PORT || 3500;
   await app.listen(port);
 
-  console.log(`🚀 iStack Buddy Server running on: http://localhost:${port}`);
-  console.log(
-    `📚 API Documentation available at: http://localhost:${port}/api`,
-  );
-  console.log(`🌐 CORS enabled for ALL origins (temporary)`);
+  logger.log(`iStack Buddy Server running on: http://localhost:${port}`);
+  logger.log(`API Documentation available at: http://localhost:${port}/api`);
+  logger.warn(`CORS enabled for ALL origins (temporary)`);
 }
 
 // Only run bootstrap if this file is executed directly (not imported)

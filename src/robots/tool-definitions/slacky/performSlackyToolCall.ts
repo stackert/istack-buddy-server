@@ -7,6 +7,7 @@ import type {
 import { SlackyToolsEnum } from './types';
 import * as fs from 'fs';
 import * as path from 'path';
+import { CustomLoggerService } from '../../../common/logger/custom-logger.service';
 
 /**
  * Handle collect user feedback tool
@@ -35,7 +36,7 @@ const handleCollectUserFeedback = (
     other: 'General Feedback',
   };
 
-  return `📝 **Feedback Collected Successfully**
+  return `**Feedback Collected Successfully**
 
 **Category:** ${categoryLabels[category]}
 **Your Feedback:** "${feedback}"
@@ -44,10 +45,10 @@ Thank you for taking the time to share your thoughts! Your feedback helps me imp
 
 ${
   category === 'bug_report'
-    ? "🐛 I've logged this as a bug report and will make sure the development team sees it."
+    ? "I've logged this as a bug report and will make sure the development team sees it."
     : category === 'feature_request'
-      ? "💡 Great suggestion! I've logged this feature request for the team to consider."
-      : '✨ Your feedback has been logged and will help improve the iStackBuddy experience.'
+      ? "Great suggestion! I've logged this feature request for the team to consider."
+      : 'Your feedback has been logged and will help improve the iStackBuddy experience.'
 }
 
 Is there anything else you'd like to share or any other way I can assist you?`;
@@ -61,7 +62,7 @@ const handleCollectUserRating = (toolArgs: ICollectUserRatingArgs): string => {
 
   // Validate rating range
   if (rating < -5 || rating > 5) {
-    return `❌ **Invalid Rating**
+    return `**Invalid Rating**
 
 Ratings must be between -5 and +5. Please provide a rating in this range.
 
@@ -104,18 +105,18 @@ Ratings must be between -5 and +5. Please provide a rating in this range.
   };
 
   const ratingDesc = getRatingDescription(rating);
-  const emoji =
+  const ratingPrefix =
     rating >= 3
-      ? '🌟'
+      ? 'Excellent'
       : rating >= 1
-        ? '👍'
+        ? 'Good'
         : rating === 0
-          ? '😐'
+          ? 'Neutral'
           : rating >= -2
-            ? '👎'
-            : '💥';
+            ? 'Poor'
+            : 'Very Poor';
 
-  return `${emoji} **Rating Received: ${rating >= 0 ? '+' : ''}${rating}/5**
+  return `**Rating Received: ${rating >= 0 ? '+' : ''}${rating}/5**
 
 **Context:** ${context}
 **Rating:** ${ratingDesc}
@@ -138,6 +139,7 @@ Your rating helps me learn and improve! Is there anything specific I can do bett
  * Log feedback/rating data to file
  */
 const logFeedback = (data: any): void => {
+  const logger = new CustomLoggerService('SlackyToolCall');
   try {
     // Ensure feedback directory exists
     const feedbackDir = path.join(
@@ -158,7 +160,7 @@ const logFeedback = (data: any): void => {
     // Write log entry
     fs.writeFileSync(filepath, JSON.stringify(data, null, 2));
   } catch (error) {
-    console.error('Failed to log feedback:', error);
+    logger.error('Failed to log feedback', error);
   }
 };
 
@@ -170,12 +172,12 @@ const handleSsoAutofillAssistance = (
 ): string => {
   const { formId, accountId } = toolArgs;
 
-  return `🔐 SSO Auto-fill Configuration Analysis
+  return `SSO Auto-fill Configuration Analysis
 
-📋 Form ID: ${formId}
-🏢 Account ID: ${accountId}
+Form ID: ${formId}
+Account ID: ${accountId}
 
-🔧 SSO Auto-fill Troubleshooting:
+SSO Auto-fill Troubleshooting:
 
 **Common Issues to Check:**
 • SSO provider configuration and field mappings
@@ -195,7 +197,7 @@ const handleSsoAutofillAssistance = (
 • Verify SAML/OIDC response contains expected attributes
 • Review form field names and auto-fill mappings
 
-💡 **What I can help with:**
+**What I can help with:**
 • Analyze specific error messages
 • Guide through configuration verification
 • Help troubleshoot field mapping issues
@@ -210,8 +212,8 @@ const handleSumoLogicQuery = (toolArgs: ISumoLogicQueryArgs): string => {
 
   // Build ID section conditionally
   const idSection = [
-    formId ? `📋 Form ID: ${formId}` : '',
-    submissionId ? `📄 Submission ID: ${submissionId}` : '',
+    formId ? `Form ID: ${formId}` : '',
+    submissionId ? `Submission ID: ${submissionId}` : '',
   ]
     .filter(Boolean)
     .join('\n');
@@ -231,17 +233,17 @@ const handleSumoLogicQuery = (toolArgs: ISumoLogicQueryArgs): string => {
 • System-wide performance metrics
 • Error trend analysis`;
 
-  return `🔍 Sumo Logic Query Analysis
+  return `Sumo Logic Query Analysis
 
-📅 Date Range: ${fromDate} to ${toDate}
+Date Range: ${fromDate} to ${toDate}
 ${idSection}
 
-📊 Query Results:
+Query Results:
 Based on the provided parameters, here's what I would help you analyze:
 
 ${analysisSection}
 
-💡 Next Steps:
+Next Steps:
 • I can help you craft specific Sumo Logic queries
 • Provide query syntax for your specific use case
 • Interpret results and identify patterns`;

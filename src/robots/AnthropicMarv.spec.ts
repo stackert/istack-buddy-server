@@ -200,7 +200,7 @@ describe('AnthropicMarv', () => {
       expect(mockPerformMarvToolCall).toHaveBeenCalledWith('formLiteAdd', {
         name: 'Test Form',
       });
-      expect(result).toContain('✅ formLiteAdd completed successfully');
+      expect(result).toContain('formLiteAdd completed successfully');
       expect(result).toContain('"id": "12345"');
       expect(result).toContain('"name": "Test Form"');
     });
@@ -218,7 +218,7 @@ describe('AnthropicMarv', () => {
         name: '',
       });
 
-      expect(result).toContain('❌ formLiteAdd failed');
+      expect(result).toContain('formLiteAdd failed');
       expect(result).toContain('Invalid form name, Missing required field');
     });
 
@@ -235,7 +235,7 @@ describe('AnthropicMarv', () => {
         fieldId: 'invalid',
       });
 
-      expect(result).toContain('❌ fieldRemove failed');
+      expect(result).toContain('fieldRemove failed');
       expect(result).toContain('Unknown error');
     });
 
@@ -249,7 +249,7 @@ describe('AnthropicMarv', () => {
         fieldType: 'text',
       });
 
-      expect(result).toContain('❌ Error executing fieldLiteAdd');
+      expect(result).toContain('Error executing fieldLiteAdd');
       expect(result).toContain('Network connection failed');
     });
 
@@ -263,7 +263,7 @@ describe('AnthropicMarv', () => {
         },
       );
 
-      expect(result).toContain('❌ Error executing fieldLogicStashCreate');
+      expect(result).toContain('Error executing fieldLogicStashCreate');
       expect(result).toContain('Unknown error');
     });
   });
@@ -367,7 +367,7 @@ describe('AnthropicMarv', () => {
         name: 'Test Form',
       });
       expect(chunkCallback).toHaveBeenCalledWith(
-        expect.stringContaining('✅ formLiteAdd completed successfully'),
+        expect.stringContaining('formLiteAdd completed successfully'),
       );
     });
 
@@ -466,7 +466,7 @@ describe('AnthropicMarv', () => {
       );
 
       expect(chunkCallback).toHaveBeenCalledWith(
-        expect.stringContaining('❌ Error executing fieldRemove'),
+        expect.stringContaining('Error executing fieldRemove'),
       );
     });
 
@@ -534,7 +534,7 @@ describe('AnthropicMarv', () => {
         'Let me create that form for you. ',
       );
       expect(chunkCallback).toHaveBeenCalledWith(
-        expect.stringContaining('✅ formLiteAdd completed successfully'),
+        expect.stringContaining('formLiteAdd completed successfully'),
       );
       expect(chunkCallback).toHaveBeenCalledWith('Form created successfully!');
     });
@@ -606,7 +606,7 @@ describe('AnthropicMarv', () => {
         "I'll create that form for you.",
       );
       expect(result.envelopePayload.content.payload).toContain(
-        '✅ formLiteAdd completed successfully',
+        'formLiteAdd completed successfully',
       );
       expect(result.envelopePayload.content.payload).toContain('"id": "98765"');
     });
@@ -634,7 +634,7 @@ describe('AnthropicMarv', () => {
         await marv.acceptMessageImmediateResponse(mockMessageEnvelope);
 
       expect(result.envelopePayload.content.payload).toContain(
-        '❌ fieldLiteAdd failed',
+        'fieldLiteAdd failed',
       );
       expect(result.envelopePayload.content.payload).toContain(
         'Form not found, Invalid field type',
@@ -662,7 +662,7 @@ describe('AnthropicMarv', () => {
         await marv.acceptMessageImmediateResponse(mockMessageEnvelope);
 
       expect(result.envelopePayload.content.payload).toContain(
-        '❌ Error executing fieldLogicStashApply: Logic stash not found',
+        'Error executing fieldLogicStashApply: Logic stash not found',
       );
     });
 
@@ -708,10 +708,10 @@ describe('AnthropicMarv', () => {
         'Creating form and adding field...',
       );
       expect(result.envelopePayload.content.payload).toContain(
-        '✅ formLiteAdd completed successfully',
+        'formLiteAdd completed successfully',
       );
       expect(result.envelopePayload.content.payload).toContain(
-        '✅ fieldLiteAdd completed successfully',
+        'fieldLiteAdd completed successfully',
       );
       expect(mockPerformMarvToolCall).toHaveBeenCalledTimes(2);
     });
@@ -1018,7 +1018,7 @@ describe('AnthropicMarv', () => {
         'Creating form with logic... ',
       );
       expect(chunkCallback).toHaveBeenCalledWith(
-        expect.stringContaining('✅ formLiteAdd completed successfully'),
+        expect.stringContaining('formLiteAdd completed successfully'),
       );
       expect(mockPerformMarvToolCall).toHaveBeenCalledWith('formLiteAdd', {
         name: 'Complex Form',

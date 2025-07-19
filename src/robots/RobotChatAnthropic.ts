@@ -3,13 +3,15 @@ import type { TConversationTextMessageEnvelope } from './types';
 import { IConversationMessage } from '../chat-manager/interfaces/message.interface';
 import { UserRole } from '../chat-manager/dto/create-message.dto';
 import Anthropic from '@anthropic-ai/sdk';
-//import { slackyToolSet } from './tool-definitions/RobotChatAnthropicTools';
 import { anthropicToolSet } from './tool-definitions/toolCatalog';
+import { CustomLoggerService } from '../common/logger/custom-logger.service';
 /**
  * Anthropic Claude Chat Robot implementation
  * Connects to Anthropic's API for real chat functionality with tool support
  */
 export class RobotChatAnthropic extends AbstractRobotChat {
+  private readonly logger = new CustomLoggerService('RobotChatAnthropic');
+
   // Required properties from AbstractRobot
   public readonly contextWindowSizeInTokens: number = 200000;
   public readonly LLModelName: string = 'claude-3-5-sonnet-20241022';
@@ -146,19 +148,18 @@ Please provide helpful, accurate, and detailed responses to user questions. If y
     toolName: string,
     toolArgs: any,
   ): Promise<string> {
-    console.log(`🔧 Executing tool: ${toolName} with args:`, toolArgs);
+    this.logger.debug(`Executing tool: ${toolName}`, { toolArgs });
     try {
       const result = anthropicToolSet.executeToolCall(toolName, toolArgs);
       const finalResult = typeof result === 'string' ? result : await result;
-      console.log(
-        `Tool ${toolName} executed successfully. Result type:`,
-        typeof finalResult,
-      );
+      this.logger.debug(`Tool ${toolName} executed successfully`, {
+        resultType: typeof finalResult,
+      });
       const jsonResult = JSON.stringify(finalResult, null, 2);
-      console.log(`📄 Complete tool result:`, jsonResult);
+      this.logger.debug(`Complete tool result`, { result: jsonResult });
       return jsonResult;
     } catch (error) {
-      console.error(`❌ Tool ${toolName} execution failed:`, error);
+      this.logger.error(`Tool ${toolName} execution failed`, error);
       return `Error executing tool ${toolName}: ${error instanceof Error ? error.message : 'Unknown error'}`;
     }
   }
@@ -264,40 +265,45 @@ Please provide helpful, accurate, and detailed responses to user questions. If y
         }
       }
 
-      console.log(
-        `📝 Initial robot response text (${responseText.length} chars):`,
-        responseText,
+      this.logger.debug(
+        `Initial robot response text (${responseText.length} chars)`,
+        {
+          responseText:
+            responseText.substring(0, 200) +
+            (responseText.length > 200 ? '...' : ''),
+        },
       );
-      console.log(`🔧 Found ${toolUses.length} tool calls to execute`);
+      this.logger.debug(`Found ${toolUses.length} tool calls to execute`);
 
       // Execute any tool calls
       for (const toolUse of toolUses) {
-        console.log(`\n🎯 === TOOL CALL ${toolUse.name} ===`);
-        console.log(`📥 Tool input:`, JSON.stringify(toolUse.input, null, 2));
+        this.logger.debug(`=== TOOL CALL ${toolUse.name} ===`);
+        this.logger.debug(`Tool input`, { input: toolUse.input });
 
         try {
           const toolResult = await this.executeToolCall(
             toolUse.name,
             toolUse.input,
           );
-          console.log(
-            `📤 Tool result (${toolResult.length} chars):`,
-            toolResult,
-          );
+          this.logger.debug(`Tool result (${toolResult.length} chars)`, {
+            toolResult:
+              toolResult.substring(0, 200) +
+              (toolResult.length > 200 ? '...' : ''),
+          });
           responseText += `\n\n${toolResult}`;
         } catch (error) {
           const errorMsg = `Error executing tool ${toolUse.name}: ${error instanceof Error ? error.message : 'Unknown error'}`;
-          console.log(`❌ Tool execution error:`, errorMsg);
+          this.logger.error(`Tool execution error: ${errorMsg}`);
           responseText += `\n\n${errorMsg}`;
         }
-        console.log(`🏁 === END TOOL CALL ${toolUse.name} ===\n`);
+        this.logger.debug(`=== END TOOL CALL ${toolUse.name} ===`);
       }
 
-      console.log(
-        `📋 Final robot response (${responseText.length} chars):`,
-        responseText.substring(0, 500) +
-          (responseText.length > 500 ? '...' : ''),
-      );
+      this.logger.debug(`Final robot response (${responseText.length} chars)`, {
+        responseText:
+          responseText.substring(0, 200) +
+          (responseText.length > 200 ? '...' : ''),
+      });
 
       // Create response envelope
       const responseEnvelope: TConversationTextMessageEnvelope = {

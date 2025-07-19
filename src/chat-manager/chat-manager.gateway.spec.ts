@@ -10,6 +10,18 @@ import {
 } from './dto/create-message.dto';
 import { Server, Socket } from 'socket.io';
 
+// Mock the CustomLoggerService
+const mockLogger = {
+  debug: jest.fn(),
+  log: jest.fn(),
+  error: jest.fn(),
+  warn: jest.fn(),
+};
+
+jest.mock('../common/logger/custom-logger.service', () => ({
+  CustomLoggerService: jest.fn().mockImplementation(() => mockLogger),
+}));
+
 describe('ChatManagerGateway', () => {
   let gateway: ChatManagerGateway;
   let service: ChatManagerService;
@@ -68,25 +80,21 @@ describe('ChatManagerGateway', () => {
 
   describe('handleConnection', () => {
     it('should log client connection', () => {
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
-
       gateway.handleConnection(mockSocket);
 
-      expect(consoleSpy).toHaveBeenCalledWith('Client connected: socket-123');
-      consoleSpy.mockRestore();
+      expect(mockLogger.log).toHaveBeenCalledWith(
+        'Client connected: socket-123',
+      );
     });
   });
 
   describe('handleDisconnect', () => {
     it('should log client disconnection', () => {
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
-
       gateway.handleDisconnect(mockSocket);
 
-      expect(consoleSpy).toHaveBeenCalledWith(
+      expect(mockLogger.log).toHaveBeenCalledWith(
         'Client disconnected: socket-123',
       );
-      consoleSpy.mockRestore();
     });
   });
 
@@ -398,42 +406,32 @@ describe('ChatManagerGateway', () => {
 
   describe('handleJoinDashboard', () => {
     it('should handle join dashboard successfully', async () => {
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
-
       const result = await gateway.handleJoinDashboard(mockSocket);
 
       expect(mockSocket.join).toHaveBeenCalledWith('dashboard');
-      expect(consoleSpy).toHaveBeenCalledWith(
+      expect(mockLogger.log).toHaveBeenCalledWith(
         'Client socket-123 joining dashboard',
       );
       expect(result).toEqual({
         success: true,
         message: 'Joined dashboard room',
       });
-
-      consoleSpy.mockRestore();
     });
 
     it('should handle join dashboard errors', async () => {
       const error = new Error('Join failed');
       mockSocket.join.mockRejectedValue(error);
 
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
-      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
-
       const result = await gateway.handleJoinDashboard(mockSocket);
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        'Error joining dashboard:',
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        'Error joining dashboard',
         error,
       );
       expect(result).toEqual({
         success: false,
         error: 'Failed to join dashboard',
       });
-
-      consoleSpy.mockRestore();
-      consoleErrorSpy.mockRestore();
     });
   });
 
