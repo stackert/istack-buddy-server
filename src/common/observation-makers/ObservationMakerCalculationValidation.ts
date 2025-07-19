@@ -1,9 +1,5 @@
 import {
   ObservationMakers,
-  // TreeCalculations,
-  //   TreeVisibility,
-  // TreeSystems,
-  Models,
   TreeUtilities,
   EObservationSubjectType,
   ALL_KNOWN_FS_FIELD_TYPES,

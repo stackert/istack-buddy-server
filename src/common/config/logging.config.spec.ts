@@ -1,4 +1,4 @@
-import { getLoggingConfig, LoggingConfig } from './logging.config';
+import { getLoggingConfig } from './logging.config';
 
 describe('Logging Configuration', () => {
   let originalEnv: string | undefined;

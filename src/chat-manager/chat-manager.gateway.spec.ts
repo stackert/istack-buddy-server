@@ -8,7 +8,6 @@ import {
   UserRole,
   MessageType,
 } from './dto/create-message.dto';
-import { JoinRoomDto } from './dto/join-room.dto';
 import { Server, Socket } from 'socket.io';
 
 describe('ChatManagerGateway', () => {

@@ -1,10 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { Logger } from '@nestjs/common';
-import {
-  CustomLoggerService,
-  LogContext,
-  StructuredLogEntry,
-} from './custom-logger.service';
+import { CustomLoggerService, LogContext } from './custom-logger.service';
 
 describe('CustomLoggerService', () => {
   let service: CustomLoggerService;

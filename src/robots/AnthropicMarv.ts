@@ -153,7 +153,7 @@ Your goal is to help users efficiently manage their Formstack forms through thes
         stream: true,
       });
 
-      let toolUseBlocks: any[] = [];
+      const toolUseBlocks: any[] = [];
       let currentToolUse: any = null;
 
       for await (const chunk of stream) {

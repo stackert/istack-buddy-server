@@ -2,7 +2,6 @@ import {
   ObservationMakers,
   TreeUtilities,
   EObservationSubjectType,
-  ALL_KNOWN_FS_FIELD_TYPES,
   ELogLevel,
   // LogLevel,
 } from 'istack-buddy-utilities';
@@ -12,9 +11,7 @@ import type {
   IObservationResult,
   IObservationLogItem,
   IFsModelForm,
-  TFsFieldType,
   IFsModelField,
-  FsFieldVisibilityNode,
   TFsVisibilityErrorNode,
 } from 'istack-buddy-utilities';
 

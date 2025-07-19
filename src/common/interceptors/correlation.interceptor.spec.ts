@@ -1,8 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { CorrelationInterceptor } from './correlation.interceptor';
 import { ExecutionContext, CallHandler } from '@nestjs/common';
-import { Observable, of } from 'rxjs';
-import { Request, Response } from 'express';
+import { of } from 'rxjs';
+import { Response } from 'express';
 
 // Mock uuid to have predictable test results
 jest.mock('uuid', () => ({

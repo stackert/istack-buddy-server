@@ -2,8 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { LoggingInterceptor } from './logging.interceptor';
 import { CustomLoggerService } from '../logger/custom-logger.service';
 import { ExecutionContext, CallHandler } from '@nestjs/common';
-import { Observable, of, throwError } from 'rxjs';
-import { Request, Response } from 'express';
+import { of, throwError } from 'rxjs';
+import { Response } from 'express';
 
 describe('LoggingInterceptor', () => {
   let interceptor: LoggingInterceptor;

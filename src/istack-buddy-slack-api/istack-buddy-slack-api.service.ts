@@ -5,7 +5,6 @@ import { v4 as uuidv4 } from 'uuid';
 import { ChatManagerService } from '../chat-manager/chat-manager.service';
 import { MessageType, UserRole } from '../chat-manager/dto/create-message.dto';
 import { TConversationTextMessageEnvelope } from '../robots/types';
-import type { IConversationMessage } from '../chat-manager';
 
 // Interface for storing Slack conversation mapping and callback
 interface TSlackInterfaceRecord {

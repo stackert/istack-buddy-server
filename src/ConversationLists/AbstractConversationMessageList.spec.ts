@@ -24,8 +24,6 @@
 
 import { AbstractConversationMessageList } from './AbstractConversationMessageList';
 import type {
-  TConversationListMessage,
-  TConversationMessageEnvelope,
   TConversationTextMessage,
   TConversationTextMessageEnvelope,
   TConversationMessageContentString,

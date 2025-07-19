@@ -1,6 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { writeFileSync } from 'fs';
-import { join } from 'path';
 import { createHash } from 'crypto';
 import {
   CreateMessageDto,
@@ -19,11 +17,7 @@ import {
 import { v4 as uuidv4 } from 'uuid';
 import { ConversationListSlackAppService } from '../ConversationLists/ConversationListSlackAppService';
 import { ChatConversationListService } from '../ConversationLists/ChatConversationListService';
-import {
-  TConversationMessageEnvelope,
-  TConversationTextMessage,
-  TConversationTextMessageEnvelope,
-} from '../ConversationLists/types';
+import { TConversationTextMessageEnvelope } from '../ConversationLists/types';
 
 @Injectable()
 export class ChatManagerService {

@@ -1,9 +1,5 @@
 import {
   ObservationMakers,
-  // TreeCalculations,
-  //   TreeVisibility,
-  // TreeSystems,
-  Models,
   TreeUtilities,
   EObservationSubjectType,
   ALL_KNOWN_FS_FIELD_TYPES,
@@ -83,7 +79,7 @@ class ObservationMakerFieldCounts extends ObservationMakers.AbstractObservationM
   async makeObservation(
     context: IObservationContext,
   ): Promise<IObservationResult> {
-    let isObservationTrue = false;
+    const isObservationTrue = false;
     const logItems: IObservationLogItem[] = [];
     const uniqueLabel: Record<string, string[]> = {};
     const formModel: IFsModelForm = context.resources.formModel;

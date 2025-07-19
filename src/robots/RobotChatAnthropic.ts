@@ -179,7 +179,7 @@ Please provide helpful, accurate, and detailed responses to user questions. If y
         stream: true,
       });
 
-      let toolUseBlocks: any[] = [];
+      const toolUseBlocks: any[] = [];
       let currentToolUse: any = null;
 
       for await (const chunk of stream) {
