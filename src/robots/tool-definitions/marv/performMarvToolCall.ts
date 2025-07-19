@@ -1,4 +1,4 @@
-import { FsApiClient } from './fsApiClient';
+import { MarvService } from './marvService';
 import { IMarvApiUniversalResponse, FsRestrictedApiRoutesEnum } from '.';
 
 // Main function to handle external API calls from the robot
@@ -6,7 +6,9 @@ const performMarvToolCall = async (
   functionName: string,
   functionParametersJson?: any,
 ): Promise<IMarvApiUniversalResponse<any>> => {
-  const api = new FsApiClient();
+  const marvService = new MarvService(
+    new (await import('./fsApiClient')).FsApiClient(),
+  );
 
   // Parse function parameters
   const fnParamsJson =
@@ -18,7 +20,7 @@ const performMarvToolCall = async (
   // Handle all functions through the enum-based switch
   switch (functionName as FsRestrictedApiRoutesEnum) {
     case FsRestrictedApiRoutesEnum.FieldRemove:
-      return api.fieldRemove(fnParamsJson?.fieldId);
+      return marvService.fieldRemove(fnParamsJson?.fieldId);
 
     case FsRestrictedApiRoutesEnum.FormLiteAdd: {
       // Only apply defaults for FormLiteAdd
@@ -28,7 +30,10 @@ const performMarvToolCall = async (
         ...fnParamsJson,
       };
       const { formName, fields } = parameters;
-      const formLiteAddResponse = await api.formLiteAdd(formName, fields);
+      const formLiteAddResponse = await marvService.formLiteAdd(
+        formName,
+        fields,
+      );
 
       if (helpers.isSuccessfulResponse(formLiteAddResponse)) {
         return formLiteAddResponse;
@@ -42,44 +47,44 @@ const performMarvToolCall = async (
     }
 
     case FsRestrictedApiRoutesEnum.FieldLabelUniqueSlugAdd:
-      return api.fieldLabelUniqueSlugAdd(fnParamsJson?.formId);
+      return marvService.fieldLabelUniqueSlugAdd(fnParamsJson?.formId);
 
     case FsRestrictedApiRoutesEnum.FieldLabelUniqueSlugRemove:
-      return api.fieldLabelUniqueSlugRemove(fnParamsJson?.formId);
+      return marvService.fieldLabelUniqueSlugRemove(fnParamsJson?.formId);
 
     case FsRestrictedApiRoutesEnum.FieldLiteAdd:
-      return api.fieldLiteAdd(
+      return marvService.fieldLiteAdd(
         fnParamsJson?.formId,
         fnParamsJson?.fields || fnParamsJson,
       );
 
     case FsRestrictedApiRoutesEnum.FieldLogicRemove:
-      return api.fieldLogicRemove(fnParamsJson?.formId);
+      return marvService.fieldLogicRemove(fnParamsJson?.formId);
 
     case FsRestrictedApiRoutesEnum.FieldLogicStashApply:
-      return api.fieldLogicStashApply(fnParamsJson?.formId);
+      return marvService.fieldLogicStashApply(fnParamsJson?.formId);
 
     case FsRestrictedApiRoutesEnum.FieldLogicStashApplyAndRemove:
-      return api.fieldLogicStashApplyAndRemove(fnParamsJson?.formId);
+      return marvService.fieldLogicStashApplyAndRemove(fnParamsJson?.formId);
 
     case FsRestrictedApiRoutesEnum.FieldLogicStashCreate:
       console.log({ fieldLogicStashCreate: fnParamsJson });
-      return api.fieldLogicStashCreate(fnParamsJson?.formId);
+      return marvService.fieldLogicStashCreate(fnParamsJson?.formId);
 
     case FsRestrictedApiRoutesEnum.FieldLogicStashRemove:
-      return api.fieldLogicStashRemove(fnParamsJson?.formId);
+      return marvService.fieldLogicStashRemove(fnParamsJson?.formId);
 
     case FsRestrictedApiRoutesEnum.FormDeveloperAdd:
-      return api.formDeveloperCopy(fnParamsJson?.formId);
+      return marvService.formDeveloperCopy(fnParamsJson?.formId);
 
     case FsRestrictedApiRoutesEnum.FormAndRelatedEntityOverview:
-      return api.formAndRelatedEntityOverview(fnParamsJson?.formId);
+      return marvService.formAndRelatedEntityOverview(fnParamsJson?.formId);
 
     case FsRestrictedApiRoutesEnum.FormLogicValidation:
-      return api.formLogicValidation(fnParamsJson?.formId);
+      return marvService.formLogicValidation(fnParamsJson?.formId);
 
     case FsRestrictedApiRoutesEnum.FormCalculationValidation:
-      return api.formCalculationValidation(fnParamsJson?.formId);
+      return marvService.formCalculationValidation(fnParamsJson?.formId);
   }
   // No default - let other tool catalogs handle unknown tools
 };

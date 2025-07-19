@@ -7,12 +7,7 @@ import type {
   IFormAndRelatedEntityOverview,
 } from './types';
 
-import { ObservationMakerLogicValidation } from '../../../common/observation-makers/ObservationMakerLogicValidation';
-import { ObservationMakerCalculationValidation } from '../../../common/observation-makers/ObservationMakerCalculationValidation';
-import { Models } from 'istack-buddy-utilities';
-import type { IObservationResult } from 'istack-buddy-utilities';
-
-// Real API client for Formstack operations - NO MOCKS
+// Focused API client for Formstack operations - NO MOCKS
 export class FsApiClient {
   private apiKey: string;
   private static readonly API_ROOT = 'https://www.formstack.com/api/v2';
@@ -29,9 +24,7 @@ export class FsApiClient {
 
   // Force refresh API key from environment variable
   refreshApiKeyFromEnvironment(): FsApiClient {
-    const oldApiKey = this.apiKey;
     this.apiKey = process.env.CORE_FORMS_API_V2_KEY || '';
-
     return this;
   }
 
@@ -99,151 +92,27 @@ export class FsApiClient {
     }
   }
 
-  // Get form field JSON from Formstack API
-  private async getFormFieldJson(formId: string): Promise<TFsFieldJson[]> {
-    const response = await this.makeRequest<{ fields: TFsFieldJson[] }>(
-      `/form/${formId}.json`,
-    );
-    if (response.isSuccess && response.response) {
-      return response.response.fields || [];
-    }
-    throw new Error(
-      `Failed to get form fields: ${response.errorItems?.join(', ')}`,
-    );
-  }
+  // ===== BASIC API OPERATIONS =====
 
-  // Check if form is Marv enabled
-  private async isFormMarvEnabled(formId: string): Promise<boolean> {
-    try {
-      const fields = await this.getFormFieldJson(formId);
-      const marvEnabledField = fields.find(
-        (field) => field.label === 'MARV_ENABLED',
-      );
-      return !!marvEnabledField;
-    } catch (error) {
-      return false;
-    }
-  }
-
-  // Create logic stash string from fields with logic
-  private stringifyLogicStashString(fieldsWithLogic: TFsFieldJson[]): string {
-    const allFieldLogic = fieldsWithLogic.reduce(
-      (acc, field) => {
-        acc[field.id] = field.logic;
-        return acc;
-      },
-      {} as Record<string, any>,
-    );
-
-    const logicAsBase64 = btoa(JSON.stringify(allFieldLogic));
-    const logic = {
-      base64: logicAsBase64,
-    };
-
-    return JSON.stringify(logic);
-  }
-
-  // Parse logic stash string from base64
-  private parseLogicStashString(logicStashString: string): Record<string, any> {
-    const logicEnvelope = JSON.parse(logicStashString);
-    const logicStash = JSON.parse(atob(logicEnvelope.base64));
-    return logicStash;
-  }
-
-  // Get the logic stash field from the form
-  private async getLogicStashField(formId: string): Promise<TFsFieldJson> {
-    const fields = await this.getFormFieldJson(formId);
-    const logicStashFields = fields.filter(
-      (field) => field.label === 'MARV_LOGIC_STASH',
-    );
-
-    if (logicStashFields.length === 0) {
-      throw new Error('No logic stash field found');
-    }
-
-    // Return the most recent one (biggest field.id)
-    return logicStashFields.reduce((latest, field) => {
-      return parseInt(field.id) > parseInt(latest.id) ? field : latest;
-    });
-  }
-
-  // Update a field's logic
-  private async updateFieldLogic(
-    fieldId: string,
-    logic: any,
-  ): Promise<IMarvApiUniversalResponse<any>> {
-    return this.makeRequest(`/field/${fieldId}`, 'PUT', {
-      logic: logic,
-    });
-  }
-
-  // Delete a field
-  private async deleteField(
-    fieldId: string,
-  ): Promise<IMarvApiUniversalResponse<any>> {
-    return this.makeRequest(`/field/${fieldId}`, 'DELETE');
-  }
-
-  // REAL API IMPLEMENTATIONS
-
-  async fieldLogicStashCreate(
+  // Get form JSON from Formstack API
+  async getFormJson(
     formId: string,
-  ): Promise<IMarvApiUniversalResponse<TFsFieldJson>> {
-    
-
-    // Check if form is Marv enabled
-    const isMarvEnabled = await this.isFormMarvEnabled(formId);
-    if (!isMarvEnabled) {
-      return {
-        isSuccess: false,
-        response: null,
-        errorItems: ['Form is not Marv enabled'],
-      };
-    }
-
-    // Get fields with logic
-    const allFields = await this.getFormFieldJson(formId);
-    const fieldsWithLogicJson = allFields.filter((field) => field.logic);
-
-    
-
-    if (fieldsWithLogicJson.length === 0) {
-      return {
-        isSuccess: false,
-        response: null,
-        errorItems: ['No fields with logic found on this form'],
-      };
-    }
-
-    // Create logic stash string
-    const logicStashString =
-      this.stringifyLogicStashString(fieldsWithLogicJson);
-
-    
-
-    // Create the logic stash field
-    const createResponse = await this.makeRequest<TFsFieldJson>(
-      `/form/${formId}/field.json`,
-      'POST',
-      {
-        field_type: 'text',
-        hidden: true,
-        default_value: logicStashString,
-        default: logicStashString,
-        label: 'MARV_LOGIC_STASH',
-      },
-    );
-
-    if (createResponse.isSuccess) {
-    }
-
-    return createResponse;
+  ): Promise<IMarvApiUniversalResponse<TFsFormJson>> {
+    return this.makeRequest<TFsFormJson>(`/form/${formId}.json`);
   }
 
-  async formLiteAdd(
+  // Get form fields JSON from Formstack API
+  async getFormFieldsJson(
+    formId: string,
+  ): Promise<IMarvApiUniversalResponse<{ fields: TFsFieldJson[] }>> {
+    return this.makeRequest<{ fields: TFsFieldJson[] }>(`/form/${formId}.json`);
+  }
+
+  // Create a new form
+  async postForm(
     formName: string,
     fields: IAddFsLiteFieldProps[],
-  ): Promise<IMarvApiUniversalResponse<TFsLiteFormAddResponse>> {
+  ): Promise<IMarvApiUniversalResponse<TFsFormJson>> {
     const sanitizedFields = fields.map((field) => ({
       label: field.label,
       field_type: field.field_type,
@@ -251,652 +120,97 @@ export class FsApiClient {
       require: field.isRequired ? '1' : '0',
     }));
 
-    const response = await this.makeRequest<TFsFormJson>('/form.json', 'POST', {
+    return this.makeRequest<TFsFormJson>('/form.json', 'POST', {
       name: formName,
       fields: sanitizedFields,
     });
-
-    if (response.isSuccess && response.response) {
-      const formJson = response.response;
-      return {
-        isSuccess: true,
-        response: {
-          editUrl: formJson.edit_url,
-          viewUrl: formJson.url,
-          formId: formJson.id,
-          isSuccess: true,
-        },
-        errorItems: null,
-      };
-    }
-
-    return {
-      isSuccess: false,
-      response: null,
-      errorItems: response.errorItems,
-    };
   }
 
-  async fieldLiteAdd(
+  // Create a new field
+  async postField(
     formId: string,
-    properties: IAddFsLiteFieldProps,
-  ): Promise<
-    IMarvApiUniversalResponse<{ fieldId: string; fieldJson: TFsFieldJson }>
-  > {
-    const response = await this.makeRequest<TFsFieldJson>(
+    fieldData: any,
+  ): Promise<IMarvApiUniversalResponse<TFsFieldJson>> {
+    return this.makeRequest<TFsFieldJson>(
       `/form/${formId}/field.json`,
       'POST',
-      {
-        field_type: properties.field_type,
-        label: properties.label,
-        hidden: properties.isHidden ? '1' : '0',
-        require: properties.isRequired ? '1' : '0',
-      },
+      fieldData,
     );
-
-    if (response.isSuccess && response.response) {
-      return {
-        isSuccess: true,
-        response: {
-          fieldId: response.response.id,
-          fieldJson: response.response,
-        },
-        errorItems: null,
-      };
-    }
-
-    return {
-      isSuccess: false,
-      response: null,
-      errorItems: response.errorItems,
-    };
   }
 
-  // Create unique slug for a field (last 4 digits of field ID)
-  private fieldJsonToUniqueLabelSlug(field: TFsFieldJson): string {
-    return `|${(field.id || '').slice(-4)}|`;
+  // Update a field
+  async putField(
+    fieldId: string,
+    fieldData: any,
+  ): Promise<IMarvApiUniversalResponse<TFsFieldJson>> {
+    return this.makeRequest<TFsFieldJson>(
+      `/field/${fieldId}`,
+      'PUT',
+      fieldData,
+    );
   }
 
-  // Remove slug from a field label
-  private labelWithoutSlug(field: TFsFieldJson): string {
-    const slug = this.fieldJsonToUniqueLabelSlug(field).replace(/\|/g, `\\|`);
-    const slugRegExp = new RegExp(slug, 'g');
-    const cleanedLabel = (field.label || '').replace(slugRegExp, '');
-    return cleanedLabel;
+  // Update field logic specifically
+  async putFieldLogic(
+    fieldId: string,
+    logic: any,
+  ): Promise<IMarvApiUniversalResponse<TFsFieldJson>> {
+    return this.makeRequest<TFsFieldJson>(`/field/${fieldId}`, 'PUT', {
+      logic,
+    });
   }
 
-  async fieldLabelUniqueSlugAdd(
-    formId: string,
-  ): Promise<IMarvApiUniversalResponse<{ isSuccessful: boolean }>> {
-    
-
-    try {
-      // Check if form is Marv enabled
-      const isMarvEnabled = await this.isFormMarvEnabled(formId);
-      if (!isMarvEnabled) {
-        return {
-          isSuccess: false,
-          response: { isSuccessful: false },
-          errorItems: ['Form is not Marv enabled'],
-        };
-      }
-
-      // Get all fields
-      const fields = await this.getFormFieldJson(formId);
-      
-
-      let successCount = 0;
-      let errors: string[] = [];
-
-      // Update each field with unique slug
-      for (const field of fields) {
-        const slug = this.fieldJsonToUniqueLabelSlug(field);
-        const newLabel = slug + field.label;
-
-        const result = await this.makeRequest(`/field/${field.id}`, 'PUT', {
-          label: newLabel,
-        });
-
-        if (result.isSuccess) {
-          successCount++;
-        } else {
-          errors.push(
-            `Failed to add slug to field ${field.id}: ${result.errorItems?.join(', ')}`,
-          );
-        }
-      }
-
-
-      return {
-        isSuccess: errors.length === 0,
-        response: { isSuccessful: errors.length === 0 },
-        errorItems: errors.length > 0 ? errors : null,
-      };
-    } catch (error) {
-      return {
-        isSuccess: false,
-        response: { isSuccessful: false },
-        errorItems: [error instanceof Error ? error.message : 'Unknown error'],
-      };
-    }
+  // Delete a field
+  async deleteField(fieldId: string): Promise<IMarvApiUniversalResponse<any>> {
+    return this.makeRequest(`/field/${fieldId}`, 'DELETE');
   }
 
-  async fieldLabelUniqueSlugRemove(
-    formId: string,
-  ): Promise<IMarvApiUniversalResponse<{ isSuccessful: boolean }>> {
-    
-
-    try {
-      // Check if form is Marv enabled
-      const isMarvEnabled = await this.isFormMarvEnabled(formId);
-      if (!isMarvEnabled) {
-        return {
-          isSuccess: false,
-          response: { isSuccessful: false },
-          errorItems: ['Form is not Marv enabled'],
-        };
-      }
-
-      // Get all fields
-      const fields = await this.getFormFieldJson(formId);
-      
-
-      let successCount = 0;
-      let errors: string[] = [];
-
-      // Update each field to remove slug
-      for (const field of fields) {
-        const cleanedLabel = this.labelWithoutSlug(field);
-
-        // Only update if the label actually changed (had a slug)
-        if (cleanedLabel !== field.label) {
-          const result = await this.makeRequest(`/field/${field.id}`, 'PUT', {
-            label: cleanedLabel,
-          });
-
-          if (result.isSuccess) {
-            successCount++;
-          } else {
-            errors.push(
-              `Failed to remove slug from field ${field.id}: ${result.errorItems?.join(', ')}`,
-            );
-          }
-        } else {
-        }
-      }
-
-      
-
-      return {
-        isSuccess: errors.length === 0,
-        response: { isSuccessful: errors.length === 0 },
-        errorItems: errors.length > 0 ? errors : null,
-      };
-    } catch (error) {
-      return {
-        isSuccess: false,
-        response: { isSuccessful: false },
-        errorItems: [error instanceof Error ? error.message : 'Unknown error'],
-      };
-    }
-  }
-
-  async fieldLogicRemove(
-    formId: string,
-  ): Promise<IMarvApiUniversalResponse<{ isSuccessful: boolean }>> {
-    
-
-    try {
-      // Check if form is Marv enabled
-      const isMarvEnabled = await this.isFormMarvEnabled(formId);
-      if (!isMarvEnabled) {
-        return {
-          isSuccess: false,
-          response: { isSuccessful: false },
-          errorItems: ['Form is not Marv enabled'],
-        };
-      }
-
-      // Get all fields with logic
-      const allFields = await this.getFormFieldJson(formId);
-      const fieldsWithLogic = allFields.filter((field) => field.logic);
-
-
-      if (fieldsWithLogic.length === 0) {
-        
-        return {
-          isSuccess: true,
-          response: { isSuccessful: true },
-          errorItems: null,
-        };
-      }
-
-      // Remove logic from each field by setting logic to null
-      let successCount = 0;
-      let errors: string[] = [];
-
-      for (const field of fieldsWithLogic) {
-        const result = await this.updateFieldLogic(field.id, null);
-
-        if (result.isSuccess) {
-          successCount++;
-          
-        } else {
-          errors.push(
-            `Failed to remove logic from field ${field.id}: ${result.errorItems?.join(', ')}`,
-          );
-        }
-      }
-
-
-      return {
-        isSuccess: errors.length === 0,
-        response: { isSuccessful: errors.length === 0 },
-        errorItems: errors.length > 0 ? errors : null,
-      };
-    } catch (error) {
-      return {
-        isSuccess: false,
-        response: { isSuccessful: false },
-        errorItems: [error instanceof Error ? error.message : 'Unknown error'],
-      };
-    }
-  }
-
-  async fieldLogicStashApply(
-    formId: string,
-  ): Promise<IMarvApiUniversalResponse<{ isSuccessful: boolean }>> {
-    
-
-    try {
-      // Get the stash field
-      const stashField = await this.getLogicStashField(formId);
-      
-
-      // Parse the stashed logic
-      const logicStash = this.parseLogicStashString(stashField.default || '');
-      const fieldIds = Object.keys(logicStash);
-      
-
-      // Apply logic to each field
-      let successCount = 0;
-      let errors: string[] = [];
-
-      for (const [fieldId, logic] of Object.entries(logicStash)) {
-        const result = await this.updateFieldLogic(fieldId, logic);
-        if (result.isSuccess) {
-          successCount++;
-          
-        } else {
-          errors.push(
-            `Failed to apply logic to field ${fieldId}: ${result.errorItems?.join(', ')}`,
-          );
-        }
-      }
-
-
-      return {
-        isSuccess: errors.length === 0,
-        response: { isSuccessful: errors.length === 0 },
-        errorItems: errors.length > 0 ? errors : null,
-      };
-    } catch (error) {
-      return {
-        isSuccess: false,
-        response: { isSuccessful: false },
-        errorItems: [error instanceof Error ? error.message : 'Unknown error'],
-      };
-    }
-  }
-
-  async fieldLogicStashApplyAndRemove(
-    formId: string,
-  ): Promise<IMarvApiUniversalResponse<{ isSuccessful: boolean }>> {
-    
-
-    try {
-      // First apply the logic
-      const applyResult = await this.fieldLogicStashApply(formId);
-
-      if (!applyResult.isSuccess) {
-        return applyResult;
-      }
-
-      // Then remove the stash field
-      const removeResult = await this.fieldLogicStashRemove(formId);
-
-      return {
-        isSuccess: removeResult.isSuccess,
-        response: { isSuccessful: removeResult.isSuccess },
-        errorItems: removeResult.errorItems,
-      };
-    } catch (error) {
-      return {
-        isSuccess: false,
-        response: { isSuccessful: false },
-        errorItems: [error instanceof Error ? error.message : 'Unknown error'],
-      };
-    }
-  }
-
-  async fieldLogicStashRemove(
+  // Get form webhooks
+  async getFormWebhooks(
     formId: string,
   ): Promise<IMarvApiUniversalResponse<any>> {
-    
-
-    try {
-      // Get the stash field
-      const stashField = await this.getLogicStashField(formId);
-      
-
-      // Delete the stash field
-      const deleteResult = await this.deleteField(stashField.id);
-
-      if (deleteResult.isSuccess) {
-        
-      }
-
-      return deleteResult;
-    } catch (error) {
-      return {
-        isSuccess: false,
-        response: null,
-        errorItems: [error instanceof Error ? error.message : 'Unknown error'],
-      };
-    }
+    return this.makeRequest(`/form/${formId}/webhook.json`);
   }
 
-  async formDeveloperCopy(
+  // Get form notifications
+  async getFormNotifications(
+    formId: string,
+  ): Promise<IMarvApiUniversalResponse<any>> {
+    return this.makeRequest(`/form/${formId}/notification.json`);
+  }
+
+  // Get form confirmations
+  async getFormConfirmations(
+    formId: string,
+  ): Promise<IMarvApiUniversalResponse<any>> {
+    return this.makeRequest(`/form/${formId}/confirmation.json`);
+  }
+
+  // Create a developer copy of a form
+  async postFormCopy(
     formId: string,
   ): Promise<IMarvApiUniversalResponse<TFsFormJson>> {
-    const response = await this.makeRequest<TFsFormJson>(
-      `/form/${formId}/copy`,
-      'POST',
-    );
-    return response;
+    return this.makeRequest<TFsFormJson>(`/form/${formId}/copy`, 'POST');
   }
 
-  async fieldRemove(fieldId: string): Promise<IMarvApiUniversalResponse<any>> {
-    
+  // ===== MARV-SPECIFIC API OPERATIONS =====
 
+  // Check if form is Marv enabled (MUST BE DEFINED ON THIS CLASS)
+  async isFormMarvEnabled(formId: string): Promise<boolean> {
     try {
-      const deleteResult = await this.deleteField(fieldId);
-
-      if (deleteResult.isSuccess) {
-        
+      const response = await this.getFormFieldsJson(formId);
+      if (response.isSuccess && response.response) {
+        const fields = response.response.fields || [];
+        const marvEnabledField = fields.find(
+          (field) => field.label === 'MARV_ENABLED',
+        );
+        return !!marvEnabledField;
       }
-
-      return deleteResult;
+      return false;
     } catch (error) {
-      return {
-        isSuccess: false,
-        response: null,
-        errorItems: [error instanceof Error ? error.message : 'Unknown error'],
-      };
+      return false;
     }
   }
-
-  async formAndRelatedEntityOverview(
-    formId: string,
-  ): Promise<IMarvApiUniversalResponse<IFormAndRelatedEntityOverview>> {
-    
-
-    try {
-      // Make parallel API calls to get all form-related data
-      const [
-        formResponse,
-        webhooksResponse,
-        notificationsResponse,
-        confirmationsResponse,
-      ] = await Promise.all([
-        this.makeRequest<TFsFormJson>(`/form/${formId}.json`, 'GET'),
-        this.makeRequest<{ webhooks: any[] }>(
-          `/form/${formId}/webhook.json`,
-          'GET',
-        ),
-        this.makeRequest<{ notifications: any[] }>(
-          `/form/${formId}/notification.json`,
-          'GET',
-        ),
-        this.makeRequest<{ confirmations: any[] }>(
-          `/form/${formId}/confirmation.json`,
-          'GET',
-        ),
-      ]);
-
-      if (!formResponse.isSuccess || !formResponse.response) {
-        return {
-          isSuccess: false,
-          response: null,
-          errorItems: formResponse.errorItems || ['Failed to get form details'],
-        };
-      }
-
-      const formData = formResponse.response;
-
-      // Extract submit actions (webhooks) with name and id
-      const submitActions =
-        webhooksResponse.isSuccess && webhooksResponse.response?.webhooks
-          ? webhooksResponse.response.webhooks.map((webhook: any) => ({
-              id: webhook.id || '',
-              name: webhook.name || webhook.url || 'Unnamed Webhook',
-            }))
-          : [];
-
-      // Extract notification emails with name and id
-      const notificationEmails =
-        notificationsResponse.isSuccess &&
-        notificationsResponse.response?.notifications
-          ? notificationsResponse.response.notifications.map(
-              (notification: any) => ({
-                id: notification.id || '',
-                name:
-                  notification.name ||
-                  notification.subject ||
-                  'Unnamed Notification',
-              }),
-            )
-          : [];
-
-      // Extract confirmation emails with name and id
-      const confirmationEmails =
-        confirmationsResponse.isSuccess &&
-        confirmationsResponse.response?.confirmations
-          ? confirmationsResponse.response.confirmations.map(
-              (confirmation: any) => ({
-                id: confirmation.id || '',
-                name:
-                  confirmation.name ||
-                  confirmation.subject ||
-                  'Unnamed Confirmation',
-              }),
-            )
-          : [];
-
-      // Transform the API response to our desired structure
-      const overview: IFormAndRelatedEntityOverview = {
-        formId: formData.id,
-        submissions: formData.submissions || 0,
-        version: formData.version || 1,
-        submissionsToday: formData.submissions_today || 0,
-        lastSubmissionId: formData.last_submission_id || null,
-        url: formData.url,
-        encrypted: formData.encrypted || false,
-        isActive: !formData.inactive, // Transform inactive to isActive
-        timezone: formData.timezone || 'UTC',
-        isOneQuestionAtATime:
-          formData.should_display_one_question_at_a_time || false,
-        hasApprovers: formData.has_approvers || false,
-        isWorkflowForm: formData.is_workflow_form || false,
-        fieldCount: formData.fields?.length || 0,
-        submitActions,
-        notificationEmails,
-        confirmationEmails,
-      };
-
-      // Only include isWorkflowPublished if isWorkflowForm is true
-      if (overview.isWorkflowForm) {
-        overview.isWorkflowPublished = formData.is_workflow_published || false;
-      }
-
-      
-
-      return {
-        isSuccess: true,
-        response: overview,
-        errorItems: null,
-      };
-    } catch (error) {
-      return {
-        isSuccess: false,
-        response: null,
-        errorItems: [error instanceof Error ? error.message : 'Unknown error'],
-      };
-    }
-  }
-
-  async formLogicValidation(
-    formId: string,
-  ): Promise<IMarvApiUniversalResponse<IObservationResult>> {
-    
-
-    // Force refresh API key from environment to ensure we have the latest value
-    this.refreshApiKeyFromEnvironment();
-
-    
-    
-
-    try {
-      // Get form data from API
-      
-      const formResponse = await this.makeRequest<TFsFormJson>(
-        `/form/${formId}.json`,
-        'GET',
-      );
-
-      
-
-      if (!formResponse.isSuccess || !formResponse.response) {
-        
-        return {
-          isSuccess: false,
-          response: null,
-          errorItems: formResponse.errorItems || ['Failed to get form details'],
-        };
-      }
-
-      const formData = formResponse.response;
-
-      // Convert form data to form model
-      const formDataWithFields = {
-        ...formData,
-        fields: formData.fields || [],
-      };
-      const formModel = new Models.FsModelForm(formDataWithFields, {
-        fieldModelVersion: 'v2',
-      });
-
-      // Create observation context
-      const observationContext = {
-        resources: {
-          formModel: formModel,
-        },
-      };
-
-      // Create and run observation maker
-      const observationMaker = new ObservationMakerLogicValidation();
-      const observationResult =
-        await observationMaker.makeObservation(observationContext);
-
-      
-
-      return {
-        isSuccess: true,
-        response: observationResult,
-        errorItems: null,
-      };
-    } catch (error) {
-      return {
-        isSuccess: false,
-        response: null,
-        errorItems: [error instanceof Error ? error.message : 'Unknown error'],
-      };
-    }
-  }
-
-  async formCalculationValidation(
-    formId: string,
-  ): Promise<IMarvApiUniversalResponse<IObservationResult>> {
-    
-
-    // Force refresh API key from environment to ensure we have the latest value
-    this.refreshApiKeyFromEnvironment();
-
-    
-    
-
-    try {
-      // Get form data from API
-      
-      const formResponse = await this.makeRequest<TFsFormJson>(
-        `/form/${formId}.json`,
-        'GET',
-      );
-
-      
-
-      if (!formResponse.isSuccess || !formResponse.response) {
-        
-        return {
-          isSuccess: false,
-          response: null,
-          errorItems: formResponse.errorItems || ['Failed to get form details'],
-        };
-      }
-
-      const formData = formResponse.response;
-
-      // Convert form data to form model
-      const formDataWithFields = {
-        ...formData,
-        fields: formData.fields || [],
-      };
-      const formModel = new Models.FsModelForm(formDataWithFields, {
-        fieldModelVersion: 'v2',
-      });
-
-      // Create observation context
-      const observationContext = {
-        resources: {
-          formModel: formModel,
-        },
-      };
-
-      // Create and run observation maker
-      const observationMaker = new ObservationMakerCalculationValidation();
-      const observationResult =
-        await observationMaker.makeObservation(observationContext);
-
-      
-
-      return {
-        isSuccess: true,
-        response: observationResult,
-        errorItems: null,
-      };
-    } catch (error) {
-      return {
-        isSuccess: false,
-        response: null,
-        errorItems: [error instanceof Error ? error.message : 'Unknown error'],
-      };
-    }
-  }
-
-  // Enable Marv on a form by adding the MARV_ENABLED field
-  // async enableMarvOnForm();
-  // DO NOT REMOVE THIS COMMENT
-  // WE MUST NEVER ATTEMPT TO ENABLE MARV ON A FORM.
 }
 
 // Singleton instance
