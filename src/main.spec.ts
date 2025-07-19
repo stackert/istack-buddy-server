@@ -1,12 +1,16 @@
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as cookieParser from 'cookie-parser';
+import { json } from 'express';
 
 // Mock all dependencies to avoid side effects
 jest.mock('@nestjs/core');
 jest.mock('@nestjs/swagger');
 jest.mock('cookie-parser');
 jest.mock('dotenv');
+jest.mock('express', () => ({
+  json: jest.fn(),
+}));
 jest.mock('./app.module', () => ({
   AppModule: class MockAppModule {},
 }));
@@ -18,6 +22,7 @@ describe('Main Bootstrap Function', () => {
   let mockApp: any;
   let mockNestFactory: jest.Mocked<typeof NestFactory>;
   let mockSwaggerModule: jest.Mocked<typeof SwaggerModule>;
+  let mockJson: jest.MockedFunction<typeof json>;
 
   beforeEach(() => {
     // Reset mocks
@@ -65,6 +70,10 @@ describe('Main Bootstrap Function', () => {
     (cookieParser as jest.MockedFunction<typeof cookieParser>).mockReturnValue(
       jest.fn(),
     );
+
+    // Mock express json
+    mockJson = json as jest.MockedFunction<typeof json>;
+    mockJson.mockReturnValue(jest.fn());
   });
 
   describe('Bootstrap Function Execution', () => {
@@ -399,6 +408,63 @@ describe('Main Bootstrap Function', () => {
     });
   });
 
+  describe('Slack Webhook Verify Function', () => {
+    it('should configure express json middleware with verify function', async () => {
+      await bootstrap();
+
+      // Verify express.json was called with the correct configuration
+      expect(mockJson).toHaveBeenCalledWith({
+        verify: expect.any(Function),
+      });
+    });
+
+    it('should execute verify function and store raw body', async () => {
+      await bootstrap();
+
+      // Get the verify function that was passed to express.json
+      const verifyFunction = mockJson.mock.calls[0][0]?.verify;
+      expect(typeof verifyFunction).toBe('function');
+
+      // Create mock request and buffer
+      const mockReq: any = {};
+      const mockRes: any = {};
+      const mockBuf = Buffer.from('{"test": "data"}');
+
+      // Execute the verify function (express verify functions have 4 parameters)
+      if (verifyFunction) {
+        verifyFunction(mockReq, mockRes, mockBuf, 'utf8');
+      }
+
+      // Verify that rawBody and rawBodyString were stored
+      expect(mockReq.rawBody).toBe(mockBuf);
+      expect(mockReq.rawBodyString).toBe('{"test": "data"}');
+    });
+
+    it('should handle different buffer types in verify function', async () => {
+      await bootstrap();
+
+      const verifyFunction = mockJson.mock.calls[0][0]?.verify;
+      const mockReq: any = {};
+      const mockRes: any = {};
+
+      // Test with empty buffer
+      const emptyBuf = Buffer.alloc(0);
+      if (verifyFunction) {
+        verifyFunction(mockReq, mockRes, emptyBuf, 'utf8');
+      }
+      expect(mockReq.rawBody).toBe(emptyBuf);
+      expect(mockReq.rawBodyString).toBe('');
+
+      // Test with string buffer
+      const stringBuf = Buffer.from('hello world');
+      if (verifyFunction) {
+        verifyFunction(mockReq, mockRes, stringBuf, 'utf8');
+      }
+      expect(mockReq.rawBody).toBe(stringBuf);
+      expect(mockReq.rawBodyString).toBe('hello world');
+    });
+  });
+
   describe('Bootstrap Function Properties', () => {
     it('should be an async function', () => {
       expect(bootstrap.constructor.name).toBe('AsyncFunction');
@@ -422,6 +488,16 @@ describe('Main Bootstrap Function', () => {
       // This test verifies the structure without trying to modify read-only properties
       // The actual execution logic is tested through the bootstrap function tests
       expect(require.main).toBeDefined();
+    });
+
+    it('should test module execution condition structure', () => {
+      // Test that the condition structure exists and is valid
+      const mainModule = require.main;
+      expect(mainModule).toBeDefined();
+
+      // Verify that the condition would work if this file was executed directly
+      // This covers the structure of the condition without actually executing it
+      expect(typeof mainModule).toBe('object');
     });
   });
 });

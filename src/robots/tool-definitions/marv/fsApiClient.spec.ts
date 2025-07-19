@@ -167,6 +167,128 @@ describe('FsApiClient', () => {
       expect(result.isSuccess).toBe(false);
       expect(result.errorItems).toEqual(['Unknown error']);
     });
+
+    // NEW: Comprehensive HTTP status code error handling tests
+    describe('HTTP Status Code Error Handling', () => {
+      it('should handle 400 error with authentication header issue and no API key', async () => {
+        const clientWithoutKey = new FsApiClient();
+        mockFetch.mockResolvedValueOnce({
+          ok: false,
+          status: 400,
+          json: () =>
+            Promise.resolve({
+              error: 'invalid_request',
+              error_description: 'authentication header is required',
+            }),
+        });
+
+        const result = await (clientWithoutKey as any).makeRequest('/test');
+
+        expect(result.isSuccess).toBe(false);
+        expect(result.errorItems).toEqual([
+          'Authentication failed: No API key provided (CORE_FORMS_API_V2_KEY environment variable not set)',
+        ]);
+      });
+
+      it('should handle 400 error with authentication header issue and invalid API key', async () => {
+        mockFetch.mockResolvedValueOnce({
+          ok: false,
+          status: 400,
+          json: () =>
+            Promise.resolve({
+              error: 'invalid_request',
+              error_description: 'authentication header is required',
+            }),
+        });
+
+        const result = await (client as any).makeRequest('/test');
+
+        expect(result.isSuccess).toBe(false);
+        expect(result.errorItems).toEqual([
+          'Authentication failed: Invalid API key or malformed authentication header',
+        ]);
+      });
+
+      it('should handle 400 error with other error description', async () => {
+        mockFetch.mockResolvedValueOnce({
+          ok: false,
+          status: 400,
+          json: () =>
+            Promise.resolve({
+              error: 'invalid_request',
+              error_description: 'Invalid form data',
+            }),
+        });
+
+        const result = await (client as any).makeRequest('/test');
+
+        expect(result.isSuccess).toBe(false);
+        expect(result.errorItems).toEqual(['Bad Request: Invalid form data']);
+      });
+
+      it('should handle 400 error without error description', async () => {
+        mockFetch.mockResolvedValueOnce({
+          ok: false,
+          status: 400,
+          json: () =>
+            Promise.resolve({
+              error: 'invalid_request',
+            }),
+        });
+
+        const result = await (client as any).makeRequest('/test');
+
+        expect(result.isSuccess).toBe(false);
+        expect(result.errorItems).toEqual(['Bad Request: invalid_request']);
+      });
+
+      it('should handle 401 Unauthorized error', async () => {
+        mockFetch.mockResolvedValueOnce({
+          ok: false,
+          status: 401,
+          json: () => Promise.resolve({ error: 'unauthorized' }),
+        });
+
+        const result = await (client as any).makeRequest('/test');
+
+        expect(result.isSuccess).toBe(false);
+        expect(result.errorItems).toEqual([
+          'Authentication failed: Invalid API key',
+        ]);
+      });
+
+      it('should handle 403 Forbidden error', async () => {
+        mockFetch.mockResolvedValueOnce({
+          ok: false,
+          status: 403,
+          json: () => Promise.resolve({ error: 'forbidden' }),
+        });
+
+        const result = await (client as any).makeRequest('/test');
+
+        expect(result.isSuccess).toBe(false);
+        expect(result.errorItems).toEqual([
+          'Access forbidden: API key lacks required permissions',
+        ]);
+      });
+
+      it('should handle 400 error without invalid_request error type', async () => {
+        mockFetch.mockResolvedValueOnce({
+          ok: false,
+          status: 400,
+          json: () =>
+            Promise.resolve({
+              error: 'bad_request',
+              error_description: 'Something went wrong',
+            }),
+        });
+
+        const result = await (client as any).makeRequest('/test');
+
+        expect(result.isSuccess).toBe(false);
+        expect(result.errorItems).toEqual(['bad_request']);
+      });
+    });
   });
 
   describe('Basic API Operations', () => {
