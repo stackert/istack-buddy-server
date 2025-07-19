@@ -18,7 +18,7 @@ import { createCompositeToolSet } from './tool-definitions/toolCatalog';
 export class SlackyAnthropicAgent extends AbstractRobotChat {
   constructor() {
     super();
-    console.log('🚀 SlackyAnthropicAgent constructor called - class loaded');
+    console.log('SlackyAnthropicAgent constructor called - class loaded');
   }
 
   // Required properties from AbstractRobot
@@ -53,10 +53,10 @@ You are iStackBuddy, a specialized AI assistant for Intellistack Forms Core trou
 - Comprehensive form management and field operations
 
  **Your Tools Include:**
- 🔍 **Analysis Tools:**
+ **Analysis Tools:**
  - Sumo Logic Queries - for analyzing logs and submission data
  
- 🔐 **SSO & Security:**
+ **SSO & Security:**
  - SSO Auto-fill Assistance - troubleshooting SSO configuration and auto-fill mapping issues
 
  🧮 **Form Validation & Analysis:**
@@ -141,12 +141,12 @@ I'm your AI assistant specialized in **Intellistack Forms Core** troubleshooting
 • Form integration (submitActions) issues
 
 **Advanced Analysis Tools:**
-• 📊 **Sumo Logic Queries** - Analyze submission logs and trace data
-• 🔐 **SSO Auto-fill Assistance** - Diagnose SSO configuration issues
-• 📋 **Form Validation** - Check logic and calculation errors
-• 🔍 **Form Overviews** - Get comprehensive form statistics and configurations
+• **Sumo Logic Queries** - Analyze submission logs and trace data
+• **SSO Auto-fill Assistance** - Diagnose SSO configuration issues
+• **Form Validation** - Check logic and calculation errors
+• **Form Overviews** - Get comprehensive form statistics and configurations
 
-## 📚 **Knowledge Base Coverage:**
+## **Knowledge Base Coverage:**
 
 I'm backed by specialized knowledge bases depending on the channel:
 • **#forms-sso** → Forms SSO-specific knowledge base
@@ -215,6 +215,105 @@ I'm designed to help you solve Forms Core issues quickly and effectively. Just a
   }
 
   /**
+   * Execute all tool calls and return formatted results
+   */
+  private async executeToolAllCalls(toolUses: any[]): Promise<any[]> {
+    const toolResultMessages: any[] = [];
+
+    for (const toolUse of toolUses) {
+      try {
+        const toolResult = await this.executeToolCall(
+          toolUse.name,
+          toolUse.input,
+        );
+
+        toolResultMessages.push({
+          type: 'tool_result',
+          tool_use_id: toolUse.id,
+          content: toolResult,
+        });
+      } catch (error) {
+        toolResultMessages.push({
+          type: 'tool_result',
+          tool_use_id: toolUse.id,
+          content: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          is_error: true,
+        });
+      }
+    }
+
+    return toolResultMessages;
+  }
+
+  /**
+   * Execute all tool calls with delayed callback notifications and return formatted results
+   */
+  private async executeToolAllCallsWithDelayedCallback(
+    toolUses: any[],
+    delayedMessageCallback: (message: any) => void,
+  ): Promise<any[]> {
+    const toolResultMessages: any[] = [];
+
+    for (const toolUse of toolUses) {
+      try {
+        const toolResult = await this.executeToolCall(
+          toolUse.name,
+          toolUse.input,
+        );
+
+        // Send raw tool result immediately via delayed callback
+        delayedMessageCallback({
+          messageId: `slacky-tool-result-${Date.now()}`,
+          requestOrResponse: 'response',
+          envelopePayload: {
+            messageId: `slacky-tool-msg-${Date.now()}`,
+            author_role: 'assistant',
+            content: {
+              type: 'text/plain',
+              payload: `**Tool: ${toolUse.name}**\n\n${toolResult}`,
+            },
+            created_at: new Date().toISOString(),
+            estimated_token_count: this.estimateTokens(toolResult),
+          },
+        });
+
+        toolResultMessages.push({
+          type: 'tool_result',
+          tool_use_id: toolUse.id,
+          content: toolResult,
+        });
+      } catch (error) {
+        const errorMsg = `Error: ${error instanceof Error ? error.message : 'Unknown error'}`;
+
+        // Send raw tool error immediately via delayed callback
+        delayedMessageCallback({
+          messageId: `slacky-tool-error-${Date.now()}`,
+          requestOrResponse: 'response',
+          envelopePayload: {
+            messageId: `slacky-tool-error-msg-${Date.now()}`,
+            author_role: 'assistant',
+            content: {
+              type: 'text/plain',
+              payload: `**Tool Error: ${toolUse.name}**\n\n${errorMsg}`,
+            },
+            created_at: new Date().toISOString(),
+            estimated_token_count: this.estimateTokens(errorMsg),
+          },
+        });
+
+        toolResultMessages.push({
+          type: 'tool_result',
+          tool_use_id: toolUse.id,
+          content: errorMsg,
+          is_error: true,
+        });
+      }
+    }
+
+    return toolResultMessages;
+  }
+
+  /**
    * Stream response from Anthropic API with proper tool result handling
    */
   public async acceptMessageStreamResponse(
@@ -267,7 +366,7 @@ I'm designed to help you solve Forms Core issues quickly and effectively. Just a
 
       for (const toolUse of toolUses) {
         try {
-          chunkCallback(`\n\n🔧 Executing ${toolUse.name}...`);
+          chunkCallback(`\n\nExecuting ${toolUse.name}...`);
           const toolResult = await this.executeToolCall(
             toolUse.name,
             toolUse.input,
@@ -385,7 +484,7 @@ I'm designed to help you solve Forms Core issues quickly and effectively. Just a
     const trimmedMessage = message.trim();
 
     // TEMPORARY DEBUG LOGGING
-    console.log('🔍 SLACK DEBUG - Direct command check:');
+    console.log('SLACK DEBUG - Direct command check:');
     console.log('  Raw message:', JSON.stringify(message));
     console.log('  Trimmed message:', JSON.stringify(trimmedMessage));
 
@@ -395,7 +494,7 @@ I'm designed to help you solve Forms Core issues quickly and effectively. Just a
     );
     console.log('  Help regex result:', helpMatch ? 'MATCHED' : 'NO MATCH');
     if (helpMatch) {
-      console.log('  ✅ HELP COMMAND DETECTED');
+      console.log('  HELP COMMAND DETECTED');
       return this.getUserHelpText();
     }
 
@@ -408,7 +507,7 @@ I'm designed to help you solve Forms Core issues quickly and effectively. Just a
       feedbackMatch ? 'MATCHED' : 'NO MATCH',
     );
     if (feedbackMatch) {
-      console.log('  ✅ FEEDBACK COMMAND DETECTED');
+      console.log('  FEEDBACK COMMAND DETECTED');
       const feedbackContent = feedbackMatch[1].trim();
 
       // Call the feedback tool
@@ -418,10 +517,10 @@ I'm designed to help you solve Forms Core issues quickly and effectively. Just a
           category: 'other', // Default category since user didn't specify
         });
 
-        return `📝 Thank you for your feedback! We appreciate your input to help improve our service.`;
+        return `Thank you for your feedback! We appreciate your input to help improve our service.`;
       } catch (error) {
         console.error('Error processing feedback:', error);
-        return `📝 Thank you for your feedback! We appreciate your input to help improve our service.`;
+        return `Thank you for your feedback! We appreciate your input to help improve our service.`;
       }
     }
 
@@ -431,13 +530,13 @@ I'm designed to help you solve Forms Core issues quickly and effectively. Just a
     );
     console.log('  Rating regex result:', ratingMatch ? 'MATCHED' : 'NO MATCH');
     if (ratingMatch) {
-      console.log('  ✅ RATING COMMAND DETECTED');
+      console.log('  RATING COMMAND DETECTED');
       const rating = parseInt(ratingMatch[1]);
       const comment = ratingMatch[2]?.trim() || '';
 
       // Validate rating range
       if (rating < -5 || rating > 5) {
-        return `❌ **Invalid Rating**
+        return `**Invalid Rating**
 
 Ratings must be between -5 and +5. Please provide a rating in this range.
 
@@ -464,25 +563,14 @@ Ratings must be between -5 and +5. Please provide a rating in this range.
           comment: comment || undefined,
         });
 
-        const ratingEmoji =
-          rating >= 3
-            ? '🌟'
-            : rating >= 1
-              ? '👍'
-              : rating === 0
-                ? '😐'
-                : rating >= -2
-                  ? '👎'
-                  : '💥';
-
-        return `${ratingEmoji} Thank you for your rating of ${rating >= 0 ? '+' : ''}${rating}/5! We appreciate your feedback to help us improve our service.`;
+        return `Thank you for your rating of ${rating >= 0 ? '+' : ''}${rating}/5! We appreciate your feedback to help us improve our service.`;
       } catch (error) {
         console.error('Error processing rating:', error);
-        return `⭐ Thank you for your rating! We appreciate your feedback to help us improve our service.`;
+        return `Thank you for your rating! We appreciate your feedback to help us improve our service.`;
       }
     }
 
-    console.log('  ❌ NO DIRECT COMMANDS DETECTED - will go to Claude');
+    console.log('  NO DIRECT COMMANDS DETECTED - will go to Claude');
     return null;
   }
 
@@ -561,29 +649,7 @@ Ratings must be between -5 and +5. Please provide a rating in this range.
       }
 
       // If tools were used, execute them and get Claude's final response
-      const toolResultMessages: any[] = [];
-
-      for (const toolUse of toolUses) {
-        try {
-          const toolResult = await this.executeToolCall(
-            toolUse.name,
-            toolUse.input,
-          );
-
-          toolResultMessages.push({
-            type: 'tool_result',
-            tool_use_id: toolUse.id,
-            content: toolResult,
-          });
-        } catch (error) {
-          toolResultMessages.push({
-            type: 'tool_result',
-            tool_use_id: toolUse.id,
-            content: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
-            is_error: true,
-          });
-        }
-      }
+      const toolResultMessages = await this.executeToolAllCalls(toolUses);
 
       // Get Claude's final response with tool results
       const finalResponse = (await client.messages.create({
@@ -655,7 +721,7 @@ Ratings must be between -5 and +5. Please provide a rating in this range.
     const userMessage = messageEnvelope.envelopePayload.content.payload;
 
     // TEMPORARY DEBUG LOGGING
-    console.log('🔍 MULTIPART DEBUG - acceptMessageMultiPartResponse called');
+    console.log('MULTIPART DEBUG - acceptMessageMultiPartResponse called');
     console.log('  User message content:', JSON.stringify(userMessage));
 
     // Check for direct feedback/rating commands FIRST (before needing API key)
@@ -666,7 +732,7 @@ Ratings must be between -5 and +5. Please provide a rating in this range.
       directCommandResult ? 'FOUND COMMAND' : 'NO COMMAND',
     );
     if (directCommandResult) {
-      console.log('  ✅ RETURNING DIRECT COMMAND RESPONSE');
+      console.log('  RETURNING DIRECT COMMAND RESPONSE');
       return {
         messageId: `slacky-direct-multipart-${Date.now()}`,
         requestOrResponse: 'response',
@@ -730,63 +796,11 @@ Ratings must be between -5 and +5. Please provide a rating in this range.
       }
 
       // Execute tools and send raw results immediately
-      const toolResultMessages: any[] = [];
-
-      for (const toolUse of toolUses) {
-        try {
-          const toolResult = await this.executeToolCall(
-            toolUse.name,
-            toolUse.input,
-          );
-
-          // Send raw tool result immediately via delayed callback
-          delayedMessageCallback({
-            messageId: `slacky-tool-result-${Date.now()}`,
-            requestOrResponse: 'response',
-            envelopePayload: {
-              messageId: `slacky-tool-msg-${Date.now()}`,
-              author_role: 'assistant',
-              content: {
-                type: 'text/plain',
-                payload: `**Tool: ${toolUse.name}**\n\n${toolResult}`,
-              },
-              created_at: new Date().toISOString(),
-              estimated_token_count: this.estimateTokens(toolResult),
-            },
-          });
-
-          toolResultMessages.push({
-            type: 'tool_result',
-            tool_use_id: toolUse.id,
-            content: toolResult,
-          });
-        } catch (error) {
-          const errorMsg = `Error: ${error instanceof Error ? error.message : 'Unknown error'}`;
-
-          // Send raw tool error immediately via delayed callback
-          delayedMessageCallback({
-            messageId: `slacky-tool-error-${Date.now()}`,
-            requestOrResponse: 'response',
-            envelopePayload: {
-              messageId: `slacky-tool-error-msg-${Date.now()}`,
-              author_role: 'assistant',
-              content: {
-                type: 'text/plain',
-                payload: `**Tool Error: ${toolUse.name}**\n\n${errorMsg}`,
-              },
-              created_at: new Date().toISOString(),
-              estimated_token_count: this.estimateTokens(errorMsg),
-            },
-          });
-
-          toolResultMessages.push({
-            type: 'tool_result',
-            tool_use_id: toolUse.id,
-            content: errorMsg,
-            is_error: true,
-          });
-        }
-      }
+      const toolResultMessages =
+        await this.executeToolAllCallsWithDelayedCallback(
+          toolUses,
+          delayedMessageCallback,
+        );
 
       // Get Claude's final analysis with tool results
       const finalResponse = (await client.messages.create({
