@@ -453,6 +453,26 @@ describe('performMarvToolCall', () => {
       expect(result.errorItems).toBeNull();
     });
 
+    it('should handle pushErrorMessage with null errorItems', async () => {
+      const responseWithNullErrors = {
+        isSuccess: false,
+        response: null,
+        errorItems: null,
+      };
+      mockFsApiClient.formLiteAdd.mockResolvedValue(responseWithNullErrors);
+
+      const result = await performMarvToolCall(
+        FsRestrictedApiRoutesEnum.FormLiteAdd,
+        '{}',
+      );
+
+      expect(result.errorItems).toBeInstanceOf(Array);
+      expect(result.errorItems).toHaveLength(1);
+      expect(result.errorItems![0]).toContain(
+        'Function returned non-successful response',
+      );
+    });
+
     it('should correctly identify unsuccessful response', async () => {
       const unsuccessfulResponse = {
         isSuccess: false,

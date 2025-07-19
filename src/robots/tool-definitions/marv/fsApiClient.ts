@@ -12,16 +12,6 @@ import { ObservationMakerCalculationValidation } from '../../../common/observati
 import { Models } from 'istack-buddy-utilities';
 import type { IObservationResult } from 'istack-buddy-utilities';
 
-// Debug mode control - set to false to disable console.log output
-const IS_DEBUG_MODE = true; // Force enable for debugging
-
-// Debug logging helper
-const debugLog = (...args: any[]): void => {
-  if (IS_DEBUG_MODE) {
-    console.log(...args);
-  }
-};
-
 // Real API client for Formstack operations - NO MOCKS
 export class FsApiClient {
   private apiKey: string;
@@ -77,8 +67,6 @@ export class FsApiClient {
           errorItems: null,
         };
       } else {
-        debugLog(`DEBUG: Returning error response`);
-
         // Improve error handling for authentication failures
         let errorMessage = data.error || 'API request failed';
 
@@ -96,8 +84,6 @@ export class FsApiClient {
         } else if (response.status === 403) {
           errorMessage = 'Access forbidden: API key lacks required permissions';
         }
-
-        debugLog(`DEBUG: Error message: ${errorMessage}`);
         return {
           isSuccess: false,
           response: null,
@@ -133,12 +119,8 @@ export class FsApiClient {
       const marvEnabledField = fields.find(
         (field) => field.label === 'MARV_ENABLED',
       );
-      debugLog(
-        `🔍 Marv enabled check for form ${formId}: ${!!marvEnabledField ? 'YES' : 'NO'}`,
-      );
       return !!marvEnabledField;
     } catch (error) {
-      debugLog(`❌ Error checking Marv status for form ${formId}:`, error);
       return false;
     }
   }
@@ -207,7 +189,7 @@ export class FsApiClient {
   async fieldLogicStashCreate(
     formId: string,
   ): Promise<IMarvApiUniversalResponse<TFsFieldJson>> {
-    debugLog(`🔍 Creating logic stash for form ${formId}`);
+    
 
     // Check if form is Marv enabled
     const isMarvEnabled = await this.isFormMarvEnabled(formId);
@@ -223,7 +205,7 @@ export class FsApiClient {
     const allFields = await this.getFormFieldJson(formId);
     const fieldsWithLogicJson = allFields.filter((field) => field.logic);
 
-    debugLog(`📊 Found ${fieldsWithLogicJson.length} fields with logic`);
+    
 
     if (fieldsWithLogicJson.length === 0) {
       return {
@@ -237,7 +219,7 @@ export class FsApiClient {
     const logicStashString =
       this.stringifyLogicStashString(fieldsWithLogicJson);
 
-    debugLog(`💾 Creating logic stash field...`);
+    
 
     // Create the logic stash field
     const createResponse = await this.makeRequest<TFsFieldJson>(
@@ -253,9 +235,6 @@ export class FsApiClient {
     );
 
     if (createResponse.isSuccess) {
-      debugLog(
-        `✅ Logic stash created successfully! Field ID: ${createResponse.response?.id}`,
-      );
     }
 
     return createResponse;
@@ -349,7 +328,7 @@ export class FsApiClient {
   async fieldLabelUniqueSlugAdd(
     formId: string,
   ): Promise<IMarvApiUniversalResponse<{ isSuccessful: boolean }>> {
-    debugLog(`🏷️ Adding unique slugs to form ${formId} field labels`);
+    
 
     try {
       // Check if form is Marv enabled
@@ -364,7 +343,7 @@ export class FsApiClient {
 
       // Get all fields
       const fields = await this.getFormFieldJson(formId);
-      debugLog(`📊 Found ${fields.length} fields to add slugs to`);
+      
 
       let successCount = 0;
       let errors: string[] = [];
@@ -380,9 +359,6 @@ export class FsApiClient {
 
         if (result.isSuccess) {
           successCount++;
-          debugLog(
-            `✅ Added slug to field ${field.id}: "${field.label}" → "${newLabel}"`,
-          );
         } else {
           errors.push(
             `Failed to add slug to field ${field.id}: ${result.errorItems?.join(', ')}`,
@@ -390,9 +366,6 @@ export class FsApiClient {
         }
       }
 
-      debugLog(
-        `✅ Unique slugs added: ${successCount}/${fields.length} fields updated`,
-      );
 
       return {
         isSuccess: errors.length === 0,
@@ -411,7 +384,7 @@ export class FsApiClient {
   async fieldLabelUniqueSlugRemove(
     formId: string,
   ): Promise<IMarvApiUniversalResponse<{ isSuccessful: boolean }>> {
-    debugLog(`🏷️ Removing unique slugs from form ${formId} field labels`);
+    
 
     try {
       // Check if form is Marv enabled
@@ -426,7 +399,7 @@ export class FsApiClient {
 
       // Get all fields
       const fields = await this.getFormFieldJson(formId);
-      debugLog(`📊 Found ${fields.length} fields to remove slugs from`);
+      
 
       let successCount = 0;
       let errors: string[] = [];
@@ -443,22 +416,16 @@ export class FsApiClient {
 
           if (result.isSuccess) {
             successCount++;
-            debugLog(
-              `✅ Removed slug from field ${field.id}: "${field.label}" → "${cleanedLabel}"`,
-            );
           } else {
             errors.push(
               `Failed to remove slug from field ${field.id}: ${result.errorItems?.join(', ')}`,
             );
           }
         } else {
-          debugLog(
-            `⏭️ Field ${field.id} has no slug to remove: "${field.label}"`,
-          );
         }
       }
 
-      debugLog(`✅ Unique slugs removed: ${successCount} fields updated`);
+      
 
       return {
         isSuccess: errors.length === 0,
@@ -477,7 +444,7 @@ export class FsApiClient {
   async fieldLogicRemove(
     formId: string,
   ): Promise<IMarvApiUniversalResponse<{ isSuccessful: boolean }>> {
-    debugLog(`🧹 Removing all logic from form ${formId} fields`);
+    
 
     try {
       // Check if form is Marv enabled
@@ -494,12 +461,9 @@ export class FsApiClient {
       const allFields = await this.getFormFieldJson(formId);
       const fieldsWithLogic = allFields.filter((field) => field.logic);
 
-      debugLog(
-        `📊 Found ${fieldsWithLogic.length} fields with logic to remove`,
-      );
 
       if (fieldsWithLogic.length === 0) {
-        debugLog(`⏭️ No fields with logic found on form ${formId}`);
+        
         return {
           isSuccess: true,
           response: { isSuccessful: true },
@@ -516,7 +480,7 @@ export class FsApiClient {
 
         if (result.isSuccess) {
           successCount++;
-          debugLog(`✅ Removed logic from field ${field.id}: "${field.label}"`);
+          
         } else {
           errors.push(
             `Failed to remove logic from field ${field.id}: ${result.errorItems?.join(', ')}`,
@@ -524,9 +488,6 @@ export class FsApiClient {
         }
       }
 
-      debugLog(
-        `✅ Logic removal completed: ${successCount}/${fieldsWithLogic.length} fields updated`,
-      );
 
       return {
         isSuccess: errors.length === 0,
@@ -545,17 +506,17 @@ export class FsApiClient {
   async fieldLogicStashApply(
     formId: string,
   ): Promise<IMarvApiUniversalResponse<{ isSuccessful: boolean }>> {
-    debugLog(`🔄 Applying logic stash for form ${formId}`);
+    
 
     try {
       // Get the stash field
       const stashField = await this.getLogicStashField(formId);
-      debugLog(`📦 Found stash field: ${stashField.id}`);
+      
 
       // Parse the stashed logic
       const logicStash = this.parseLogicStashString(stashField.default || '');
       const fieldIds = Object.keys(logicStash);
-      debugLog(`🔧 Applying logic to ${fieldIds.length} fields`);
+      
 
       // Apply logic to each field
       let successCount = 0;
@@ -565,7 +526,7 @@ export class FsApiClient {
         const result = await this.updateFieldLogic(fieldId, logic);
         if (result.isSuccess) {
           successCount++;
-          debugLog(`✅ Applied logic to field ${fieldId}`);
+          
         } else {
           errors.push(
             `Failed to apply logic to field ${fieldId}: ${result.errorItems?.join(', ')}`,
@@ -573,9 +534,6 @@ export class FsApiClient {
         }
       }
 
-      debugLog(
-        `✅ Logic stash applied: ${successCount}/${fieldIds.length} fields updated`,
-      );
 
       return {
         isSuccess: errors.length === 0,
@@ -594,7 +552,7 @@ export class FsApiClient {
   async fieldLogicStashApplyAndRemove(
     formId: string,
   ): Promise<IMarvApiUniversalResponse<{ isSuccessful: boolean }>> {
-    debugLog(`🔄 Applying and removing logic stash for form ${formId}`);
+    
 
     try {
       // First apply the logic
@@ -624,18 +582,18 @@ export class FsApiClient {
   async fieldLogicStashRemove(
     formId: string,
   ): Promise<IMarvApiUniversalResponse<any>> {
-    debugLog(`🗑️ Removing logic stash for form ${formId}`);
+    
 
     try {
       // Get the stash field
       const stashField = await this.getLogicStashField(formId);
-      debugLog(`📦 Found stash field to remove: ${stashField.id}`);
+      
 
       // Delete the stash field
       const deleteResult = await this.deleteField(stashField.id);
 
       if (deleteResult.isSuccess) {
-        debugLog(`✅ Logic stash field ${stashField.id} removed successfully`);
+        
       }
 
       return deleteResult;
@@ -659,13 +617,13 @@ export class FsApiClient {
   }
 
   async fieldRemove(fieldId: string): Promise<IMarvApiUniversalResponse<any>> {
-    debugLog(`🗑️ Removing field ${fieldId}`);
+    
 
     try {
       const deleteResult = await this.deleteField(fieldId);
 
       if (deleteResult.isSuccess) {
-        debugLog(`✅ Field ${fieldId} removed successfully`);
+        
       }
 
       return deleteResult;
@@ -681,7 +639,7 @@ export class FsApiClient {
   async formAndRelatedEntityOverview(
     formId: string,
   ): Promise<IMarvApiUniversalResponse<IFormAndRelatedEntityOverview>> {
-    debugLog(`📋 Getting form and related entity overview for form ${formId}`);
+    
 
     try {
       // Make parallel API calls to get all form-related data
@@ -781,13 +739,7 @@ export class FsApiClient {
         overview.isWorkflowPublished = formData.is_workflow_published || false;
       }
 
-      debugLog(`✅ Form overview retrieved successfully for form ${formId}`);
-      debugLog(
-        `📊 Form stats: ${overview.fieldCount} fields, ${overview.submissions} submissions`,
-      );
-      debugLog(
-        `📋 Related entities: ${submitActions.length} webhooks, ${notificationEmails.length} notifications, ${confirmationEmails.length} confirmations`,
-      );
+      
 
       return {
         isSuccess: true,
@@ -806,32 +758,26 @@ export class FsApiClient {
   async formLogicValidation(
     formId: string,
   ): Promise<IMarvApiUniversalResponse<IObservationResult>> {
-    debugLog(`DEBUG: Starting formLogicValidation for form ${formId}`);
+    
 
     // Force refresh API key from environment to ensure we have the latest value
     this.refreshApiKeyFromEnvironment();
 
-    debugLog(`DEBUG: API key present: ${!!this.apiKey}`);
-    debugLog(`DEBUG: API key length: ${this.apiKey?.length || 0}`);
+    
+    
 
     try {
       // Get form data from API
-      debugLog(`DEBUG: Making API request to /form/${formId}.json`);
+      
       const formResponse = await this.makeRequest<TFsFormJson>(
         `/form/${formId}.json`,
         'GET',
       );
 
-      debugLog(
-        `DEBUG: API response received - isSuccess: ${formResponse.isSuccess}`,
-      );
-      debugLog(`DEBUG: API response has data: ${!!formResponse.response}`);
-      debugLog(
-        `DEBUG: API response error items: ${JSON.stringify(formResponse.errorItems)}`,
-      );
+      
 
       if (!formResponse.isSuccess || !formResponse.response) {
-        debugLog(`DEBUG: API request failed, returning error`);
+        
         return {
           isSuccess: false,
           response: null,
@@ -862,10 +808,7 @@ export class FsApiClient {
       const observationResult =
         await observationMaker.makeObservation(observationContext);
 
-      debugLog(`✅ Form logic validation completed for form ${formId}`);
-      debugLog(
-        `📊 Found ${observationResult.logItems.length} observation items`,
-      );
+      
 
       return {
         isSuccess: true,
@@ -884,32 +827,26 @@ export class FsApiClient {
   async formCalculationValidation(
     formId: string,
   ): Promise<IMarvApiUniversalResponse<IObservationResult>> {
-    debugLog(`DEBUG: Starting formCalculationValidation for form ${formId}`);
+    
 
     // Force refresh API key from environment to ensure we have the latest value
     this.refreshApiKeyFromEnvironment();
 
-    debugLog(`DEBUG: API key present: ${!!this.apiKey}`);
-    debugLog(`DEBUG: API key length: ${this.apiKey?.length || 0}`);
+    
+    
 
     try {
       // Get form data from API
-      debugLog(`DEBUG: Making API request to /form/${formId}.json`);
+      
       const formResponse = await this.makeRequest<TFsFormJson>(
         `/form/${formId}.json`,
         'GET',
       );
 
-      debugLog(
-        `DEBUG: API response received - isSuccess: ${formResponse.isSuccess}`,
-      );
-      debugLog(`DEBUG: API response has data: ${!!formResponse.response}`);
-      debugLog(
-        `DEBUG: API response error items: ${JSON.stringify(formResponse.errorItems)}`,
-      );
+      
 
       if (!formResponse.isSuccess || !formResponse.response) {
-        debugLog(`DEBUG: API request failed, returning error`);
+        
         return {
           isSuccess: false,
           response: null,
@@ -940,10 +877,7 @@ export class FsApiClient {
       const observationResult =
         await observationMaker.makeObservation(observationContext);
 
-      debugLog(`✅ Form calculation validation completed for form ${formId}`);
-      debugLog(
-        `📊 Found ${observationResult.logItems.length} observation items`,
-      );
+      
 
       return {
         isSuccess: true,
