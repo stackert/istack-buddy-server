@@ -117,7 +117,7 @@ export class ChatManagerService {
   /**
    * Check if message is duplicate based on content hash
    */
-  private isDuplicateMessage(
+  private x_isDuplicateMessage(
     contentHash: string,
     conversationId: string,
   ): boolean {
