@@ -311,3 +311,9 @@ GET /istack-buddy/slack-integration/health - public
 GET /istack-buddy/slack-integration/debug - admin:system
 POST /istack-buddy/slack-integration/slack/events - system:slack:events
 ```
+
+## Slack/Debug Form Session - key rotation
+
+_TMC_
+We rotate them and we'll explain how after we explain the rotation process
+AI - Please complete this section

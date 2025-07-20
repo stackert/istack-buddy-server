@@ -35,6 +35,48 @@ jest.mock('fs', () => ({
         },
       });
     }
+    if (filePath.includes('user-permissions.json')) {
+      return JSON.stringify({
+        user_permissions: {
+          'user-1': {
+            permissions: [
+              'user:profile:me:view',
+              'auth:user',
+              'auth:user:{self}',
+            ],
+            jwtToken:
+              'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ1c2VyLTEiLCJlbWFpbCI6ImFkbWluQGlzdGFjay5jb20iLCJ1c2VybmFtZSI6ImFkbWluIiwiYWNjb3VudFR5cGUiOiJBRE1JTiIsImlhdCI6MTc1MzAxMTQ0NCwiZXhwIjoxNzUzMDQwMjQ0fQ.kdr-ymMRdEQIniGwR915TTpsqD_wSdX2mutNYk87fyY',
+          },
+          'user-2': {
+            permissions: [],
+            jwtToken:
+              'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ1c2VyLTIiLCJlbWFpbCI6InN0dWRlbnRAaXN0YWNrLmNvbSIsInVzZXJuYW1lIjoic3R1ZGVudCIsImFjY291bnRUeXBlIjoiU1RVREVOVCIsImlhdCI6MTc1MzAxMTQ0NCwiZXhwIjoxNzUzMDQwMjQ0fQ._3FpdkUV3GQn1qrEclxRDxy4oY0zYXHoNPnggk58Oss',
+          },
+        },
+      });
+    }
+    if (filePath.includes('user-profiles.json')) {
+      return JSON.stringify({
+        users: {
+          'user-1': {
+            id: 'user-1',
+            email: 'all-permissions@example.com',
+            username: 'admin',
+            account_type_informal: 'ADMIN',
+            first_name: 'Admin',
+            last_name: 'User',
+          },
+          'user-2': {
+            id: 'user-2',
+            email: 'no-permissions@example.com',
+            username: 'student',
+            account_type_informal: 'STUDENT',
+            first_name: 'Student',
+            last_name: 'User',
+          },
+        },
+      });
+    }
     // For other files, throw an error (which individual tests can override)
     throw new Error(`ENOENT: no such file or directory, open '${filePath}'`);
   }),

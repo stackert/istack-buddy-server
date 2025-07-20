@@ -3,8 +3,8 @@ import { AppModule } from './app.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { DevDebugModule } from './dev-debug/dev-debug.module';
-import { AuthModule } from './auth/auth.module';
-import { AuthenticationUserModule } from './authentication-user/authentication-user.module';
+import { AuthenticationModule } from './authentication/authentication.module';
+import { UserProfileModule } from './user-profile/user-profile.module';
 import { LoggerModule } from './common/logger/logger.module';
 
 describe('AppModule', () => {
@@ -63,12 +63,12 @@ describe('AppModule', () => {
       expect(() => module.get(LoggerModule)).not.toThrow();
     });
 
-    it('should import AuthModule', () => {
-      expect(() => module.get(AuthModule)).not.toThrow();
+    it('should import AuthenticationModule', () => {
+      expect(() => module.get(AuthenticationModule)).not.toThrow();
     });
 
-    it('should import AuthenticationUserModule', () => {
-      expect(() => module.get(AuthenticationUserModule)).not.toThrow();
+    it('should import UserProfileModule', () => {
+      expect(() => module.get(UserProfileModule)).not.toThrow();
     });
 
     it('should import DevDebugModule', () => {
@@ -150,8 +150,8 @@ describe('AppModule', () => {
     it('should have all imports configured correctly', () => {
       const modules = [
         LoggerModule,
-        AuthModule,
-        AuthenticationUserModule,
+        AuthenticationModule,
+        UserProfileModule,
         DevDebugModule,
       ];
 
@@ -180,8 +180,8 @@ describe('AppModule', () => {
       // Verify all imported modules are accessible
       expect(() => {
         module.get(LoggerModule);
-        module.get(AuthModule);
-        module.get(AuthenticationUserModule);
+        module.get(AuthenticationModule);
+        module.get(UserProfileModule);
         module.get(DevDebugModule);
       }).not.toThrow();
     });

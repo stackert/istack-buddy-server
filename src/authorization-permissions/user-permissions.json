@@ -4,6 +4,9 @@
       "permissions": [
         "auth:user",
         "auth:user:{self}",
+        "user:profile:me:view",
+        "user:profile:me:edit",
+        "user:profile:public:view",
         "chat:conversations:create",
         "chat:conversations:read",
         "chat:conversations:update",
@@ -20,6 +23,7 @@
       "permissions": [
         "auth:user",
         "auth:user:{self}",
+        "user:profile:me:view",
         "chat:conversations:create",
         "chat:conversations:read",
         "chat:conversations:message:create",
@@ -31,6 +35,9 @@
       "permissions": [
         "auth:user",
         "auth:user:{self}",
+        "user:profile:me:view",
+        "user:profile:me:edit",
+        "user:profile:public:view",
         "chat:conversations:create",
         "chat:conversations:read",
         "chat:conversations:update",
@@ -45,6 +52,9 @@
       "permissions": [
         "auth:user",
         "auth:user:{self}",
+        "user:profile:me:view",
+        "user:profile:me:edit",
+        "user:profile:public:view",
         "chat:conversations:create",
         "chat:conversations:read",
         "chat:conversations:message:create",

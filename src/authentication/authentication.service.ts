@@ -5,6 +5,7 @@ import * as jwt from 'jsonwebtoken';
 import { CustomLoggerService } from '../common/logger/custom-logger.service';
 import { AuthenticationResult } from './interfaces/auth-result.interface';
 import { AuthenticationFailedException } from './exceptions/authentication-failed.exception';
+import { AuthorizationPermissionsService } from '../authorization-permissions/authorization-permissions.service';
 
 interface SessionConfig {
   sessionTimeoutSeconds: number;
@@ -39,7 +40,10 @@ export class AuthenticationService {
   private config: SessionConfig;
   private userPermissions: UserPermissions | null = null;
 
-  constructor(private readonly logger: CustomLoggerService) {
+  constructor(
+    private readonly logger: CustomLoggerService,
+    private readonly authPermissionsService: AuthorizationPermissionsService,
+  ) {
     this.loadConfiguration();
     this.loadUserPermissions();
   }
@@ -321,6 +325,21 @@ export class AuthenticationService {
     );
 
     try {
+      // First check if this is a test user
+      const testUserPermissions =
+        this.authPermissionsService.getTestUserPermissions(userId);
+      if (testUserPermissions) {
+        this.logger.logWithContext(
+          'debug',
+          'Found test user permissions',
+          'AuthenticationService.getUserPermissionSet',
+          undefined,
+          { userId, permissionCount: testUserPermissions.permissions.length },
+        );
+        return testUserPermissions.permissions;
+      }
+
+      // Fall back to file-based permissions
       if (!this.userPermissions) {
         this.logger.error(
           'AuthenticationService.getUserPermissionSet',

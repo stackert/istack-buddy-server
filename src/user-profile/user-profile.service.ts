@@ -2,10 +2,14 @@ import { Injectable } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
 import { CustomLoggerService } from '../common/logger/custom-logger.service';
+import { AuthorizationPermissionsService } from '../authorization-permissions/authorization-permissions.service';
 
 @Injectable()
 export class UserProfileService {
-  constructor(private readonly logger: CustomLoggerService) {}
+  constructor(
+    private readonly logger: CustomLoggerService,
+    private readonly authPermissionsService: AuthorizationPermissionsService,
+  ) {}
 
   /**
    * Gets user profile by ID.
@@ -20,6 +24,21 @@ export class UserProfileService {
     );
 
     try {
+      // First check if this is a test user
+      const testUserProfile =
+        this.authPermissionsService.getTestUserProfile(userId);
+      if (testUserProfile) {
+        this.logger.logWithContext(
+          'debug',
+          'Found test user profile',
+          'UserProfileService.getUserProfileById',
+          undefined,
+          { userId },
+        );
+        return testUserProfile;
+      }
+
+      // Fall back to file-based profiles
       // Try multiple possible paths for the file
       const possiblePaths = [
         path.join(process.cwd(), 'src', 'user-profile', 'user-profiles.json'),
