@@ -19,16 +19,14 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { Request, Response } from 'express';
-import { AuthenticationUserService } from './authentication-user.service';
+import { AuthenticationService } from './authentication.service';
 import { UserAuthRequestDto } from './dto/user-auth-request.dto';
 import { UserAuthResponseDto } from './dto/user-auth-response.dto';
 
 @ApiTags('authentication')
 @Controller('auth')
-export class AuthenticationUserController {
-  constructor(
-    private readonly authenticationUserService: AuthenticationUserService,
-  ) {}
+export class AuthenticationController {
+  constructor(private readonly authenticationService: AuthenticationService) {}
 
   /**
    * POST /auth/user
@@ -49,8 +47,8 @@ export class AuthenticationUserController {
       validUser: {
         summary: 'Valid user authentication',
         value: {
-          email: 'all-permissions@example.com',
-          password: 'any-password',
+          email: 'user@example.com',
+          password: 'password123',
         },
       },
     },
@@ -72,20 +70,6 @@ export class AuthenticationUserController {
   })
   @ApiUnauthorizedResponse({
     description: 'Authentication failed - invalid credentials',
-    schema: {
-      type: 'object',
-      properties: {
-        statusCode: { type: 'number', example: 401 },
-        timestamp: { type: 'string', example: '2025-06-18T10:09:10.655Z' },
-        path: { type: 'string', example: '/auth/user' },
-        method: { type: 'string', example: 'POST' },
-        message: { type: 'string', example: 'Authentication failed' },
-        correlationId: {
-          type: 'string',
-          example: 'b43cd554-3b18-454a-919e-cab26c0471aa',
-        },
-      },
-    },
   })
   @ApiBadRequestResponse({
     description: 'Validation error - missing or invalid request data',
@@ -95,7 +79,10 @@ export class AuthenticationUserController {
     @Res({ passthrough: true }) response: Response,
   ): Promise<UserAuthResponseDto> {
     const result =
-      await this.authenticationUserService.authenticateUser(authRequest);
+      await this.authenticationService.authenticateUserByEmailAndPassword(
+        authRequest.email,
+        authRequest.password,
+      );
 
     // Set authentication cookie with the JWT token
     response.cookie('auth-token', result.jwtToken, {
@@ -105,7 +92,14 @@ export class AuthenticationUserController {
       maxAge: 8 * 60 * 60 * 1000, // 8 hours (matching session timeout)
     });
 
-    return result;
+    return {
+      success: result.success,
+      userId: result.userId!,
+      email: authRequest.email,
+      jwtToken: result.jwtToken!,
+      permissions: result.permissions || [],
+      message: result.message || 'Authentication successful',
+    };
   }
 
   @Get('profile/me')
@@ -120,61 +114,59 @@ export class AuthenticationUserController {
   @ApiResponse({
     status: 200,
     description: 'User profile retrieved successfully',
-    schema: {
-      type: 'object',
-      properties: {
-        success: { type: 'boolean', example: true },
-        userId: {
-          type: 'string',
-          example: '4b99f90a-1fe8-452a-9ce1-e590324a78de',
-        },
-        email: { type: 'string', example: 'all-permissions@example.com' },
-        username: { type: 'string', example: 'all-permissions' },
-        firstName: { type: 'string', example: 'All' },
-        lastName: { type: 'string', example: 'Permissions' },
-        accountType: { type: 'string', example: 'STUDENT' },
-        accountStatus: { type: 'string', example: 'ACTIVE' },
-        permissions: {
-          type: 'array',
-          items: { type: 'string' },
-          example: [
-            'user:profile:me:view',
-            'user:profile:me:edit',
-            'instructor:course:create',
-          ],
-        },
-        lastLogin: { type: 'string', nullable: true, example: null },
-        emailVerified: { type: 'boolean', example: true },
-      },
-    },
   })
   @ApiUnauthorizedResponse({
     description: 'Authentication required - no valid auth token provided',
-    schema: {
-      type: 'object',
-      properties: {
-        statusCode: { type: 'number', example: 401 },
-        timestamp: { type: 'string', example: '2025-06-18T16:17:33.570Z' },
-        path: { type: 'string', example: '/auth/profile/me' },
-        method: { type: 'string', example: 'GET' },
-        message: {
-          type: 'string',
-          example: 'No authentication token provided',
-        },
-        correlationId: {
-          type: 'string',
-          example: '81238b77-106e-4377-af21-a2ba8e7fd89d',
-        },
-      },
-    },
   })
   public async getMyProfile(@Req() request: Request): Promise<any> {
-    const authToken = request.cookies['auth-token'];
+    const authToken = request.cookies?.['auth-token'];
 
     if (!authToken) {
       throw new UnauthorizedException('No authentication token provided');
     }
 
-    return this.authenticationUserService.getUserProfile(authToken);
+    const sessionInfo =
+      await this.authenticationService.getSessionByToken(authToken);
+
+    if (!sessionInfo) {
+      throw new UnauthorizedException(
+        'Invalid or expired authentication token',
+      );
+    }
+
+    const isValidSession = await this.authenticationService.isUserAuthenticated(
+      sessionInfo.userId,
+      authToken,
+    );
+
+    if (!isValidSession) {
+      throw new UnauthorizedException('Authentication token has expired');
+    }
+
+    const userProfile = await this.authenticationService.getUserProfileById(
+      sessionInfo.userId,
+    );
+
+    if (!userProfile) {
+      throw new UnauthorizedException('User profile not found');
+    }
+
+    const permissions = await this.authenticationService.getUserPermissionSet(
+      sessionInfo.userId,
+    );
+
+    return {
+      success: true,
+      userId: sessionInfo.userId,
+      email: userProfile.email,
+      username: userProfile.username,
+      firstName: userProfile.first_name,
+      lastName: userProfile.last_name,
+      accountType: userProfile.account_type_informal,
+      accountStatus: userProfile.current_account_status,
+      permissions,
+      lastLogin: null,
+      emailVerified: userProfile.is_email_verified,
+    };
   }
 }

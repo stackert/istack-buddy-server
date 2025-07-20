@@ -3,8 +3,9 @@ import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { DevDebugModule } from './dev-debug/dev-debug.module';
-import { AuthModule } from './auth/auth.module';
-import { AuthenticationUserModule } from './authentication-user/authentication-user.module';
+import { AuthenticationModule } from './authentication/authentication.module';
+import { UserProfileModule } from './user-profile/user-profile.module';
+import { AuthorizationPermissionsModule } from './authorization-permissions/authorization-permissions.module';
 import { LoggerModule } from './common/logger/logger.module';
 import { CorrelationInterceptor } from './common/interceptors/correlation.interceptor';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
@@ -17,8 +18,9 @@ import { RobotModule } from './robots/robot.module';
 @Module({
   imports: [
     LoggerModule,
-    AuthModule,
-    AuthenticationUserModule,
+    AuthenticationModule,
+    UserProfileModule,
+    AuthorizationPermissionsModule,
     DevDebugModule,
     ChatManagerModule,
     IstackBuddySlackApiModule,

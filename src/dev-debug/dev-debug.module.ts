@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
 import { DevDebugController } from './dev-debug.controller';
 import { DevDebugService } from './dev-debug.service';
-import { AuthModule } from '../auth/auth.module';
+import { AuthenticationModule } from '../authentication/authentication.module';
 
 @Module({
-  imports: [AuthModule],
+  imports: [AuthenticationModule],
   controllers: [DevDebugController],
   providers: [DevDebugService],
 })

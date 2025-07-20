@@ -1,0 +1,40 @@
+{
+  "groups": {
+    "admin": {
+      "id": "admin",
+      "name": "Administrators",
+      "description": "System administrators with full access",
+      "created_at": "2024-01-01T00:00:00Z"
+    },
+    "instructor": {
+      "id": "instructor",
+      "name": "Instructors",
+      "description": "Course instructors with teaching permissions",
+      "created_at": "2024-01-01T00:00:00Z"
+    },
+    "student": {
+      "id": "student",
+      "name": "Students",
+      "description": "Students with basic access",
+      "created_at": "2024-01-01T00:00:00Z"
+    },
+    "developer": {
+      "id": "developer",
+      "name": "Developers",
+      "description": "Development team with technical access",
+      "created_at": "2024-01-01T00:00:00Z"
+    },
+    "chat-admin": {
+      "id": "chat-admin",
+      "name": "Chat Administrators",
+      "description": "Users with chat management permissions",
+      "created_at": "2024-01-01T00:00:00Z"
+    },
+    "slack-integration": {
+      "id": "slack-integration",
+      "name": "Slack Integration Users",
+      "description": "Users with Slack integration access",
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  }
+}

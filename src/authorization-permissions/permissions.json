@@ -1,0 +1,59 @@
+{
+  "permissions": {
+    "auth:user": {
+      "id": "auth:user",
+      "name": "Basic User Authentication",
+      "description": "Basic user authentication permission"
+    },
+    "auth:user:{self}": {
+      "id": "auth:user:{self}",
+      "name": "Self User Access",
+      "description": "Access to own user data"
+    },
+    "chat:conversations:create": {
+      "id": "chat:conversations:create",
+      "name": "Create Conversations",
+      "description": "Create new chat conversations"
+    },
+    "chat:conversations:read": {
+      "id": "chat:conversations:read",
+      "name": "Read Conversations",
+      "description": "Read chat conversations"
+    },
+    "chat:conversations:update": {
+      "id": "chat:conversations:update",
+      "name": "Update Conversations",
+      "description": "Update chat conversations"
+    },
+    "chat:conversations:delete": {
+      "id": "chat:conversations:delete",
+      "name": "Delete Conversations",
+      "description": "Delete chat conversations"
+    },
+    "chat:conversations:message:create": {
+      "id": "chat:conversations:message:create",
+      "name": "Create Messages",
+      "description": "Create messages in conversations"
+    },
+    "chat:conversations:message:read": {
+      "id": "chat:conversations:message:read",
+      "name": "Read Messages",
+      "description": "Read messages in conversations"
+    },
+    "chat:dashboard:stats": {
+      "id": "chat:dashboard:stats",
+      "name": "Dashboard Statistics",
+      "description": "Access dashboard statistics"
+    },
+    "external-service:external-service:slacky:events": {
+      "id": "external-service:external-service:slacky:events",
+      "name": "Slack Integration Events",
+      "description": "Handle Slack integration events"
+    },
+    "admin:debug": {
+      "id": "admin:debug",
+      "name": "Debug Access",
+      "description": "Access debug endpoints"
+    }
+  }
+}

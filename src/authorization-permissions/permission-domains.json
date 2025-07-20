@@ -1,0 +1,24 @@
+{
+  "domains": {
+    "auth": {
+      "id": "auth",
+      "name": "Authentication",
+      "description": "Authentication and user management"
+    },
+    "chat": {
+      "id": "chat",
+      "name": "Chat System",
+      "description": "Chat conversations and messaging"
+    },
+    "external-service": {
+      "id": "external-service",
+      "name": "External Services",
+      "description": "External service integrations"
+    },
+    "admin": {
+      "id": "admin",
+      "name": "Administration",
+      "description": "System administration and debugging"
+    }
+  }
+}
