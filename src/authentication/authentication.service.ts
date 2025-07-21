@@ -37,23 +37,51 @@ interface AuthenticationResult {
 
 @Injectable()
 export class AuthenticationService {
-  private config: SessionConfig;
+  private config: SessionConfig = {
+    sessionTimeoutSeconds: 28800, // 8 hours default
+    sessionCleanupIntervalMinutes: 30,
+    jwtSecret: 'development-jwt-secret-replace-in-production',
+    jwtExpiration: '8h',
+    jwtIssuer: 'istack-buddy',
+  };
 
   constructor(
     private readonly logger: CustomLoggerService,
     private readonly authPermissionsService: AuthorizationPermissionsService,
     private readonly userProfileService: UserProfileService,
   ) {
-    // Use imported JSON data directly
-    this.config = sessionConfig;
+    // Use imported JSON data directly with fallback
+    try {
+      if (sessionConfig && typeof sessionConfig === 'object') {
+        this.config = { ...this.config, ...sessionConfig };
+      }
+    } catch (error) {
+      this.logger.error(
+        'AuthenticationService.constructor',
+        'Failed to load session configuration, using defaults',
+        error as Error,
+      );
+      // Keep the default config already set above
+    }
 
-    this.logger.logWithContext(
-      'debug',
-      'Authentication service initialized with configuration',
-      'AuthenticationService.constructor',
-      undefined,
-      { sessionTimeoutSeconds: this.config.sessionTimeoutSeconds },
-    );
+    // Ensure config is always defined before logging
+    if (this.config && this.config.sessionTimeoutSeconds) {
+      this.logger.logWithContext(
+        'debug',
+        'Authentication service initialized with configuration',
+        'AuthenticationService.constructor',
+        undefined,
+        { sessionTimeoutSeconds: this.config.sessionTimeoutSeconds },
+      );
+    } else {
+      this.logger.logWithContext(
+        'warn',
+        'Authentication service initialized with default configuration',
+        'AuthenticationService.constructor',
+        undefined,
+        { sessionTimeoutSeconds: 28800 }, // Default value
+      );
+    }
   }
 
   /**

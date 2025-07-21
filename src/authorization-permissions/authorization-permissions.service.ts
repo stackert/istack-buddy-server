@@ -1,9 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import * as jwt from 'jsonwebtoken';
 import { CustomLoggerService } from '../common/logger/custom-logger.service';
 import {
-  evaluatePermission,
-  getUserEffectivePermissionChain,
   PermissionWithConditions,
   EvaluateAllowConditions,
 } from './permission-evaluator.helper';
@@ -57,6 +55,29 @@ interface FileBasedUserGroupMemberships {
   };
 }
 
+// Define interfaces for the helper functions to make them injectable
+interface PermissionEvaluator {
+  evaluatePermission: (
+    userId: string,
+    requiredPermission: string,
+    userOwnPermissions: PermissionWithConditions[],
+    userGroupMemberships: PermissionWithConditions[],
+    evaluationContext: EvaluateAllowConditions,
+  ) => {
+    actor: string;
+    subjectPermission: string;
+    isAllowed: boolean;
+    reason: string;
+    evaluatedChain: string[];
+  };
+  getUserEffectivePermissionChain: (
+    userId: string,
+    userOwnPermissions: PermissionWithConditions[],
+    userGroupMemberships: PermissionWithConditions[],
+    evaluationContext: EvaluateAllowConditions,
+  ) => Promise<PermissionWithConditions[]>;
+}
+
 @Injectable()
 export class AuthorizationPermissionsService {
   // In-memory storage for test users
@@ -69,7 +90,11 @@ export class AuthorizationPermissionsService {
   private userGroupMemberships: FileBasedUserGroupMemberships =
     userGroupMembershipsData;
 
-  constructor(private readonly logger: CustomLoggerService) {
+  constructor(
+    private readonly logger: CustomLoggerService,
+    @Inject('PermissionEvaluator')
+    private readonly permissionEvaluator: PermissionEvaluator,
+  ) {
     this.logger.logWithContext(
       'debug',
       'File-based permissions loaded successfully',
@@ -184,8 +209,8 @@ export class AuthorizationPermissionsService {
       }));
     }
 
-    // Check file-based permissions
-    if (this.userPermissions.user_permissions[userId]) {
+    // Check file-based permissions (with null check)
+    if (this.userPermissions?.user_permissions?.[userId]) {
       return this.userPermissions.user_permissions[userId].permissions.map(
         (permissionId) => ({
           permissionId,
@@ -204,13 +229,13 @@ export class AuthorizationPermissionsService {
   private getUserGroupMemberships(userId: string): PermissionWithConditions[] {
     const groupMemberships: PermissionWithConditions[] = [];
 
-    // Get user's group memberships
+    // Get user's group memberships (with null check)
     const userGroups =
-      this.userGroupMemberships.user_group_memberships[userId] || [];
+      this.userGroupMemberships?.user_group_memberships?.[userId] || [];
 
     // For each group, get the permissions
     userGroups.forEach((groupId) => {
-      const groupData = this.groupPermissions.group_permissions[groupId];
+      const groupData = this.groupPermissions?.group_permissions?.[groupId];
       if (groupData) {
         groupData.permissions.forEach((permissionId) => {
           groupMemberships.push({
@@ -250,7 +275,7 @@ export class AuthorizationPermissionsService {
       const userGroupMemberships = this.getUserGroupMemberships(userId);
 
       // Use the helper function to evaluate the permission
-      const result = evaluatePermission(
+      const result = this.permissionEvaluator.evaluatePermission(
         userId,
         requiredPermission,
         userOwnPermissions,
@@ -300,12 +325,13 @@ export class AuthorizationPermissionsService {
       const userGroupMemberships = this.getUserGroupMemberships(userId);
 
       // Use the helper function to get the effective permission chain
-      const effectivePermissions = getUserEffectivePermissionChain(
-        userId,
-        userOwnPermissions,
-        userGroupMemberships,
-        evaluationContext,
-      );
+      const effectivePermissions =
+        await this.permissionEvaluator.getUserEffectivePermissionChain(
+          userId,
+          userOwnPermissions,
+          userGroupMemberships,
+          evaluationContext,
+        );
 
       return effectivePermissions;
     } catch (error) {

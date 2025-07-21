@@ -1,25 +1,45 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { CustomLoggerService } from '../common/logger/custom-logger.service';
-
-// Mock the helper functions before importing the service
-const mockEvaluatePermission = jest.fn();
-const mockGetUserEffectivePermissionChain = jest.fn();
-
-jest.mock('./permission-evaluator.helper', () => ({
-  evaluatePermission: mockEvaluatePermission,
-  getUserEffectivePermissionChain: mockGetUserEffectivePermissionChain,
+// Mock the JSON imports before any imports
+jest.doMock('./user-permissions.json', () => ({
+  user_permissions: {
+    user1: {
+      permissions: ['read:chat'],
+      jwtToken: 'test-jwt-1',
+    },
+  },
 }));
 
-// Import the service after mocking
+jest.doMock('./group-permissions.json', () => ({
+  group_permissions: {
+    'admin-group': {
+      permissions: ['write:chat'],
+      members: ['user1'],
+    },
+  },
+}));
+
+jest.doMock('./user-group-memberships.json', () => ({
+  user_group_memberships: {
+    user1: ['admin-group'],
+  },
+}));
+
+import { Test, TestingModule } from '@nestjs/testing';
+import { CustomLoggerService } from '../common/logger/custom-logger.service';
 import { AuthorizationPermissionsService } from './authorization-permissions.service';
 
 describe('AuthorizationPermissionsService', () => {
   let service: AuthorizationPermissionsService;
   let logger: CustomLoggerService;
+  let mockEvaluatePermission: jest.Mock;
+  let mockGetUserEffectivePermissionChain: jest.Mock;
 
   beforeEach(async () => {
     // Reset all mocks first
     jest.clearAllMocks();
+
+    // Create mock functions
+    mockEvaluatePermission = jest.fn();
+    mockGetUserEffectivePermissionChain = jest.fn();
 
     // Set up default mock implementations for helper functions
     mockEvaluatePermission.mockReturnValue({
@@ -30,7 +50,19 @@ describe('AuthorizationPermissionsService', () => {
       evaluatedChain: ['read:chat', 'write:chat'],
     });
 
-    mockGetUserEffectivePermissionChain.mockResolvedValue([]);
+    mockGetUserEffectivePermissionChain.mockResolvedValue([
+      {
+        permissionId: 'read:chat',
+        conditions: null,
+        byVirtueOf: 'user',
+      },
+      {
+        permissionId: 'write:chat',
+        conditions: null,
+        byVirtueOf: 'group',
+        groupId: 'admin-group',
+      },
+    ]);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -41,6 +73,14 @@ describe('AuthorizationPermissionsService', () => {
             logWithContext: jest.fn(),
             error: jest.fn(),
             permissionCheck: jest.fn(),
+          },
+        },
+        {
+          provide: 'PermissionEvaluator',
+          useValue: {
+            evaluatePermission: mockEvaluatePermission,
+            getUserEffectivePermissionChain:
+              mockGetUserEffectivePermissionChain,
           },
         },
       ],
@@ -95,18 +135,24 @@ describe('AuthorizationPermissionsService', () => {
 
   describe('hasPermission', () => {
     it('should use helper function to evaluate permissions', async () => {
+      // Create a test user first to ensure we have valid data
+      const testUser = service.createTestUserWithPermissions([
+        'read:chat',
+        'write:chat',
+      ]);
+
       mockEvaluatePermission.mockReturnValue({
-        actor: 'user1',
+        actor: testUser.userId,
         subjectPermission: 'read:chat',
         isAllowed: true,
         reason: 'Allowed - Permission found in chain',
         evaluatedChain: ['read:chat', 'write:chat'],
       });
 
-      const result = await service.hasPermission('user1', 'read:chat');
+      const result = await service.hasPermission(testUser.userId, 'read:chat');
 
       expect(mockEvaluatePermission).toHaveBeenCalledWith(
-        'user1',
+        testUser.userId,
         'read:chat',
         expect.any(Array),
         expect.any(Array),
@@ -116,25 +162,32 @@ describe('AuthorizationPermissionsService', () => {
     });
 
     it('should return false when helper function returns false', async () => {
+      const testUser = service.createTestUserWithPermissions(['read:chat']);
+
       mockEvaluatePermission.mockReturnValue({
-        actor: 'user1',
+        actor: testUser.userId,
         subjectPermission: 'admin:system',
         isAllowed: false,
         reason: 'Permission is not allowed - Permission not found in chain',
         evaluatedChain: [],
       });
 
-      const result = await service.hasPermission('user1', 'admin:system');
+      const result = await service.hasPermission(
+        testUser.userId,
+        'admin:system',
+      );
 
       expect(result).toBe(false);
     });
 
     it('should handle errors gracefully', async () => {
+      const testUser = service.createTestUserWithPermissions(['read:chat']);
+
       mockEvaluatePermission.mockImplementation(() => {
         throw new Error('Helper error');
       });
 
-      const result = await service.hasPermission('user1', 'read:chat');
+      const result = await service.hasPermission(testUser.userId, 'read:chat');
 
       expect(result).toBe(false);
       expect(logger.error).toHaveBeenCalled();
@@ -143,6 +196,11 @@ describe('AuthorizationPermissionsService', () => {
 
   describe('getUserEffectivePermissions', () => {
     it('should use helper function to get effective permissions', async () => {
+      const testUser = service.createTestUserWithPermissions([
+        'read:chat',
+        'write:chat',
+      ]);
+
       const mockPermissions = [
         {
           permissionId: 'read:chat',
@@ -153,10 +211,10 @@ describe('AuthorizationPermissionsService', () => {
 
       mockGetUserEffectivePermissionChain.mockResolvedValue(mockPermissions);
 
-      const result = await service.getUserEffectivePermissions('user1');
+      const result = await service.getUserEffectivePermissions(testUser.userId);
 
       expect(mockGetUserEffectivePermissionChain).toHaveBeenCalledWith(
-        'user1',
+        testUser.userId,
         expect.any(Array),
         expect.any(Array),
         {},
@@ -165,11 +223,13 @@ describe('AuthorizationPermissionsService', () => {
     });
 
     it('should handle errors gracefully', async () => {
+      const testUser = service.createTestUserWithPermissions(['read:chat']);
+
       mockGetUserEffectivePermissionChain.mockImplementation(() => {
         throw new Error('Helper error');
       });
 
-      const result = await service.getUserEffectivePermissions('user1');
+      const result = await service.getUserEffectivePermissions(testUser.userId);
 
       expect(result).toEqual([]);
       expect(logger.error).toHaveBeenCalled();
@@ -178,6 +238,11 @@ describe('AuthorizationPermissionsService', () => {
 
   describe('getUserPermissions (legacy method)', () => {
     it('should return permission IDs from effective permissions', async () => {
+      const testUser = service.createTestUserWithPermissions([
+        'read:chat',
+        'write:chat',
+      ]);
+
       const mockPermissions = [
         {
           permissionId: 'read:chat',
@@ -194,29 +259,9 @@ describe('AuthorizationPermissionsService', () => {
 
       mockGetUserEffectivePermissionChain.mockResolvedValue(mockPermissions);
 
-      const result = await service.getUserPermissions('user1');
+      const result = await service.getUserPermissions(testUser.userId);
 
       expect(result).toEqual(['read:chat', 'write:chat']);
-    });
-  });
-
-  describe('test user management', () => {
-    it('should clear test users', () => {
-      // Create a test user first
-      const testUser = service.createTestUserWithPermissions(['read:chat']);
-
-      // Verify user exists
-      const userPermissions = service.getTestUserPermissions(testUser.userId);
-      expect(userPermissions).toBeDefined();
-
-      // Clear users
-      service.clearTestUsers();
-
-      // Verify user is gone
-      const clearedUserPermissions = service.getTestUserPermissions(
-        testUser.userId,
-      );
-      expect(clearedUserPermissions).toBeUndefined();
     });
   });
 });

@@ -425,7 +425,7 @@ describe('ChatManagerService', () => {
       });
       const conversationId = conversation.id;
 
-      // Add multiple messages
+      // Add multiple messages with small delays to ensure proper ordering
       for (let i = 1; i <= 5; i++) {
         await service.addMessage({
           content: `Message ${i}`,
@@ -434,16 +434,16 @@ describe('ChatManagerService', () => {
           fromRole: UserRole.CUSTOMER,
           toRole: UserRole.AGENT,
         });
+        // Small delay to ensure proper chronological ordering
+        await new Promise((resolve) => setTimeout(resolve, 1));
       }
 
       const messages = await service.getLastMessages(conversationId, 3);
 
       expect(messages.length).toBe(3);
-      // Based on the actual behavior, getLastMessages returns the first 3 messages in chronological order
-      // The exact order may vary due to timing, so compare sorted arrays
-      const messageContents = messages.map((m) => m.content).sort();
-      const expectedContents = ['Message 1', 'Message 2', 'Message 3'].sort();
-      expect(messageContents).toEqual(expectedContents);
+      // Since we added 5 messages, we should get the last 3: Message 3, Message 4, Message 5
+      const messageContents = messages.map((m) => m.content);
+      expect(messageContents).toEqual(['Message 3', 'Message 4', 'Message 5']);
     });
 
     it('should return all messages if count exceeds message count', async () => {

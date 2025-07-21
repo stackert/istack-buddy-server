@@ -7,6 +7,7 @@ import { ConversationListServiceModule } from '../ConversationLists/Conversation
 import { ChatConversationListService } from '../ConversationLists/ChatConversationListService';
 import { AuthenticationModule } from '../authentication/authentication.module';
 import { GuardsModule } from '../common/guards/guards.module';
+import { AuthPermissionGuard } from '../common/guards/auth-permission.guard';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { GuardsModule } from '../common/guards/guards.module';
     ChatManagerGateway,
     ChatManagerService,
     ChatConversationListService,
+    AuthPermissionGuard,
   ],
   exports: [ChatManagerService, ChatConversationListService],
 })

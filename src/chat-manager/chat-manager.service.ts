@@ -262,12 +262,22 @@ export class ChatManagerService {
       return [];
     }
 
-    const envelopes = conversationList.getLastAddedEnvelopes().slice(0, count);
-    const messages = envelopes
+    // Get all envelopes and convert to messages
+    const allEnvelopes = conversationList.getLastAddedEnvelopes();
+    const allMessages = allEnvelopes
       .map((envelope) => this.envelopeToMessage(envelope, conversationId))
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      .sort((a, b) => {
+        // Primary sort by createdAt timestamp
+        const timeDiff = a.createdAt.getTime() - b.createdAt.getTime();
+        if (timeDiff !== 0) {
+          return timeDiff;
+        }
+        // Secondary sort by message ID for stability when timestamps are identical
+        return a.id.localeCompare(b.id);
+      });
 
-    return messages.reverse(); // Return in chronological order
+    // Return the last N messages
+    return allMessages.slice(-count);
   }
 
   /**
