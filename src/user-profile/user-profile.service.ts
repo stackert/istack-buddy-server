@@ -1,28 +1,43 @@
 import { Injectable } from '@nestjs/common';
-import * as fs from 'fs';
-import * as path from 'path';
 import { CustomLoggerService } from '../common/logger/custom-logger.service';
 import { AuthorizationPermissionsService } from '../authorization-permissions/authorization-permissions.service';
 
+// Import JSON files directly for compile-time checking
+import userProfilesData from './user-profiles.json';
+
+interface UserProfiles {
+  users: {
+    [userId: string]: {
+      id: string;
+      email: string;
+      username: string;
+      first_name: string;
+      last_name: string;
+      account_type_informal: string;
+      current_account_status: string;
+      is_email_verified: boolean;
+      created_at: string;
+      last_login: string;
+    };
+  };
+}
+
 @Injectable()
 export class UserProfileService {
+  private userProfiles: UserProfiles;
+
   constructor(
     private readonly logger: CustomLoggerService,
     private readonly authPermissionsService: AuthorizationPermissionsService,
-  ) {}
+  ) {
+    // Use imported JSON data directly
+    this.userProfiles = userProfilesData;
+  }
 
   /**
    * Gets user profile by ID.
    */
   public async getUserProfileById(userId: string): Promise<any | null> {
-    this.logger.logWithContext(
-      'debug',
-      'Getting user profile by ID',
-      'UserProfileService.getUserProfileById',
-      undefined,
-      { userId },
-    );
-
     try {
       // First check if this is a test user
       const testUserProfile =
@@ -38,36 +53,8 @@ export class UserProfileService {
         return testUserProfile;
       }
 
-      // Fall back to file-based profiles
-      // Try multiple possible paths for the file
-      const possiblePaths = [
-        path.join(process.cwd(), 'src', 'user-profile', 'user-profiles.json'),
-        path.join(__dirname, 'user-profiles.json'),
-        path.join(process.cwd(), 'src', 'user-profile', 'user-profiles.json'),
-      ];
-
-      let profilesFile = null;
-      let usedPath = '';
-
-      for (const filePath of possiblePaths) {
-        try {
-          profilesFile = fs.readFileSync(filePath, 'utf8');
-          usedPath = filePath;
-          break;
-        } catch (fileError) {
-          // Continue to next path
-        }
-      }
-
-      if (!profilesFile) {
-        throw new Error(
-          'Could not find user-profiles.json in any expected location',
-        );
-      }
-
-      const profiles = JSON.parse(profilesFile);
-
-      const userProfile = profiles.users[userId];
+      // Use imported user profiles data
+      const userProfile = this.userProfiles.users[userId];
       if (!userProfile) {
         this.logger.logWithContext(
           'debug',
@@ -86,6 +73,46 @@ export class UserProfileService {
         'Failed to get user profile',
         error as Error,
         { userId },
+      );
+      return null;
+    }
+  }
+
+  /**
+   * Gets user profile by email.
+   */
+  public async getUserProfileByEmail(email: string): Promise<any | null> {
+    try {
+      // Search through user profiles to find by email
+      for (const [userId, userProfile] of Object.entries(
+        this.userProfiles.users,
+      )) {
+        if (userProfile.email === email) {
+          this.logger.logWithContext(
+            'debug',
+            'Found user profile by email',
+            'UserProfileService.getUserProfileByEmail',
+            undefined,
+            { email, userId },
+          );
+          return userProfile;
+        }
+      }
+
+      this.logger.logWithContext(
+        'debug',
+        'User profile not found by email',
+        'UserProfileService.getUserProfileByEmail',
+        undefined,
+        { email },
+      );
+      return null;
+    } catch (error) {
+      this.logger.error(
+        'UserProfileService.getUserProfileByEmail',
+        'Failed to get user profile by email',
+        error as Error,
+        { email },
       );
       return null;
     }

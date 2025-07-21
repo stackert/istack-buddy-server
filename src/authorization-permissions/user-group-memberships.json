@@ -1,0 +1,9 @@
+{
+  "user_group_memberships": {
+    "user1": ["admin-group", "chat-group"],
+    "user2": ["chat-group"],
+    "user3": ["guest-group"],
+    "test-user-123": ["admin-group"],
+    "test-user-456": ["chat-group"]
+  }
+}

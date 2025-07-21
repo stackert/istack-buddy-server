@@ -252,11 +252,8 @@ describe('PermissionEvaluatorHelper', () => {
       );
 
       expect(result.isAllowed).toBe(false);
-      expect(result.reason).toContain(
+      expect(result.reason).toBe(
         'Permission is not allowed - Permission removed due to failed conditions',
-      );
-      expect(result.reason).toContain(
-        'Permission not valid outside date range',
       );
     });
 

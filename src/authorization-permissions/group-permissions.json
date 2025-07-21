@@ -1,44 +1,16 @@
 {
   "group_permissions": {
-    "developer": [
-      "auth:user",
-      "auth:user:{self}",
-      "chat:conversations:create",
-      "chat:conversations:read",
-      "chat:conversations:message:create",
-      "chat:conversations:message:read",
-      "external-service:external-service:slacky:events"
-    ],
-    "chat-admin": [
-      "auth:user",
-      "auth:user:{self}",
-      "chat:conversations:create",
-      "chat:conversations:read",
-      "chat:conversations:update",
-      "chat:conversations:delete",
-      "chat:conversations:message:create",
-      "chat:conversations:message:read",
-      "chat:dashboard:stats"
-    ],
-    "slack-integration": [],
-    "cx-agent-group": [
-      "auth:user",
-      "auth:user:{self}",
-      "chat:conversations:create",
-      "chat:conversations:read",
-      "chat:conversations:update",
-      "chat:conversations:delete",
-      "chat:conversations:message:create",
-      "chat:conversations:message:read",
-      "chat:dashboard:stats"
-    ],
-    "cx-guest-group": [
-      "auth:user",
-      "auth:user:{self}",
-      "chat:conversations:create",
-      "chat:conversations:read",
-      "chat:conversations:message:create",
-      "chat:conversations:message:read"
-    ]
+    "admin-group": {
+      "permissions": ["admin:users", "admin:system", "read:chat", "write:chat"],
+      "members": ["admin", "user1"]
+    },
+    "chat-group": {
+      "permissions": ["read:chat", "write:chat"],
+      "members": ["user1", "user2"]
+    },
+    "guest-group": {
+      "permissions": ["read:chat"],
+      "members": ["user3"]
+    }
   }
 }

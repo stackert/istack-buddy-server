@@ -59,7 +59,7 @@ export interface EvaluateAllowConditions {
  * addressed in future implementations by either merging conditions or
  * providing a conflict resolution strategy.
  */
-function createEffectivePermissionChain(
+export function createEffectivePermissionChain(
   userPermissions: PermissionWithConditions[],
   groupPermissions: PermissionWithConditions[] = [],
 ): PermissionWithConditions[] {
@@ -85,6 +85,44 @@ function createEffectivePermissionChain(
 }
 
 /**
+ * Get effective permission chain for a user (own permissions + group memberships)
+ * This function should be used by the authorization service to get the user's
+ * complete permission set with conditions evaluated.
+ */
+export function getUserEffectivePermissionChain(
+  userId: string,
+  userOwnPermissions: PermissionWithConditions[],
+  userGroupMemberships: PermissionWithConditions[] = [],
+  evaluationContext: EvaluateAllowConditions = {},
+): PermissionWithConditions[] {
+  // Create the effective chain combining user and group permissions
+  const effectiveChain = createEffectivePermissionChain(
+    userOwnPermissions,
+    userGroupMemberships,
+  );
+
+  // Filter out permissions that fail conditions
+  const validPermissions: PermissionWithConditions[] = [];
+  const failedPermissions: PermissionWithConditions[] = [];
+
+  effectiveChain.forEach((permission) => {
+    if (permission.conditions) {
+      const conditionResult = evaluateCondition(permission, evaluationContext);
+      if (conditionResult.isConditionSatisfied) {
+        validPermissions.push(permission);
+      } else {
+        failedPermissions.push(permission);
+      }
+    } else {
+      // No conditions, so permission is valid
+      validPermissions.push(permission);
+    }
+  });
+
+  return validPermissions;
+}
+
+/**
  * Check if current time is between two times of day (working hours, after hours, etc.)
  * Accepts time strings like "09:00" or "17:00"
  */
@@ -100,75 +138,52 @@ function isNowBetweenTwoTimes(start: string, end: string): boolean {
 }
 
 /**
- * Check if current date is between two dates (expiration date, valid period, etc.)
- * Accepts ISO date strings
+ * Check if current date is between two dates (expiration, valid period, etc.)
+ * Accepts ISO date strings like "2024-01-01" or "2024-12-31"
  */
 function isNowBetweenTwoDates(start: string, end: string): boolean {
   const now = new Date();
   const startDate = new Date(start);
   const endDate = new Date(end);
+
   return now >= startDate && now <= endDate;
 }
 
 /**
- * Condition evaluator functions
- */
-const conditionEvaluators = {
-  timeWindow: (
-    condition: any,
-    context: EvaluateAllowConditions,
-  ): { isConditionSatisfied: boolean; reason?: string } => {
-    const { start, end } = condition;
-    if (!isNowBetweenTwoTimes(start, end)) {
-      return {
-        isConditionSatisfied: false,
-        reason: `Permission not valid outside time window ${start} - ${end}`,
-      };
-    }
-    return { isConditionSatisfied: true };
-  },
-
-  dateRange: (
-    condition: any,
-    context: EvaluateAllowConditions,
-  ): { isConditionSatisfied: boolean; reason?: string } => {
-    const { start, end } = condition;
-    if (!isNowBetweenTwoDates(start, end)) {
-      return {
-        isConditionSatisfied: false,
-        reason: `Permission not valid outside date range ${start} - ${end}`,
-      };
-    }
-    return { isConditionSatisfied: true };
-  },
-};
-
-/**
- * Evaluate a single permission's conditions
+ * Evaluate a permission's conditions against the provided context
  */
 function evaluateCondition(
   permission: PermissionWithConditions,
   conditions: EvaluateAllowConditions,
 ): { isConditionSatisfied: boolean; reason?: string } {
-  // If no conditions, permission is always valid
-  if (
-    !permission.conditions ||
-    Object.keys(permission.conditions).length === 0
-  ) {
+  if (!permission.conditions) {
     return { isConditionSatisfied: true };
   }
 
-  // Evaluate each condition type using the appropriate evaluator
-  for (const [conditionType, conditionValue] of Object.entries(
-    permission.conditions,
-  )) {
-    const evaluator =
-      conditionEvaluators[conditionType as keyof typeof conditionEvaluators];
-    if (evaluator) {
-      const result = evaluator(conditionValue, conditions);
-      if (!result.isConditionSatisfied) {
-        return result;
-      }
+  const { timeWindow, dateRange } = permission.conditions;
+
+  // Evaluate time window conditions
+  if (timeWindow) {
+    const isInTimeWindow = isNowBetweenTwoTimes(
+      timeWindow.start,
+      timeWindow.end,
+    );
+    if (!isInTimeWindow) {
+      return {
+        isConditionSatisfied: false,
+        reason: `Permission not valid outside time window ${timeWindow.start} - ${timeWindow.end}`,
+      };
+    }
+  }
+
+  // Evaluate date range conditions
+  if (dateRange) {
+    const isInDateRange = isNowBetweenTwoDates(dateRange.start, dateRange.end);
+    if (!isInDateRange) {
+      return {
+        isConditionSatisfied: false,
+        reason: `Permission not valid outside date range ${dateRange.start} - ${dateRange.end}`,
+      };
     }
   }
 
@@ -176,73 +191,53 @@ function evaluateCondition(
 }
 
 /**
- * Main permission evaluation function
- * This is the core function that evaluates if a user has permission to perform an action
+ * Evaluate if a user has a specific permission
+ * This is the main function that should be used by the authorization service
  */
-function evaluatePermission(
+export function evaluatePermission(
   userId: string,
   permissionId: string,
-  userPermissions: PermissionWithConditions[],
-  groupPermissions: PermissionWithConditions[] = [],
-  conditions: EvaluateAllowConditions = {},
+  userOwnPermissions: PermissionWithConditions[],
+  userGroupMemberships: PermissionWithConditions[] = [],
+  evaluationContext: EvaluateAllowConditions = {},
 ): EvaluationResult {
-  // Create effective permission chain
-  let chain = createEffectivePermissionChain(userPermissions, groupPermissions);
+  // Get the effective permission chain (no duplicates, no failed conditions)
+  const effectiveChain = getUserEffectivePermissionChain(
+    userId,
+    userOwnPermissions,
+    userGroupMemberships,
+    evaluationContext,
+  );
 
-  // Check if the required permission exists in the original chain (before condition filtering)
+  // Check if the required permission exists in the effective chain
+  const hasPermission = effectiveChain.some(
+    (p) => p.permissionId === permissionId,
+  );
+
+  // Create the original chain for comparison (before condition filtering)
   const originalChain = createEffectivePermissionChain(
-    userPermissions,
-    groupPermissions,
+    userOwnPermissions,
+    userGroupMemberships,
   );
   const permissionExistsInOriginalChain = originalChain.some(
     (p) => p.permissionId === permissionId,
   );
 
-  // Evaluate conditions for each permission
-  const failedPermissions: { permissionId: string; reason: string }[] = [];
-  const validChain: PermissionWithConditions[] = [];
-
-  chain.forEach((permission) => {
-    const conditionResult = evaluateCondition(permission, conditions);
-    if (conditionResult.isConditionSatisfied) {
-      validChain.push(permission);
-    } else {
-      failedPermissions.push({
-        permissionId: permission.permissionId,
-        reason: conditionResult.reason || 'Unknown condition failure',
-      });
-    }
-  });
-
-  chain = validChain;
-
-  // Check if the required permission exists in the final chain
-  const hasPermission = chain.some((p) => p.permissionId === permissionId);
-
+  // Determine the reason for the result
   let reason: string;
   if (hasPermission) {
     reason = 'Allowed - Permission found in chain';
   } else if (permissionExistsInOriginalChain) {
-    // Permission existed but was removed due to failed conditions
-    const failedPermission = failedPermissions.find(
-      (f) => f.permissionId === permissionId,
-    );
-    reason = `Permission is not allowed - Permission removed due to failed conditions: ${failedPermission?.reason || 'Unknown condition failure'}`;
+    reason = `Permission is not allowed - Permission removed due to failed conditions`;
   } else {
-    // Permission was never in the chain
     reason = 'Permission is not allowed - Permission not found in chain';
   }
-
-  const evaluatedChain = chain.map((p) => p.permissionId);
 
   return {
     actor: userId,
     subjectPermission: permissionId,
     isAllowed: hasPermission,
     reason,
-    evaluatedChain,
+    evaluatedChain: effectiveChain.map((p) => p.permissionId),
   };
 }
-
-// Single export statement at the bottom
-export { evaluatePermission, createEffectivePermissionChain };

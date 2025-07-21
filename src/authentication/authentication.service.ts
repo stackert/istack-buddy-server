@@ -1,11 +1,14 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
-import * as fs from 'fs';
-import * as path from 'path';
+import { Injectable } from '@nestjs/common';
 import * as jwt from 'jsonwebtoken';
 import { CustomLoggerService } from '../common/logger/custom-logger.service';
-import { AuthenticationResult } from './interfaces/auth-result.interface';
-import { AuthenticationFailedException } from './exceptions/authentication-failed.exception';
 import { AuthorizationPermissionsService } from '../authorization-permissions/authorization-permissions.service';
+import { UserProfileService } from '../user-profile/user-profile.service';
+import { AuthenticationFailedException } from './exceptions/authentication-failed.exception';
+
+// Import JSON files directly for compile-time checking
+import sessionConfig from '../../config/session-management.json';
+
+const JWT_SECRET = 'istack-buddy-secret-key-2024';
 
 interface SessionConfig {
   sessionTimeoutSeconds: number;
@@ -13,15 +16,6 @@ interface SessionConfig {
   jwtSecret?: string;
   jwtExpiration?: string;
   jwtIssuer?: string;
-}
-
-interface UserPermissions {
-  user_permissions: {
-    [userId: string]: {
-      permissions: string[];
-      jwtToken: string;
-    };
-  };
 }
 
 interface JWTPayload {
@@ -33,86 +27,33 @@ interface JWTPayload {
   exp: number;
 }
 
-const JWT_SECRET = 'istack-buddy-secret-key-2024';
+interface AuthenticationResult {
+  success: boolean;
+  userId?: string;
+  jwtToken?: string;
+  sessionId?: string;
+  error?: string;
+}
 
 @Injectable()
 export class AuthenticationService {
   private config: SessionConfig;
-  private userPermissions: UserPermissions | null = null;
 
   constructor(
     private readonly logger: CustomLoggerService,
     private readonly authPermissionsService: AuthorizationPermissionsService,
+    private readonly userProfileService: UserProfileService,
   ) {
-    this.loadConfiguration();
-    this.loadUserPermissions();
-  }
+    // Use imported JSON data directly
+    this.config = sessionConfig;
 
-  private loadConfiguration(): void {
-    try {
-      const configPath = path.join(
-        process.cwd(),
-        'config',
-        'session-management.json',
-      );
-      const configFile = fs.readFileSync(configPath, 'utf8');
-      this.config = JSON.parse(configFile);
-
-      this.logger.logWithContext(
-        'debug',
-        'Session management configuration loaded',
-        'AuthenticationService.loadConfiguration',
-        undefined,
-        { sessionTimeoutSeconds: this.config.sessionTimeoutSeconds },
-      );
-    } catch (error) {
-      this.logger.error(
-        'AuthenticationService.loadConfiguration',
-        'Failed to load session management configuration',
-        error as Error,
-        { configPath: 'config/session-management.json' },
-      );
-
-      // Fallback to default configuration
-      this.config = {
-        sessionTimeoutSeconds: 28800, // 8 hours
-        sessionCleanupIntervalMinutes: 30,
-      };
-    }
-  }
-
-  private loadUserPermissions(): void {
-    try {
-      const permissionsPath = path.join(
-        process.cwd(),
-        'src',
-        'authorization-permissions',
-        'user-permissions.json',
-      );
-      const permissionsFile = fs.readFileSync(permissionsPath, 'utf8');
-      this.userPermissions = JSON.parse(permissionsFile);
-
-      this.logger.logWithContext(
-        'debug',
-        'User permissions loaded',
-        'AuthenticationService.loadUserPermissions',
-        undefined,
-        {
-          userCount: Object.keys(this.userPermissions!.user_permissions).length,
-        },
-      );
-    } catch (error) {
-      this.logger.error(
-        'AuthenticationService.loadUserPermissions',
-        'Failed to load user permissions',
-        error as Error,
-        {
-          permissionsPath:
-            'src/authorization-permissions/user-permissions.json',
-        },
-      );
-      this.userPermissions = null;
-    }
+    this.logger.logWithContext(
+      'debug',
+      'Authentication service initialized with configuration',
+      'AuthenticationService.constructor',
+      undefined,
+      { sessionTimeoutSeconds: this.config.sessionTimeoutSeconds },
+    );
   }
 
   /**
@@ -138,231 +79,150 @@ export class AuthenticationService {
         throw new AuthenticationFailedException('Missing email or password');
       }
 
-      // Load user profiles to find user by email
-      const profilesPath = path.join(
-        process.cwd(),
-        'src',
-        'user-profile',
-        'user-profiles.json',
-      );
-      const profilesFile = fs.readFileSync(profilesPath, 'utf8');
-      const profiles = JSON.parse(profilesFile);
-
-      // Find user by email
-      let userId = null;
-      for (const [id, profile] of Object.entries(profiles.users)) {
-        if ((profile as any).email === email) {
-          userId = id;
-          break;
-        }
+      // Find user by email using UserProfileService
+      const userProfile =
+        await this.userProfileService.getUserProfileByEmail(email);
+      if (!userProfile) {
+        throw new AuthenticationFailedException('User not found');
       }
 
-      if (!userId) {
-        throw new AuthenticationFailedException('Invalid email or password');
+      // TODO: Add password validation logic here
+      // For now, assume any password is valid for existing users
+      if (!password || password.length < 1) {
+        throw new AuthenticationFailedException('Invalid password');
       }
-
-      // For now, accept any password for existing users
-      // TODO: Implement proper password validation
-      if (password !== 'password123') {
-        throw new AuthenticationFailedException('Invalid email or password');
-      }
-
-      // Get user permissions
-      const permissions = await this.getUserPermissionSet(userId);
 
       // Generate JWT token
       const jwtToken = jwt.sign(
         {
-          userId,
-          email,
-          username: profiles.users[userId].username,
-          accountType: profiles.users[userId].account_type_informal,
+          userId: userProfile.id,
+          email: userProfile.email,
+          username: userProfile.username,
+          accountType: userProfile.account_type_informal,
         },
         JWT_SECRET,
         { expiresIn: '8h' },
       );
 
-      const sessionId = `session-${userId}-${Date.now()}`;
-
-      // Log successful authentication
-      this.logger.auditLog(
-        'EMAIL_AUTH_SUCCESS',
-        'success',
+      this.logger.logWithContext(
+        'log',
+        'Email/password authentication successful',
         'AuthenticationService.authenticateUserByEmailAndPassword',
         undefined,
-        { email, userId, sessionId, permissionCount: permissions.length },
+        { userId: userProfile.id, email },
       );
 
       return {
         success: true,
-        sessionId,
-        userId,
-        permissions,
-        message: 'Authentication successful',
+        userId: userProfile.id,
         jwtToken,
+        sessionId: `session-${userProfile.id}-${Date.now()}`,
       };
     } catch (error) {
-      this.logger.auditLog(
-        'EMAIL_AUTH_FAILED',
-        'failure',
+      this.logger.error(
         'AuthenticationService.authenticateUserByEmailAndPassword',
-        undefined,
-        {
-          email,
-          error: error instanceof Error ? error.message : 'Unknown error',
-        },
+        'Email/password authentication failed',
+        error as Error,
+        logContext,
       );
 
-      if (error instanceof AuthenticationFailedException) {
-        throw error;
-      }
-
-      throw new AuthenticationFailedException('Authentication failed');
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Authentication failed',
+      };
     }
   }
 
   /**
-   * Validates a JWT token and returns user information.
+   * Authenticates a user using JWT token.
    */
   public async authenticateUser(
     userId: string,
     jwtToken: string,
   ): Promise<AuthenticationResult> {
+    const logContext = { userId, hasToken: !!jwtToken };
+
     this.logger.logWithContext(
       'log',
-      'Authentication attempt started',
+      'JWT authentication attempt started',
       'AuthenticationService.authenticateUser',
       undefined,
-      { userId },
+      logContext,
     );
 
     try {
-      // Validate JWT token format
-      if (!this.isValidToken(jwtToken)) {
+      // Validate input parameters
+      if (!userId || !jwtToken) {
+        throw new AuthenticationFailedException('Missing userId or JWT token');
+      }
+
+      // Verify JWT token
+      const decoded = jwt.verify(jwtToken, JWT_SECRET) as JWTPayload;
+
+      // Check if the token belongs to the specified user
+      if (decoded.userId !== userId) {
         throw new AuthenticationFailedException(
-          'Invalid JWT token format',
-          userId,
+          'JWT token does not match user ID',
         );
       }
 
-      // TODO: Verify user exists in file-based storage
-      // For now, assume user exists
+      // Check if user exists using UserProfileService
+      const userProfile =
+        await this.userProfileService.getUserProfileById(userId);
+      if (!userProfile) {
+        throw new AuthenticationFailedException('User not found');
+      }
 
-      // TODO: Create or update session in file-based storage
-      const sessionId = `session-${Date.now()}`;
-
-      // TODO: Get permissions from file-based storage
-      const permissions = ['auth:user', 'auth:user:{self}'];
-
-      // Log successful authentication
-      this.logger.auditLog(
-        'SESSION_ACTIVATED',
-        'success',
+      this.logger.logWithContext(
+        'log',
+        'JWT authentication successful',
         'AuthenticationService.authenticateUser',
         undefined,
-        { userId, sessionId, permissionCount: permissions.length },
+        { userId, email: decoded.email },
       );
 
       return {
         success: true,
-        sessionId,
         userId,
-        permissions,
-        message: 'Authentication successful',
+        jwtToken,
+        sessionId: `session-${userId}-${Date.now()}`,
       };
     } catch (error) {
-      this.logger.auditLog(
-        'SESSION_ACTIVATION_FAILED',
-        'failure',
+      this.logger.error(
         'AuthenticationService.authenticateUser',
-        undefined,
-        {
-          userId,
-          error: error instanceof Error ? error.message : 'Unknown error',
-        },
+        'JWT authentication failed',
+        error as Error,
+        logContext,
       );
 
-      if (error instanceof AuthenticationFailedException) {
-        throw error;
-      }
-
-      throw error;
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Authentication failed',
+      };
     }
   }
 
   /**
-   * Checks if a user's authentication session is valid and active.
+   * Checks if a user is authenticated using JWT token.
    */
   public async isUserAuthenticated(
     userId: string,
     jwtToken: string,
   ): Promise<boolean> {
     try {
-      // TODO: Implement file-based session validation
-      // For now, return true if token format is valid
-      return this.isValidToken(jwtToken);
+      const result = await this.authenticateUser(userId, jwtToken);
+      return result.success;
     } catch (error) {
-      this.logger.error(
-        'AuthenticationService.isUserAuthenticated',
-        'Failed to validate user authentication',
-        error as Error,
-        { userId },
-      );
       return false;
     }
   }
 
   /**
-   * Gets the user's permission set.
+   * Gets user permissions using AuthorizationPermissionsService.
    */
   public async getUserPermissionSet(userId: string): Promise<string[]> {
-    this.logger.logWithContext(
-      'debug',
-      'Retrieving user permission set',
-      'AuthenticationService.getUserPermissionSet',
-      undefined,
-      { userId },
-    );
-
     try {
-      // First check if this is a test user
-      const testUserPermissions =
-        this.authPermissionsService.getTestUserPermissions(userId);
-      if (testUserPermissions) {
-        this.logger.logWithContext(
-          'debug',
-          'Found test user permissions',
-          'AuthenticationService.getUserPermissionSet',
-          undefined,
-          { userId, permissionCount: testUserPermissions.permissions.length },
-        );
-        return testUserPermissions.permissions;
-      }
-
-      // Fall back to file-based permissions
-      if (!this.userPermissions) {
-        this.logger.error(
-          'AuthenticationService.getUserPermissionSet',
-          'User permissions not loaded',
-          new Error('User permissions not available'),
-          { userId },
-        );
-        return [];
-      }
-
-      const userData = this.userPermissions.user_permissions[userId];
-      if (!userData) {
-        this.logger.logWithContext(
-          'debug',
-          'User not found in permissions',
-          'AuthenticationService.getUserPermissionSet',
-          undefined,
-          { userId },
-        );
-        return [];
-      }
-
-      return userData.permissions;
+      return await this.authPermissionsService.getUserPermissions(userId);
     } catch (error) {
       this.logger.error(
         'AuthenticationService.getUserPermissionSet',
@@ -412,32 +272,11 @@ export class AuthenticationService {
   }
 
   /**
-   * Gets user profile by ID.
+   * Gets user profile by ID using UserProfileService.
    */
   public async getUserProfileById(userId: string): Promise<any | null> {
     try {
-      const profilesPath = path.join(
-        process.cwd(),
-        'src',
-        'user-profile',
-        'user-profiles.json',
-      );
-      const profilesFile = fs.readFileSync(profilesPath, 'utf8');
-      const profiles = JSON.parse(profilesFile);
-
-      const userProfile = profiles.users[userId];
-      if (!userProfile) {
-        this.logger.logWithContext(
-          'debug',
-          'User profile not found',
-          'AuthenticationService.getUserProfileById',
-          undefined,
-          { userId },
-        );
-        return null;
-      }
-
-      return userProfile;
+      return await this.userProfileService.getUserProfileById(userId);
     } catch (error) {
       this.logger.error(
         'AuthenticationService.getUserProfileById',

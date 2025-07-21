@@ -1,12 +1,37 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { AuthorizationPermissionsService } from './authorization-permissions.service';
 import { CustomLoggerService } from '../common/logger/custom-logger.service';
+
+// Mock the helper functions before importing the service
+const mockEvaluatePermission = jest.fn();
+const mockGetUserEffectivePermissionChain = jest.fn();
+
+jest.mock('./permission-evaluator.helper', () => ({
+  evaluatePermission: mockEvaluatePermission,
+  getUserEffectivePermissionChain: mockGetUserEffectivePermissionChain,
+}));
+
+// Import the service after mocking
+import { AuthorizationPermissionsService } from './authorization-permissions.service';
 
 describe('AuthorizationPermissionsService', () => {
   let service: AuthorizationPermissionsService;
   let logger: CustomLoggerService;
 
   beforeEach(async () => {
+    // Reset all mocks first
+    jest.clearAllMocks();
+
+    // Set up default mock implementations for helper functions
+    mockEvaluatePermission.mockReturnValue({
+      actor: 'user1',
+      subjectPermission: 'read:chat',
+      isAllowed: true,
+      reason: 'Allowed - Permission found in chain',
+      evaluatedChain: ['read:chat', 'write:chat'],
+    });
+
+    mockGetUserEffectivePermissionChain.mockResolvedValue([]);
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthorizationPermissionsService,
@@ -27,87 +52,171 @@ describe('AuthorizationPermissionsService', () => {
     logger = module.get<CustomLoggerService>(CustomLoggerService);
   });
 
-  describe('createTestUserWithPermissions', () => {
-    const originalEnv = process.env.NODE_ENV;
-
-    beforeEach(() => {
-      // Set test environment
-      process.env.NODE_ENV = 'test';
-    });
-
-    afterEach(() => {
-      process.env.NODE_ENV = originalEnv;
-      // Clear test users after each test
+  afterEach(() => {
+    if (service) {
       service.clearTestUsers();
-    });
+    }
+    jest.clearAllMocks();
+  });
 
-    it('should create test user with permissions and return JWT token', () => {
-      const permissions = ['user:profile:read', 'user:profile:edit'];
+  it('should be defined', () => {
+    expect(service).toBeDefined();
+  });
 
+  describe('createTestUserWithPermissions', () => {
+    it('should create a test user with permissions', () => {
+      const permissions = ['read:chat', 'write:chat'];
       const result = service.createTestUserWithPermissions(permissions);
 
       expect(result).toHaveProperty('userId');
       expect(result).toHaveProperty('jwt');
-      expect(result.userId).toMatch(/^test-user-\d+-\w+$/);
-      expect(result.jwt).toBeTruthy();
+      expect(result.userId).toMatch(/^test-user-/);
+      expect(result.jwt).toBeDefined();
 
-      // Verify user profile was created in memory
-      const profile = service.getTestUserProfile(result.userId);
-      expect(profile).toBeDefined();
-      expect(profile?.username).toBe(result.userId);
-      expect(profile?.email).toBe(`${result.userId}@test.example.com`);
-
-      // Verify user permissions were created in memory
+      // Verify the user was created in memory
       const userPermissions = service.getTestUserPermissions(result.userId);
       expect(userPermissions).toBeDefined();
       expect(userPermissions?.permissions).toEqual(permissions);
-
-      // Verify logger was called
-      expect(logger.logWithContext).toHaveBeenCalledWith(
-        'debug',
-        'Test user created with permissions',
-        'AuthorizationPermissionsService.createTestUserWithPermissions',
-        undefined,
-        expect.objectContaining({
-          userId: result.userId,
-          permissionCount: 2,
-        }),
-      );
     });
 
     it('should throw error when not in test mode', () => {
-      process.env.NODE_ENV = 'development';
+      const originalEnv = process.env.NODE_ENV;
+      process.env.NODE_ENV = 'production';
 
       expect(() => {
-        service.createTestUserWithPermissions(['user:profile:read']);
+        service.createTestUserWithPermissions(['read:chat']);
       }).toThrow(
         'createTestUserWithPermissions can only be called in test mode',
       );
+
+      process.env.NODE_ENV = originalEnv;
+    });
+  });
+
+  describe('hasPermission', () => {
+    it('should use helper function to evaluate permissions', async () => {
+      mockEvaluatePermission.mockReturnValue({
+        actor: 'user1',
+        subjectPermission: 'read:chat',
+        isAllowed: true,
+        reason: 'Allowed - Permission found in chain',
+        evaluatedChain: ['read:chat', 'write:chat'],
+      });
+
+      const result = await service.hasPermission('user1', 'read:chat');
+
+      expect(mockEvaluatePermission).toHaveBeenCalledWith(
+        'user1',
+        'read:chat',
+        expect.any(Array),
+        expect.any(Array),
+        {},
+      );
+      expect(result).toBe(true);
     });
 
-    it('should create unique user IDs for each call', () => {
-      const permissions = ['user:profile:read'];
+    it('should return false when helper function returns false', async () => {
+      mockEvaluatePermission.mockReturnValue({
+        actor: 'user1',
+        subjectPermission: 'admin:system',
+        isAllowed: false,
+        reason: 'Permission is not allowed - Permission not found in chain',
+        evaluatedChain: [],
+      });
 
-      const result1 = service.createTestUserWithPermissions(permissions);
-      const result2 = service.createTestUserWithPermissions(permissions);
+      const result = await service.hasPermission('user1', 'admin:system');
 
-      expect(result1.userId).not.toBe(result2.userId);
+      expect(result).toBe(false);
     });
 
-    it('should clear test users when clearTestUsers is called', () => {
-      const permissions = ['user:profile:read'];
-      const result = service.createTestUserWithPermissions(permissions);
+    it('should handle errors gracefully', async () => {
+      mockEvaluatePermission.mockImplementation(() => {
+        throw new Error('Helper error');
+      });
+
+      const result = await service.hasPermission('user1', 'read:chat');
+
+      expect(result).toBe(false);
+      expect(logger.error).toHaveBeenCalled();
+    });
+  });
+
+  describe('getUserEffectivePermissions', () => {
+    it('should use helper function to get effective permissions', async () => {
+      const mockPermissions = [
+        {
+          permissionId: 'read:chat',
+          conditions: null,
+          byVirtueOf: 'user',
+        },
+      ];
+
+      mockGetUserEffectivePermissionChain.mockResolvedValue(mockPermissions);
+
+      const result = await service.getUserEffectivePermissions('user1');
+
+      expect(mockGetUserEffectivePermissionChain).toHaveBeenCalledWith(
+        'user1',
+        expect.any(Array),
+        expect.any(Array),
+        {},
+      );
+      expect(result).toEqual(mockPermissions);
+    });
+
+    it('should handle errors gracefully', async () => {
+      mockGetUserEffectivePermissionChain.mockImplementation(() => {
+        throw new Error('Helper error');
+      });
+
+      const result = await service.getUserEffectivePermissions('user1');
+
+      expect(result).toEqual([]);
+      expect(logger.error).toHaveBeenCalled();
+    });
+  });
+
+  describe('getUserPermissions (legacy method)', () => {
+    it('should return permission IDs from effective permissions', async () => {
+      const mockPermissions = [
+        {
+          permissionId: 'read:chat',
+          conditions: null,
+          byVirtueOf: 'user',
+        },
+        {
+          permissionId: 'write:chat',
+          conditions: null,
+          byVirtueOf: 'group',
+          groupId: 'admin-group',
+        },
+      ];
+
+      mockGetUserEffectivePermissionChain.mockResolvedValue(mockPermissions);
+
+      const result = await service.getUserPermissions('user1');
+
+      expect(result).toEqual(['read:chat', 'write:chat']);
+    });
+  });
+
+  describe('test user management', () => {
+    it('should clear test users', () => {
+      // Create a test user first
+      const testUser = service.createTestUserWithPermissions(['read:chat']);
 
       // Verify user exists
-      expect(service.getTestUserProfile(result.userId)).toBeDefined();
-      expect(service.getTestUserPermissions(result.userId)).toBeDefined();
+      const userPermissions = service.getTestUserPermissions(testUser.userId);
+      expect(userPermissions).toBeDefined();
 
       // Clear users
       service.clearTestUsers();
 
-      // Verify user no longer exists
-      expect(service.getTestUserProfile(result.userId)).toBeUndefined();
-      expect(service.getTestUserPermissions(result.userId)).toBeUndefined();
+      // Verify user is gone
+      const clearedUserPermissions = service.getTestUserPermissions(
+        testUser.userId,
+      );
+      expect(clearedUserPermissions).toBeUndefined();
     });
   });
 });

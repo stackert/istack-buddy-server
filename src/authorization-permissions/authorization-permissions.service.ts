@@ -1,6 +1,17 @@
 import { Injectable } from '@nestjs/common';
 import * as jwt from 'jsonwebtoken';
 import { CustomLoggerService } from '../common/logger/custom-logger.service';
+import {
+  evaluatePermission,
+  getUserEffectivePermissionChain,
+  PermissionWithConditions,
+  EvaluateAllowConditions,
+} from './permission-evaluator.helper';
+
+// Import JSON files directly for compile-time checking
+import userPermissionsData from './user-permissions.json';
+import groupPermissionsData from './group-permissions.json';
+import userGroupMembershipsData from './user-group-memberships.json';
 
 const JWT_SECRET = 'istack-buddy-secret-key-2024';
 
@@ -22,13 +33,51 @@ interface TestUserPermissions {
   jwtToken: string;
 }
 
+interface FileBasedUserPermissions {
+  user_permissions: {
+    [userId: string]: {
+      permissions: string[];
+      jwtToken: string;
+    };
+  };
+}
+
+interface FileBasedGroupPermissions {
+  group_permissions: {
+    [groupId: string]: {
+      permissions: string[];
+      members: string[];
+    };
+  };
+}
+
+interface FileBasedUserGroupMemberships {
+  user_group_memberships: {
+    [userId: string]: string[]; // Array of group IDs
+  };
+}
+
 @Injectable()
 export class AuthorizationPermissionsService {
   // In-memory storage for test users
   private testUserProfiles: Record<string, TestUserProfile> = {};
   private testUserPermissions: Record<string, TestUserPermissions> = {};
 
-  constructor(private readonly logger: CustomLoggerService) {}
+  // Use imported JSON data directly
+  private userPermissions: FileBasedUserPermissions = userPermissionsData;
+  private groupPermissions: FileBasedGroupPermissions = groupPermissionsData;
+  private userGroupMemberships: FileBasedUserGroupMemberships =
+    userGroupMembershipsData;
+
+  constructor(private readonly logger: CustomLoggerService) {
+    this.logger.logWithContext(
+      'debug',
+      'File-based permissions loaded successfully',
+      'AuthorizationPermissionsService.constructor',
+      undefined,
+      {},
+    );
+  }
 
   /**
    * Creates a test user with specified permissions and returns JWT token.
@@ -122,35 +171,101 @@ export class AuthorizationPermissionsService {
   }
 
   /**
-   * Evaluates if a user has the required permission.
+   * Get user's own permissions as PermissionWithConditions array
+   */
+  private getUserOwnPermissions(userId: string): PermissionWithConditions[] {
+    // First check if this is a test user
+    const testUserPermissions = this.getTestUserPermissions(userId);
+    if (testUserPermissions) {
+      return testUserPermissions.permissions.map((permissionId) => ({
+        permissionId,
+        conditions: null, // Test users have no conditions
+        byVirtueOf: 'user' as const,
+      }));
+    }
+
+    // Check file-based permissions
+    if (this.userPermissions.user_permissions[userId]) {
+      return this.userPermissions.user_permissions[userId].permissions.map(
+        (permissionId) => ({
+          permissionId,
+          conditions: null, // TODO: Add conditions support to file-based permissions
+          byVirtueOf: 'user' as const,
+        }),
+      );
+    }
+
+    return [];
+  }
+
+  /**
+   * Get user's group membership permissions as PermissionWithConditions array
+   */
+  private getUserGroupMemberships(userId: string): PermissionWithConditions[] {
+    const groupMemberships: PermissionWithConditions[] = [];
+
+    // Get user's group memberships
+    const userGroups =
+      this.userGroupMemberships.user_group_memberships[userId] || [];
+
+    // For each group, get the permissions
+    userGroups.forEach((groupId) => {
+      const groupData = this.groupPermissions.group_permissions[groupId];
+      if (groupData) {
+        groupData.permissions.forEach((permissionId) => {
+          groupMemberships.push({
+            permissionId,
+            conditions: null, // TODO: Add conditions support to file-based permissions
+            byVirtueOf: 'group' as const,
+            groupId,
+          });
+        });
+      }
+    });
+
+    return groupMemberships;
+  }
+
+  /**
+   * Evaluates if a user has the required permission using the helper function.
    */
   public async hasPermission(
     userId: string,
     requiredPermission: string,
+    evaluationContext: EvaluateAllowConditions = {},
   ): Promise<boolean> {
     this.logger.logWithContext(
       'debug',
-      'Evaluating permission',
+      'Evaluating permission using helper function',
       'AuthorizationPermissionsService.hasPermission',
       undefined,
       { userId, requiredPermission },
     );
 
     try {
-      // TODO: Get user permissions from file-based storage
-      // For now, return true for basic permissions
-      const userPermissions = ['auth:user', 'auth:user:{self}'];
+      // Get user's own permissions
+      const userOwnPermissions = this.getUserOwnPermissions(userId);
 
-      const hasPermission = userPermissions.includes(requiredPermission);
+      // Get user's group membership permissions
+      const userGroupMemberships = this.getUserGroupMemberships(userId);
+
+      // Use the helper function to evaluate the permission
+      const result = evaluatePermission(
+        userId,
+        requiredPermission,
+        userOwnPermissions,
+        userGroupMemberships,
+        evaluationContext,
+      );
 
       this.logger.permissionCheck(
         requiredPermission,
-        hasPermission,
+        result.isAllowed,
         'AuthorizationPermissionsService.hasPermission',
         { userId },
       );
 
-      return hasPermission;
+      return result.isAllowed;
     } catch (error) {
       this.logger.error(
         'AuthorizationPermissionsService.hasPermission',
@@ -163,21 +278,63 @@ export class AuthorizationPermissionsService {
   }
 
   /**
-   * Gets all permissions for a user.
+   * Gets all effective permissions for a user (own + group memberships, with conditions evaluated).
+   */
+  public async getUserEffectivePermissions(
+    userId: string,
+    evaluationContext: EvaluateAllowConditions = {},
+  ): Promise<PermissionWithConditions[]> {
+    this.logger.logWithContext(
+      'debug',
+      'Getting user effective permissions using helper function',
+      'AuthorizationPermissionsService.getUserEffectivePermissions',
+      undefined,
+      { userId },
+    );
+
+    try {
+      // Get user's own permissions
+      const userOwnPermissions = this.getUserOwnPermissions(userId);
+
+      // Get user's group membership permissions
+      const userGroupMemberships = this.getUserGroupMemberships(userId);
+
+      // Use the helper function to get the effective permission chain
+      const effectivePermissions = getUserEffectivePermissionChain(
+        userId,
+        userOwnPermissions,
+        userGroupMemberships,
+        evaluationContext,
+      );
+
+      return effectivePermissions;
+    } catch (error) {
+      this.logger.error(
+        'AuthorizationPermissionsService.getUserEffectivePermissions',
+        'Failed to get user effective permissions',
+        error as Error,
+        { userId },
+      );
+      return [];
+    }
+  }
+
+  /**
+   * Gets all permissions for a user (legacy method for backward compatibility).
    */
   public async getUserPermissions(userId: string): Promise<string[]> {
     this.logger.logWithContext(
       'debug',
-      'Getting user permissions',
+      'Getting user permissions (legacy method)',
       'AuthorizationPermissionsService.getUserPermissions',
       undefined,
       { userId },
     );
 
     try {
-      // TODO: Get permissions from file-based storage
-      // For now, return basic permissions
-      return ['auth:user', 'auth:user:{self}'];
+      const effectivePermissions =
+        await this.getUserEffectivePermissions(userId);
+      return effectivePermissions.map((p) => p.permissionId);
     } catch (error) {
       this.logger.error(
         'AuthorizationPermissionsService.getUserPermissions',

@@ -1,67 +1,16 @@
 {
   "user_permissions": {
-    "user-1": {
-      "permissions": [
-        "auth:user",
-        "auth:user:{self}",
-        "user:profile:me:view",
-        "user:profile:me:edit",
-        "user:profile:public:view",
-        "chat:conversations:create",
-        "chat:conversations:read",
-        "chat:conversations:update",
-        "chat:conversations:delete",
-        "chat:conversations:message:create",
-        "chat:conversations:message:read",
-        "chat:dashboard:stats",
-        "external-service:external-service:slacky:events",
-        "admin:debug"
-      ],
-      "jwtToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ1c2VyLTEiLCJlbWFpbCI6ImFkbWluQGlzdGFjay5jb20iLCJ1c2VybmFtZSI6ImFkbWluIiwiYWNjb3VudFR5cGUiOiJBRE1JTiIsImlhdCI6MTc1MzAxMTQ0NCwiZXhwIjoxNzUzMDQwMjQ0fQ.kdr-ymMRdEQIniGwR915TTpsqD_wSdX2mutNYk87fyY"
+    "user1": {
+      "permissions": ["read:chat", "write:chat"],
+      "jwtToken": "test-jwt-user1"
     },
-    "user-2": {
-      "permissions": [
-        "auth:user",
-        "auth:user:{self}",
-        "user:profile:me:view",
-        "chat:conversations:create",
-        "chat:conversations:read",
-        "chat:conversations:message:create",
-        "chat:conversations:message:read"
-      ],
-      "jwtToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ1c2VyLTIiLCJlbWFpbCI6InN0dWRlbnRAaXN0YWNrLmNvbSIsInVzZXJuYW1lIjoic3R1ZGVudCIsImFjY291bnRUeXBlIjoiU1RVREVOVCIsImlhdCI6MTc1MzAxMTQ0NCwiZXhwIjoxNzUzMDQwMjQ0fQ._3FpdkUV3GQn1qrEclxRDxy4oY0zYXHoNPnggk58Oss"
+    "user2": {
+      "permissions": ["read:chat"],
+      "jwtToken": "test-jwt-user2"
     },
-    "user-3": {
-      "permissions": [
-        "auth:user",
-        "auth:user:{self}",
-        "user:profile:me:view",
-        "user:profile:me:edit",
-        "user:profile:public:view",
-        "chat:conversations:create",
-        "chat:conversations:read",
-        "chat:conversations:update",
-        "chat:conversations:delete",
-        "chat:conversations:message:create",
-        "chat:conversations:message:read",
-        "chat:dashboard:stats"
-      ],
-      "jwtToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ1c2VyLTMiLCJlbWFpbCI6Imluc3RydWN0b3JAaXN0YWNrLmNvbSIsInVzZXJuYW1lIjoiaW5zdHJ1Y3RvciIsImFjY291bnRUeXBlIjoiSU5TVFJVQ1RPUiIsImlhdCI6MTc1MzAxMTQ0NCwiZXhwIjoxNzUzMDQwMjQ0fQ.s9MdqDnmnWHIQhIV9GrfMwZbmeSZzwZPH0bVfBqGAwQ"
-    },
-    "user-4": {
-      "permissions": [
-        "auth:user",
-        "auth:user:{self}",
-        "user:profile:me:view",
-        "user:profile:me:edit",
-        "user:profile:public:view",
-        "chat:conversations:create",
-        "chat:conversations:read",
-        "chat:conversations:message:create",
-        "chat:conversations:message:read",
-        "external-service:external-service:slacky:events"
-      ],
-      "jwtToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ1c2VyLTQiLCJlbWFpbCI6ImRldmVsb3BlckBpc3RhY2suY29tIiwidXNlcm5hbWUiOiJkZXZlbG9wZXIiLCJhY2NvdW50VHlwZSI6IkRFVkVMT1BFUiIsImlhdCI6MTc1MzAxMTQ0NCwiZXhwIjoxNzUzMDQwMjQ0fQ.pOCBQh2O8UynO2WMoJh8pJSUcRI-sKiUCDbyqi1aCfk"
+    "admin": {
+      "permissions": ["read:chat", "write:chat", "admin:users", "admin:system"],
+      "jwtToken": "test-jwt-admin"
     }
   }
 }

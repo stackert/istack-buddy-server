@@ -32,9 +32,11 @@ export class DevDebugService {
 
       const result = {
         success: authResult.success,
-        message: `${authResult.message} (via AuthService)`,
+        message: authResult.success
+          ? 'Authentication successful (via AuthService)'
+          : authResult.error || 'Authentication failed (via AuthService)',
         sessionId: authResult.sessionId,
-        permissions: authResult.permissions,
+        permissions: [], // Permissions are now handled separately via getUserPermissionSet
       };
 
       this.logger.auditLog(

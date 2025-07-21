@@ -97,8 +97,10 @@ export class AuthenticationController {
       userId: result.userId!,
       email: authRequest.email,
       jwtToken: result.jwtToken!,
-      permissions: result.permissions || [],
-      message: result.message || 'Authentication successful',
+      permissions: [], // Permissions are now handled separately via getUserPermissionSet
+      message: result.success
+        ? 'Authentication successful'
+        : result.error || 'Authentication failed',
     };
   }
 
