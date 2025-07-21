@@ -10,6 +10,9 @@ export class IstackBuddySlackApiController {
 
   @Get('istack-buddy/slack-integration/health')
   public getHealth(): { status: string; timestamp: string } {
+    // DO NOT REMOVE THIS COMMENT
+    // We need to verify if slack signs this request.
+    // ** DOUBLE CHECK AUTHORIZATION **
     return {
       status: 'ok',
       timestamp: new Date().toISOString(),
@@ -41,6 +44,10 @@ export class IstackBuddySlackApiController {
 
   @Post('istack-buddy/slack-integration/slack/events')
   public async handleSlackEvents(@Req() req: Request, @Res() res: Response) {
+    // AI DO NOT REMOVE THIS COMMENT required permission - external-service:external-service:slacky:events
+    // Authorization works differntly.  We will get 'authorize' by virtue that the request is signed correctly
+    // hence we are skipping e2e test for this now.
+
     // Delegate to the Slack service to handle the event
     return this.istackBuddySlackApiService.handleSlackEvent(req, res);
   }

@@ -1,6 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ChatManagerController } from './chat-manager.controller';
 import { ChatManagerService } from './chat-manager.service';
+import { ConversationListSlackAppService } from '../ConversationLists/ConversationListSlackAppService';
+import { ChatConversationListService } from '../ConversationLists/ChatConversationListService';
 import {
   CreateMessageDto,
   UserRole,
@@ -9,9 +11,9 @@ import {
 import { JoinRoomDto } from './dto/join-room.dto';
 import { GetMessagesDto } from './dto/get-messages.dto';
 import { StartConversationDto } from './dto/start-conversation.dto';
-import { IConversationMessage } from './interfaces/message.interface';
-import { ConversationListSlackAppService } from '../ConversationLists/ConversationListSlackAppService';
-import { ChatConversationListService } from '../ConversationLists/ChatConversationListService';
+import { AuthPermissionGuard } from '../common/guards/auth-permission.guard';
+import { CustomLoggerService } from '../common/logger/custom-logger.service';
+import { AuthenticationService } from '../authentication/authentication.service';
 
 describe('ChatManagerController', () => {
   let controller: ChatManagerController;
@@ -29,6 +31,18 @@ describe('ChatManagerController', () => {
     leaveConversation: jest.fn(),
   };
 
+  const mockCustomLoggerService = {
+    log: jest.fn(),
+    error: jest.fn(),
+    warn: jest.fn(),
+    debug: jest.fn(),
+    verbose: jest.fn(),
+  };
+
+  const mockAuthenticationService = {
+    // Add any methods that AuthPermissionGuard might call
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [ChatManagerController],
@@ -36,6 +50,14 @@ describe('ChatManagerController', () => {
         {
           provide: ChatManagerService,
           useValue: mockChatManagerService,
+        },
+        {
+          provide: CustomLoggerService,
+          useValue: mockCustomLoggerService,
+        },
+        {
+          provide: AuthenticationService,
+          useValue: mockAuthenticationService,
         },
         ConversationListSlackAppService,
         ChatConversationListService,
@@ -156,7 +178,7 @@ describe('ChatManagerController', () => {
         userId: 'user-123',
       };
 
-      const expectedMessages: IConversationMessage[] = [
+      const expectedMessages = [
         {
           id: 'msg-1',
           content: 'Test message',
@@ -182,7 +204,7 @@ describe('ChatManagerController', () => {
       const conversationId = 'conv-123';
       const query = {};
 
-      const expectedMessages: IConversationMessage[] = [];
+      const expectedMessages: any[] = [];
 
       mockChatManagerService.getMessages.mockResolvedValue(expectedMessages);
 
@@ -198,7 +220,7 @@ describe('ChatManagerController', () => {
       const conversationId = 'conv-123';
       const count = '5';
 
-      const expectedMessages: IConversationMessage[] = [
+      const expectedMessages: any[] = [
         {
           id: 'msg-1',
           content: 'Message 1',
@@ -253,7 +275,7 @@ describe('ChatManagerController', () => {
       const conversationId = 'conv-123';
       const count = '0';
 
-      const expectedMessages = [];
+      const expectedMessages: any[] = [];
 
       mockChatManagerService.getLastMessages.mockResolvedValue(
         expectedMessages,
