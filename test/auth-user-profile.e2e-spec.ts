@@ -127,8 +127,15 @@ describe('Auth User Profile E2E Tests', () => {
 
     it('should return 200 when user has good JWT and sufficient permissions', async () => {
       // Create JWT for admin user who should have sufficient permissions
+      const testUserId = 'user-1';
+      // Add user to auth system with proper permissions
+      authPermissionsService.addUser(
+        testUserId,
+        ['user:profile:me:view'],
+        ['admin-group'],
+      );
       const testJWT = createTestJWT(
-        'user-1',
+        testUserId,
         'admin@istack.com',
         'admin',
         'ADMIN',
@@ -146,8 +153,15 @@ describe('Auth User Profile E2E Tests', () => {
 
     it('should return 200 when user has multiple permissions including the required one', async () => {
       // Create JWT for admin user who has multiple permissions
+      const testUserId = 'user-1';
+      // Add user to auth system with multiple permissions
+      authPermissionsService.addUser(
+        testUserId,
+        ['user:profile:me:view', 'user:profile:edit'],
+        ['admin-group'],
+      );
       const testJWT = createTestJWT(
-        'user-1',
+        testUserId,
         'admin@istack.com',
         'admin',
         'ADMIN',

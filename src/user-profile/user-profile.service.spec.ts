@@ -71,6 +71,10 @@ describe('UserProfileService', () => {
           provide: AuthorizationPermissionsService,
           useValue: mockAuthPermissionsService,
         },
+        {
+          provide: 'UserProfilesData',
+          useValue: mockUserProfiles,
+        },
       ],
     }).compile();
 

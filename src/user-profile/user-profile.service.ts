@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { CustomLoggerService } from '../common/logger/custom-logger.service';
 import { AuthorizationPermissionsService } from '../authorization-permissions/authorization-permissions.service';
 
@@ -29,8 +29,13 @@ export class UserProfileService {
   constructor(
     private readonly logger: CustomLoggerService,
     private readonly authPermissionsService: AuthorizationPermissionsService,
+    // Accept user profiles data as constructor parameter for testability
+    // NOTE: At this time, we have no real user management and load from file.
+    // When we integrate with a larger project, this will need to be changed.
+    @Inject('UserProfilesData')
+    userProfilesData: UserProfiles,
   ) {
-    // Use imported JSON data directly
+    // Use provided user profiles data
     this.userProfiles = userProfilesData;
   }
 

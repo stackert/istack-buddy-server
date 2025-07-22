@@ -185,7 +185,7 @@ export class AuthorizationPermissionsService {
    * the user creation, authentication, and possibly authorization code.
    * This method should be considered temporary and will likely be replaced.
    */
-  private addUser(
+  public addUser(
     userId: string,
     ownPermissions: string[],
     groupMemberships: string[],

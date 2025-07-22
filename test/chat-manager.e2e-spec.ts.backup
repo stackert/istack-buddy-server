@@ -71,13 +71,11 @@ describe('Chat Manager E2E Tests', () => {
     });
 
     it('should return 403 when user has no permissions', async () => {
-      const testUserId = 'test-user-no-perms';
-      authPermissionsService.addUser(testUserId, [], []);
-      const testJWT = createTestJWT(testUserId, 'noperms@example.com', 'noperms', 'STUDENT');
+      const testUser = authPermissionsService.createTestUserWithPermissions([]);
 
       const response = await request(app.getHttpServer())
         .post('/chat/messages')
-        .set('Authorization', `Bearer ${testJWT}`)
+        .set('Authorization', `Bearer ${testUser.jwt}`)
         .send({ content: 'test message', userId: 'test-user' })
         .expect(403);
 
@@ -87,13 +85,14 @@ describe('Chat Manager E2E Tests', () => {
     });
 
     it('should return 403 when user has insufficient permissions', async () => {
-      const testUserId = 'test-user-with-perms';
-      authPermissionsService.addUser(testUserId, ['chat:conversations:read', 'chat:conversations:message:read'], []);
-      const testJWT = createTestJWT(testUserId, 'withperms@example.com', 'withperms', 'STUDENT');
+      const testUser = authPermissionsService.createTestUserWithPermissions([
+        'chat:conversations:read',
+        'chat:conversations:message:read',
+      ]);
 
       const response = await request(app.getHttpServer())
         .post('/chat/messages')
-        .set('Authorization', `Bearer ${testJWT}`)
+        .set('Authorization', `Bearer ${testUser.jwt}`)
         .send({ content: 'test message', userId: 'test-user' })
         .expect(403);
 
@@ -103,13 +102,13 @@ describe('Chat Manager E2E Tests', () => {
     });
 
     it('should return 201 when user has good JWT and sufficient permissions', async () => {
-      const testUserId = 'test-user-with-perms';
-      authPermissionsService.addUser(testUserId, ['chat:conversations:message:create'], []);
-      const testJWT = createTestJWT(testUserId, 'withperms@example.com', 'withperms', 'STUDENT');
+      const testUser = authPermissionsService.createTestUserWithPermissions([
+        'chat:conversations:message:create',
+      ]);
 
       const response = await request(app.getHttpServer())
         .post('/chat/messages')
-        .set('Authorization', `Bearer ${testJWT}`)
+        .set('Authorization', `Bearer ${testUser.jwt}`)
         .send({ content: 'test message', userId: 'test-user' })
         .expect(201);
 
@@ -129,13 +128,11 @@ describe('Chat Manager E2E Tests', () => {
     });
 
     it('should return 403 when user has no permissions', async () => {
-      const testUserId = 'test-user-no-perms';
-      authPermissionsService.addUser(testUserId, [], []);
-      const testJWT = createTestJWT(testUserId, 'noperms@example.com', 'noperms', 'STUDENT');
+      const testUser = authPermissionsService.createTestUserWithPermissions([]);
 
       const response = await request(app.getHttpServer())
         .get('/chat/conversations')
-        .set('Authorization', `Bearer ${testJWT}`)
+        .set('Authorization', `Bearer ${testUser.jwt}`)
         .expect(403);
 
       expect(response.body.message).toContain(
@@ -144,13 +141,13 @@ describe('Chat Manager E2E Tests', () => {
     });
 
     it('should return 200 when user has good JWT and sufficient permissions', async () => {
-      const testUserId = 'test-user-with-perms';
-      authPermissionsService.addUser(testUserId, ['chat:conversations:read'], []);
-      const testJWT = createTestJWT(testUserId, 'withperms@example.com', 'withperms', 'STUDENT');
+      const testUser = authPermissionsService.createTestUserWithPermissions([
+        'chat:conversations:read',
+      ]);
 
       const response = await request(app.getHttpServer())
         .get('/chat/conversations')
-        .set('Authorization', `Bearer ${testJWT}`)
+        .set('Authorization', `Bearer ${testUser.jwt}`)
         .expect(200);
 
       expect(response.body).toBeDefined();
@@ -169,13 +166,11 @@ describe('Chat Manager E2E Tests', () => {
     });
 
     it('should return 403 when user has no permissions', async () => {
-      const testUserId = 'test-user-no-perms';
-      authPermissionsService.addUser(testUserId, [], []);
-      const testJWT = createTestJWT(testUserId, 'noperms@example.com', 'noperms', 'STUDENT');
+      const testUser = authPermissionsService.createTestUserWithPermissions([]);
 
       const response = await request(app.getHttpServer())
         .get('/chat/conversations/test-conversation/messages')
-        .set('Authorization', `Bearer ${testJWT}`)
+        .set('Authorization', `Bearer ${testUser.jwt}`)
         .expect(403);
 
       expect(response.body.message).toContain(
@@ -184,13 +179,13 @@ describe('Chat Manager E2E Tests', () => {
     });
 
     it('should return 200 when user has good JWT and sufficient permissions', async () => {
-      const testUserId = 'test-user-with-perms';
-      authPermissionsService.addUser(testUserId, ['chat:conversations:message:read'], []);
-      const testJWT = createTestJWT(testUserId, 'withperms@example.com', 'withperms', 'STUDENT');
+      const testUser = authPermissionsService.createTestUserWithPermissions([
+        'chat:conversations:message:read',
+      ]);
 
       const response = await request(app.getHttpServer())
         .get('/chat/conversations/test-conversation/messages')
-        .set('Authorization', `Bearer ${testJWT}`)
+        .set('Authorization', `Bearer ${testUser.jwt}`)
         .expect(200);
 
       expect(response.body).toBeDefined();
@@ -209,13 +204,11 @@ describe('Chat Manager E2E Tests', () => {
     });
 
     it('should return 403 when user has no permissions', async () => {
-      const testUserId = 'test-user-no-perms';
-      authPermissionsService.addUser(testUserId, [], []);
-      const testJWT = createTestJWT(testUserId, 'noperms@example.com', 'noperms', 'STUDENT');
+      const testUser = authPermissionsService.createTestUserWithPermissions([]);
 
       const response = await request(app.getHttpServer())
         .get('/chat/conversations/test-conversation/messages/last/5')
-        .set('Authorization', `Bearer ${testJWT}`)
+        .set('Authorization', `Bearer ${testUser.jwt}`)
         .expect(403);
 
       expect(response.body.message).toContain(
@@ -224,13 +217,13 @@ describe('Chat Manager E2E Tests', () => {
     });
 
     it('should return 200 when user has good JWT and sufficient permissions', async () => {
-      const testUserId = 'test-user-with-perms';
-      authPermissionsService.addUser(testUserId, ['chat:conversations:message:read'], []);
-      const testJWT = createTestJWT(testUserId, 'withperms@example.com', 'withperms', 'STUDENT');
+      const testUser = authPermissionsService.createTestUserWithPermissions([
+        'chat:conversations:message:read',
+      ]);
 
       const response = await request(app.getHttpServer())
         .get('/chat/conversations/test-conversation/messages/last/5')
-        .set('Authorization', `Bearer ${testJWT}`)
+        .set('Authorization', `Bearer ${testUser.jwt}`)
         .expect(200);
 
       expect(response.body).toBeDefined();
@@ -250,13 +243,11 @@ describe('Chat Manager E2E Tests', () => {
     });
 
     it('should return 403 when user has no permissions', async () => {
-      const testUserId = 'test-user-no-perms';
-      authPermissionsService.addUser(testUserId, [], []);
-      const testJWT = createTestJWT(testUserId, 'noperms@example.com', 'noperms', 'STUDENT');
+      const testUser = authPermissionsService.createTestUserWithPermissions([]);
 
       const response = await request(app.getHttpServer())
         .post('/chat/conversations/test-conversation/join')
-        .set('Authorization', `Bearer ${testJWT}`)
+        .set('Authorization', `Bearer ${testUser.jwt}`)
         .send({ userId: 'test-user' })
         .expect(403);
 
@@ -266,13 +257,13 @@ describe('Chat Manager E2E Tests', () => {
     });
 
     it('should return 500 when conversation does not exist (but authorization passes)', async () => {
-      const testUserId = 'test-user-with-perms';
-      authPermissionsService.addUser(testUserId, ['chat:conversations:update'], []);
-      const testJWT = createTestJWT(testUserId, 'withperms@example.com', 'withperms', 'STUDENT');
+      const testUser = authPermissionsService.createTestUserWithPermissions([
+        'chat:conversations:update',
+      ]);
 
       const response = await request(app.getHttpServer())
         .post('/chat/conversations/test-conversation/join')
-        .set('Authorization', `Bearer ${testJWT}`)
+        .set('Authorization', `Bearer ${testUser.jwt}`)
         .send({ userId: 'test-user' })
         .expect(500);
 
@@ -294,13 +285,11 @@ describe('Chat Manager E2E Tests', () => {
     });
 
     it('should return 403 when user has no permissions', async () => {
-      const testUserId = 'test-user-no-perms';
-      authPermissionsService.addUser(testUserId, [], []);
-      const testJWT = createTestJWT(testUserId, 'noperms@example.com', 'noperms', 'STUDENT');
+      const testUser = authPermissionsService.createTestUserWithPermissions([]);
 
       const response = await request(app.getHttpServer())
         .get('/chat/conversations/test-conversation/participants')
-        .set('Authorization', `Bearer ${testJWT}`)
+        .set('Authorization', `Bearer ${testUser.jwt}`)
         .expect(403);
 
       expect(response.body.message).toContain(
@@ -309,13 +298,13 @@ describe('Chat Manager E2E Tests', () => {
     });
 
     it('should return 200 when user has good JWT and sufficient permissions', async () => {
-      const testUserId = 'test-user-with-perms';
-      authPermissionsService.addUser(testUserId, ['chat:conversations:read'], []);
-      const testJWT = createTestJWT(testUserId, 'withperms@example.com', 'withperms', 'STUDENT');
+      const testUser = authPermissionsService.createTestUserWithPermissions([
+        'chat:conversations:read',
+      ]);
 
       const response = await request(app.getHttpServer())
         .get('/chat/conversations/test-conversation/participants')
-        .set('Authorization', `Bearer ${testJWT}`)
+        .set('Authorization', `Bearer ${testUser.jwt}`)
         .expect(200);
 
       expect(response.body).toBeDefined();
@@ -334,13 +323,11 @@ describe('Chat Manager E2E Tests', () => {
     });
 
     it('should return 403 when user has no permissions', async () => {
-      const testUserId = 'test-user-no-perms';
-      authPermissionsService.addUser(testUserId, [], []);
-      const testJWT = createTestJWT(testUserId, 'noperms@example.com', 'noperms', 'STUDENT');
+      const testUser = authPermissionsService.createTestUserWithPermissions([]);
 
       const response = await request(app.getHttpServer())
         .get('/chat/dashboard/stats')
-        .set('Authorization', `Bearer ${testJWT}`)
+        .set('Authorization', `Bearer ${testUser.jwt}`)
         .expect(403);
 
       expect(response.body.message).toContain(
@@ -349,13 +336,13 @@ describe('Chat Manager E2E Tests', () => {
     });
 
     it('should return 200 when user has good JWT and sufficient permissions', async () => {
-      const testUserId = 'test-user-with-perms';
-      authPermissionsService.addUser(testUserId, ['chat:dashboard:stats'], []);
-      const testJWT = createTestJWT(testUserId, 'withperms@example.com', 'withperms', 'STUDENT');
+      const testUser = authPermissionsService.createTestUserWithPermissions([
+        'chat:dashboard:stats',
+      ]);
 
       const response = await request(app.getHttpServer())
         .get('/chat/dashboard/stats')
-        .set('Authorization', `Bearer ${testJWT}`)
+        .set('Authorization', `Bearer ${testUser.jwt}`)
         .expect(200);
 
       expect(response.body).toBeDefined();
@@ -375,13 +362,11 @@ describe('Chat Manager E2E Tests', () => {
     });
 
     it('should return 403 when user has no permissions', async () => {
-      const testUserId = 'test-user-no-perms';
-      authPermissionsService.addUser(testUserId, [], []);
-      const testJWT = createTestJWT(testUserId, 'noperms@example.com', 'noperms', 'STUDENT');
+      const testUser = authPermissionsService.createTestUserWithPermissions([]);
 
       const response = await request(app.getHttpServer())
         .post('/chat/conversations/start')
-        .set('Authorization', `Bearer ${testJWT}`)
+        .set('Authorization', `Bearer ${testUser.jwt}`)
         .send({ participants: ['user1', 'user2'] })
         .expect(403);
 
@@ -391,13 +376,13 @@ describe('Chat Manager E2E Tests', () => {
     });
 
     it('should return 201 when user has good JWT and sufficient permissions', async () => {
-      const testUserId = 'test-user-with-perms';
-      authPermissionsService.addUser(testUserId, ['chat:conversations:create'], []);
-      const testJWT = createTestJWT(testUserId, 'withperms@example.com', 'withperms', 'STUDENT');
+      const testUser = authPermissionsService.createTestUserWithPermissions([
+        'chat:conversations:create',
+      ]);
 
       const response = await request(app.getHttpServer())
         .post('/chat/conversations/start')
-        .set('Authorization', `Bearer ${testJWT}`)
+        .set('Authorization', `Bearer ${testUser.jwt}`)
         .send({ participants: ['user1', 'user2'] })
         .expect(201);
 
@@ -418,13 +403,11 @@ describe('Chat Manager E2E Tests', () => {
     });
 
     it('should return 403 when user has no permissions', async () => {
-      const testUserId = 'test-user-no-perms';
-      authPermissionsService.addUser(testUserId, [], []);
-      const testJWT = createTestJWT(testUserId, 'noperms@example.com', 'noperms', 'STUDENT');
+      const testUser = authPermissionsService.createTestUserWithPermissions([]);
 
       const response = await request(app.getHttpServer())
         .post('/chat/conversations/test-conversation/leave')
-        .set('Authorization', `Bearer ${testJWT}`)
+        .set('Authorization', `Bearer ${testUser.jwt}`)
         .send({ userId: 'test-user' })
         .expect(403);
 
@@ -434,13 +417,13 @@ describe('Chat Manager E2E Tests', () => {
     });
 
     it('should return 201 when user has good JWT and sufficient permissions', async () => {
-      const testUserId = 'test-user-with-perms';
-      authPermissionsService.addUser(testUserId, ['chat:conversations:update'], []);
-      const testJWT = createTestJWT(testUserId, 'withperms@example.com', 'withperms', 'STUDENT');
+      const testUser = authPermissionsService.createTestUserWithPermissions([
+        'chat:conversations:update',
+      ]);
 
       const response = await request(app.getHttpServer())
         .post('/chat/conversations/test-conversation/leave')
-        .set('Authorization', `Bearer ${testJWT}`)
+        .set('Authorization', `Bearer ${testUser.jwt}`)
         .send({ userId: 'test-user' })
         .expect(201);
 
@@ -453,14 +436,17 @@ describe('Chat Manager E2E Tests', () => {
 
   describe('Multiple Permission Scenarios', () => {
     it('should allow user with multiple chat permissions to access multiple endpoints', async () => {
-      const testUserId = 'test-user-with-perms';
-      authPermissionsService.addUser(testUserId, ['chat:conversations:read', 'chat:conversations:message:read', 'chat:conversations:message:create', 'chat:conversations:update'], []);
-      const testJWT = createTestJWT(testUserId, 'withperms@example.com', 'withperms', 'STUDENT');
+      const testUser = authPermissionsService.createTestUserWithPermissions([
+        'chat:conversations:read',
+        'chat:conversations:message:read',
+        'chat:conversations:message:create',
+        'chat:conversations:update',
+      ]);
 
       // Test conversations read
       const conversationsResponse = await request(app.getHttpServer())
         .get('/chat/conversations')
-        .set('Authorization', `Bearer ${testJWT}`)
+        .set('Authorization', `Bearer ${testUser.jwt}`)
         .expect(200);
 
       expect(conversationsResponse.body).toBeDefined();
@@ -468,7 +454,7 @@ describe('Chat Manager E2E Tests', () => {
       // Test messages read
       const messagesResponse = await request(app.getHttpServer())
         .get('/chat/conversations/test-conversation/messages')
-        .set('Authorization', `Bearer ${testJWT}`)
+        .set('Authorization', `Bearer ${testUser.jwt}`)
         .expect(200);
 
       expect(messagesResponse.body).toBeDefined();
@@ -476,7 +462,7 @@ describe('Chat Manager E2E Tests', () => {
       // Test message creation
       const createMessageResponse = await request(app.getHttpServer())
         .post('/chat/messages')
-        .set('Authorization', `Bearer ${testJWT}`)
+        .set('Authorization', `Bearer ${testUser.jwt}`)
         .send({ content: 'test message', userId: 'test-user' })
         .expect(201);
 
@@ -486,7 +472,7 @@ describe('Chat Manager E2E Tests', () => {
       // but authorization passes, which is what we're testing
       const joinResponse = await request(app.getHttpServer())
         .post('/chat/conversations/test-conversation/join')
-        .set('Authorization', `Bearer ${testJWT}`)
+        .set('Authorization', `Bearer ${testUser.jwt}`)
         .send({ userId: 'test-user' })
         .expect(500);
 
@@ -494,13 +480,16 @@ describe('Chat Manager E2E Tests', () => {
     });
 
     it('should deny access to dashboard stats when user lacks specific permission', async () => {
-      const testUserId = 'test-user-with-perms';
-      authPermissionsService.addUser(testUserId, ['chat:conversations:read', 'chat:conversations:message:read', 'chat:conversations:message:create'], []);
-      const testJWT = createTestJWT(testUserId, 'withperms@example.com', 'withperms', 'STUDENT');
+      const testUser = authPermissionsService.createTestUserWithPermissions([
+        'chat:conversations:read',
+        'chat:conversations:message:read',
+        'chat:conversations:message:create',
+        // Missing chat:dashboard:stats permission
+      ]);
 
       const response = await request(app.getHttpServer())
         .get('/chat/dashboard/stats')
-        .set('Authorization', `Bearer ${testJWT}`)
+        .set('Authorization', `Bearer ${testUser.jwt}`)
         .expect(403);
 
       expect(response.body.message).toContain(
