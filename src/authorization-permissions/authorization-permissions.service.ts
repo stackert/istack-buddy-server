@@ -174,6 +174,54 @@ export class AuthorizationPermissionsService {
   }
 
   /**
+   * Add a user with their own permissions and group memberships.
+   * Throws error if validation fails - does not try to fix issues.
+   *
+   * NOTE: This method is designed for testing and temporary users only.
+   * We have no real intention of supporting actual user management at this time.
+   * Use cases requiring identity will be 'testing users' or 'temporary users' only.
+   *
+   * When we integrate with the larger ecosystem, we anticipate redoing much of
+   * the user creation, authentication, and possibly authorization code.
+   * This method should be considered temporary and will likely be replaced.
+   */
+  private addUser(
+    userId: string,
+    ownPermissions: string[],
+    groupMemberships: string[],
+  ): void {
+    // Validate that all groups exist
+    for (const groupId of groupMemberships) {
+      if (!this.groupPermissions.group_permissions[groupId]) {
+        throw new Error(
+          `Group '${groupId}' does not exist for user '${userId}'`,
+        );
+      }
+    }
+
+    // Add user's own permissions
+    this.userPermissions.user_permissions[userId] = {
+      permissions: ownPermissions,
+      jwtToken: `test-jwt-${userId}`,
+    };
+
+    // Add user's group memberships
+    this.userGroupMemberships.user_group_memberships[userId] = groupMemberships;
+
+    this.logger.logWithContext(
+      'debug',
+      'User added successfully',
+      'AuthorizationPermissionsService.addUser',
+      undefined,
+      {
+        userId,
+        ownPermissionsCount: ownPermissions.length,
+        groupMembershipsCount: groupMemberships.length,
+      },
+    );
+  }
+
+  /**
    * Get user's own permissions as PermissionWithConditions array
    * ALL USERS ARE TREATED UNIFORMLY - NO TEST USER SPECIAL HANDLING
    */

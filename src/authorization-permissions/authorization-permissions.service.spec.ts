@@ -484,4 +484,50 @@ describe('AuthorizationPermissionsService', () => {
       ]);
     });
   });
+
+  describe('addUser', () => {
+    it('should add user successfully with valid permissions and groups', () => {
+      const userId = 'new-user';
+      const ownPermissions = ['read:chat'];
+      const groupMemberships = ['admin-group'];
+
+      service['addUser'](userId, ownPermissions, groupMemberships);
+
+      expect(service['userPermissions'].user_permissions[userId]).toEqual({
+        permissions: ownPermissions,
+        jwtToken: `test-jwt-${userId}`,
+      });
+      expect(
+        service['userGroupMemberships'].user_group_memberships[userId],
+      ).toEqual(groupMemberships);
+    });
+
+    it('should throw error when group does not exist', () => {
+      const userId = 'new-user';
+      const ownPermissions = ['read:chat'];
+      const groupMemberships = ['nonexistent-group'];
+
+      expect(() => {
+        service['addUser'](userId, ownPermissions, groupMemberships);
+      }).toThrow(
+        "Group 'nonexistent-group' does not exist for user 'new-user'",
+      );
+    });
+
+    it('should add user with empty permissions and groups', () => {
+      const userId = 'empty-user';
+      const ownPermissions: string[] = [];
+      const groupMemberships: string[] = [];
+
+      service['addUser'](userId, ownPermissions, groupMemberships);
+
+      expect(service['userPermissions'].user_permissions[userId]).toEqual({
+        permissions: [],
+        jwtToken: `test-jwt-${userId}`,
+      });
+      expect(
+        service['userGroupMemberships'].user_group_memberships[userId],
+      ).toEqual([]);
+    });
+  });
 });
