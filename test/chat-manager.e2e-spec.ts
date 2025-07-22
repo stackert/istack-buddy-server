@@ -1,8 +1,27 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
+import * as jwt from 'jsonwebtoken';
 import { AppModule } from '../src/app.module';
 import { AuthorizationPermissionsService } from '../src/authorization-permissions/authorization-permissions.service';
+
+// Helper function to create JWT tokens for testing
+function createTestJWT(
+  userId: string,
+  email: string,
+  username: string,
+  accountType: string,
+): string {
+  const payload = {
+    userId,
+    email,
+    username,
+    accountType,
+    iat: Math.floor(Date.now() / 1000),
+    exp: Math.floor(Date.now() / 1000) + 60 * 60, // 1 hour expiration
+  };
+  return jwt.sign(payload, 'istack-buddy-secret-key-2024');
+}
 
 describe('Chat Manager E2E Tests', () => {
   let app: INestApplication;
@@ -23,11 +42,6 @@ describe('Chat Manager E2E Tests', () => {
 
   afterAll(async () => {
     await app.close();
-  });
-
-  afterEach(() => {
-    // Clear test users after each test
-    authPermissionsService.clearTestUsers();
   });
 
   describe('POST /chat/messages', () => {

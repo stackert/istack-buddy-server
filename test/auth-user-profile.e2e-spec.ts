@@ -1,8 +1,27 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
+import * as jwt from 'jsonwebtoken';
 import { AppModule } from '../src/app.module';
 import { AuthorizationPermissionsService } from '../src/authorization-permissions/authorization-permissions.service';
+
+// Helper function to create JWT tokens for testing
+function createTestJWT(
+  userId: string,
+  email: string,
+  username: string,
+  accountType: string,
+): string {
+  const payload = {
+    userId,
+    email,
+    username,
+    accountType,
+    iat: Math.floor(Date.now() / 1000),
+    exp: Math.floor(Date.now() / 1000) + 60 * 60, // 1 hour expiration
+  };
+  return jwt.sign(payload, 'istack-buddy-secret-key-2024');
+}
 
 describe('Auth User Profile E2E Tests', () => {
   let app: INestApplication;
@@ -23,11 +42,6 @@ describe('Auth User Profile E2E Tests', () => {
 
   afterAll(async () => {
     await app.close();
-  });
-
-  afterEach(() => {
-    // Clear test users after each test
-    authPermissionsService.clearTestUsers();
   });
 
   describe('GET /user-profiles/me', () => {
@@ -55,11 +69,17 @@ describe('Auth User Profile E2E Tests', () => {
     });
 
     it('should return 403 when user has no permissions', async () => {
-      const testUser = authPermissionsService.createTestUserWithPermissions([]);
+      // Create JWT for a user with no permissions
+      const testJWT = createTestJWT(
+        'user-no-permissions',
+        'noperms@example.com',
+        'noperms',
+        'STUDENT',
+      );
 
       const response = await request(app.getHttpServer())
         .get('/user-profiles/me')
-        .set('Authorization', `Bearer ${testUser.jwt}`)
+        .set('Authorization', `Bearer ${testJWT}`)
         .expect(403);
 
       expect(response.body.message).toContain(
@@ -68,15 +88,17 @@ describe('Auth User Profile E2E Tests', () => {
     });
 
     it('should return 403 when user has insufficient permissions', async () => {
-      // User has some permissions but not the required one
-      const testUser = authPermissionsService.createTestUserWithPermissions([
-        'user:profile:edit',
-        'user:profile:delete',
-      ]);
+      // Create JWT for a user with some permissions but not the required one
+      const testJWT = createTestJWT(
+        'user2',
+        'student@istack.com',
+        'student',
+        'STUDENT',
+      );
 
       const response = await request(app.getHttpServer())
         .get('/user-profiles/me')
-        .set('Authorization', `Bearer ${testUser.jwt}`)
+        .set('Authorization', `Bearer ${testJWT}`)
         .expect(403);
 
       expect(response.body.message).toContain(
@@ -85,14 +107,17 @@ describe('Auth User Profile E2E Tests', () => {
     });
 
     it('should return 403 when user has unknown permission', async () => {
-      // User has a permission that doesn't exist in the system
-      const testUser = authPermissionsService.createTestUserWithPermissions([
-        'unknown:permission:that:does:not:exist',
-      ]);
+      // Create JWT for a user with unknown permissions
+      const testJWT = createTestJWT(
+        'user-unknown',
+        'unknown@example.com',
+        'unknown',
+        'STUDENT',
+      );
 
       const response = await request(app.getHttpServer())
         .get('/user-profiles/me')
-        .set('Authorization', `Bearer ${testUser.jwt}`)
+        .set('Authorization', `Bearer ${testJWT}`)
         .expect(403);
 
       expect(response.body.message).toContain(
@@ -101,35 +126,41 @@ describe('Auth User Profile E2E Tests', () => {
     });
 
     it('should return 200 when user has good JWT and sufficient permissions', async () => {
-      // User has the required permission
-      const testUser = authPermissionsService.createTestUserWithPermissions([
-        'user:profile:me:view',
-      ]);
+      // Create JWT for admin user who should have sufficient permissions
+      const testJWT = createTestJWT(
+        'user-1',
+        'admin@istack.com',
+        'admin',
+        'ADMIN',
+      );
 
       const response = await request(app.getHttpServer())
         .get('/user-profiles/me')
-        .set('Authorization', `Bearer ${testUser.jwt}`)
+        .set('Authorization', `Bearer ${testJWT}`)
         .expect(200);
 
-      expect(response.body).toHaveProperty('userId', testUser.userId);
+      expect(response.body).toHaveProperty('userId', 'user-1');
       expect(response.body).toHaveProperty('username');
       expect(response.body).toHaveProperty('email');
     });
 
     it('should return 200 when user has multiple permissions including the required one', async () => {
-      // User has multiple permissions including the required one
-      const testUser = authPermissionsService.createTestUserWithPermissions([
-        'user:profile:me:view',
-        'user:profile:edit',
-        'user:profile:delete',
-      ]);
+      // Create JWT for admin user who has multiple permissions
+      const testJWT = createTestJWT(
+        'user-1',
+        'admin@istack.com',
+        'admin',
+        'ADMIN',
+      );
 
       const response = await request(app.getHttpServer())
         .get('/user-profiles/me')
-        .set('Authorization', `Bearer ${testUser.jwt}`)
+        .set('Authorization', `Bearer ${testJWT}`)
         .expect(200);
 
-      expect(response.body).toHaveProperty('userId', testUser.userId);
+      expect(response.body).toHaveProperty('userId', 'user-1');
+      expect(response.body).toHaveProperty('username', 'admin');
+      expect(response.body).toHaveProperty('email', 'admin@istack.com');
     });
   });
 });

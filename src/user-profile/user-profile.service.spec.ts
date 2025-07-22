@@ -3,36 +3,6 @@ import { UserProfileService } from './user-profile.service';
 import { CustomLoggerService } from '../common/logger/custom-logger.service';
 import { AuthorizationPermissionsService } from '../authorization-permissions/authorization-permissions.service';
 
-// Mock the JSON imports
-jest.doMock('./user-profiles.json', () => ({
-  users: {
-    user1: {
-      id: 'user1',
-      email: 'user1@example.com',
-      username: 'user1',
-      first_name: 'John',
-      last_name: 'Doe',
-      account_type_informal: 'customer',
-      current_account_status: 'active',
-      is_email_verified: true,
-      created_at: '2024-01-01T00:00:00Z',
-      last_login: '2024-01-01T00:00:00Z',
-    },
-    user2: {
-      id: 'user2',
-      email: 'user2@example.com',
-      username: 'user2',
-      first_name: 'Jane',
-      last_name: 'Smith',
-      account_type_informal: 'agent',
-      current_account_status: 'active',
-      is_email_verified: true,
-      created_at: '2024-01-01T00:00:00Z',
-      last_login: '2024-01-01T00:00:00Z',
-    },
-  },
-}));
-
 describe('UserProfileService', () => {
   let service: UserProfileService;
   let logger: jest.Mocked<CustomLoggerService>;
@@ -49,6 +19,24 @@ describe('UserProfileService', () => {
     is_email_verified: true,
     created_at: '2024-01-01T00:00:00Z',
     last_login: '2024-01-01T00:00:00Z',
+  };
+
+  const mockUserProfiles = {
+    users: {
+      user1: mockUserProfile,
+      user2: {
+        id: 'user2',
+        email: 'user2@example.com',
+        username: 'user2',
+        first_name: 'Jane',
+        last_name: 'Smith',
+        account_type_informal: 'agent',
+        current_account_status: 'active',
+        is_email_verified: true,
+        created_at: '2024-01-01T00:00:00Z',
+        last_login: '2024-01-01T00:00:00Z',
+      },
+    },
   };
 
   const mockTestUserProfile = {
@@ -69,7 +57,7 @@ describe('UserProfileService', () => {
     };
 
     const mockAuthPermissionsService = {
-      getTestUserProfile: jest.fn(),
+      // No test user methods exist anymore
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -102,52 +90,23 @@ describe('UserProfileService', () => {
   });
 
   describe('getUserProfileById', () => {
-    it('should return test user profile when found in auth service', async () => {
-      authPermissionsService.getTestUserProfile.mockReturnValue(
-        mockTestUserProfile,
-      );
-
-      const result = await service.getUserProfileById('test-user');
-
-      expect(result).toEqual(mockTestUserProfile);
-      expect(authPermissionsService.getTestUserProfile).toHaveBeenCalledWith(
-        'test-user',
-      );
-      expect(logger.logWithContext).toHaveBeenCalledWith(
-        'debug',
-        'Found test user profile',
-        'UserProfileService.getUserProfileById',
-        undefined,
-        { userId: 'test-user' },
-      );
-    });
-
-    it('should return user profile from JSON data when not a test user', async () => {
-      authPermissionsService.getTestUserProfile.mockReturnValue(undefined);
+    it('should return user profile from JSON data when found', async () => {
+      // Mock the service's userProfiles property
+      (service as any).userProfiles = mockUserProfiles;
 
       const result = await service.getUserProfileById('user1');
 
-      // Since the JSON mock isn't working properly, we'll just test that it doesn't log the test user profile message
-      expect(logger.logWithContext).not.toHaveBeenCalledWith(
-        'debug',
-        'Found test user profile',
-        expect.any(String),
-        undefined,
-        { userId: 'user1' },
-      );
+      expect(result).toEqual(mockUserProfile);
+      // No log message is expected when profile is found
     });
 
     it('should return null when user profile is not found', async () => {
-      authPermissionsService.getTestUserProfile.mockReturnValue(undefined);
-
       const result = await service.getUserProfileById('nonexistent-user');
 
       expect(result).toBeNull();
     });
 
     it('should handle errors in getUserProfileById and return null', async () => {
-      authPermissionsService.getTestUserProfile.mockReturnValue(undefined);
-
       // Mock the userProfiles to throw an error when accessed
       const originalUserProfiles = (service as any).userProfiles;
       (service as any).userProfiles = {
@@ -168,22 +127,6 @@ describe('UserProfileService', () => {
 
       // Restore original
       (service as any).userProfiles = originalUserProfiles;
-    });
-
-    it('should handle errors and return null', async () => {
-      authPermissionsService.getTestUserProfile.mockImplementation(() => {
-        throw new Error('Test service error');
-      });
-
-      const result = await service.getUserProfileById('user1');
-
-      expect(result).toBeNull();
-      expect(logger.error).toHaveBeenCalledWith(
-        'UserProfileService.getUserProfileById',
-        'Failed to get user profile',
-        expect.any(Error),
-        { userId: 'user1' },
-      );
     });
   });
 

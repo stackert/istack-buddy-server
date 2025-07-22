@@ -39,20 +39,6 @@ export class UserProfileService {
    */
   public async getUserProfileById(userId: string): Promise<any | null> {
     try {
-      // First check if this is a test user
-      const testUserProfile =
-        this.authPermissionsService.getTestUserProfile(userId);
-      if (testUserProfile) {
-        this.logger.logWithContext(
-          'debug',
-          'Found test user profile',
-          'UserProfileService.getUserProfileById',
-          undefined,
-          { userId },
-        );
-        return testUserProfile;
-      }
-
       // Use imported user profiles data
       const userProfile = this.userProfiles.users[userId];
       if (!userProfile) {
