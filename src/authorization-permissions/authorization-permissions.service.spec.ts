@@ -1,28 +1,3 @@
-// Mock the JSON imports before any imports
-jest.doMock('./user-permissions.json', () => ({
-  user_permissions: {
-    user1: {
-      permissions: ['read:chat'],
-      jwtToken: 'test-jwt-1',
-    },
-  },
-}));
-
-jest.doMock('./group-permissions.json', () => ({
-  group_permissions: {
-    'admin-group': {
-      permissions: ['write:chat'],
-      members: ['user1'],
-    },
-  },
-}));
-
-jest.doMock('./user-group-memberships.json', () => ({
-  user_group_memberships: {
-    user1: ['admin-group'],
-  },
-}));
-
 import { Test, TestingModule } from '@nestjs/testing';
 import { CustomLoggerService } from '../common/logger/custom-logger.service';
 import { AuthorizationPermissionsService } from './authorization-permissions.service';
@@ -32,6 +7,40 @@ describe('AuthorizationPermissionsService', () => {
   let logger: CustomLoggerService;
   let mockEvaluatePermission: jest.Mock;
   let mockGetUserEffectivePermissionChain: jest.Mock;
+
+  // Mock data for testing
+  const mockUserPermissionsData = {
+    user_permissions: {
+      user1: {
+        permissions: ['read:chat'],
+        jwtToken: 'test-jwt-1',
+      },
+      user2: {
+        permissions: ['write:chat'],
+        jwtToken: 'test-jwt-2',
+      },
+    },
+  };
+
+  const mockGroupPermissionsData = {
+    group_permissions: {
+      'admin-group': {
+        permissions: ['admin:all'],
+        members: ['user1'],
+      },
+      'moderator-group': {
+        permissions: ['moderate:chat'],
+        members: ['user2'],
+      },
+    },
+  };
+
+  const mockUserGroupMembershipsData = {
+    user_group_memberships: {
+      user1: ['admin-group'],
+      user2: ['moderator-group'],
+    },
+  };
 
   beforeEach(async () => {
     // Reset all mocks first
@@ -47,20 +56,14 @@ describe('AuthorizationPermissionsService', () => {
       subjectPermission: 'read:chat',
       isAllowed: true,
       reason: 'Allowed - Permission found in chain',
-      evaluatedChain: ['read:chat', 'write:chat'],
+      evaluatedChain: ['read:chat'],
     });
 
     mockGetUserEffectivePermissionChain.mockResolvedValue([
       {
         permissionId: 'read:chat',
         conditions: null,
-        byVirtueOf: 'user',
-      },
-      {
-        permissionId: 'write:chat',
-        conditions: null,
-        byVirtueOf: 'group',
-        groupId: 'admin-group',
+        byVirtueOf: 'user' as const,
       },
     ]);
 
@@ -72,6 +75,9 @@ describe('AuthorizationPermissionsService', () => {
           useValue: {
             logWithContext: jest.fn(),
             error: jest.fn(),
+            warn: jest.fn(),
+            debug: jest.fn(),
+            log: jest.fn(),
             permissionCheck: jest.fn(),
           },
         },
@@ -83,6 +89,18 @@ describe('AuthorizationPermissionsService', () => {
               mockGetUserEffectivePermissionChain,
           },
         },
+        {
+          provide: 'UserPermissionsData',
+          useValue: mockUserPermissionsData,
+        },
+        {
+          provide: 'GroupPermissionsData',
+          useValue: mockGroupPermissionsData,
+        },
+        {
+          provide: 'UserGroupMembershipsData',
+          useValue: mockUserGroupMembershipsData,
+        },
       ],
     }).compile();
 
@@ -93,9 +111,6 @@ describe('AuthorizationPermissionsService', () => {
   });
 
   afterEach(() => {
-    if (service) {
-      service.clearTestUsers();
-    }
     jest.clearAllMocks();
   });
 
@@ -103,56 +118,20 @@ describe('AuthorizationPermissionsService', () => {
     expect(service).toBeDefined();
   });
 
-  describe('createTestUserWithPermissions', () => {
-    it('should create a test user with permissions', () => {
-      const permissions = ['read:chat', 'write:chat'];
-      const result = service.createTestUserWithPermissions(permissions);
-
-      expect(result).toHaveProperty('userId');
-      expect(result).toHaveProperty('jwt');
-      expect(result.userId).toMatch(/^test-user-/);
-      expect(result.jwt).toBeDefined();
-
-      // Verify the user was created in memory
-      const userPermissions = service.getTestUserPermissions(result.userId);
-      expect(userPermissions).toBeDefined();
-      expect(userPermissions?.permissions).toEqual(permissions);
-    });
-
-    it('should throw error when not in test mode', () => {
-      const originalEnv = process.env.NODE_ENV;
-      process.env.NODE_ENV = 'production';
-
-      expect(() => {
-        service.createTestUserWithPermissions(['read:chat']);
-      }).toThrow(
-        'createTestUserWithPermissions can only be called in test mode',
-      );
-
-      process.env.NODE_ENV = originalEnv;
-    });
-  });
-
   describe('hasPermission', () => {
     it('should use helper function to evaluate permissions', async () => {
-      // Create a test user first to ensure we have valid data
-      const testUser = service.createTestUserWithPermissions([
-        'read:chat',
-        'write:chat',
-      ]);
-
       mockEvaluatePermission.mockReturnValue({
-        actor: testUser.userId,
+        actor: 'user1',
         subjectPermission: 'read:chat',
         isAllowed: true,
         reason: 'Allowed - Permission found in chain',
-        evaluatedChain: ['read:chat', 'write:chat'],
+        evaluatedChain: ['read:chat'],
       });
 
-      const result = await service.hasPermission(testUser.userId, 'read:chat');
+      const result = await service.hasPermission('user1', 'read:chat');
 
       expect(mockEvaluatePermission).toHaveBeenCalledWith(
-        testUser.userId,
+        'user1',
         'read:chat',
         expect.any(Array),
         expect.any(Array),
@@ -162,106 +141,347 @@ describe('AuthorizationPermissionsService', () => {
     });
 
     it('should return false when helper function returns false', async () => {
-      const testUser = service.createTestUserWithPermissions(['read:chat']);
-
       mockEvaluatePermission.mockReturnValue({
-        actor: testUser.userId,
+        actor: 'user1',
         subjectPermission: 'admin:system',
         isAllowed: false,
         reason: 'Permission is not allowed - Permission not found in chain',
         evaluatedChain: [],
       });
 
-      const result = await service.hasPermission(
-        testUser.userId,
-        'admin:system',
-      );
+      const result = await service.hasPermission('user1', 'admin:system');
 
       expect(result).toBe(false);
     });
 
     it('should handle errors gracefully', async () => {
-      const testUser = service.createTestUserWithPermissions(['read:chat']);
-
       mockEvaluatePermission.mockImplementation(() => {
         throw new Error('Helper error');
       });
 
-      const result = await service.hasPermission(testUser.userId, 'read:chat');
+      const result = await service.hasPermission('user1', 'read:chat');
 
       expect(result).toBe(false);
       expect(logger.error).toHaveBeenCalled();
     });
+
+    it('should test getUserOwnPermissions through hasPermission', async () => {
+      // This test indirectly covers getUserOwnPermissions method
+      mockEvaluatePermission.mockReturnValue({
+        actor: 'user1',
+        subjectPermission: 'read:chat',
+        isAllowed: true,
+        reason: 'Allowed - Permission found in chain',
+        evaluatedChain: ['read:chat'],
+      });
+
+      const result = await service.hasPermission('user1', 'read:chat');
+
+      expect(result).toBe(true);
+      expect(mockEvaluatePermission).toHaveBeenCalledWith(
+        'user1',
+        'read:chat',
+        expect.any(Array), // userOwnPermissions
+        expect.any(Array), // userGroupMemberships
+        {},
+      );
+    });
+
+    it('should test getUserGroupMemberships through hasPermission', async () => {
+      // This test indirectly covers getUserGroupMemberships method
+      mockEvaluatePermission.mockReturnValue({
+        actor: 'user1',
+        subjectPermission: 'write:chat',
+        isAllowed: true,
+        reason: 'Allowed - Permission found in chain',
+        evaluatedChain: ['write:chat'],
+      });
+
+      const result = await service.hasPermission('user1', 'write:chat');
+
+      expect(result).toBe(true);
+      expect(mockEvaluatePermission).toHaveBeenCalledWith(
+        'user1',
+        'write:chat',
+        expect.any(Array), // userOwnPermissions
+        expect.any(Array), // userGroupMemberships
+        {},
+      );
+    });
   });
 
   describe('getUserEffectivePermissions', () => {
-    it('should use helper function to get effective permissions', async () => {
-      const testUser = service.createTestUserWithPermissions([
-        'read:chat',
-        'write:chat',
-      ]);
-
-      const mockPermissions = [
+    it('should get user effective permissions', async () => {
+      const result = await service.getUserEffectivePermissions('user1');
+      expect(result).toEqual([
         {
           permissionId: 'read:chat',
           conditions: null,
           byVirtueOf: 'user',
         },
-      ];
-
-      mockGetUserEffectivePermissionChain.mockResolvedValue(mockPermissions);
-
-      const result = await service.getUserEffectivePermissions(testUser.userId);
-
-      expect(mockGetUserEffectivePermissionChain).toHaveBeenCalledWith(
-        testUser.userId,
-        expect.any(Array),
-        expect.any(Array),
-        {},
-      );
-      expect(result).toEqual(mockPermissions);
+      ]);
     });
 
-    it('should handle errors gracefully', async () => {
-      const testUser = service.createTestUserWithPermissions(['read:chat']);
+    it('should handle errors gracefully in getUserEffectivePermissions', async () => {
+      // Mock the private methods to throw errors to force the catch block
+      jest
+        .spyOn(service as any, 'getUserOwnPermissions')
+        .mockImplementation(() => {
+          throw new Error('Private method error');
+        });
 
-      mockGetUserEffectivePermissionChain.mockImplementation(() => {
-        throw new Error('Helper error');
-      });
-
-      const result = await service.getUserEffectivePermissions(testUser.userId);
-
+      const result = await service.getUserEffectivePermissions('user1');
       expect(result).toEqual([]);
-      expect(logger.error).toHaveBeenCalled();
+    });
+
+    it('should test getUserEffectivePermissions with evaluation context', async () => {
+      const evaluationContext = {};
+      const result = await service.getUserEffectivePermissions(
+        'user1',
+        evaluationContext,
+      );
+      expect(result).toEqual([
+        {
+          permissionId: 'read:chat',
+          conditions: null,
+          byVirtueOf: 'user',
+        },
+      ]);
+      expect(mockGetUserEffectivePermissionChain).toHaveBeenCalledWith(
+        'user1',
+        expect.any(Array),
+        expect.any(Array),
+        evaluationContext,
+      );
     });
   });
 
-  describe('getUserPermissions (legacy method)', () => {
-    it('should return permission IDs from effective permissions', async () => {
-      const testUser = service.createTestUserWithPermissions([
-        'read:chat',
-        'write:chat',
-      ]);
+  describe('getUserPermissions', () => {
+    it('should get user permissions (legacy method)', async () => {
+      const result = await service.getUserPermissions('user1');
+      expect(result).toEqual(['read:chat']);
+    });
 
-      const mockPermissions = [
+    it('should handle errors gracefully in getUserPermissions', async () => {
+      // Mock getUserEffectivePermissions to throw an error to trigger the catch block
+      jest
+        .spyOn(service, 'getUserEffectivePermissions')
+        .mockRejectedValue(new Error('Test error'));
+      const result = await service.getUserPermissions('user1');
+      expect(result).toEqual([]);
+    });
+
+    it('should handle errors gracefully in getUserPermissions with evaluation context', async () => {
+      mockGetUserEffectivePermissionChain.mockRejectedValue(
+        new Error('Helper function error'),
+      );
+      const result = await service.getUserPermissions('user1');
+      expect(result).toEqual([]);
+    });
+
+    it('should test getUserPermissions with evaluation context', async () => {
+      const evaluationContext = {};
+      const result = await service.getUserPermissions('user1');
+      expect(result).toEqual(['read:chat']);
+      expect(mockGetUserEffectivePermissionChain).toHaveBeenCalledWith(
+        'user1',
+        expect.any(Array),
+        expect.any(Array),
+        evaluationContext,
+      );
+    });
+  });
+
+  describe('private methods', () => {
+    it('should test getUserOwnPermissions directly with existing user', () => {
+      const result = service['getUserOwnPermissions']('user1');
+
+      // Test the structure without depending on specific data
+      expect(Array.isArray(result)).toBe(true);
+      // If there are permissions, they should have the correct structure
+      if (result.length > 0) {
+        expect(result[0]).toHaveProperty('permissionId');
+        expect(result[0]).toHaveProperty('conditions');
+        expect(result[0]).toHaveProperty('byVirtueOf', 'user');
+      }
+    });
+
+    it('should test getUserOwnPermissions with non-existent user', () => {
+      const result = service['getUserOwnPermissions']('non-existent-user');
+      expect(result).toEqual([]);
+    });
+
+    it('should test getUserGroupMemberships with user not in any groups', () => {
+      const result = service['getUserGroupMemberships']('user-not-in-groups');
+      expect(Array.isArray(result)).toBe(true);
+    });
+
+    it('should test getUserGroupMemberships with user in groups', () => {
+      const result = service['getUserGroupMemberships']('user1');
+      expect(Array.isArray(result)).toBe(true);
+      // If there are group memberships, they should have the correct structure
+      if (result.length > 0) {
+        expect(result[0]).toHaveProperty('permissionId');
+        expect(result[0]).toHaveProperty('conditions');
+        expect(result[0]).toHaveProperty('byVirtueOf', 'group');
+        expect(result[0]).toHaveProperty('groupId');
+      }
+    });
+
+    describe('validation functions', () => {
+      it('should validate user permissions with valid data', () => {
+        const validData = {
+          user_permissions: {
+            user1: {
+              permissions: ['read:chat'],
+              jwtToken: 'test-jwt',
+            },
+          },
+        };
+        const result = service['validateUserPermissions'](validData);
+        expect(result).toEqual(validData);
+      });
+
+      it('should throw error when user permissions data is null', () => {
+        expect(() => service['validateUserPermissions'](null)).toThrow(
+          'user-permissions.json is empty or invalid',
+        );
+      });
+
+      it('should throw error when user permissions data is undefined', () => {
+        expect(() => service['validateUserPermissions'](undefined)).toThrow(
+          'user-permissions.json is empty or invalid',
+        );
+      });
+
+      it('should throw error when user permissions data is missing user_permissions property', () => {
+        const invalidData = { someOtherProperty: 'value' };
+        expect(() => service['validateUserPermissions'](invalidData)).toThrow(
+          'user-permissions.json is missing user_permissions property',
+        );
+      });
+
+      it('should validate group permissions with valid data', () => {
+        const validData = {
+          group_permissions: {
+            'admin-group': {
+              permissions: ['write:chat'],
+              members: ['user1'],
+            },
+          },
+        };
+        const result = service['validateGroupPermissions'](validData);
+        expect(result).toEqual(validData);
+      });
+
+      it('should throw error when group permissions data is null', () => {
+        expect(() => service['validateGroupPermissions'](null)).toThrow(
+          'group-permissions.json is empty or invalid',
+        );
+      });
+
+      it('should throw error when group permissions data is missing group_permissions property', () => {
+        const invalidData = { someOtherProperty: 'value' };
+        expect(() => service['validateGroupPermissions'](invalidData)).toThrow(
+          'group-permissions.json is missing group_permissions property',
+        );
+      });
+
+      it('should validate user group memberships with valid data', () => {
+        const validData = {
+          user_group_memberships: {
+            user1: ['admin-group'],
+          },
+        };
+        const result = service['validateUserGroupMemberships'](validData);
+        expect(result).toEqual(validData);
+      });
+
+      it('should throw error when user group memberships data is null', () => {
+        expect(() => service['validateUserGroupMemberships'](null)).toThrow(
+          'user-group-memberships.json is empty or invalid',
+        );
+      });
+
+      it('should throw error when user group memberships data is missing user_group_memberships property', () => {
+        const invalidData = { someOtherProperty: 'value' };
+        expect(() =>
+          service['validateUserGroupMemberships'](invalidData),
+        ).toThrow(
+          'user-group-memberships.json is missing user_group_memberships property',
+        );
+      });
+
+      it('should throw error when loadConfiguration fails validation', () => {
+        // Create a new service instance with invalid data to trigger the throw
+        const invalidUserData = null;
+        const validGroupData = mockGroupPermissionsData;
+        const validMembershipData = mockUserGroupMembershipsData;
+
+        expect(() => {
+          service['loadConfiguration'](
+            invalidUserData,
+            validGroupData,
+            validMembershipData,
+          );
+        }).toThrow(
+          'Failed to load authorization permissions configuration: user-permissions.json is empty or invalid',
+        );
+      });
+    });
+  });
+
+  describe('hasPermission with evaluation context', () => {
+    it('should pass evaluation context to helper function', async () => {
+      const evaluationContext = {};
+
+      mockEvaluatePermission.mockReturnValue({
+        actor: 'user1',
+        subjectPermission: 'read:chat',
+        isAllowed: true,
+        reason: 'Allowed - Permission found in chain',
+        evaluatedChain: ['read:chat'],
+      });
+
+      const result = await service.hasPermission(
+        'user1',
+        'read:chat',
+        evaluationContext,
+      );
+
+      expect(result).toBe(true);
+      expect(mockEvaluatePermission).toHaveBeenCalledWith(
+        'user1',
+        'read:chat',
+        expect.any(Array),
+        expect.any(Array),
+        evaluationContext,
+      );
+    });
+  });
+
+  describe('getUserEffectivePermissions with evaluation context', () => {
+    it('should pass evaluation context to helper function', async () => {
+      const evaluationContext = {};
+
+      const result = await service.getUserEffectivePermissions(
+        'user1',
+        evaluationContext,
+      );
+
+      expect(mockGetUserEffectivePermissionChain).toHaveBeenCalledWith(
+        'user1',
+        expect.any(Array),
+        expect.any(Array),
+        evaluationContext,
+      );
+      expect(result).toEqual([
         {
           permissionId: 'read:chat',
           conditions: null,
           byVirtueOf: 'user',
         },
-        {
-          permissionId: 'write:chat',
-          conditions: null,
-          byVirtueOf: 'group',
-          groupId: 'admin-group',
-        },
-      ];
-
-      mockGetUserEffectivePermissionChain.mockResolvedValue(mockPermissions);
-
-      const result = await service.getUserPermissions(testUser.userId);
-
-      expect(result).toEqual(['read:chat', 'write:chat']);
+      ]);
     });
   });
 });

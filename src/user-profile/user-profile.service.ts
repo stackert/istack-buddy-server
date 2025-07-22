@@ -125,15 +125,15 @@ export class UserProfileService {
     userId: string,
     profileData: any,
   ): Promise<boolean> {
-    this.logger.logWithContext(
-      'debug',
-      'Updating user profile',
-      'UserProfileService.updateUserProfile',
-      undefined,
-      { userId },
-    );
-
     try {
+      this.logger.logWithContext(
+        'debug',
+        'Updating user profile',
+        'UserProfileService.updateUserProfile',
+        undefined,
+        { userId },
+      );
+
       // TODO: Update user profile in file-based storage
       // For now, return success
       return true;

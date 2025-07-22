@@ -37,49 +37,76 @@ interface AuthenticationResult {
 
 @Injectable()
 export class AuthenticationService {
-  private config: SessionConfig = {
-    sessionTimeoutSeconds: 28800, // 8 hours default
-    sessionCleanupIntervalMinutes: 30,
-    jwtSecret: 'development-jwt-secret-replace-in-production',
-    jwtExpiration: '8h',
-    jwtIssuer: 'istack-buddy',
-  };
+  private config: SessionConfig;
 
   constructor(
     private readonly logger: CustomLoggerService,
     private readonly authPermissionsService: AuthorizationPermissionsService,
     private readonly userProfileService: UserProfileService,
   ) {
-    // Use imported JSON data directly with fallback
+    // Load session configuration - CONFIGURATION ISSUES ARE FATAL
+    const defaultConfig: SessionConfig = {
+      sessionTimeoutSeconds: 28800, // 8 hours default
+      sessionCleanupIntervalMinutes: 30,
+      jwtSecret: 'development-jwt-secret-replace-in-production',
+      jwtExpiration: '8h',
+      jwtIssuer: 'istack-buddy',
+    };
+
+    this.config = this.calculateEffectiveConfiguration(
+      defaultConfig,
+      sessionConfig,
+    );
+
+    // Validate configuration - CONFIGURATION ISSUES ARE FATAL
+    this.validateConfiguration(this.config);
+
+    // Log successful initialization
+    this.logger.logWithContext(
+      'debug',
+      'Authentication service initialized with configuration',
+      'AuthenticationService.constructor',
+      undefined,
+      { sessionTimeoutSeconds: this.config.sessionTimeoutSeconds },
+    );
+  }
+
+  /**
+   * Calculates the effective configuration by merging default config with session config.
+   * This is a private method for testability - configuration errors are fatal.
+   */
+  private calculateEffectiveConfiguration(
+    defaultConfig: SessionConfig,
+    sessionConfig: any,
+  ): SessionConfig {
+    // Ensure sessionConfig is always an object
+    const effectiveSessionConfig =
+      sessionConfig && typeof sessionConfig === 'object' ? sessionConfig : {};
+
+    // Always merge, even if sessionConfig is empty
+    const effectiveConfiguration = {
+      ...defaultConfig,
+      ...effectiveSessionConfig,
+    };
+
+    return effectiveConfiguration;
+  }
+
+  /**
+   * Validates that the configuration is properly loaded.
+   * This is a private method for testability - configuration errors are fatal.
+   */
+  private validateConfiguration(config: SessionConfig): void {
     try {
-      if (sessionConfig && typeof sessionConfig === 'object') {
-        this.config = { ...this.config, ...sessionConfig };
+      if (!config || !config.sessionTimeoutSeconds) {
+        throw new Error(
+          'Invalid session configuration: missing required properties',
+        );
       }
     } catch (error) {
-      this.logger.error(
-        'AuthenticationService.constructor',
-        'Failed to load session configuration, using defaults',
-        error as Error,
-      );
-      // Keep the default config already set above
-    }
-
-    // Ensure config is always defined before logging
-    if (this.config && this.config.sessionTimeoutSeconds) {
-      this.logger.logWithContext(
-        'debug',
-        'Authentication service initialized with configuration',
-        'AuthenticationService.constructor',
-        undefined,
-        { sessionTimeoutSeconds: this.config.sessionTimeoutSeconds },
-      );
-    } else {
-      this.logger.logWithContext(
-        'warn',
-        'Authentication service initialized with default configuration',
-        'AuthenticationService.constructor',
-        undefined,
-        { sessionTimeoutSeconds: 28800 }, // Default value
+      // CONFIGURATION ISSUES ARE FATAL - THE SERVER MUST NOT START
+      throw new Error(
+        `Configuration validation failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
       );
     }
   }
@@ -114,10 +141,11 @@ export class AuthenticationService {
         throw new AuthenticationFailedException('User not found');
       }
 
-      // TODO: Add password validation logic here
-      // For now, assume any password is valid for existing users
-      if (!password || password.length < 1) {
-        throw new AuthenticationFailedException('Invalid password');
+      // Validate password - must be at least 3 characters
+      if (!password || password.length < 3) {
+        throw new AuthenticationFailedException(
+          'Invalid password: must be at least 3 characters',
+        );
       }
 
       // Generate JWT token
@@ -239,8 +267,38 @@ export class AuthenticationService {
   ): Promise<boolean> {
     try {
       const result = await this.authenticateUser(userId, jwtToken);
+
+      // Log the authentication result
+      if (result.success) {
+        this.logger.logWithContext(
+          'debug',
+          `'isUserAuthenticated' called for ${userId} SUCCESS`,
+          'AuthenticationService.isUserAuthenticated',
+          undefined,
+          { userId },
+        );
+      } else {
+        this.logger.logWithContext(
+          'debug',
+          `'isUserAuthenticated' called for ${userId} FAIL`,
+          'AuthenticationService.isUserAuthenticated',
+          undefined,
+          { userId, error: result.error },
+        );
+      }
+
       return result.success;
     } catch (error) {
+      this.logger.logWithContext(
+        'debug',
+        `'isUserAuthenticated' called for ${userId} FAIL`,
+        'AuthenticationService.isUserAuthenticated',
+        undefined,
+        {
+          userId,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        },
+      );
       return false;
     }
   }
@@ -313,16 +371,6 @@ export class AuthenticationService {
         { userId },
       );
       return null;
-    }
-  }
-
-  private isValidToken(token: string): boolean {
-    try {
-      // Verify JWT token
-      jwt.verify(token, JWT_SECRET);
-      return true;
-    } catch (error) {
-      return false;
     }
   }
 }

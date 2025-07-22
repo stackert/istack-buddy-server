@@ -6,30 +6,7 @@ import {
   EvaluateAllowConditions,
 } from './permission-evaluator.helper';
 
-// Import JSON files directly for compile-time checking
-import userPermissionsData from './user-permissions.json';
-import groupPermissionsData from './group-permissions.json';
-import userGroupMembershipsData from './user-group-memberships.json';
-
 const JWT_SECRET = 'istack-buddy-secret-key-2024';
-
-interface TestUserResult {
-  userId: string;
-  jwt: string;
-}
-
-interface TestUserProfile {
-  username: string;
-  email: string;
-  account_type_informal: string;
-  created_at: string;
-  updated_at: string;
-}
-
-interface TestUserPermissions {
-  permissions: string[];
-  jwtToken: string;
-}
 
 interface FileBasedUserPermissions {
   user_permissions: {
@@ -80,137 +57,129 @@ interface PermissionEvaluator {
 
 @Injectable()
 export class AuthorizationPermissionsService {
-  // In-memory storage for test users
-  private testUserProfiles: Record<string, TestUserProfile> = {};
-  private testUserPermissions: Record<string, TestUserPermissions> = {};
-
-  // Use imported JSON data directly
-  private userPermissions: FileBasedUserPermissions = userPermissionsData;
-  private groupPermissions: FileBasedGroupPermissions = groupPermissionsData;
-  private userGroupMemberships: FileBasedUserGroupMemberships =
-    userGroupMembershipsData;
+  // Configuration data - CONFIGURATION LOADING IS FATAL
+  private userPermissions: FileBasedUserPermissions;
+  private groupPermissions: FileBasedGroupPermissions;
+  private userGroupMemberships: FileBasedUserGroupMemberships;
 
   constructor(
     private readonly logger: CustomLoggerService,
     @Inject('PermissionEvaluator')
     private readonly permissionEvaluator: PermissionEvaluator,
+    // Accept configuration data as constructor parameters for testability
+    // NOTE: At this time, we have no users and therefore no real user management.
+    // It's expected that we will eventually integrate with a larger project that will provide user identity services and this code will need to be changed.
+    // In the meantime, we load bare necessity from file.
+    @Inject('UserPermissionsData')
+    userPermissionsData: Partial<FileBasedUserPermissions>,
+    @Inject('GroupPermissionsData')
+    groupPermissionsData: any,
+    @Inject('UserGroupMembershipsData')
+    userGroupMembershipsData: any,
   ) {
+    // CONFIGURATION LOADING IS FATAL - THE SERVER MUST NOT START IF THIS FAILS
+    this.loadConfiguration(
+      userPermissionsData,
+      groupPermissionsData,
+      userGroupMembershipsData,
+    );
+
     this.logger.logWithContext(
       'debug',
       'File-based permissions loaded successfully',
       'AuthorizationPermissionsService.constructor',
       undefined,
-      {},
+      {
+        userPermissionsCount: Object.keys(this.userPermissions.user_permissions)
+          .length,
+        groupPermissionsCount: Object.keys(
+          this.groupPermissions.group_permissions,
+        ).length,
+        userGroupMembershipsCount: Object.keys(
+          this.userGroupMemberships.user_group_memberships,
+        ).length,
+      },
     );
   }
 
   /**
-   * Creates a test user with specified permissions and returns JWT token.
-   * Only available in test mode.
+   * Validate user permissions data - CONFIGURATION LOADING IS FATAL
    */
-  public createTestUserWithPermissions(permissions: string[]): TestUserResult {
-    // Ensure we're in test mode
-    if (process.env.NODE_ENV !== 'test') {
+  private validateUserPermissions(data: any): FileBasedUserPermissions {
+    if (!data) {
+      throw new Error('user-permissions.json is empty or invalid');
+    }
+    if (!data.user_permissions) {
       throw new Error(
-        'createTestUserWithPermissions can only be called in test mode',
+        'user-permissions.json is missing user_permissions property',
       );
     }
-
-    const userId = `test-user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-
-    // Create user profile in memory
-    this.createTestUserProfile(userId);
-
-    // Create user permissions in memory
-    this.createTestUserPermissions(userId, permissions);
-
-    // Generate JWT token
-    const jwtToken = jwt.sign(
-      {
-        userId,
-        email: `${userId}@test.example.com`,
-        username: userId,
-        accountType: 'test',
-      },
-      JWT_SECRET,
-      { expiresIn: '8h' },
-    );
-
-    this.logger.logWithContext(
-      'debug',
-      'Test user created with permissions',
-      'AuthorizationPermissionsService.createTestUserWithPermissions',
-      undefined,
-      { userId, permissionCount: permissions.length },
-    );
-
-    return { userId, jwt: jwtToken };
+    return data as FileBasedUserPermissions;
   }
 
-  private createTestUserProfile(userId: string): void {
-    const profile: TestUserProfile = {
-      username: userId,
-      email: `${userId}@test.example.com`,
-      account_type_informal: 'test',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-
-    this.testUserProfiles[userId] = profile;
+  /**
+   * Validate group permissions data - CONFIGURATION LOADING IS FATAL
+   */
+  private validateGroupPermissions(data: any): FileBasedGroupPermissions {
+    if (!data) {
+      throw new Error('group-permissions.json is empty or invalid');
+    }
+    if (!data.group_permissions) {
+      throw new Error(
+        'group-permissions.json is missing group_permissions property',
+      );
+    }
+    return data as FileBasedGroupPermissions;
   }
 
-  private createTestUserPermissions(
-    userId: string,
-    permissions: string[],
+  /**
+   * Validate user group memberships data - CONFIGURATION LOADING IS FATAL
+   */
+  private validateUserGroupMemberships(
+    data: any,
+  ): FileBasedUserGroupMemberships {
+    if (!data) {
+      throw new Error('user-group-memberships.json is empty or invalid');
+    }
+    if (!data.user_group_memberships) {
+      throw new Error(
+        'user-group-memberships.json is missing user_group_memberships property',
+      );
+    }
+    return data as FileBasedUserGroupMemberships;
+  }
+
+  /**
+   * Load configuration - CONFIGURATION LOADING IS FATAL
+   */
+  private loadConfiguration(
+    userPermissionsData: any,
+    groupPermissionsData: any,
+    userGroupMembershipsData: any,
   ): void {
-    const userPermissions: TestUserPermissions = {
-      permissions: permissions,
-      jwtToken: '', // Will be set by authentication service
-    };
-
-    this.testUserPermissions[userId] = userPermissions;
-  }
-
-  /**
-   * Gets test user profile from memory (for testing purposes)
-   */
-  public getTestUserProfile(userId: string): TestUserProfile | undefined {
-    return this.testUserProfiles[userId];
-  }
-
-  /**
-   * Gets test user permissions from memory (for testing purposes)
-   */
-  public getTestUserPermissions(
-    userId: string,
-  ): TestUserPermissions | undefined {
-    return this.testUserPermissions[userId];
-  }
-
-  /**
-   * Clears all test users from memory (for test cleanup)
-   */
-  public clearTestUsers(): void {
-    this.testUserProfiles = {};
-    this.testUserPermissions = {};
+    try {
+      // Validate each JSON data separately for granular error handling
+      this.userPermissions = this.validateUserPermissions(userPermissionsData);
+      this.groupPermissions =
+        this.validateGroupPermissions(groupPermissionsData);
+      this.userGroupMemberships = this.validateUserGroupMemberships(
+        userGroupMembershipsData,
+      );
+    } catch (error) {
+      // CONFIGURATION LOADING IS FATAL - THE SERVER MUST NOT START
+      throw new Error(
+        `Failed to load authorization permissions configuration: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
+    }
   }
 
   /**
    * Get user's own permissions as PermissionWithConditions array
+   * ALL USERS ARE TREATED UNIFORMLY - NO TEST USER SPECIAL HANDLING
    */
   private getUserOwnPermissions(userId: string): PermissionWithConditions[] {
-    // First check if this is a test user
-    const testUserPermissions = this.getTestUserPermissions(userId);
-    if (testUserPermissions) {
-      return testUserPermissions.permissions.map((permissionId) => ({
-        permissionId,
-        conditions: null, // Test users have no conditions
-        byVirtueOf: 'user' as const,
-      }));
-    }
-
-    // Check file-based permissions (with null check)
-    if (this.userPermissions?.user_permissions?.[userId]) {
+    // Check file-based permissions - NO OPTIONAL CHAINING, DATA IS GUARANTEED TO EXIST
+    if (this.userPermissions.user_permissions[userId]) {
       return this.userPermissions.user_permissions[userId].permissions.map(
         (permissionId) => ({
           permissionId,
@@ -229,13 +198,13 @@ export class AuthorizationPermissionsService {
   private getUserGroupMemberships(userId: string): PermissionWithConditions[] {
     const groupMemberships: PermissionWithConditions[] = [];
 
-    // Get user's group memberships (with null check)
+    // Get user's group memberships - NO OPTIONAL CHAINING, DATA IS GUARANTEED TO EXIST
     const userGroups =
-      this.userGroupMemberships?.user_group_memberships?.[userId] || [];
+      this.userGroupMemberships.user_group_memberships[userId] || [];
 
     // For each group, get the permissions
     userGroups.forEach((groupId) => {
-      const groupData = this.groupPermissions?.group_permissions?.[groupId];
+      const groupData = this.groupPermissions.group_permissions[groupId];
       if (groupData) {
         groupData.permissions.forEach((permissionId) => {
           groupMemberships.push({

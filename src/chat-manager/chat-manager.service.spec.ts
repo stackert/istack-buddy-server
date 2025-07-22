@@ -434,8 +434,8 @@ describe('ChatManagerService', () => {
           fromRole: UserRole.CUSTOMER,
           toRole: UserRole.AGENT,
         });
-        // Small delay to ensure proper chronological ordering
-        await new Promise((resolve) => setTimeout(resolve, 1));
+        // Longer delay to ensure distinct timestamps
+        await new Promise((resolve) => setTimeout(resolve, 10));
       }
 
       const messages = await service.getLastMessages(conversationId, 3);
