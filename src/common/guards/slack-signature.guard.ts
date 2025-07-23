@@ -76,6 +76,15 @@ export class SlackSignatureGuard implements CanActivate {
     }
 
     this.logger.log('Slack signature verified successfully');
+
+    // Set the authenticated user for Slack service
+    request.user = {
+      userId: 'slack-integration-internal-user',
+      email: 'slack-service@istack-buddy.com',
+      username: 'slack-integration-internal-user',
+      accountType: 'SERVICE',
+    };
+
     return true;
   }
 }

@@ -17,6 +17,10 @@
         "cx-agent:form-marv:read"
       ],
       "jwtToken": "test-jwt-admin"
+    },
+    "slack-integration-internal-user": {
+      "permissions": ["external-service:slacky:events"],
+      "jwtToken": "slack-service-jwt"
     }
   }
 }

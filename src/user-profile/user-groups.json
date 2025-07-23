@@ -29,12 +29,6 @@
       "name": "Chat Administrators",
       "description": "Users with chat management permissions",
       "created_at": "2024-01-01T00:00:00Z"
-    },
-    "slack-integration": {
-      "id": "slack-integration",
-      "name": "Slack Integration Users",
-      "description": "Users with Slack integration access",
-      "created_at": "2024-01-01T00:00:00Z"
     }
   }
 }

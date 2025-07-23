@@ -45,8 +45,8 @@
       "name": "Dashboard Statistics",
       "description": "Access dashboard statistics"
     },
-    "external-service:external-service:slacky:events": {
-      "id": "external-service:external-service:slacky:events",
+    "external-service:slacky:events": {
+      "id": "external-service:slacky:events",
       "name": "Slack Integration Events",
       "description": "Handle Slack integration events"
     },

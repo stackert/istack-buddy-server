@@ -47,6 +47,19 @@
       "is_email_verified": true,
       "created_at": "2024-01-04T00:00:00Z",
       "last_login": "2024-01-15T11:20:00Z"
+    },
+    "slack-integration-internal-user": {
+      "id": "slack-integration-internal-user",
+      "email": "slack-service@istack-buddy.com",
+      "username": "slack-integration-internal-user",
+      "first_name": "Slack",
+      "last_name": "Integration Service",
+      "account_type_informal": "SERVICE",
+      "current_account_status": "ACTIVE",
+      "is_email_verified": true,
+      "created_at": "2024-01-01T00:00:00Z",
+      "last_login": null,
+      "comments": "Internal service user for Slack integration events. Authenticated via Slack signature verification. Handles all Slack webhook events and provides audit trail for Slack-related activities."
     }
   }
 }

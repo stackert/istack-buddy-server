@@ -1,16 +1,15 @@
 {
   "memberships": {
-    "user-1": ["admin", "chat-admin", "slack-integration"],
+    "user-1": ["admin", "chat-admin"],
     "user-2": ["student"],
     "user-3": ["instructor", "chat-admin"],
-    "user-4": ["developer", "slack-integration"]
+    "user-4": ["developer"]
   },
   "group_members": {
     "admin": ["user-1"],
     "instructor": ["user-3"],
     "student": ["user-2"],
     "developer": ["user-4"],
-    "chat-admin": ["user-1", "user-3"],
-    "slack-integration": ["user-1", "user-4"]
+    "chat-admin": ["user-1", "user-3"]
   }
 }
