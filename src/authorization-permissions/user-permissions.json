@@ -1,15 +1,21 @@
 {
   "user_permissions": {
     "user1": {
-      "permissions": ["read:chat", "write:chat"],
+      "permissions": ["read:chat", "write:chat", "cx-agent:form-marv:read"],
       "jwtToken": "test-jwt-user1"
     },
     "user2": {
-      "permissions": ["read:chat"],
+      "permissions": ["read:chat", "cx-agent:form-marv:read"],
       "jwtToken": "test-jwt-user2"
     },
     "admin": {
-      "permissions": ["read:chat", "write:chat", "admin:users", "admin:system"],
+      "permissions": [
+        "read:chat",
+        "write:chat",
+        "admin:users",
+        "admin:system",
+        "cx-agent:form-marv:read"
+      ],
       "jwtToken": "test-jwt-admin"
     }
   }

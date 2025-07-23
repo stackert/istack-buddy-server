@@ -14,6 +14,7 @@ import { ValidationExceptionFilter } from './common/filters/validation-exception
 import { ChatManagerModule } from './chat-manager/chat-manager.module';
 import { IstackBuddySlackApiModule } from './istack-buddy-slack-api/istack-buddy-slack-api.module';
 import { RobotModule } from './robots/robot.module';
+import { PublicInterfaceModule } from './public-interface/public-interface.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { RobotModule } from './robots/robot.module';
     ChatManagerModule,
     IstackBuddySlackApiModule,
     RobotModule,
+    PublicInterfaceModule,
   ],
   controllers: [AppController],
   providers: [

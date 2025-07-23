@@ -77,6 +77,13 @@ jest.mock('fs', () => ({
         },
       });
     }
+    // Mock responses for public content files
+    if (filePath.includes('hello-world.html')) {
+      return '<!DOCTYPE html>\n<html lang="en">\n<head>\n    <meta charset="UTF-8">\n    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n    <title>Hello World</title>\n</head>\n<body>\n    <h1>Hello World!</h1>\n    <p>Welcome to the public interface.</p>\n</body>\n</html>';
+    }
+    if (filePath.includes('hello-from-marv.html')) {
+      return '<!DOCTYPE html>\n<html lang="en">\n<head>\n    <meta charset="UTF-8">\n    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n    <title>Hello from Marv</title>\n</head>\n<body>\n    <h1>Hello from Marv!</h1>\n    <p>This is the form-marv interface.</p>\n</body>\n</html>';
+    }
     // For other files, throw an error (which individual tests can override)
     throw new Error(`ENOENT: no such file or directory, open '${filePath}'`);
   }),

@@ -138,4 +138,32 @@ export class UserProfileService {
       return false;
     }
   }
+
+  /**
+   * Adds a temporary user profile for form-marv sessions.
+   * NOTE: This method is designed for testing and temporary users only.
+   * When we integrate with a larger ecosystem, this will need to be replaced.
+   */
+  public addTemporaryUser(userId: string, profileData: any): void {
+    this.userProfiles.users[userId] = {
+      id: userId,
+      email: profileData.email,
+      username: profileData.username,
+      first_name: profileData.first_name || 'Form',
+      last_name: profileData.last_name || 'Marv',
+      account_type_informal: profileData.account_type_informal || 'TEMPORARY',
+      current_account_status: 'active',
+      is_email_verified: false,
+      created_at: new Date().toISOString(),
+      last_login: new Date().toISOString(),
+    };
+
+    this.logger.logWithContext(
+      'log',
+      'Temporary user profile added',
+      'UserProfileService.addTemporaryUser',
+      undefined,
+      { userId },
+    );
+  }
 }
