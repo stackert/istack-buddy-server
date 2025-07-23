@@ -6,31 +6,10 @@ import {
   getUserEffectivePermissionChain,
 } from './permission-evaluator.helper';
 
-// Import JSON files for production use - provide defaults if imports fail
-let userPermissionsData: any;
-let groupPermissionsData: any;
-let userGroupMembershipsData: any;
-
-try {
-  userPermissionsData = require('./user-permissions.json');
-} catch (error) {
-  // Provide default empty data if import fails (e.g., in test environments)
-  userPermissionsData = { user_permissions: {} };
-}
-
-try {
-  groupPermissionsData = require('./group-permissions.json');
-} catch (error) {
-  // Provide default empty data if import fails (e.g., in test environments)
-  groupPermissionsData = { group_permissions: {} };
-}
-
-try {
-  userGroupMembershipsData = require('./user-group-memberships.json');
-} catch (error) {
-  // Provide default empty data if import fails (e.g., in test environments)
-  userGroupMembershipsData = { user_group_memberships: {} };
-}
+// Import JSON files using require for compatibility
+const userPermissionsData = require('./user-permissions.json');
+const groupPermissionsData = require('./group-permissions.json');
+const userGroupMembershipsData = require('./user-group-memberships.json');
 
 @Module({
   imports: [LoggerModule],

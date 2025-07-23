@@ -6,15 +6,8 @@ import { AuthorizationPermissionsModule } from '../authorization-permissions/aut
 import { AuthPermissionGuard } from '../common/guards/auth-permission.guard';
 import { AuthenticationModule } from '../authentication/authentication.module';
 
-// Import JSON files for production use - provide defaults if imports fail
-let userProfilesData: any;
-
-try {
-  userProfilesData = require('./user-profiles.json');
-} catch (error) {
-  // Provide default empty data if import fails (e.g., in test environments)
-  userProfilesData = { users: {} };
-}
+// Import JSON file using require for compatibility
+const userProfilesData = require('./user-profiles.json');
 
 @Module({
   imports: [
