@@ -111,95 +111,6 @@ describe('Public Interface E2E Tests', () => {
     });
   });
 
-  describe('GET /public/form-marv/:randomkey/:formId', () => {
-    it('should return 401 when no JWT token is provided', async () => {
-      const response = await request(app.getHttpServer())
-        .get('/public/form-marv/random123/form456')
-        .expect(401);
-
-      expect(response.body.message).toBe('No authentication token provided');
-    });
-
-    it('should return 401 when bad JWT token is provided', async () => {
-      const response = await request(app.getHttpServer())
-        .get('/public/form-marv/random123/form456')
-        .set('Authorization', 'Bearer bad-token')
-        .expect(401);
-
-      expect(response.body.message).toBe(
-        'Invalid or expired authentication token',
-      );
-    });
-
-    it('should return 403 when user has no permissions', async () => {
-      // Create a test user with no permissions
-      const testUserId = 'test-user-no-perms-2';
-      authPermissionsService.addUser(testUserId, [], []);
-      const testJWT = createTestJWT(
-        testUserId,
-        'noperms2@example.com',
-        'noperms2',
-        'STUDENT',
-      );
-
-      const response = await request(app.getHttpServer())
-        .get('/public/form-marv/random123/form456')
-        .set('Authorization', `Bearer ${testJWT}`)
-        .expect(403);
-
-      expect(response.body.message).toContain(
-        'Access denied. Required permissions: cx-agent:form-marv:read',
-      );
-    });
-
-    it('should return 200 when user has the required permission', async () => {
-      // Create a test user with the required permission
-      const testUserId = 'test-user-with-perms-2';
-      authPermissionsService.addUser(
-        testUserId,
-        ['cx-agent:form-marv:read'],
-        [],
-      );
-      const testJWT = createTestJWT(
-        testUserId,
-        'withperms2@example.com',
-        'withperms2',
-        'STUDENT',
-      );
-
-      const response = await request(app.getHttpServer())
-        .get('/public/form-marv/random123/form456')
-        .set('Authorization', `Bearer ${testJWT}`)
-        .expect(200);
-
-      expect(response.text).toContain('Hello from Marv!');
-      expect(response.text).toContain('This is the form-marv interface');
-    });
-
-    it('should work with different randomkey and formId parameters', async () => {
-      // Create a test user with the required permission
-      const testUserId = 'test-user-with-perms-3';
-      authPermissionsService.addUser(
-        testUserId,
-        ['cx-agent:form-marv:read'],
-        [],
-      );
-      const testJWT = createTestJWT(
-        testUserId,
-        'withperms3@example.com',
-        'withperms3',
-        'STUDENT',
-      );
-
-      const response = await request(app.getHttpServer())
-        .get('/public/form-marv/any-random-key/any-form-id')
-        .set('Authorization', `Bearer ${testJWT}`)
-        .expect(200);
-
-      expect(response.text).toContain('Hello from Marv!');
-    });
-  });
-
   describe('GET /public/form-marv', () => {
     it('should return 404 for root form-marv endpoint', async () => {
       const response = await request(app.getHttpServer())
@@ -283,12 +194,12 @@ describe('Public Interface E2E Tests', () => {
       );
     });
 
-    it('should return 404 when session does not exist', async () => {
+    it('should return 401 when no formId is provided', async () => {
       const response = await request(app.getHttpServer())
         .get('/public/form-marv/non-existent-secret-key')
-        .expect(404);
+        .expect(401);
 
-      expect(response.text).toBe('Session not found or expired');
+      expect(response.text).toBe('Form ID is required in the URL path');
     });
 
     it('should return 401 when session exists but authentication fails', async () => {

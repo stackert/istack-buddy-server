@@ -4,6 +4,8 @@ import { IstackBuddySlackApiService } from './istack-buddy-slack-api.service';
 import { ConversationListServiceModule } from '../ConversationLists';
 import { RobotModule } from '../robots/robot.module';
 import { ChatManagerModule } from '../chat-manager/chat-manager.module';
+import { AuthenticationModule } from '../authentication/authentication.module';
+import { LoggerModule } from '../common/logger/logger.module';
 
 describe('IstackBuddySlackApiController', () => {
   let controller: IstackBuddySlackApiController;
@@ -25,7 +27,13 @@ describe('IstackBuddySlackApiController', () => {
     );
 
     const module: TestingModule = await Test.createTestingModule({
-      imports: [ConversationListServiceModule, RobotModule, ChatManagerModule],
+      imports: [
+        ConversationListServiceModule,
+        RobotModule,
+        ChatManagerModule,
+        AuthenticationModule,
+        LoggerModule,
+      ],
       controllers: [IstackBuddySlackApiController],
       providers: [IstackBuddySlackApiService],
     }).compile();
@@ -181,6 +189,7 @@ describe('IstackBuddySlackApiController', () => {
       };
 
       const module = await Test.createTestingModule({
+        imports: [AuthenticationModule, LoggerModule],
         controllers: [IstackBuddySlackApiController],
         providers: [
           {
