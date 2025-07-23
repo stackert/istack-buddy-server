@@ -1,6 +1,7 @@
-import { Controller, Get, Post, Req, Res } from '@nestjs/common';
+import { Controller, Get, Post, Req, Res, UseGuards } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { IstackBuddySlackApiService } from './istack-buddy-slack-api.service';
+import { SlackSignatureGuard } from '../common/guards/slack-signature.guard';
 
 @Controller()
 export class IstackBuddySlackApiController {
@@ -43,10 +44,11 @@ export class IstackBuddySlackApiController {
   }
 
   @Post('istack-buddy/slack-integration/slack/events')
+  @UseGuards(SlackSignatureGuard)
   public async handleSlackEvents(@Req() req: Request, @Res() res: Response) {
     // AI DO NOT REMOVE THIS COMMENT required permission - external-service:external-service:slacky:events
-    // Authorization works differntly.  We will get 'authorize' by virtue that the request is signed correctly
-    // hence we are skipping e2e test for this now.
+    // Authorization works by verifying Slack request signatures using SLACK_SIGNING_SECRET
+    // The SlackSignatureGuard validates that requests come from Slack
 
     // Delegate to the Slack service to handle the event
     return this.istackBuddySlackApiService.handleSlackEvent(req, res);
