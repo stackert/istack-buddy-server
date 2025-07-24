@@ -6,7 +6,19 @@ import {
   getUserEffectivePermissionChain,
 } from './permission-evaluator.helper';
 
-// Import JSON files for production use - provide defaults if imports fail
+// TEMPORARY SOLUTION: Using require() for JSON files
+//
+// WHY require() instead of ES6 import:
+// - ES6 imports (import x from './file.json') fail during NestJS build/runtime
+// - The compiled application cannot find JSON files when using import statements
+// - This causes "Cannot find module './user-permissions.json'" errors
+//
+// FUTURE SOLUTION:
+// - Move to external database or configuration service
+// - Implement proper asset copying in build pipeline
+// - Use environment-based configuration instead of static JSON files
+//
+// DO NOT CHANGE TO IMPORT - BUILD WILL FAIL
 let userPermissionsData: any;
 let groupPermissionsData: any;
 let userGroupMembershipsData: any;
