@@ -47,10 +47,10 @@ export class FormMarvSessionService {
     const expiresInMs = 24 * 60 * 60 * 1000; // 24 hours
     const sessionFormId = formId || this.generateFakeFormId();
 
-    // Create a temporary user with the required permission
+    // Create a temporary user with the required permissions for both read and write
     this.authPermissionsService.addUser(
       userId,
-      ['cx-agent:form-marv:read'],
+      ['cx-agent:form-marv:read', 'cx-agent:form-marv:write'],
       [],
     );
 

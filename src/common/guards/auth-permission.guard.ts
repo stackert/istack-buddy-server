@@ -48,7 +48,44 @@ export class AuthPermissionGuard implements CanActivate {
       [context.getHandler(), context.getClass()],
     );
 
-    // Step 1: Extract and validate JWT token
+    // Special case: If there's a jwtToken query parameter, validate it and let controller handle redirect
+    const queryToken = request.query.jwtToken as string;
+    if (queryToken) {
+      try {
+        const payload = jwt.verify(queryToken, JWT_SECRET) as JWTPayload;
+        // Set user information on request for the controller
+        request.user = {
+          userId: payload.userId,
+          email: payload.email,
+          username: payload.username,
+          accountType: payload.accountType,
+        };
+
+        this.logger.debug(
+          'JWT token from query parameter validated, allowing controller to handle redirect',
+          {
+            userId: payload.userId,
+            endpoint: request.url,
+            method: request.method,
+            correlationId: request.headers['x-correlation-id'] || 'unknown',
+          },
+        );
+
+        return true; // Let controller handle the redirect
+      } catch (error) {
+        this.logger.warn('Invalid JWT token in query parameter', {
+          endpoint: request.url,
+          method: request.method,
+          correlationId: request.headers['x-correlation-id'] || 'unknown',
+          error: error.message,
+        });
+        throw new UnauthorizedException(
+          'Invalid or expired authentication token',
+        );
+      }
+    }
+
+    // Step 1: Extract and validate JWT token from headers/cookies
     const token = this.extractTokenFromRequest(request);
 
     if (!token) {
@@ -161,16 +198,22 @@ export class AuthPermissionGuard implements CanActivate {
     }
 
     // Check cookie
-    const cookieToken = request.cookies?.['auth-token'];
+    const cookieToken = request.cookies?.['jwtToken'];
     if (cookieToken) {
       return cookieToken;
     }
 
-    // Check query parameter (for testing purposes)
-    const queryToken = request.query.jwtToken as string;
-    if (queryToken) {
-      return queryToken;
+    // Fallback: Parse cookie header manually (for test environments)
+    const cookieHeader = request.headers.cookie;
+    if (cookieHeader) {
+      const jwtTokenMatch = cookieHeader.match(/jwtToken=([^;]+)/);
+      if (jwtTokenMatch) {
+        return jwtTokenMatch[1];
+      }
     }
+
+    // Note: Query parameters are handled separately in the main canActivate method
+    // for the redirect flow, so we don't check them here
 
     return null;
   }

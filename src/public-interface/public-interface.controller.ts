@@ -1,11 +1,13 @@
 import {
   Controller,
   Get,
+  Post,
   Param,
-  Res,
   Query,
-  UseGuards,
   Req,
+  Res,
+  UseGuards,
+  Body,
 } from '@nestjs/common';
 import { Response } from 'express';
 import { AuthPermissionGuard } from '../common/guards/auth-permission.guard';
@@ -85,10 +87,42 @@ export class PublicInterfaceController {
     }
   }
 
+  @Get('/form-marv/:secretKey/debug-session')
+  async debugSession(
+    @Param('secretKey') secretKey: string,
+    @Res() res: Response,
+  ): Promise<void> {
+    try {
+      const session = this.formMarvSessionService.getSession(secretKey);
+
+      if (!session) {
+        res.status(404).json({
+          error: 'Session not found',
+          secretKey: secretKey,
+          message: 'No session exists for the provided secret key',
+        });
+        return;
+      }
+
+      // Return the complete session data as JSON
+      res.setHeader('Content-Type', 'application/json');
+      res.json({
+        secretKey: secretKey,
+        sessionData: session,
+        timestamp: new Date().toISOString(),
+        note: 'This is debug information for development purposes only',
+      });
+    } catch (error) {
+      res.status(500).json({
+        error: 'Internal Server Error',
+        message: error.message || 'An unexpected error occurred',
+      });
+    }
+  }
+
   @Get('/form-marv/:secretKey')
   async serveFormMarvContent(
     @Param('secretKey') secretKey: string,
-    @Query('jwtToken') jwtToken: string,
     @Res() res: Response,
     @Req() req: any,
   ): Promise<void> {
@@ -97,6 +131,8 @@ export class PublicInterfaceController {
   }
 
   @Get('/form-marv/:secretKey/:formId')
+  @UseGuards(AuthPermissionGuard)
+  @RequirePermissions('cx-agent:form-marv:read')
   async serveFormMarvContentWithFormId(
     @Param('secretKey') secretKey: string,
     @Param('formId') formId: string,
@@ -105,12 +141,6 @@ export class PublicInterfaceController {
     @Req() req: any,
   ): Promise<void> {
     try {
-      // DEBUG: Log cookies for troubleshooting
-      console.log(
-        'DEBUG serveFormMarvContentWithFormId req.cookies:',
-        req.cookies,
-      );
-
       // If JWT token is provided in query, set it as a cookie and redirect
       if (jwtToken) {
         res.cookie('jwtToken', jwtToken, {
@@ -138,50 +168,7 @@ export class PublicInterfaceController {
         return;
       }
 
-      // Get JWT token from cookies
-      const jwtTokenFromCookie = req.cookies?.jwtToken;
-
-      // If JWT token is provided in cookie, validate it first
-      if (jwtTokenFromCookie) {
-        const isCookieTokenValid = await this.authService.isUserAuthenticated(
-          session.userId,
-          jwtTokenFromCookie,
-        );
-        if (!isCookieTokenValid) {
-          res.status(401).send('Invalid or expired authentication token');
-          return;
-        }
-      }
-
-      // Use the token from cookie if provided and valid, otherwise use session token
-      const tokenToUse = jwtTokenFromCookie || session.jwtToken;
-
-      try {
-        // Verify the token and check if user has the required permission
-        const isAuthenticated = await this.authService.isUserAuthenticated(
-          session.userId,
-          tokenToUse,
-        );
-        if (!isAuthenticated) {
-          res.status(401).send('Invalid or expired authentication token');
-          return;
-        }
-
-        // Verify the user has the required permission
-        const hasPermission = await this.authPermissionsService.hasPermission(
-          session.userId,
-          'cx-agent:form-marv:read',
-        );
-        if (!hasPermission) {
-          res
-            .status(403)
-            .send(
-              'Access denied. Required permissions: cx-agent:form-marv:read',
-            );
-          return;
-        }
-
-        const html = `
+      const html = `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -195,13 +182,39 @@ export class PublicInterfaceController {
 </body>
 </html>`;
 
-        res.setHeader('Content-Type', 'text/html');
-        res.send(html);
-      } catch (authError) {
-        res.status(401).send('Authentication failed');
-      }
+      res.setHeader('Content-Type', 'text/html');
+      res.send(html);
     } catch (error) {
       res.status(500).send('Internal Server Error');
     }
+  }
+
+  @Get('/form-marv/:secretKey/:formId/chat-messages')
+  @UseGuards(AuthPermissionGuard)
+  @RequirePermissions('cx-agent:form-marv:read')
+  async getChatMessages(
+    @Param('secretKey') secretKey: string,
+    @Param('formId') formId: string,
+    @Req() req: any,
+    @Query('dtSinceMs') dtSinceMs?: string,
+  ): Promise<any[]> {
+    // For now, return empty array
+    return [];
+  }
+
+  @Post('/form-marv/:secretKey/:formId/chat-messages')
+  @UseGuards(AuthPermissionGuard)
+  @RequirePermissions('cx-agent:form-marv:write')
+  async postChatMessage(
+    @Param('secretKey') secretKey: string,
+    @Param('formId') formId: string,
+    @Body() messageData: any,
+    @Req() req: any,
+  ): Promise<{ success: boolean; messageId?: string }> {
+    // For now, return success with a placeholder messageId
+    return {
+      success: true,
+      messageId: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    };
   }
 }

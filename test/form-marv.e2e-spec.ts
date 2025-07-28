@@ -44,6 +44,56 @@ describe('Form Marv E2E Tests', () => {
     });
   });
 
+  describe('GET /public/form-marv/:secretKey/debug-session', () => {
+    it('should return session data for existing session', async () => {
+      // First create a session
+      const createResponse = await request(app.getHttpServer())
+        .get('/public/form-marv/debug-create')
+        .expect(200);
+
+      // Extract the secret key from the response
+      const html = createResponse.text;
+      const linkMatch = html.match(
+        /\/public\/form-marv\/([^\/]+)\/([^?]+)\?jwtToken=/,
+      );
+
+      if (!linkMatch) {
+        throw new Error('Could not extract secret key from response');
+      }
+
+      const [, secretKey, formId] = linkMatch;
+
+      // Test the debug endpoint
+      const debugResponse = await request(app.getHttpServer())
+        .get(`/public/form-marv/${secretKey}/debug-session`)
+        .expect(200);
+
+      expect(debugResponse.body).toHaveProperty('secretKey', secretKey);
+      expect(debugResponse.body).toHaveProperty('sessionData');
+      expect(debugResponse.body).toHaveProperty('timestamp');
+      expect(debugResponse.body).toHaveProperty('note');
+
+      const sessionData = debugResponse.body.sessionData;
+      expect(sessionData).toHaveProperty('secretKey', secretKey);
+      expect(sessionData).toHaveProperty('formId', formId);
+      expect(sessionData).toHaveProperty('userId');
+      expect(sessionData).toHaveProperty('jwtToken');
+      expect(sessionData).toHaveProperty('createdAt');
+      expect(sessionData).toHaveProperty('lastActivityAt');
+      expect(sessionData).toHaveProperty('expiresInMs');
+    });
+
+    it('should return 404 for non-existent session', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/public/form-marv/non-existent-key/debug-session')
+        .expect(404);
+
+      expect(response.body).toHaveProperty('error', 'Session not found');
+      expect(response.body).toHaveProperty('secretKey', 'non-existent-key');
+      expect(response.body).toHaveProperty('message');
+    });
+  });
+
   describe('GET /public/form-marv/:secretKey', () => {
     it('should return 401 when formId is not provided', async () => {
       // First create a session
@@ -131,29 +181,39 @@ describe('Form Marv E2E Tests', () => {
 
       const [, secretKey, formId, jwtToken] = linkMatch;
 
-      // First visit with JWT token to set the cookie
-      await request(app.getHttpServer())
+      // First visit with JWT token to set the cookie (should redirect)
+      const redirectResponse = await request(app.getHttpServer())
         .get(`/public/form-marv/${secretKey}/${formId}?jwtToken=${jwtToken}`)
         .expect(302);
 
-      // Then access the session directly (should work because JWT token is stored in cookie)
+      // Extract the cookie from the Set-Cookie header
+      const setCookieHeader = redirectResponse.headers['set-cookie'];
+      if (!setCookieHeader || !setCookieHeader[0]) {
+        throw new Error('No cookie was set in the redirect response');
+      }
+
+      // Extract just the cookie value for jwtToken
+      const cookieValue = setCookieHeader[0].split(';')[0]; // e.g., "jwtToken=..."
+
+      // Then access the session directly with the cookie
       const response = await request(app.getHttpServer())
         .get(`/public/form-marv/${secretKey}/${formId}`)
+        .set('Cookie', cookieValue)
         .expect(200);
 
       expect(response.text).toContain('Welcome to Forms Marv!');
       expect(response.text).toContain('Your session is active and ready');
     });
 
-    it('should return 404 for non-existent session', async () => {
+    it('should return 401 for non-existent session (guard blocks unauthenticated access)', async () => {
       const response = await request(app.getHttpServer())
         .get('/public/form-marv/non-existent-secret-key/non-existent-form-id')
-        .expect(404);
+        .expect(401);
 
-      expect(response.text).toBe('Session not found or expired');
+      expect(response.body.message).toBe('No authentication token provided');
     });
 
-    it('should return 401 for wrong formId', async () => {
+    it('should return 401 for wrong formId (guard blocks unauthenticated access)', async () => {
       // First create a session
       const createResponse = await request(app.getHttpServer())
         .get('/public/form-marv/debug-create')
@@ -171,12 +231,12 @@ describe('Form Marv E2E Tests', () => {
 
       const [, secretKey] = linkMatch;
 
-      // Access with wrong formId
+      // Access with wrong formId (should be blocked by guard due to no authentication)
       const response = await request(app.getHttpServer())
         .get(`/public/form-marv/${secretKey}/wrong-form-id`)
         .expect(401);
 
-      expect(response.text).toBe('Invalid form ID for this session');
+      expect(response.body.message).toBe('No authentication token provided');
     });
   });
 });

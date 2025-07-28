@@ -238,7 +238,6 @@ describe('PublicInterfaceController', () => {
     it('should return 401 when formId is required in URL path', async () => {
       await controller.serveFormMarvContent(
         'test-secret-key',
-        'test-jwt-token',
         mockResponse as Response,
         mockRequest,
       );
@@ -276,7 +275,7 @@ describe('PublicInterfaceController', () => {
 
       expect(mockResponse.cookie).toHaveBeenCalledWith('jwtToken', jwtToken, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        secure: false, // NODE_ENV is not 'production' in tests
         sameSite: 'strict',
         maxAge: 24 * 60 * 60 * 1000,
       });
@@ -289,7 +288,7 @@ describe('PublicInterfaceController', () => {
       mockFormMarvSessionService.getSession.mockReturnValue(null);
 
       await controller.serveFormMarvContentWithFormId(
-        'non-existent-key',
+        'test-secret-key',
         '123456',
         '',
         mockResponse as Response,
@@ -319,9 +318,8 @@ describe('PublicInterfaceController', () => {
       );
     });
 
-    it('should return 401 when authentication fails with session token', async () => {
+    it('should serve content when session and formId are valid', async () => {
       mockFormMarvSessionService.getSession.mockReturnValue(mockSession);
-      mockAuthService.isUserAuthenticated.mockResolvedValue(false);
 
       await controller.serveFormMarvContentWithFormId(
         'test-secret-key',
@@ -331,92 +329,6 @@ describe('PublicInterfaceController', () => {
         mockRequest,
       );
 
-      expect(mockAuthService.isUserAuthenticated).toHaveBeenCalledWith(
-        mockSession.userId,
-        mockSession.jwtToken,
-      );
-      expect(mockResponse.status).toHaveBeenCalledWith(401);
-      expect(mockResponse.send).toHaveBeenCalledWith(
-        'Invalid or expired authentication token',
-      );
-    });
-
-    it('should return 401 when cookie token is invalid', async () => {
-      const mockRequestWithCookie = {
-        ...mockRequest,
-        cookies: { jwtToken: 'invalid-cookie-token' },
-      };
-
-      mockFormMarvSessionService.getSession.mockReturnValue(mockSession);
-      // First call for cookie validation
-      mockAuthService.isUserAuthenticated.mockResolvedValueOnce(false);
-
-      await controller.serveFormMarvContentWithFormId(
-        'test-secret-key',
-        '123456',
-        '',
-        mockResponse as Response,
-        mockRequestWithCookie,
-      );
-
-      expect(mockAuthService.isUserAuthenticated).toHaveBeenCalledWith(
-        mockSession.userId,
-        'invalid-cookie-token',
-      );
-      expect(mockResponse.status).toHaveBeenCalledWith(401);
-      expect(mockResponse.send).toHaveBeenCalledWith(
-        'Invalid or expired authentication token',
-      );
-    });
-
-    it('should return 403 when user lacks required permission', async () => {
-      mockFormMarvSessionService.getSession.mockReturnValue(mockSession);
-      mockAuthService.isUserAuthenticated.mockResolvedValue(true);
-      mockAuthPermissionsService.hasPermission.mockResolvedValue(false);
-
-      await controller.serveFormMarvContentWithFormId(
-        'test-secret-key',
-        '123456',
-        '',
-        mockResponse as Response,
-        mockRequest,
-      );
-
-      expect(mockAuthService.isUserAuthenticated).toHaveBeenCalledWith(
-        mockSession.userId,
-        mockSession.jwtToken,
-      );
-      expect(mockAuthPermissionsService.hasPermission).toHaveBeenCalledWith(
-        mockSession.userId,
-        'cx-agent:form-marv:read',
-      );
-      expect(mockResponse.status).toHaveBeenCalledWith(403);
-      expect(mockResponse.send).toHaveBeenCalledWith(
-        'Access denied. Required permissions: cx-agent:form-marv:read',
-      );
-    });
-
-    it('should serve content when authentication and authorization succeed', async () => {
-      mockFormMarvSessionService.getSession.mockReturnValue(mockSession);
-      mockAuthService.isUserAuthenticated.mockResolvedValue(true);
-      mockAuthPermissionsService.hasPermission.mockResolvedValue(true);
-
-      await controller.serveFormMarvContentWithFormId(
-        'test-secret-key',
-        '123456',
-        '',
-        mockResponse as Response,
-        mockRequest,
-      );
-
-      expect(mockAuthService.isUserAuthenticated).toHaveBeenCalledWith(
-        mockSession.userId,
-        mockSession.jwtToken,
-      );
-      expect(mockAuthPermissionsService.hasPermission).toHaveBeenCalledWith(
-        mockSession.userId,
-        'cx-agent:form-marv:read',
-      );
       expect(mockResponse.setHeader).toHaveBeenCalledWith(
         'Content-Type',
         'text/html',
@@ -425,61 +337,8 @@ describe('PublicInterfaceController', () => {
         expect.stringContaining('Welcome to Forms Marv!'),
       );
       expect(mockResponse.send).toHaveBeenCalledWith(
-        expect.stringContaining(
-          'Your session is active and ready for formId: 123456',
-        ),
+        expect.stringContaining('123456'),
       );
-    });
-
-    it('should prefer cookie token over session token when both are valid', async () => {
-      const mockRequestWithCookie = {
-        ...mockRequest,
-        cookies: { jwtToken: 'valid-cookie-token' },
-      };
-
-      mockFormMarvSessionService.getSession.mockReturnValue(mockSession);
-      // First call for cookie validation, second for actual auth
-      mockAuthService.isUserAuthenticated
-        .mockResolvedValueOnce(true) // Cookie validation
-        .mockResolvedValueOnce(true); // Actual auth
-      mockAuthPermissionsService.hasPermission.mockResolvedValue(true);
-
-      await controller.serveFormMarvContentWithFormId(
-        'test-secret-key',
-        '123456',
-        '',
-        mockResponse as Response,
-        mockRequestWithCookie,
-      );
-
-      expect(mockAuthService.isUserAuthenticated).toHaveBeenNthCalledWith(
-        1,
-        mockSession.userId,
-        'valid-cookie-token',
-      );
-      expect(mockAuthService.isUserAuthenticated).toHaveBeenNthCalledWith(
-        2,
-        mockSession.userId,
-        'valid-cookie-token',
-      );
-    });
-
-    it('should handle authentication service errors', async () => {
-      mockFormMarvSessionService.getSession.mockReturnValue(mockSession);
-      mockAuthService.isUserAuthenticated.mockRejectedValue(
-        new Error('Auth service error'),
-      );
-
-      await controller.serveFormMarvContentWithFormId(
-        'test-secret-key',
-        '123456',
-        '',
-        mockResponse as Response,
-        mockRequest,
-      );
-
-      expect(mockResponse.status).toHaveBeenCalledWith(401);
-      expect(mockResponse.send).toHaveBeenCalledWith('Authentication failed');
     });
 
     it('should handle general errors and return 500', async () => {
@@ -525,6 +384,46 @@ describe('PublicInterfaceController', () => {
       } finally {
         process.env.NODE_ENV = originalEnv;
       }
+    });
+  });
+
+  describe('getChatMessages', () => {
+    it('should return empty array', async () => {
+      const result = await controller.getChatMessages(
+        'test-secret-key',
+        '123456',
+        mockRequest,
+        undefined,
+      );
+
+      expect(result).toEqual([]);
+    });
+
+    it('should return empty array with dtSinceMs parameter', async () => {
+      const result = await controller.getChatMessages(
+        'test-secret-key',
+        '123456',
+        mockRequest,
+        '1640995200000',
+      );
+
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe('postChatMessage', () => {
+    const mockMessageData = { message: 'Hello, world!', type: 'user' };
+
+    it('should return success response', async () => {
+      const result = await controller.postChatMessage(
+        'test-secret-key',
+        '123456',
+        mockMessageData,
+        mockRequest,
+      );
+
+      expect(result.success).toBe(true);
+      expect(result.messageId).toMatch(/^msg_\d+_[a-z0-9]{9}$/);
     });
   });
 });

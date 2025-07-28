@@ -50,6 +50,16 @@
       "name": "Slack Integration Events",
       "description": "Handle Slack integration events"
     },
+    "cx-agent:form-marv:read": {
+      "id": "cx-agent:form-marv:read",
+      "name": "Form Marv Read Access",
+      "description": "Read access to Form Marv sessions and data"
+    },
+    "cx-agent:form-marv:write": {
+      "id": "cx-agent:form-marv:write",
+      "name": "Form Marv Write Access",
+      "description": "Write access to Form Marv sessions and data"
+    },
     "admin:debug": {
       "id": "admin:debug",
       "name": "Debug Access",

@@ -1,8 +1,4 @@
 {
-    "jest.runMode": "on-demand",
-    "cSpell.words": [
-        "Intellistack",
-        "istack",
-        "slacky"
-    ]
+  "jest.runMode": "on-demand",
+  "cSpell.words": ["Intellistack", "istack", "marv", "slacky"]
 }
