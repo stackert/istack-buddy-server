@@ -3,8 +3,6 @@ import type { TConversationTextMessageEnvelope } from './types';
 import Anthropic from '@anthropic-ai/sdk';
 import { marvToolSet } from './tool-definitions/marv';
 
-const ANTHROPIC_API_KEY = '_ANTHROPIC_API_KEY_';
-
 /**
  * Anthropic Marv - Specialized Formstack API Robot
  * Focused on Formstack form management and field operations
