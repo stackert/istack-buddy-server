@@ -9,6 +9,8 @@ export { AgentRobotParrot } from './AgentRobotParrot';
 export { RobotChatOpenAI } from './RobotChatOpenAI';
 export { RobotChatAnthropic } from './RobotChatAnthropic';
 export { AnthropicMarv } from './AnthropicMarv';
+export { MarvOpenAiAgent } from './MarvOpenAiAgent';
+export { SlackyOpenAiAgent } from './SlackyOpenAiAgent';
 
 // Pseudo robot implementations
 // Note: PseudoRobot exports commented out as files are in .hidden

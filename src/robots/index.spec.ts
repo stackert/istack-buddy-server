@@ -10,6 +10,8 @@ import {
   RobotChatOpenAI,
   RobotChatAnthropic,
   AnthropicMarv,
+  MarvOpenAiAgent,
+  SlackyOpenAiAgent,
 
   // Slack Agent implementations
   SlackAgentCoreFormsParrot,
@@ -68,6 +70,16 @@ describe('robots/index', () => {
     it('should export AnthropicMarv', () => {
       expect(AnthropicMarv).toBeDefined();
       expect(typeof AnthropicMarv).toBe('function');
+    });
+
+    it('should export MarvOpenAiAgent', () => {
+      expect(MarvOpenAiAgent).toBeDefined();
+      expect(typeof MarvOpenAiAgent).toBe('function');
+    });
+
+    it('should export SlackyOpenAiAgent', () => {
+      expect(SlackyOpenAiAgent).toBeDefined();
+      expect(typeof SlackyOpenAiAgent).toBe('function');
     });
   });
 
@@ -146,6 +158,8 @@ describe('robots/index', () => {
         'RobotChatOpenAI',
         'RobotChatAnthropic',
         'AnthropicMarv',
+        'MarvOpenAiAgent',
+        'SlackyOpenAiAgent',
         'SlackAgentCoreFormsParrot',
         'SlackAgentCoreFormsSsoAutofillParrot',
         'RobotService',
@@ -177,6 +191,8 @@ describe('robots/index', () => {
         RobotChatOpenAI,
         RobotChatAnthropic,
         AnthropicMarv,
+        MarvOpenAiAgent,
+        SlackyOpenAiAgent,
         SlackAgentCoreFormsParrot,
         SlackAgentCoreFormsSsoAutofillParrot,
       ];

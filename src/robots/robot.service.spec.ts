@@ -146,6 +146,8 @@ describe('RobotService', () => {
         'RobotChatOpenAI',
         'RobotChatAnthropic',
         'SlackyAnthropicAgent',
+        'MarvOpenAiAgent',
+        'SlackyOpenAiAgent',
         'SlackAgentCoreFormsParrot',
         'SlackAgentCoreFormsSsoAutofillParrot',
       ];

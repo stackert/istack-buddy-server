@@ -5,6 +5,8 @@ import { AgentRobotParrot } from './AgentRobotParrot';
 import { RobotChatOpenAI } from './RobotChatOpenAI';
 import { RobotChatAnthropic } from './RobotChatAnthropic';
 import { SlackyAnthropicAgent } from './SlackyAnthropicAgent';
+import { MarvOpenAiAgent } from './MarvOpenAiAgent';
+import { SlackyOpenAiAgent } from './SlackyOpenAiAgent';
 // import { PseudoRobotRouter } from './PseudoRobotRouter.ts.hidden';
 // import { PseudoRobotRouterSuggestions } from './PseudoRobotRouterSuggestions.ts.hidden';
 // import { PseudoRobotDocumentationSuggestions } from './PseudoRobotDocumentationSuggestions.ts.hidden';
@@ -40,6 +42,8 @@ export class RobotService implements OnModuleInit {
         'RobotChatOpenAI',
         'RobotChatAnthropic',
         'SlackyAnthropicAgent',
+        'MarvOpenAiAgent',
+        'SlackyOpenAiAgent',
         'SlackAgentCoreFormsParrot',
         'SlackAgentCoreFormsSsoAutofillParrot',
       ];
@@ -59,6 +63,8 @@ export class RobotService implements OnModuleInit {
         new RobotChatOpenAI(),
         new RobotChatAnthropic(),
         new SlackyAnthropicAgent(),
+        new MarvOpenAiAgent(),
+        new SlackyOpenAiAgent(),
         // new PseudoRobotRouter(),
         // new PseudoRobotRouterSuggestions(),
         // new PseudoRobotDocumentationSuggestions(),
