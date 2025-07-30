@@ -121,6 +121,21 @@ IMPORTANT: Never use emojis, emoticons, or any graphical symbols in your respons
 
   // Store conversation history for context
   private conversationHistory: IConversationMessage[] = [];
+  private isActivelyListeningForResponse: boolean = false;
+  private activeMonitoringIntervals: Map<string, NodeJS.Timeout> = new Map();
+  private toolStatus: {
+    executing: string[];
+    completed: string[];
+    errors: string[];
+  } = { executing: [], completed: [], errors: [] };
+  private readonly pollIntervalMs: number = 15000; // 15 seconds
+  private readonly noToolsTimeoutMs: number = 30000; // 30 seconds timeout when no tools are called
+  private readMessageIds: Set<string> = new Set();
+  private lastToolResults: any[] = [];
+  private currentCallback:
+    | ((response: TConversationTextMessageEnvelope) => void)
+    | null = null;
+  private hasSentFinalResponse: boolean = false;
 
   /**
    * Simple token estimation - roughly 4 characters per token for GPT
@@ -192,14 +207,27 @@ Need help? Just ask! 🚀`;
     toolArgs: any,
   ): Promise<string> {
     this.logger.debug(`Executing tool: ${toolName}`, { toolArgs });
+
+    // Update status to executing
+    this.updateToolStatus(toolName, 'executing');
+
     try {
       const result = this.compositeToolSet.executeToolCall(toolName, toolArgs);
       const finalResult = typeof result === 'string' ? result : await result;
+      this.logger.log(`Tool ${toolName} result: "${finalResult}"`);
+
+      // Update status to completed
+      this.updateToolStatus(toolName, 'completed');
+
       return finalResult;
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
       this.logger.error(`Error executing tool ${toolName}:`, error);
+
+      // Update status to error
+      this.updateToolStatus(toolName, 'error', errorMessage);
+
       return `Error executing ${toolName}: ${errorMessage}`;
     }
   }
@@ -211,11 +239,18 @@ Need help? Just ask! 🚀`;
     const results = [];
     for (const toolCall of toolCalls) {
       try {
+        const toolName = toolCall.function?.name || '';
         const toolArgs = JSON.parse(toolCall.function?.arguments || '{}');
-        const result = await this.executeToolCall(
-          toolCall.function?.name || '',
-          toolArgs,
-        );
+
+        // Log tool call and response for debugging (but don't send to Slack)
+        const toolCallMessage = `🔧 Calling tool: ${toolName} with arguments: ${JSON.stringify(toolArgs, null, 2)}`;
+        this.logger.log(toolCallMessage);
+
+        const result = await this.executeToolCall(toolName, toolArgs);
+
+        const toolResponseMessage = `✅ Tool ${toolName} returned: ${JSON.stringify(result, null, 2)}`;
+        this.logger.log(toolResponseMessage);
+
         results.push({
           tool_call_id: toolCall.id,
           role: 'tool' as const,
@@ -224,6 +259,14 @@ Need help? Just ask! 🚀`;
       } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : 'Unknown error';
+
+        // Send tool error message to Slack
+        const toolErrorMessage = `❌ Tool ${toolCall.function?.name || 'unknown'} failed: ${errorMessage}`;
+        this.logger.log(toolErrorMessage);
+        if (this.currentCallback) {
+          this.currentCallback(this.createToolStatusResponse(toolErrorMessage));
+        }
+
         results.push({
           tool_call_id: toolCall.id,
           role: 'tool' as const,
@@ -231,6 +274,14 @@ Need help? Just ask! 🚀`;
         });
       }
     }
+
+    // Store the results for final response generation
+    this.lastToolResults = results;
+    this.logger.log(`Stored ${results.length} tool results for final response`);
+    this.logger.log(
+      `Tool results content: ${JSON.stringify(results, null, 2)}`,
+    );
+
     return results;
   }
 
@@ -240,11 +291,16 @@ Need help? Just ask! 🚀`;
   public async acceptMessageStreamResponse(
     messageEnvelope: TConversationTextMessageEnvelope,
     chunkCallback: (chunk: string) => void,
+    getHistory?: () => IConversationMessage[],
   ): Promise<void> {
     try {
       const client = this.getClient();
+
+      // Use getHistory callback if provided, otherwise fall back to internal conversationHistory
+      const history = getHistory ? getHistory() : this.conversationHistory;
       const messages = this.buildOpenAIMessageHistory(
         messageEnvelope.envelopePayload.content.payload,
+        history,
       );
 
       const stream = await client.chat.completions.create({
@@ -276,9 +332,416 @@ Need help? Just ask! 🚀`;
 
   /**
    * Set conversation history for context-aware responses
+   * @deprecated Use getHistory parameter in accept* methods instead
    */
   public setConversationHistory(history: IConversationMessage[]): void {
     this.conversationHistory = history;
+  }
+
+  /**
+   * Update tool status and trigger callback if needed
+   */
+  private updateToolStatus(
+    toolName: string,
+    status: 'executing' | 'completed' | 'error',
+    errorMessage?: string,
+  ): void {
+    // Remove from all arrays first
+    this.toolStatus.executing = this.toolStatus.executing.filter(
+      (t) => t !== toolName,
+    );
+    this.toolStatus.completed = this.toolStatus.completed.filter(
+      (t) => t !== toolName,
+    );
+    this.toolStatus.errors = this.toolStatus.errors.filter(
+      (t) => t !== toolName,
+    );
+
+    // Add to appropriate array
+    switch (status) {
+      case 'executing':
+        this.toolStatus.executing.push(toolName);
+        break;
+      case 'completed':
+        this.toolStatus.completed.push(toolName);
+        break;
+      case 'error':
+        this.toolStatus.errors.push(toolName);
+        break;
+    }
+
+    this.logger.log(`Tool status updated: ${toolName} -> ${status}`);
+  }
+
+  /**
+   * Get current tool status for monitoring
+   */
+  private getToolStatus(): string | null {
+    if (this.toolStatus.executing.length > 0) {
+      return `Executing tools: ${this.toolStatus.executing.join(', ')}`;
+    }
+    if (this.toolStatus.completed.length > 0) {
+      return `Completed tools: ${this.toolStatus.completed.join(', ')}`;
+    }
+    if (this.toolStatus.errors.length > 0) {
+      return `Tool errors: ${this.toolStatus.errors.join(', ')}`;
+    }
+    return null;
+  }
+
+  /**
+   * Create tool status response envelope
+   */
+  private createToolStatusResponse(
+    status: string,
+  ): TConversationTextMessageEnvelope {
+    return {
+      messageId: `status-${Date.now()}`,
+      requestOrResponse: 'response',
+      envelopePayload: {
+        messageId: `status-msg-${Date.now()}`,
+        author_role: 'assistant',
+        content: {
+          type: 'text/plain',
+          payload: status,
+        },
+        created_at: new Date().toISOString(),
+        estimated_token_count: this.estimateTokens(status),
+      },
+    };
+  }
+
+  /**
+   * Check for new unread messages and return them
+   * Note: This is a simplified version since the robot doesn't have direct access to chatManagerService
+   * In a real implementation, this would need to be passed in or accessed differently
+   */
+  /**
+   * Get unread messages from the robot's conversation history
+   * TODO: Future enhancement - may want to add conversationId parameter for more sophisticated conversation management
+   */
+  private async getUnreadMessages(originalMessageId: string): Promise<any[]> {
+    try {
+      // For now, we'll use the conversation history we already have
+      // In a real implementation, this would query the chat manager service
+      const unreadMessages = this.conversationHistory.filter(
+        (msg: any) =>
+          !this.readMessageIds.has(msg.messageId) &&
+          msg.fromRole === 'customer' &&
+          msg.messageId !== originalMessageId,
+      );
+
+      // Mark these messages as read
+      unreadMessages.forEach((msg: any) => {
+        this.readMessageIds.add(msg.messageId);
+      });
+
+      return unreadMessages;
+    } catch (error) {
+      this.logger.error('Error getting unread messages:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Check if there's a new user message (simplified - would need conversation tracking)
+   */
+  private hasNewUserMessage(
+    originalMessage: TConversationTextMessageEnvelope,
+  ): boolean {
+    // TODO: Implement proper new message detection
+    // For now, return false - this would need to track conversation state
+    return false;
+  }
+
+  /**
+   * Start monitoring for responses and tool status updates
+   */
+  private startResponseMonitoring(
+    originalMessage: TConversationTextMessageEnvelope,
+    sendMessageToSlack: (response: TConversationTextMessageEnvelope) => void,
+  ): void {
+    const monitoringId = `monitor-${Date.now()}`;
+    const startTime = Date.now();
+    const timeoutMs = 3 * 60 * 1000; // 3 minutes
+    let hasSentFinalResponse = false;
+
+    this.isActivelyListeningForResponse = true;
+
+    const interval = setInterval(async () => {
+      try {
+        const elapsedTime = Date.now() - startTime;
+        const remainingTime = timeoutMs - elapsedTime;
+
+        // Check for new user messages using conversation history
+        const unreadMessages = await this.getUnreadMessages(
+          originalMessage.messageId,
+        );
+
+        this.logger.log(
+          `Checking for new messages. Found: ${unreadMessages.length}, conversation history length: ${this.conversationHistory.length}`,
+        );
+
+        if (unreadMessages.length > 0) {
+          this.logger.log(
+            `New user messages detected: ${unreadMessages.length} messages, stopping monitoring`,
+          );
+          clearInterval(interval);
+          this.activeMonitoringIntervals.delete(monitoringId);
+          this.isActivelyListeningForResponse = false;
+          return;
+        }
+
+        // Check timeout
+        if (elapsedTime > timeoutMs) {
+          this.logger.log('Monitoring timeout reached (3 minutes)');
+          clearInterval(interval);
+          this.activeMonitoringIntervals.delete(monitoringId);
+          this.isActivelyListeningForResponse = false;
+          return;
+        }
+
+        // Send debug message to show polling activity
+        const debugMessage = `debug: no new messages found yet, polling time remaining: ${Math.round(remainingTime / 1000)}s (elapsed: ${Math.round(elapsedTime / 1000)}s)`;
+        this.logger.log(debugMessage);
+        sendMessageToSlack(this.createToolStatusResponse(debugMessage));
+
+        // Check for tool status updates - only send once per tool completion
+        const toolStatus = this.getToolStatus();
+        if (toolStatus && !hasSentFinalResponse && !this.hasSentFinalResponse) {
+          this.logger.log(`Sending tool status update: ${toolStatus}`);
+          sendMessageToSlack(this.createToolStatusResponse(toolStatus));
+        }
+
+        // Check if we have final results (all tools completed or errored)
+        const totalTools =
+          this.toolStatus.executing.length +
+          this.toolStatus.completed.length +
+          this.toolStatus.errors.length;
+
+        // If we have tools and they're all done, OR if we've been polling for a while with no tools
+        const shouldSendFinalResponse =
+          (totalTools > 0 && this.toolStatus.executing.length === 0) ||
+          (totalTools === 0 && elapsedTime > this.noToolsTimeoutMs); // Use class member instead of hardcoded value
+
+        if (
+          shouldSendFinalResponse &&
+          !hasSentFinalResponse &&
+          !this.hasSentFinalResponse
+        ) {
+          // All tools have completed (success or error), or we've waited long enough with no tools
+          this.logger.log(
+            `Sending final response. Tools: ${totalTools}, elapsed: ${elapsedTime}ms`,
+          );
+          hasSentFinalResponse = true;
+          this.hasSentFinalResponse = true;
+
+          const finalResponse = await this.generateFinalResponse();
+          sendMessageToSlack(finalResponse);
+
+          // DON'T stop monitoring here - continue polling for new user messages
+          // Only stop on timeout or new user message
+        }
+      } catch (error) {
+        this.logger.error('Error in response monitoring:', error);
+        clearInterval(interval);
+        this.activeMonitoringIntervals.delete(monitoringId);
+        this.isActivelyListeningForResponse = false;
+      }
+    }, this.pollIntervalMs); // Poll every 15 seconds
+
+    this.activeMonitoringIntervals.set(monitoringId, interval);
+  }
+
+  /**
+   * Generate final response based on tool results
+   */
+  private async generateFinalResponse(): Promise<TConversationTextMessageEnvelope> {
+    const client = this.getClient();
+
+    // Calculate total tools
+    const totalTools =
+      this.toolStatus.executing.length +
+      this.toolStatus.completed.length +
+      this.toolStatus.errors.length;
+
+    // Create a summary request based on tool results
+    const summaryRequest: OpenAI.Chat.Completions.ChatCompletionCreateParams = {
+      model: this.LLModelName,
+      max_tokens: 1024,
+      messages: [
+        {
+          role: 'system' as const,
+          content: this.robotRole,
+        },
+        {
+          role: 'user' as const,
+          content:
+            totalTools > 0
+              ? `Based on the following tool execution results, provide a comprehensive summary and actionable insights:\n\n${JSON.stringify(this.lastToolResults, null, 2)}\n\nCompleted tools: ${this.toolStatus.completed.join(', ')}. Failed tools: ${this.toolStatus.errors.join(', ')}.`
+              : `Provide a helpful response to the user's request. No tools were executed, so provide general assistance or ask for more specific information.`,
+        },
+      ],
+    };
+
+    try {
+      // If we have tool results, use the fallback response method which handles errors properly
+      if (this.lastToolResults.length > 0) {
+        const responseText = this.createFallbackResponse(this.lastToolResults);
+        this.logger.log(`Generated fallback response: "${responseText}"`);
+        return {
+          messageId: `final-${Date.now()}`,
+          requestOrResponse: 'response',
+          envelopePayload: {
+            messageId: `final-msg-${Date.now()}`,
+            author_role: 'assistant',
+            content: {
+              type: 'text/plain',
+              payload: responseText,
+            },
+            created_at: new Date().toISOString(),
+            estimated_token_count: this.estimateTokens(responseText),
+          },
+        };
+      }
+
+      // Otherwise, generate a response using the AI
+      const response = await client.chat.completions.create(summaryRequest);
+      let responseText = '';
+
+      if ('choices' in response && response.choices[0]?.message) {
+        responseText = response.choices[0].message.content || '';
+      }
+
+      if (!responseText || responseText.trim() === '') {
+        responseText = this.createFallbackResponse(this.lastToolResults);
+      }
+
+      return {
+        messageId: `final-${Date.now()}`,
+        requestOrResponse: 'response',
+        envelopePayload: {
+          messageId: `final-msg-${Date.now()}`,
+          author_role: 'assistant',
+          content: {
+            type: 'text/plain',
+            payload: responseText,
+          },
+          created_at: new Date().toISOString(),
+          estimated_token_count: this.estimateTokens(responseText),
+        },
+      };
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      return {
+        messageId: `error-${Date.now()}`,
+        requestOrResponse: 'response',
+        envelopePayload: {
+          messageId: `error-msg-${Date.now()}`,
+          author_role: 'assistant',
+          content: {
+            type: 'text/plain',
+            payload: `I encountered an error generating the final response: ${errorMessage}`,
+          },
+          created_at: new Date().toISOString(),
+          estimated_token_count: this.estimateTokens(errorMessage),
+        },
+      };
+    }
+  }
+
+  /**
+   * Create a fallback response when the final API call fails or returns empty
+   */
+  private createFallbackResponse(toolResults: any[]): string {
+    // We throw because we don't know how the fuck to detect error properly
+    // This should only be called for irrecoverable errors, not because we're lazy
+    throw new Error(
+      `createFallbackResponse called - this indicates a design flaw. Tool results: ${JSON.stringify(toolResults, null, 2)}`,
+    );
+
+    this.logger.log(
+      `createFallbackResponse called with ${toolResults.length} tool results`,
+    );
+    this.logger.log(
+      `Tool results for fallback: ${JSON.stringify(toolResults, null, 2)}`,
+    );
+
+    const errors = toolResults
+      .filter(
+        (result) =>
+          result.content &&
+          typeof result.content === 'object' &&
+          result.content.errorItems,
+      )
+      .flatMap((result) => result.content.errorItems || []);
+
+    const successes = toolResults.filter(
+      (result) =>
+        result.content &&
+        typeof result.content === 'object' &&
+        result.content.isSuccess === true,
+    );
+
+    if (errors.length > 0) {
+      return `I attempted to process your request but encountered some issues:\n\n${errors.map((error) => `• ${error}`).join('\n')}\n\nPlease verify the form ID or try a different approach.`;
+    } else if (successes.length > 0) {
+      // Actually use the tool results to create a meaningful response
+      const successResult = successes[0];
+      if (successResult.content && successResult.content.response) {
+        const data = successResult.content.response;
+
+        // Create a comprehensive summary of the form data
+        let summary = `## Form Overview: ${data.formId}\n\n`;
+
+        if (data.url) {
+          summary += `**Form URL:** ${data.url}\n`;
+        }
+        if (data.submissions !== undefined) {
+          summary += `**Total Submissions:** ${data.submissions}\n`;
+        }
+        if (data.submissionsToday !== undefined) {
+          summary += `**Submissions Today:** ${data.submissionsToday}\n`;
+        }
+        if (data.version) {
+          summary += `**Version:** ${data.version}\n`;
+        }
+        if (data.fieldCount) {
+          summary += `**Field Count:** ${data.fieldCount}\n`;
+        }
+        if (data.isActive !== undefined) {
+          summary += `**Status:** ${data.isActive ? 'Active' : 'Inactive'}\n`;
+        }
+
+        if (data.submitActions && data.submitActions.length > 0) {
+          summary += `\n**Submit Actions (${data.submitActions.length}):**\n`;
+          data.submitActions.forEach((action: any) => {
+            summary += `• ${action.name} (ID: ${action.id})\n`;
+          });
+        }
+
+        if (data.notificationEmails && data.notificationEmails.length > 0) {
+          summary += `\n**Notification Emails (${data.notificationEmails.length}):**\n`;
+          data.notificationEmails.forEach((email: any) => {
+            summary += `• ${email.name} (ID: ${email.id})\n`;
+          });
+        }
+
+        if (data.confirmationEmails && data.confirmationEmails.length > 0) {
+          summary += `\n**Confirmation Emails (${data.confirmationEmails.length}):**\n`;
+          data.confirmationEmails.forEach((email: any) => {
+            summary += `• ${email.name} (ID: ${email.id})\n`;
+          });
+        }
+
+        return summary;
+      } else {
+        return `I've completed the requested analysis. The tools executed successfully and provided the requested information.`;
+      }
+    } else {
+      return `I processed your request but didn't receive the expected results. Please try again or provide more specific details about what you need.`;
+    }
   }
 
   /**
@@ -286,11 +749,12 @@ Need help? Just ask! 🚀`;
    */
   private buildOpenAIMessageHistory(
     currentMessage: string,
+    history: IConversationMessage[] = this.conversationHistory,
   ): OpenAI.Chat.Completions.ChatCompletionMessageParam[] {
     const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [];
 
     // Add conversation history
-    for (const msg of this.conversationHistory) {
+    for (const msg of history) {
       if (msg.fromRole === UserRole.CUSTOMER) {
         messages.push({
           role: 'user' as const,
@@ -304,11 +768,27 @@ Need help? Just ask! 🚀`;
       }
     }
 
-    // Add current message
-    messages.push({
-      role: 'user' as const,
-      content: currentMessage,
-    });
+    // Only add current message if it's not already in the history
+    const lastHistoryMessage = history[history.length - 1];
+    const isCurrentMessageInHistory =
+      lastHistoryMessage &&
+      lastHistoryMessage.fromRole === UserRole.CUSTOMER &&
+      lastHistoryMessage.content === currentMessage;
+
+    if (!isCurrentMessageInHistory) {
+      messages.push({
+        role: 'user' as const,
+        content: currentMessage,
+      });
+    }
+
+    // Debug log the conversation being sent to the robot
+    const conversationForLog = messages.map((msg) => ({
+      author: msg.role === 'user' ? 'user' : 'robot',
+      content: msg.content,
+    }));
+
+    this.logger.debug('Conversation being sent to robot:', conversationForLog);
 
     return messages;
   }
@@ -367,6 +847,7 @@ Need help? Just ask! 🚀`;
    */
   public async acceptMessageImmediateResponse(
     messageEnvelope: TConversationTextMessageEnvelope,
+    getHistory?: () => IConversationMessage[],
   ): Promise<TConversationTextMessageEnvelope> {
     try {
       const userMessage = messageEnvelope.envelopePayload.content.payload;
@@ -393,7 +874,10 @@ Need help? Just ask! 🚀`;
       }
 
       const client = this.getClient();
-      const messages = this.buildOpenAIMessageHistory(userMessage);
+
+      // Use getHistory callback if provided, otherwise fall back to internal conversationHistory
+      const history = getHistory ? getHistory() : this.conversationHistory;
+      const messages = this.buildOpenAIMessageHistory(userMessage, history);
 
       const request: OpenAI.Chat.Completions.ChatCompletionCreateParams = {
         model: this.LLModelName,
@@ -417,6 +901,8 @@ Need help? Just ask! 🚀`;
       if ('choices' in response && response.choices[0]?.message) {
         responseText = response.choices[0].message.content || '';
         toolCalls.push(...(response.choices[0].message.tool_calls || []));
+        this.logger.log(`Initial response: "${responseText}"`);
+        this.logger.log(`Tool calls found: ${toolCalls.length}`);
       }
 
       // Execute any tool calls
@@ -424,6 +910,17 @@ Need help? Just ask! 🚀`;
         const toolResults = await this.executeToolAllCalls(toolCalls);
 
         // Add tool results to the conversation and get final response
+        this.logger.log(`Tool results: ${JSON.stringify(toolResults)}`);
+        // Ensure tool results are properly formatted for OpenAI API
+        const formattedToolResults = toolResults.map((result) => ({
+          tool_call_id: result.tool_call_id,
+          role: 'tool' as const,
+          content:
+            typeof result.content === 'string'
+              ? result.content
+              : JSON.stringify(result.content),
+        }));
+
         const finalMessages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] =
           [
             ...messages,
@@ -432,7 +929,7 @@ Need help? Just ask! 🚀`;
               content: responseText,
               tool_calls: toolCalls,
             },
-            ...toolResults,
+            ...formattedToolResults,
             {
               role: 'user' as const,
               content:
@@ -440,25 +937,52 @@ Need help? Just ask! 🚀`;
             },
           ];
 
-        const finalResponse = await client.chat.completions.create({
-          model: this.LLModelName,
-          max_tokens: 1024,
-          messages: [
-            {
-              role: 'system' as const,
-              content: this.robotRole,
-            },
-            ...finalMessages,
-          ],
-        });
+        try {
+          const finalResponse = await client.chat.completions.create({
+            model: this.LLModelName,
+            max_tokens: 1024,
+            messages: [
+              {
+                role: 'system' as const,
+                content: this.robotRole,
+              },
+              ...finalMessages,
+            ],
+          });
 
-        if ('choices' in finalResponse && finalResponse.choices[0]?.message) {
-          responseText = finalResponse.choices[0].message.content || '';
+          if ('choices' in finalResponse && finalResponse.choices[0]?.message) {
+            responseText = finalResponse.choices[0].message.content || '';
+            this.logger.log(
+              `Final response after tool execution: "${responseText}"`,
+            );
+          } else {
+            this.logger.warn(
+              'No content in final response after tool execution',
+            );
+          }
+        } catch (finalResponseError) {
+          this.logger.error(
+            'Error generating final response after tool execution:',
+            finalResponseError,
+          );
+          // Use fallback response instead of failing completely
+          responseText = this.createFallbackResponse(toolResults);
+        }
+
+        // If we still don't have a response after tool execution, create a fallback response
+        if (!responseText || responseText.trim() === '') {
+          this.logger.warn(
+            'Creating fallback response due to empty final response',
+          );
+          responseText = this.createFallbackResponse(toolResults);
         }
       }
 
       // Create response envelope
       // we need to verify where/who/how messageId are generated.  Is it the responsibility of the robot? or conversation manager.
+      this.logger.log(
+        `Creating response envelope with text: "${responseText}"`,
+      );
       const responseEnvelope: TConversationTextMessageEnvelope = {
         messageId: `response-${Date.now()}`,
         requestOrResponse: 'response',
@@ -501,92 +1025,224 @@ Need help? Just ask! 🚀`;
   }
 
   /**
-   * Handle multi-part response with delayed callback
+   * Handle multi-part response with monitoring and tool status updates
    */
   public async acceptMessageMultiPartResponse(
     messageEnvelope: TConversationTextMessageEnvelope,
     delayedMessageCallback: (
       response: TConversationTextMessageEnvelope,
     ) => void,
+    getHistory?: () => IConversationMessage[],
   ): Promise<TConversationTextMessageEnvelope> {
-    // Get immediate response first
-    const immediateResponse =
-      await this.acceptMessageImmediateResponse(messageEnvelope);
+    // Stop any existing monitoring first
+    this.stopMonitoring();
 
-    // Send a delayed follow-up after processing
-    setTimeout(async () => {
-      try {
-        const followUpRequest: OpenAI.Chat.Completions.ChatCompletionCreateParams =
-          {
-            model: this.LLModelName,
-            max_tokens: 1024,
-            messages: [
-              {
-                role: 'system' as const,
-                content: this.robotRole,
-              },
-              {
-                role: 'user' as const,
-                content: `Follow up on: "${messageEnvelope.envelopePayload.content.payload}". Is there anything else I can help you with regarding Forms Core troubleshooting? I have tools available for Sumo Logic queries, SSO assistance, form validation, and more.`,
-              },
-            ],
-            tools: this.tools,
-          };
+    // Clear any previous tool status, read message IDs, and tool results
+    this.toolStatus = { executing: [], completed: [], errors: [] };
+    this.readMessageIds.clear();
+    this.lastToolResults = [];
+    this.hasSentFinalResponse = false;
 
-        const client = this.getClient();
-        const followUpResponse =
-          await client.chat.completions.create(followUpRequest);
+    // 1. Return immediate meaningless acknowledgment
+    const immediateResponse: TConversationTextMessageEnvelope = {
+      messageId: `ack-${Date.now()}`,
+      requestOrResponse: 'response',
+      envelopePayload: {
+        messageId: `ack-msg-${Date.now()}`,
+        author_role: 'assistant',
+        content: {
+          type: 'text/plain',
+          payload: 'Working on it...',
+        },
+        created_at: new Date().toISOString(),
+        estimated_token_count: this.estimateTokens('Working on it...'),
+      },
+    };
 
-        let followUpText = '';
-        if (
-          'choices' in followUpResponse &&
-          followUpResponse.choices[0]?.message
-        ) {
-          followUpText = followUpResponse.choices[0].message.content || '';
-        }
+    // 2. Store the callback for use in processRequestAsync
+    this.currentCallback = delayedMessageCallback;
 
-        // we need to verify where/who/how messageId are generated.  Is it the responsibility of the robot? or conversation manager.
-        const delayedResponse: TConversationTextMessageEnvelope = {
-          messageId: `delayed-${Date.now()}`,
-          requestOrResponse: 'response',
-          envelopePayload: {
-            messageId: `delayed-msg-${Date.now()}`,
-            author_role: 'assistant',
-            content: {
-              type: 'text/plain',
-              payload: followUpText,
-            },
-            created_at: new Date().toISOString(),
-            estimated_token_count: this.estimateTokens(followUpText),
-          },
-        };
+    // 3. Start monitoring for tool status and final responses
+    this.startResponseMonitoring(messageEnvelope, delayedMessageCallback);
 
-        delayedMessageCallback(delayedResponse);
-      } catch (error) {
-        const errorMessage =
-          error instanceof Error
-            ? error.message
-            : 'Unknown error in delayed response';
-        // we need to verify where/who/how messageId are generated.  Is it the responsibility of the robot? or conversation manager.
-        const errorResponse: TConversationTextMessageEnvelope = {
-          messageId: `delayed-error-${Date.now()}`,
-          requestOrResponse: 'response',
-          envelopePayload: {
-            messageId: `delayed-error-msg-${Date.now()}`,
-            author_role: 'assistant',
-            content: {
-              type: 'text/plain',
-              payload: `Error in delayed response: ${errorMessage}`,
-            },
-            created_at: new Date().toISOString(),
-            estimated_token_count: this.estimateTokens(errorMessage),
-          },
-        };
-
-        delayedMessageCallback(errorResponse);
-      }
-    }, 2000);
+    // 4. Process the actual request asynchronously
+    this.processRequestAsync(messageEnvelope, getHistory);
 
     return immediateResponse;
+  }
+
+  /**
+   * Process the request asynchronously (this will trigger tool execution)
+   */
+  private async processRequestAsync(
+    messageEnvelope: TConversationTextMessageEnvelope,
+    getHistory?: () => IConversationMessage[],
+  ): Promise<void> {
+    try {
+      // Get conversation history
+      const history = getHistory ? getHistory() : this.conversationHistory;
+
+      // Build message history for OpenAI
+      const messages = this.buildOpenAIMessageHistory(
+        messageEnvelope.envelopePayload.content.payload,
+        history,
+      );
+
+      // Create the OpenAI request
+      const request: OpenAI.Chat.Completions.ChatCompletionCreateParams = {
+        model: this.LLModelName,
+        max_tokens: 1024,
+        messages,
+        tools: this.tools,
+        stream: false,
+      };
+
+      // Make the API call
+      const client = this.getClient();
+      const response = await client.chat.completions.create(request);
+
+      let responseText = '';
+      if ('choices' in response && response.choices[0]?.message) {
+        responseText = response.choices[0].message.content || '';
+      }
+
+      // Handle tool calls if any
+      if (response.choices[0]?.message?.tool_calls) {
+        const toolCalls = response.choices[0].message.tool_calls;
+        this.logger.log(`Tool calls found: ${toolCalls.length}`);
+
+        // Execute all tool calls
+        const toolResults = await this.executeToolAllCalls(toolCalls);
+
+        // Handle tool calls if any
+        if (toolResults.length > 0) {
+          // Check if any tools failed
+          const hasErrors = toolResults.some(
+            (result) =>
+              result.content &&
+              typeof result.content === 'object' &&
+              result.content.errorItems &&
+              result.content.errorItems.length > 0,
+          );
+
+          if (hasErrors) {
+            // Only use fallback for actual errors
+            responseText = this.createFallbackResponse(toolResults);
+          } else {
+            // Tools succeeded but AI didn't generate content - create meaningful response from tool data
+            const successResult = toolResults[0];
+            if (successResult.content && successResult.content.response) {
+              const data = successResult.content.response;
+
+              // Create a comprehensive summary of the form data
+              let summary = `## Form Overview: ${data.formId}\n\n`;
+
+              if (data.url) {
+                summary += `**Form URL:** ${data.url}\n`;
+              }
+              if (data.submissions !== undefined) {
+                summary += `**Total Submissions:** ${data.submissions}\n`;
+              }
+              if (data.submissionsToday !== undefined) {
+                summary += `**Submissions Today:** ${data.submissionsToday}\n`;
+              }
+              if (data.version) {
+                summary += `**Version:** ${data.version}\n`;
+              }
+              if (data.fieldCount) {
+                summary += `**Field Count:** ${data.fieldCount}\n`;
+              }
+              if (data.isActive !== undefined) {
+                summary += `**Status:** ${data.isActive ? 'Active' : 'Inactive'}\n`;
+              }
+
+              if (data.submitActions && data.submitActions.length > 0) {
+                summary += `\n**Submit Actions (${data.submitActions.length}):**\n`;
+                data.submitActions.forEach((action: any) => {
+                  summary += `• ${action.name} (ID: ${action.id})\n`;
+                });
+              }
+
+              if (
+                data.notificationEmails &&
+                data.notificationEmails.length > 0
+              ) {
+                summary += `\n**Notification Emails (${data.notificationEmails.length}):**\n`;
+                data.notificationEmails.forEach((email: any) => {
+                  summary += `• ${email.name} (ID: ${email.id})\n`;
+                });
+              }
+
+              if (
+                data.confirmationEmails &&
+                data.confirmationEmails.length > 0
+              ) {
+                summary += `\n**Confirmation Emails (${data.confirmationEmails.length}):**\n`;
+                data.confirmationEmails.forEach((email: any) => {
+                  summary += `• ${email.name} (ID: ${email.id})\n`;
+                });
+              }
+
+              responseText = summary;
+            }
+          }
+        }
+      }
+
+      // Create response envelope
+      const responseEnvelope: TConversationTextMessageEnvelope = {
+        messageId: `response-${Date.now()}`,
+        requestOrResponse: 'response',
+        envelopePayload: {
+          messageId: `response-msg-${Date.now()}`,
+          author_role: 'assistant',
+          content: {
+            type: 'text/plain',
+            payload:
+              responseText ||
+              'I processed your request but have no response to provide.',
+          },
+          created_at: new Date().toISOString(),
+          estimated_token_count: this.estimateTokens(responseText),
+        },
+      };
+
+      // Send the response to Slack if we have a callback
+      if (this.currentCallback) {
+        this.logger.log(
+          `Sending response to Slack: ${responseEnvelope.envelopePayload.content.payload}`,
+        );
+        this.currentCallback(responseEnvelope);
+        // Mark that we've sent a final response to prevent duplicate from monitoring
+        this.hasSentFinalResponse = true;
+      } else {
+        this.logger.warn('No callback available to send response to Slack');
+      }
+    } catch (error) {
+      this.logger.error('Error processing request asynchronously:', error);
+      // Update tool status to indicate error
+      this.updateToolStatus(
+        'request-processing',
+        'error',
+        error instanceof Error ? error.message : 'Unknown error',
+      );
+    }
+  }
+
+  /**
+   * Stop all active monitoring
+   */
+  public stopMonitoring(): void {
+    this.isActivelyListeningForResponse = false;
+    this.activeMonitoringIntervals.forEach((interval) => {
+      clearInterval(interval);
+    });
+    this.activeMonitoringIntervals.clear();
+    this.toolStatus = { executing: [], completed: [], errors: [] };
+    this.readMessageIds.clear();
+    this.lastToolResults = [];
+    this.currentCallback = null;
+    this.hasSentFinalResponse = false;
+    this.logger.log('All monitoring stopped');
   }
 }

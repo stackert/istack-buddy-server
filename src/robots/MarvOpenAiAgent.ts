@@ -109,19 +109,34 @@ IMPORTANT: Never use emojis, emoticons, or any graphical symbols in your respons
   ): OpenAI.Chat.Completions.ChatCompletionCreateParams {
     const userMessage = messageEnvelope.envelopePayload.content.payload;
 
+    const messages = [
+      {
+        role: 'system' as const,
+        content: this.robotRole,
+      },
+      {
+        role: 'user' as const,
+        content: userMessage,
+      },
+    ];
+
+    // Debug log the conversation being sent to the robot
+    const conversationForLog = messages.map((msg) => ({
+      author:
+        msg.role === 'user'
+          ? 'user'
+          : msg.role === 'system'
+            ? 'system'
+            : 'robot',
+      content: msg.content,
+    }));
+
+    this.logger.debug('Conversation being sent to robot:', conversationForLog);
+
     return {
       model: this.LLModelName,
       max_tokens: 1024,
-      messages: [
-        {
-          role: 'system' as const,
-          content: this.robotRole,
-        },
-        {
-          role: 'user' as const,
-          content: userMessage,
-        },
-      ],
+      messages,
       tools: this.tools,
     };
   }

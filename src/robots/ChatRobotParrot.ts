@@ -2,6 +2,7 @@ import type {
   TConversationTextMessageEnvelope,
   TConversationTextMessage,
 } from './types';
+import type { IConversationMessage } from '../chat-manager/interfaces/message.interface';
 import { AbstractRobotChat } from './AbstractRobotChat';
 
 /**
@@ -65,6 +66,7 @@ export class ChatRobotParrot extends AbstractRobotChat {
     delayedMessageCallback: (
       response: TConversationTextMessageEnvelope,
     ) => void,
+    getHistory?: () => IConversationMessage[],
   ): Promise<TConversationTextMessageEnvelope> {
     // For chat robots, we can implement multipart by using the immediate response
     // and then potentially sending additional responses via callback

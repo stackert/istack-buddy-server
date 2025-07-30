@@ -28,6 +28,7 @@ export class RobotService implements OnModuleInit {
    */
   private initializeRobots(): void {
     // Check if fake parrot robot mode is enabled
+    // This is used for testing - when enabled, all robots become parrot robots
     const useFakeParrotRobot = process.env.USE_FAKE_PARROT_ROBOT !== undefined;
 
     if (useFakeParrotRobot) {
@@ -56,7 +57,7 @@ export class RobotService implements OnModuleInit {
         this.logger.debug(`Registered fake parrot robot: ${robotName}`);
       });
     } else {
-      // Normal robot initialization
+      // Normal robot initialization - using real robots (not parrots)
       const robotInstances: AbstractRobot[] = [
         new ChatRobotParrot(),
         new AgentRobotParrot(),

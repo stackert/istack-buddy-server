@@ -1,4 +1,5 @@
 import type { TConversationTextMessageEnvelope } from './types';
+import type { IConversationMessage } from '../chat-manager/interfaces/message.interface';
 /**
  * Abstract base class for all robot types
  */
@@ -50,6 +51,7 @@ export abstract class AbstractRobot {
     delayedMessageCallback: (
       response: TConversationTextMessageEnvelope,
     ) => void,
+    getHistory?: () => IConversationMessage[],
   ): Promise<TConversationTextMessageEnvelope>;
 
   get robotClass(): string {

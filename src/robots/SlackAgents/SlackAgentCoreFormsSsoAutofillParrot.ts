@@ -3,6 +3,7 @@ import {
   TConversationTextMessageEnvelope,
   TConversationTextMessage,
 } from '../types';
+import type { IConversationMessage } from '../../chat-manager/interfaces/message.interface';
 import { TKnowledgeBase, TSlackAgentFunctionDescription } from './types';
 
 /**
@@ -90,6 +91,7 @@ class SlackAgentCoreFormsSsoAutofillParrot extends AbstractSlackRobotAgent {
     delayedMessageCallback: (
       response: TConversationTextMessageEnvelope,
     ) => void,
+    getHistory?: () => IConversationMessage[],
   ): Promise<TConversationTextMessageEnvelope> {
     const recvMessage: TConversationTextMessage =
       messageEnvelope.envelopePayload;

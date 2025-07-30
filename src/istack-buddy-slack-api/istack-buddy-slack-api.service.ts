@@ -1,5 +1,5 @@
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
-import { SlackyAnthropicAgent } from '../robots/SlackyAnthropicAgent';
+import { SlackyOpenAiAgent } from '../robots/SlackyOpenAiAgent';
 import { RobotService } from '../robots/robot.service';
 import { v4 as uuidv4 } from 'uuid';
 import { ChatManagerService } from '../chat-manager/chat-manager.service';
@@ -84,20 +84,12 @@ export class IstackBuddySlackApiService implements OnModuleDestroy {
    * Main entry point for all Slack webhook events
    */
   public async handleSlackEvent(req: any, res: any): Promise<void> {
-    const simpleEvent = this.makeSimplifiedEvent(req.body.event);
-
     const body = req.body;
-    if (this.uniqueEventList[simpleEvent.eventTs]) {
-      this.logger.log(`Duplicate event detected: ${body.event_id}`);
-      res.status(200).json({ status: 'ok' });
-      return;
-    }
-    this.uniqueEventList[simpleEvent.eventTs] = body;
 
     try {
       // Handle URL verification challenge (Slack App setup)
       if (body.challenge) {
-        // Slack initiation/setup requirement to verify URL
+        this.logger.log('Handling Slack URL verification challenge');
         res.status(200).json({ challenge: body.challenge });
         return;
       }
@@ -105,12 +97,26 @@ export class IstackBuddySlackApiService implements OnModuleDestroy {
       // Handle app mention events
       if (body.event && body.event.type === 'app_mention') {
         this.logger.log('Received app mention event');
+
+        // Create simplified event for app mention events only
+        const simpleEvent = this.makeSimplifiedEvent(body.event);
+
+        if (this.uniqueEventList[simpleEvent.eventTs]) {
+          this.logger.log(`Duplicate event detected: ${body.event_id}`);
+          res.status(200).json({ status: 'ok' });
+          return;
+        }
+        this.uniqueEventList[simpleEvent.eventTs] = body;
+
         await this.handleAppMention(body.event);
         res.status(200).json({ status: 'ok' });
         return;
       }
 
-      // it wasn't a mention - we're done, goodbye
+      // Handle other event types (ignore for now)
+      this.logger.log(
+        `Received unhandled event type: ${body.event?.type || 'unknown'}`,
+      );
       res.status(200).json({ status: 'ok' });
     } catch (error) {
       this.logger.error('Error handling Slack event:', error);
@@ -154,22 +160,30 @@ export class IstackBuddySlackApiService implements OnModuleDestroy {
         const sendConversationResponseToSlack = async (
           delayedResponse: TConversationTextMessageEnvelope,
         ) => {
-          // Add robot response to conversation history
-          await this.chatManagerService.addMessage({
-            conversationId: conversation.id,
-            fromUserId: 'cx-slack-robot',
-            content: delayedResponse.envelopePayload.content.payload,
-            messageType: MessageType.ROBOT,
-            fromRole: UserRole.ROBOT,
-            toRole: UserRole.CUSTOMER,
-          });
+          const messageContent =
+            delayedResponse.envelopePayload.content.payload;
 
-          // Send message to Slack
-          await this.sendSlackMessage(
-            delayedResponse.envelopePayload.content.payload,
-            event.channel,
-            event.ts, // this is what creates the thread
-          );
+          // Only send to Slack if we have actual content
+          if (messageContent && messageContent.trim()) {
+            // Add robot response to conversation history
+            await this.chatManagerService.addMessage({
+              conversationId: conversation.id,
+              fromUserId: 'cx-slack-robot',
+              content: messageContent,
+              messageType: MessageType.ROBOT,
+              fromRole: UserRole.ROBOT,
+              toRole: UserRole.CUSTOMER,
+            });
+
+            // Send message to Slack
+            await this.sendSlackMessage(
+              messageContent,
+              event.channel,
+              event.ts, // this is what creates the thread
+            );
+          } else {
+            this.logger.warn('Skipping empty message response to Slack');
+          }
         };
 
         // Map the Slack thread to conversation record with callback for future lookups
@@ -180,20 +194,23 @@ export class IstackBuddySlackApiService implements OnModuleDestroy {
         };
 
         // --------------------
-        const robot = this.robotService.getRobotByName<SlackyAnthropicAgent>(
-          'SlackyAnthropicAgent',
-        )!;
+        const robot =
+          this.robotService.getRobotByName<SlackyOpenAiAgent>(
+            'SlackyOpenAiAgent',
+          )!;
 
         // this creates the first message in the thread
-        const messageEnvelope = await this.createMessageEnvelopeWithHistory({
-          conversationId: conversation.id,
-          fromUserId: event.user,
-          content: event.text,
-        });
+        const { messageEnvelope, conversationHistory } =
+          await this.createMessageEnvelopeWithHistory({
+            conversationId: conversation.id,
+            fromUserId: event.user,
+            content: event.text,
+          });
 
         const response = await robot.acceptMessageMultiPartResponse(
           messageEnvelope,
           sendConversationResponseToSlack,
+          () => conversationHistory, // Pass getHistory callback
         );
         // ----------------------
 
@@ -211,6 +228,9 @@ export class IstackBuddySlackApiService implements OnModuleDestroy {
           return;
         }
 
+        // IMMEDIATE ACKNOWLEDGMENT - Add thinking emoji reaction for thread replies
+        await this.addSlackReaction('thinking_face', event.channel, event.ts);
+
         const userMessage = await this.chatManagerService.addMessage({
           conversationId: conversationRecord.internalConversationId,
           fromUserId: 'cx-slack-robot', // Generic Slack robot user - actual Slack user not tracked
@@ -221,19 +241,22 @@ export class IstackBuddySlackApiService implements OnModuleDestroy {
         });
 
         // --------------------
-        const robot = this.robotService.getRobotByName<SlackyAnthropicAgent>(
-          'SlackyAnthropicAgent',
-        )!;
+        const robot =
+          this.robotService.getRobotByName<SlackyOpenAiAgent>(
+            'SlackyOpenAiAgent',
+          )!;
 
-        const messageEnvelope = await this.createMessageEnvelopeWithHistory({
-          conversationId: conversationRecord.internalConversationId,
-          fromUserId: event.user,
-          content: event.text,
-        });
+        const { messageEnvelope, conversationHistory } =
+          await this.createMessageEnvelopeWithHistory({
+            conversationId: conversationRecord.internalConversationId,
+            fromUserId: event.user,
+            content: event.text,
+          });
 
         const response = await robot.acceptMessageMultiPartResponse(
           messageEnvelope,
           conversationRecord.sendConversationResponseToSlack,
+          () => conversationHistory, // Pass getHistory callback
         );
         // ----------------------
       } else {
@@ -269,6 +292,12 @@ export class IstackBuddySlackApiService implements OnModuleDestroy {
     channelId: string,
     thread_ts: string,
   ) {
+    // Skip sending if message is empty or undefined
+    if (!message || !message.trim()) {
+      this.logger.warn('Attempted to send empty message to Slack, skipping');
+      return;
+    }
+
     try {
       const response = await fetch('https://slack.com/api/chat.postMessage', {
         method: 'POST',
@@ -394,7 +423,10 @@ export class IstackBuddySlackApiService implements OnModuleDestroy {
     conversationId: string;
     fromUserId: string;
     content: string;
-  }): Promise<TConversationTextMessageEnvelope> {
+  }): Promise<{
+    messageEnvelope: TConversationTextMessageEnvelope;
+    conversationHistory: any[];
+  }> {
     // Get conversation history - get last 20 messages to provide context
     const filteredHistory = await this.chatManagerService.getLastMessages(
       request.conversationId,
@@ -425,6 +457,6 @@ export class IstackBuddySlackApiService implements OnModuleDestroy {
       },
     };
 
-    return messageEnvelope;
+    return { messageEnvelope, conversationHistory: filteredHistory };
   }
 }
