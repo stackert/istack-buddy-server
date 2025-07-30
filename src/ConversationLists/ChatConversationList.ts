@@ -18,6 +18,8 @@ export class ChatConversationList {
    */
   addChatMessage(message: IConversationMessage): string {
     this.messages.push(message);
+
+    console.log({ allConversationMessages: this.messages });
     return message.id;
   }
 

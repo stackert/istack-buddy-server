@@ -501,10 +501,9 @@ Need help? Just ask! 🚀`;
           return;
         }
 
-        // Send debug message to show polling activity
+        // Log debug message for monitoring (but don't send to Slack)
         const debugMessage = `debug: no new messages found yet, polling time remaining: ${Math.round(remainingTime / 1000)}s (elapsed: ${Math.round(elapsedTime / 1000)}s)`;
         this.logger.log(debugMessage);
-        sendMessageToSlack(this.createToolStatusResponse(debugMessage));
 
         // Check for tool status updates - only send once per tool completion
         const toolStatus = this.getToolStatus();
