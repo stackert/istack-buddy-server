@@ -655,12 +655,6 @@ Need help? Just ask! 🚀`;
    * Create a fallback response when the final API call fails or returns empty
    */
   private createFallbackResponse(toolResults: any[]): string {
-    // We throw because we don't know how the fuck to detect error properly
-    // This should only be called for irrecoverable errors, not because we're lazy
-    throw new Error(
-      `createFallbackResponse called - this indicates a design flaw. Tool results: ${JSON.stringify(toolResults, null, 2)}`,
-    );
-
     this.logger.log(
       `createFallbackResponse called with ${toolResults.length} tool results`,
     );
