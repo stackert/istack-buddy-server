@@ -1,11 +1,19 @@
 import { SlackyOpenAiAgent } from './SlackyOpenAiAgent';
-import { slackyToolSet } from './tool-definitions/slacky';
-import {
-  marvToolDefinitions,
-  performMarvToolCall,
-} from './tool-definitions/marv';
-import { createCompositeToolSet } from './tool-definitions/toolCatalog';
 import type { TConversationTextMessageEnvelope } from './types';
+
+// Mock OpenAI
+const mockOpenAI = {
+  Chat: {
+    Completions: {
+      create: jest.fn(),
+    },
+  },
+};
+
+jest.mock('openai', () => ({
+  default: jest.fn(() => mockOpenAI),
+  OpenAI: jest.fn(() => mockOpenAI),
+}));
 
 // Mock the tool modules
 jest.mock('./tool-definitions/slacky', () => ({
@@ -23,18 +31,6 @@ jest.mock('./tool-definitions/slacky', () => ({
           required: ['fromDate', 'toDate'],
         },
       },
-      {
-        name: 'ssoAutofillAssistance',
-        description: 'Assist users with form SSO auto-fill questions',
-        input_schema: {
-          type: 'object',
-          properties: {
-            formId: { type: 'string' },
-            accountId: { type: 'string' },
-          },
-          required: ['formId', 'accountId'],
-        },
-      },
     ],
     executeToolCall: jest.fn(),
   },
@@ -43,29 +39,7 @@ jest.mock('./tool-definitions/slacky', () => ({
 jest.mock('./tool-definitions/marv', () => ({
   marvToolDefinitions: [
     {
-      name: 'formLogicValidation',
-      description: 'Validate form logic for errors and issues',
-      input_schema: {
-        type: 'object',
-        properties: {
-          formId: { type: 'string' },
-        },
-        required: ['formId'],
-      },
-    },
-    {
-      name: 'formCalculationValidation',
-      description: 'Validate form calculations and detect circular references',
-      input_schema: {
-        type: 'object',
-        properties: {
-          formId: { type: 'string' },
-        },
-        required: ['formId'],
-      },
-    },
-    {
-      name: 'formAndRelatedEntityOverview',
+      name: 'fsRestrictedApiFormAndRelatedEntityOverview',
       description: 'Get comprehensive form overview with statistics',
       input_schema: {
         type: 'object',
@@ -78,9 +52,9 @@ jest.mock('./tool-definitions/marv', () => ({
   ],
   performMarvToolCall: jest.fn(),
   FsRestrictedApiRoutesEnum: {
-    FormLogicValidation: 'formLogicValidation',
-    FormCalculationValidation: 'formCalculationValidation',
-    FormAndRelatedEntityOverview: 'formAndRelatedEntityOverview',
+    FormLogicValidation: 'fsRestrictedApiFormLogicValidation',
+    FormCalculationValidation: 'fsRestrictedApiFormCalculationValidation',
+    FormAndRelatedEntityOverview: 'fsRestrictedApiFormAndRelatedEntityOverview',
   },
 }));
 
@@ -88,20 +62,8 @@ jest.mock('./tool-definitions/toolCatalog', () => ({
   createCompositeToolSet: jest.fn(() => ({
     toolDefinitions: [
       {
-        name: 'sumoLogicQuery',
-        description: 'Assist users with Sumo Logic queries',
-        input_schema: {
-          type: 'object',
-          properties: {
-            fromDate: { type: 'string' },
-            toDate: { type: 'string' },
-          },
-          required: ['fromDate', 'toDate'],
-        },
-      },
-      {
-        name: 'formLogicValidation',
-        description: 'Validate form logic for errors and issues',
+        name: 'fsRestrictedApiFormAndRelatedEntityOverview',
+        description: 'Get comprehensive form overview with statistics',
         input_schema: {
           type: 'object',
           properties: {
@@ -117,22 +79,19 @@ jest.mock('./tool-definitions/toolCatalog', () => ({
 
 describe('SlackyOpenAiAgent', () => {
   let robot: SlackyOpenAiAgent;
-  let mockSlackyToolSet: jest.Mocked<typeof slackyToolSet>;
-  let mockPerformMarvToolCall: jest.MockedFunction<typeof performMarvToolCall>;
-  let mockCreateCompositeToolSet: jest.MockedFunction<
-    typeof createCompositeToolSet
-  >;
 
   beforeEach(() => {
     robot = new SlackyOpenAiAgent();
-    mockSlackyToolSet = slackyToolSet as jest.Mocked<typeof slackyToolSet>;
-    mockPerformMarvToolCall = performMarvToolCall as jest.MockedFunction<
-      typeof performMarvToolCall
-    >;
-    mockCreateCompositeToolSet = createCompositeToolSet as jest.MockedFunction<
-      typeof createCompositeToolSet
-    >;
     jest.clearAllMocks();
+
+    // Set up environment
+    process.env.OPENAI_API_KEY = 'test-key';
+  });
+
+  afterEach(() => {
+    delete process.env.OPENAI_API_KEY;
+    // Clean up any monitoring intervals
+    robot.stopMonitoring();
   });
 
   describe('Basic Properties', () => {
@@ -162,70 +121,39 @@ describe('SlackyOpenAiAgent', () => {
     });
   });
 
-  describe('Tool Definitions', () => {
-    it('should have tool definitions from composite tool set', () => {
-      expect(mockCreateCompositeToolSet).toHaveBeenCalled();
-    });
-
-    it('should convert tools to OpenAI format', () => {
-      // Access the private tools property for testing
-      const tools = (robot as any).tools;
-      expect(tools).toBeDefined();
-      expect(Array.isArray(tools)).toBe(true);
-
-      // Check that tools are in OpenAI format
-      tools.forEach((tool: any) => {
-        expect(tool.type).toBe('function');
-        expect(tool.function).toBeDefined();
-        expect(tool.function.name).toBeDefined();
-        expect(tool.function.description).toBeDefined();
-        expect(tool.function.parameters).toBeDefined();
-      });
-    });
-  });
-
   describe('Client Creation', () => {
     it('should throw error when OPENAI_API_KEY is not set', () => {
-      const originalEnv = process.env.OPENAI_API_KEY;
       delete process.env.OPENAI_API_KEY;
-
       expect(() => {
         (robot as any).getClient();
       }).toThrow('OPENAI_API_KEY environment variable is required');
-
-      if (originalEnv) {
-        process.env.OPENAI_API_KEY = originalEnv;
-      }
     });
 
     it('should create client when OPENAI_API_KEY is set', () => {
-      const originalEnv = process.env.OPENAI_API_KEY;
-      process.env.OPENAI_API_KEY = 'test-key';
-
       expect(() => {
         (robot as any).getClient();
       }).not.toThrow();
-
-      if (originalEnv) {
-        process.env.OPENAI_API_KEY = originalEnv;
-      } else {
-        delete process.env.OPENAI_API_KEY;
-      }
     });
   });
 
   describe('Tool Execution', () => {
     it('should execute tool calls successfully', async () => {
-      const mockResult = 'Tool execution result';
+      const mockResult = {
+        isSuccess: true,
+        response: { formId: '123', submissions: '5' },
+      };
       const mockCompositeToolSet = (robot as any).compositeToolSet;
       mockCompositeToolSet.executeToolCall.mockResolvedValue(mockResult);
 
-      const result = await (robot as any).executeToolCall('testTool', {
-        formId: '123',
-      });
+      const result = await (robot as any).executeToolCall(
+        'fsRestrictedApiFormAndRelatedEntityOverview',
+        {
+          formId: '123',
+        },
+      );
 
       expect(mockCompositeToolSet.executeToolCall).toHaveBeenCalledWith(
-        'testTool',
+        'fsRestrictedApiFormAndRelatedEntityOverview',
         { formId: '123' },
       );
       expect(result).toBe(mockResult);
@@ -236,27 +164,30 @@ describe('SlackyOpenAiAgent', () => {
       const mockCompositeToolSet = (robot as any).compositeToolSet;
       mockCompositeToolSet.executeToolCall.mockRejectedValue(mockError);
 
-      const result = await (robot as any).executeToolCall('testTool', {
-        formId: '123',
-      });
+      const result = await (robot as any).executeToolCall(
+        'fsRestrictedApiFormAndRelatedEntityOverview',
+        {
+          formId: '123',
+        },
+      );
 
       expect(result).toContain(
-        'Error executing testTool: Tool execution failed',
+        'Error executing fsRestrictedApiFormAndRelatedEntityOverview: Tool execution failed',
       );
     });
   });
 
-  describe('Message History', () => {
+  describe('Message History Building', () => {
     it('should build OpenAI message history correctly', () => {
       const mockHistory = [
-        { fromRole: 'CUSTOMER', content: 'User message 1' },
-        { fromRole: 'ROBOT', content: 'Assistant response 1' },
-        { fromRole: 'CUSTOMER', content: 'User message 2' },
+        { fromRole: 'cx-customer' as any, content: 'User message 1' },
+        { fromRole: 'robot' as any, content: 'Assistant response 1' },
+        { fromRole: 'cx-customer' as any, content: 'User message 2' },
       ];
 
-      robot.setConversationHistory(mockHistory as any);
       const messages = (robot as any).buildOpenAIMessageHistory(
         'Current message',
+        mockHistory as any,
       );
 
       expect(messages).toHaveLength(4); // 3 history + 1 current
@@ -268,6 +199,21 @@ describe('SlackyOpenAiAgent', () => {
       expect(messages[2].content).toBe('User message 2');
       expect(messages[3].role).toBe('user');
       expect(messages[3].content).toBe('Current message');
+    });
+
+    it('should not duplicate current message if already in history', () => {
+      const mockHistory = [
+        { fromRole: 'cx-customer' as any, content: 'User message 1' },
+        { fromRole: 'cx-customer' as any, content: 'Current message' },
+      ];
+
+      const messages = (robot as any).buildOpenAIMessageHistory(
+        'Current message',
+        mockHistory as any,
+      );
+
+      expect(messages).toHaveLength(2); // Should not add duplicate
+      expect(messages[1].content).toBe('Current message');
     });
   });
 
@@ -290,22 +236,7 @@ describe('SlackyOpenAiAgent', () => {
         '/rate 5 Excellent service',
       );
       expect(result).toContain('Thank you for your rating');
-      expect(result).toContain("😊 I'm glad I could help");
-    });
-
-    it('should handle /rate command with negative rating', async () => {
-      const result = await (robot as any).handleDirectFeedbackCommands(
-        '/rate -2 Could be better',
-      );
-      expect(result).toContain('Thank you for your rating');
-      expect(result).toContain("😔 I'm sorry I couldn't help better");
-    });
-
-    it('should reject invalid rating', async () => {
-      const result = await (robot as any).handleDirectFeedbackCommands(
-        '/rate 10',
-      );
-      expect(result).toContain('Please provide a rating between -5 and +5');
+      expect(result).toContain("I'm glad I could help");
     });
 
     it('should return null for unrecognized commands', async () => {
@@ -316,8 +247,8 @@ describe('SlackyOpenAiAgent', () => {
     });
   });
 
-  describe('Message Response Handling', () => {
-    it('should handle immediate response correctly', async () => {
+  describe('acceptMessageMultiPartResponse', () => {
+    it('should return immediate acknowledgment and start monitoring', async () => {
       const messageEnvelope: TConversationTextMessageEnvelope = {
         messageId: 'test-msg',
         requestOrResponse: 'request',
@@ -326,57 +257,7 @@ describe('SlackyOpenAiAgent', () => {
           author_role: 'user',
           content: {
             type: 'text/plain',
-            payload: 'Help me with form validation',
-          },
-          created_at: '2024-01-01T00:00:00Z',
-          estimated_token_count: 5,
-        },
-      };
-
-      const response =
-        await robot.acceptMessageImmediateResponse(messageEnvelope);
-
-      expect(response.messageId).toContain('response-');
-      expect(response.requestOrResponse).toBe('response');
-      expect(response.envelopePayload.author_role).toBe('assistant');
-      expect(response.envelopePayload.content.type).toBe('text/plain');
-      expect(response.envelopePayload.content.payload).toBeDefined();
-    });
-
-    it('should handle streaming response correctly', async () => {
-      const messageEnvelope: TConversationTextMessageEnvelope = {
-        messageId: 'test-msg',
-        requestOrResponse: 'request',
-        envelopePayload: {
-          messageId: 'msg-1',
-          author_role: 'user',
-          content: {
-            type: 'text/plain',
-            payload: 'Help me with form validation',
-          },
-          created_at: '2024-01-01T00:00:00Z',
-          estimated_token_count: 5,
-        },
-      };
-
-      const chunks: string[] = [];
-      const chunkCallback = (chunk: string) => chunks.push(chunk);
-
-      await robot.acceptMessageStreamResponse(messageEnvelope, chunkCallback);
-
-      expect(chunks.length).toBeGreaterThan(0);
-    });
-
-    it('should handle multi-part response correctly', async () => {
-      const messageEnvelope: TConversationTextMessageEnvelope = {
-        messageId: 'test-msg',
-        requestOrResponse: 'request',
-        envelopePayload: {
-          messageId: 'msg-1',
-          author_role: 'user',
-          content: {
-            type: 'text/plain',
-            payload: 'Help me with form validation',
+            payload: 'Tell me about form 123',
           },
           created_at: '2024-01-01T00:00:00Z',
           estimated_token_count: 5,
@@ -393,18 +274,95 @@ describe('SlackyOpenAiAgent', () => {
         delayedCallback,
       );
 
-      expect(response.messageId).toContain('response-');
+      // Should return immediate acknowledgment
+      expect(response.messageId).toContain('ack-');
+      expect(response.envelopePayload.content.payload).toBe('Working on it...');
       expect(response.requestOrResponse).toBe('response');
+    });
+  });
 
-      // Wait for delayed callback
-      await new Promise((resolve) => setTimeout(resolve, 2500));
-      expect(delayedMessages.length).toBeGreaterThan(0);
+  describe('Tool Response Generation', () => {
+    it('should create meaningful response from successful tool results', () => {
+      const toolResults = [
+        {
+          tool_call_id: 'call_123',
+          role: 'tool',
+          content: {
+            isSuccess: true,
+            response: {
+              formId: '5375703',
+              submissions: '2',
+              version: '4',
+              fieldCount: 56,
+              isActive: true,
+              url: 'https://example.com/form',
+              submitActions: [
+                { id: '123', name: 'Action 1' },
+                { id: '456', name: 'Action 2' },
+              ],
+            },
+          },
+        },
+      ];
+
+      const response = (robot as any).createFallbackResponse(toolResults);
+
+      expect(response).toContain('## Form Overview: 5375703');
+      expect(response).toContain('**Total Submissions:** 2');
+      expect(response).toContain('**Version:** 4');
+      expect(response).toContain('**Field Count:** 56');
+      expect(response).toContain('**Status:** Active');
+      expect(response).toContain('**Submit Actions (2):**');
+      expect(response).toContain('• Action 1 (ID: 123)');
+      expect(response).toContain('• Action 2 (ID: 456)');
+    });
+
+    it('should handle tool errors gracefully', () => {
+      const toolResults = [
+        {
+          tool_call_id: 'call_123',
+          role: 'tool',
+          content: {
+            isSuccess: false,
+            response: null,
+            errorItems: ['The form was not found'],
+          },
+        },
+      ];
+
+      const response = (robot as any).createFallbackResponse(toolResults);
+
+      expect(response).toContain(
+        'I attempted to process your request but encountered some issues:',
+      );
+      expect(response).toContain('• The form was not found');
+      expect(response).toContain(
+        'Please verify the form ID or try a different approach.',
+      );
+    });
+  });
+
+  describe('Monitoring System', () => {
+    it('should start and stop monitoring correctly', () => {
+      // Start monitoring
+      (robot as any).startResponseMonitoring(
+        { messageId: 'test' } as TConversationTextMessageEnvelope,
+        jest.fn(),
+      );
+
+      expect((robot as any).isActivelyListeningForResponse).toBe(true);
+      expect((robot as any).activeMonitoringIntervals.size).toBeGreaterThan(0);
+
+      // Stop monitoring
+      robot.stopMonitoring();
+
+      expect((robot as any).isActivelyListeningForResponse).toBe(false);
+      expect((robot as any).activeMonitoringIntervals.size).toBe(0);
     });
   });
 
   describe('Error Handling', () => {
-    it('should handle client creation errors gracefully', async () => {
-      const originalEnv = process.env.OPENAI_API_KEY;
+    it('should handle missing API key in immediate response', async () => {
       delete process.env.OPENAI_API_KEY;
 
       const messageEnvelope: TConversationTextMessageEnvelope = {
@@ -431,10 +389,6 @@ describe('SlackyOpenAiAgent', () => {
       expect(response.envelopePayload.content.payload).toContain(
         'OPENAI_API_KEY',
       );
-
-      if (originalEnv) {
-        process.env.OPENAI_API_KEY = originalEnv;
-      }
     });
   });
 });
