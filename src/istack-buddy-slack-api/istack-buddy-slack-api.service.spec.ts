@@ -457,7 +457,9 @@ describe('IstackBuddySlackApiService', () => {
       });
 
       // Act - Create message envelope with history
-      const envelope = await (service as any).createMessageEnvelopeWithHistory({
+      const { messageEnvelope: envelope } = await (
+        service as any
+      ).createMessageEnvelopeWithHistory({
         conversationId: testConversationId,
         fromUserId: 'test-user',
         content: 'New test message',
@@ -518,7 +520,9 @@ describe('IstackBuddySlackApiService', () => {
       });
 
       // Act - Create message envelope with history
-      const envelope = await (service as any).createMessageEnvelopeWithHistory({
+      const { messageEnvelope: envelope } = await (
+        service as any
+      ).createMessageEnvelopeWithHistory({
         conversationId: testConversationId,
         fromUserId: 'test-user',
         content: 'New test message with no robot history',
@@ -600,7 +604,9 @@ describe('IstackBuddySlackApiService', () => {
       });
 
       // Act - Create message envelope with history
-      const envelope = await (service as any).createMessageEnvelopeWithHistory({
+      const { messageEnvelope: envelope } = await (
+        service as any
+      ).createMessageEnvelopeWithHistory({
         conversationId: testConversationId,
         fromUserId: 'test-user',
         content: 'New message in robot conversation',
@@ -644,7 +650,9 @@ describe('IstackBuddySlackApiService', () => {
 
     it('should handle empty conversation history gracefully', async () => {
       // Act - Create envelope for conversation with no history (just the initial conversation)
-      const envelope = await (service as any).createMessageEnvelopeWithHistory({
+      const { messageEnvelope: envelope } = await (
+        service as any
+      ).createMessageEnvelopeWithHistory({
         conversationId: testConversationId,
         fromUserId: 'first-user',
         content: 'First message in conversation',
@@ -687,7 +695,9 @@ describe('IstackBuddySlackApiService', () => {
       }
 
       // Act - Create message envelope with history
-      const envelope = await (service as any).createMessageEnvelopeWithHistory({
+      const { messageEnvelope: envelope } = await (
+        service as any
+      ).createMessageEnvelopeWithHistory({
         conversationId: testConversationId,
         fromUserId: 'test-user',
         content: 'New message with large history',
@@ -820,6 +830,7 @@ describe('IstackBuddySlackApiService', () => {
       expect(mockRobot.acceptMessageMultiPartResponse).toHaveBeenCalledWith(
         capturedEnvelope,
         capturedCallback,
+        expect.any(Function), // getHistory callback
       );
 
       // Restore original mock

@@ -58,7 +58,7 @@ describe('FormMarvSessionService', () => {
       expect(secretKey).toBeDefined();
       expect(mockAuthPermissionsService.addUser).toHaveBeenCalledWith(
         expect.stringMatching(/^form-marv-temp-/),
-        ['cx-agent:form-marv:read'],
+        ['cx-agent:form-marv:read', 'cx-agent:form-marv:write'],
         [],
       );
       expect(mockUserProfileService.addTemporaryUser).toHaveBeenCalledWith(
@@ -102,7 +102,7 @@ describe('FormMarvSessionService', () => {
       expect(secretKey).toBeDefined();
       expect(mockAuthPermissionsService.addUser).toHaveBeenCalledWith(
         expect.stringMatching(/^form-marv-temp-/),
-        ['cx-agent:form-marv:read'],
+        ['cx-agent:form-marv:read', 'cx-agent:form-marv:write'],
         [],
       );
       expect(mockUserProfileService.addTemporaryUser).toHaveBeenCalledWith(

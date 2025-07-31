@@ -148,11 +148,11 @@ IMPORTANT: Never use emojis, emoticons, or any graphical symbols in your respons
    * Get user help text specific to SlackyOpenAiAgent capabilities
    */
   public getUserHelpText(): string {
-    return `🤖 **iStackBuddy (Slacky OpenAI) - Help**
+    return `**iStackBuddy (Slacky OpenAI) - Help**
 
 I'm your AI assistant specialized in **Intellistack Forms Core** troubleshooting and support using OpenAI.
 
-## 🛠️ **What I Can Help With:**
+## **What I Can Help With:**
 
 **Forms Core Troubleshooting:**
 • SSO troubleshooting (Forms Password Protected/SSO Protected)
@@ -167,18 +167,18 @@ I'm your AI assistant specialized in **Intellistack Forms Core** troubleshooting
 • **Form Validation** - Check logic and calculation errors
 • **Form Overviews** - Get comprehensive form statistics and configurations
 
-## 📋 **Available Commands:**
+## **Available Commands:**
 • \`/help\` - Show this help message
 • \`/feedback <message>\` - Send feedback about our interaction
 • \`/rate <rating>\` - Rate your experience (-5 to +5)
 
-## 💡 **Tips:**
+## **Tips:**
 • Be specific about your issue for better assistance
 • Include form IDs when asking about specific forms
 • I can analyze logs and validate form configurations
 • Always confirm before suggesting destructive operations
 
-Need help? Just ask! 🚀`;
+Need help? Just ask!`;
   }
 
   /**
@@ -226,7 +226,7 @@ Need help? Just ask! 🚀`;
       this.logger.error(`Error executing tool ${toolName}:`, error);
 
       // Update status to error
-      this.updateToolStatus(toolName, 'error', errorMessage);
+      this.updateToolStatus(toolName, 'error');
 
       return `Error executing ${toolName}: ${errorMessage}`;
     }
@@ -243,12 +243,12 @@ Need help? Just ask! 🚀`;
         const toolArgs = JSON.parse(toolCall.function?.arguments || '{}');
 
         // Log tool call and response for debugging (but don't send to Slack)
-        const toolCallMessage = `🔧 Calling tool: ${toolName} with arguments: ${JSON.stringify(toolArgs, null, 2)}`;
+        const toolCallMessage = `Calling tool: ${toolName} with arguments: ${JSON.stringify(toolArgs, null, 2)}`;
         this.logger.log(toolCallMessage);
 
         const result = await this.executeToolCall(toolName, toolArgs);
 
-        const toolResponseMessage = `✅ Tool ${toolName} returned: ${JSON.stringify(result, null, 2)}`;
+        const toolResponseMessage = `Tool ${toolName} returned: ${JSON.stringify(result, null, 2)}`;
         this.logger.log(toolResponseMessage);
 
         results.push({
@@ -261,7 +261,7 @@ Need help? Just ask! 🚀`;
           error instanceof Error ? error.message : 'Unknown error';
 
         // Send tool error message to Slack
-        const toolErrorMessage = `❌ Tool ${toolCall.function?.name || 'unknown'} failed: ${errorMessage}`;
+        const toolErrorMessage = `Tool ${toolCall.function?.name || 'unknown'} failed: ${errorMessage}`;
         this.logger.log(toolErrorMessage);
         if (this.currentCallback) {
           this.currentCallback(this.createToolStatusResponse(toolErrorMessage));
@@ -344,7 +344,6 @@ Need help? Just ask! 🚀`;
   private updateToolStatus(
     toolName: string,
     status: 'executing' | 'completed' | 'error',
-    errorMessage?: string,
   ): void {
     // Remove from all arrays first
     this.toolStatus.executing = this.toolStatus.executing.filter(
@@ -441,17 +440,6 @@ Need help? Just ask! 🚀`;
       this.logger.error('Error getting unread messages:', error);
       return [];
     }
-  }
-
-  /**
-   * Check if there's a new user message (simplified - would need conversation tracking)
-   */
-  private hasNewUserMessage(
-    originalMessage: TConversationTextMessageEnvelope,
-  ): boolean {
-    // TODO: Implement proper new message detection
-    // For now, return false - this would need to track conversation state
-    return false;
   }
 
   /**
@@ -654,6 +642,11 @@ Need help? Just ask! 🚀`;
    * Create a fallback response when the final API call fails or returns empty
    */
   private createFallbackResponse(toolResults: any[]): string {
+    // AI DO NOT REMOVE THIS COMMENT
+    // 'createFallbackResponse' is a product of an poor understanding of OpenAi API - I believe
+    // it's possible we need a fall back response but in vibe-coding AI uses as a crutch.
+    // We're going to look at 'events' which may remove the need to 'poll' which will
+    // remove the need for 'createFallbackResponse'
     this.logger.log(
       `createFallbackResponse called with ${toolResults.length} tool results`,
     );
@@ -661,7 +654,26 @@ Need help? Just ask! 🚀`;
       `Tool results for fallback: ${JSON.stringify(toolResults, null, 2)}`,
     );
 
-    const errors = toolResults
+    // Parse tool results - they come as strings but may contain JSON objects
+    const parsedResults = toolResults.map((result) => {
+      if (typeof result.content === 'string') {
+        try {
+          // Try to parse as JSON
+          const parsed = JSON.parse(result.content);
+          return { ...result, content: parsed };
+        } catch (e) {
+          // If not JSON, keep as string
+          return result;
+        }
+      }
+      return result;
+    });
+
+    this.logger.log('Parsed tool results:', {
+      parsedResults: parsedResults,
+    });
+
+    const errors = parsedResults
       .filter(
         (result) =>
           result.content &&
@@ -670,20 +682,40 @@ Need help? Just ask! 🚀`;
       )
       .flatMap((result) => result.content.errorItems || []);
 
-    const successes = toolResults.filter(
+    const successes = parsedResults.filter(
       (result) =>
         result.content &&
         typeof result.content === 'object' &&
         result.content.isSuccess === true,
     );
 
+    // Debug logging to see what we're filtering
+    this.logger.log('Filtered tool results:', {
+      errors: errors,
+      successes: successes,
+      successCount: successes.length,
+    });
+
     if (errors.length > 0) {
       return `I attempted to process your request but encountered some issues:\n\n${errors.map((error) => `• ${error}`).join('\n')}\n\nPlease verify the form ID or try a different approach.`;
     } else if (successes.length > 0) {
       // Actually use the tool results to create a meaningful response
       const successResult = successes[0];
+      this.logger.log('Processing success result:', {
+        successResult: successResult,
+        hasContent: !!successResult.content,
+        hasResponse: !!(
+          successResult.content && successResult.content.response
+        ),
+      });
+
       if (successResult.content && successResult.content.response) {
         const data = successResult.content.response;
+        this.logger.log('Processing response data:', {
+          data: data,
+          hasFormId: !!data.formId,
+          formId: data.formId,
+        });
 
         // Create a comprehensive summary of the form data
         let summary = `## Form Overview: ${data.formId}\n\n`;
@@ -870,6 +902,17 @@ Need help? Just ask! 🚀`;
 
       // Use getHistory callback if provided, otherwise fall back to internal conversationHistory
       const history = getHistory ? getHistory() : this.conversationHistory;
+
+      // Debug logging to see what conversation history is being passed
+      this.logger.log('Conversation history received:', {
+        historyLength: history.length,
+        history: history.map((msg) => ({
+          fromRole: msg.fromRole,
+          content: msg.content,
+        })),
+        currentMessage: userMessage,
+      });
+
       const messages = this.buildOpenAIMessageHistory(userMessage, history);
 
       const request: OpenAI.Chat.Completions.ChatCompletionCreateParams = {
@@ -1214,11 +1257,7 @@ Need help? Just ask! 🚀`;
     } catch (error) {
       this.logger.error('Error processing request asynchronously:', error);
       // Update tool status to indicate error
-      this.updateToolStatus(
-        'request-processing',
-        'error',
-        error instanceof Error ? error.message : 'Unknown error',
-      );
+      this.updateToolStatus('request-processing', 'error');
     }
   }
 

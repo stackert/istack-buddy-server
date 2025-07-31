@@ -1284,4 +1284,488 @@ describe('SlackyAnthropicAgent', () => {
       );
     });
   });
+
+  describe('Rating validation edge cases', () => {
+    it('should handle invalid rating range (line 540)', async () => {
+      const invalidRatingEnvelope = {
+        ...mockMessageEnvelope,
+        envelopePayload: {
+          ...mockMessageEnvelope.envelopePayload,
+          content: {
+            type: 'text/plain' as const,
+            payload: '@istack-buddy /rating +10 Invalid rating',
+          },
+        },
+      };
+
+      const result = await agent.acceptMessageImmediateResponse(
+        invalidRatingEnvelope,
+      );
+
+      expect(result.envelopePayload.content.payload).toContain(
+        '**Invalid Rating**',
+      );
+      expect(result.envelopePayload.content.payload).toContain(
+        'Ratings must be between -5 and +5',
+      );
+      expect(result.envelopePayload.content.payload).toContain('Rating Scale:');
+      expect(result.envelopePayload.content.payload).toContain(
+        '-5: World War III bad',
+      );
+      expect(result.envelopePayload.content.payload).toContain(
+        '+5: Nominate iStackBuddy for world peace prize',
+      );
+    });
+
+    it('should handle negative rating validation', async () => {
+      const negativeRatingEnvelope = {
+        ...mockMessageEnvelope,
+        envelopePayload: {
+          ...mockMessageEnvelope.envelopePayload,
+          content: {
+            type: 'text/plain' as const,
+            payload: '@istack-buddy /rating -10 Invalid negative rating',
+          },
+        },
+      };
+
+      const result = await agent.acceptMessageImmediateResponse(
+        negativeRatingEnvelope,
+      );
+
+      expect(result.envelopePayload.content.payload).toContain(
+        '**Invalid Rating**',
+      );
+      expect(result.envelopePayload.content.payload).toContain(
+        'Ratings must be between -5 and +5',
+      );
+    });
+
+    it('should handle boundary rating values correctly', async () => {
+      // Test valid boundary values
+      const validRatingEnvelope = {
+        ...mockMessageEnvelope,
+        envelopePayload: {
+          ...mockMessageEnvelope.envelopePayload,
+          content: {
+            type: 'text/plain' as const,
+            payload: '@istack-buddy /rating -5 Boundary test',
+          },
+        },
+      };
+
+      const result =
+        await agent.acceptMessageImmediateResponse(validRatingEnvelope);
+
+      expect(result.envelopePayload.content.payload).toContain(
+        'Thank you for your rating',
+      );
+      expect(result.envelopePayload.content.payload).toContain('-5/5');
+    });
+  });
+
+  describe('Tool execution in acceptMessageImmediateResponse (lines 630, 653-680)', () => {
+    it('should handle tool execution in immediate response', async () => {
+      const { default: Anthropic } = require('@anthropic-ai/sdk');
+      const mockCreate = Anthropic().messages.create;
+
+      // Mock first call with tool use
+      mockCreate.mockResolvedValueOnce({
+        content: [
+          {
+            type: 'text',
+            text: 'I need to use a tool to help you.',
+          },
+          {
+            type: 'tool_use',
+            id: 'tool_123',
+            name: 'test_tool',
+            input: { query: 'test query' },
+          },
+        ],
+      });
+
+      // Mock second call with final response after tool execution
+      mockCreate.mockResolvedValueOnce({
+        content: [
+          {
+            type: 'text',
+            text: 'Based on the tool results, here is my analysis.',
+          },
+        ],
+      });
+
+      const result =
+        await agent.acceptMessageImmediateResponse(mockMessageEnvelope);
+
+      expect(result.envelopePayload.content.payload).toContain(
+        'Based on the tool results',
+      );
+      expect(result.envelopePayload.author_role).toBe('assistant');
+      expect(result.messageId).toMatch(/^slacky-response-/);
+    });
+
+    it('should handle multiple tool executions in immediate response', async () => {
+      const { default: Anthropic } = require('@anthropic-ai/sdk');
+      const mockCreate = Anthropic().messages.create;
+
+      // Mock first call with multiple tool uses
+      mockCreate.mockResolvedValueOnce({
+        content: [
+          {
+            type: 'tool_use',
+            id: 'tool_1',
+            name: 'first_tool',
+            input: { param: 'value1' },
+          },
+          {
+            type: 'tool_use',
+            id: 'tool_2',
+            name: 'second_tool',
+            input: { param: 'value2' },
+          },
+        ],
+      });
+
+      // Mock second call with final response
+      mockCreate.mockResolvedValueOnce({
+        content: [
+          {
+            type: 'text',
+            text: 'Analysis of multiple tools completed.',
+          },
+        ],
+      });
+
+      const result =
+        await agent.acceptMessageImmediateResponse(mockMessageEnvelope);
+
+      expect(result.envelopePayload.content.payload).toBe(
+        'Analysis of multiple tools completed.',
+      );
+      expect(mockCreate).toHaveBeenCalledTimes(2);
+    });
+
+    it('should handle tool execution errors in immediate response', async () => {
+      const { default: Anthropic } = require('@anthropic-ai/sdk');
+      const mockCreate = Anthropic().messages.create;
+
+      // Mock composite tool set to throw error
+      const {
+        createCompositeToolSet,
+      } = require('./tool-definitions/toolCatalog');
+      createCompositeToolSet.mockReturnValue({
+        toolDefinitions: [{ name: 'error_tool' }],
+        executeToolCall: jest
+          .fn()
+          .mockRejectedValue(new Error('Tool execution failed')),
+      });
+
+      // Create new agent to pick up the mocked tool set
+      const testAgent = new SlackyAnthropicAgent();
+
+      // Mock first call with tool use
+      mockCreate.mockResolvedValueOnce({
+        content: [
+          {
+            type: 'tool_use',
+            id: 'tool_error_123',
+            name: 'error_tool',
+            input: { query: 'test' },
+          },
+        ],
+      });
+
+      // Mock second call with final response
+      mockCreate.mockResolvedValueOnce({
+        content: [
+          {
+            type: 'text',
+            text: 'Analysis after tool error.',
+          },
+        ],
+      });
+
+      const result =
+        await testAgent.acceptMessageImmediateResponse(mockMessageEnvelope);
+
+      expect(result.envelopePayload.content.payload).toBe(
+        'Analysis after tool error.',
+      );
+      expect(mockCreate).toHaveBeenCalledTimes(2);
+    });
+
+    it('should handle mixed text and tool content in immediate response', async () => {
+      const { default: Anthropic } = require('@anthropic-ai/sdk');
+      const mockCreate = Anthropic().messages.create;
+
+      // Mock first call with mixed content
+      mockCreate.mockResolvedValueOnce({
+        content: [
+          {
+            type: 'text',
+            text: 'Let me check something for you. ',
+          },
+          {
+            type: 'tool_use',
+            id: 'tool_123',
+            name: 'test_tool',
+            input: { query: 'test' },
+          },
+          {
+            type: 'text',
+            text: ' And then I can help further.',
+          },
+        ],
+      });
+
+      // Mock second call with final response
+      mockCreate.mockResolvedValueOnce({
+        content: [
+          {
+            type: 'text',
+            text: 'Here is the complete analysis.',
+          },
+        ],
+      });
+
+      const result =
+        await agent.acceptMessageImmediateResponse(mockMessageEnvelope);
+
+      expect(result.envelopePayload.content.payload).toBe(
+        'Here is the complete analysis.',
+      );
+      expect(mockCreate).toHaveBeenCalledTimes(2);
+    });
+
+    it('should handle empty final response after tool execution', async () => {
+      const { default: Anthropic } = require('@anthropic-ai/sdk');
+      const mockCreate = Anthropic().messages.create;
+
+      // Mock first call with tool use
+      mockCreate.mockResolvedValueOnce({
+        content: [
+          {
+            type: 'tool_use',
+            id: 'tool_123',
+            name: 'test_tool',
+            input: { query: 'test' },
+          },
+        ],
+      });
+
+      // Mock second call with empty response
+      mockCreate.mockResolvedValueOnce({
+        content: [],
+      });
+
+      const result =
+        await agent.acceptMessageImmediateResponse(mockMessageEnvelope);
+
+      expect(result.envelopePayload.content.payload).toBe('');
+      expect(result.envelopePayload.author_role).toBe('assistant');
+    });
+
+    it('should handle non-text content in final response', async () => {
+      const { default: Anthropic } = require('@anthropic-ai/sdk');
+      const mockCreate = Anthropic().messages.create;
+
+      // Mock first call with tool use
+      mockCreate.mockResolvedValueOnce({
+        content: [
+          {
+            type: 'tool_use',
+            id: 'tool_123',
+            name: 'test_tool',
+            input: { query: 'test' },
+          },
+        ],
+      });
+
+      // Mock second call with mixed content types
+      mockCreate.mockResolvedValueOnce({
+        content: [
+          {
+            type: 'text',
+            text: 'Valid text content',
+          },
+          {
+            type: 'other',
+            data: 'ignored content',
+          },
+          {
+            type: 'text',
+            text: ' more text',
+          },
+        ],
+      });
+
+      const result =
+        await agent.acceptMessageImmediateResponse(mockMessageEnvelope);
+
+      expect(result.envelopePayload.content.payload).toBe(
+        'Valid text content more text',
+      );
+    });
+  });
+
+  describe('Direct command pattern variations', () => {
+    it('should handle @istack-buddy format for help command', async () => {
+      const helpEnvelope = {
+        ...mockMessageEnvelope,
+        envelopePayload: {
+          ...mockMessageEnvelope.envelopePayload,
+          content: {
+            type: 'text/plain' as const,
+            payload: '@istack-buddy /help',
+          },
+        },
+      };
+
+      const result = await agent.acceptMessageImmediateResponse(helpEnvelope);
+
+      expect(result.envelopePayload.content.payload).toContain(
+        'iStackBuddy (Slacky) - Help',
+      );
+    });
+
+    it('should handle <@USERID> format for help command', async () => {
+      const helpEnvelope = {
+        ...mockMessageEnvelope,
+        envelopePayload: {
+          ...mockMessageEnvelope.envelopePayload,
+          content: {
+            type: 'text/plain' as const,
+            payload: '<@U123456789> /help',
+          },
+        },
+      };
+
+      const result = await agent.acceptMessageImmediateResponse(helpEnvelope);
+
+      expect(result.envelopePayload.content.payload).toContain(
+        'iStackBuddy (Slacky) - Help',
+      );
+    });
+
+    it('should handle @istack-buddy format for feedback command', async () => {
+      const feedbackEnvelope = {
+        ...mockMessageEnvelope,
+        envelopePayload: {
+          ...mockMessageEnvelope.envelopePayload,
+          content: {
+            type: 'text/plain' as const,
+            payload: '@istack-buddy /feedback This is great feedback!',
+          },
+        },
+      };
+
+      const result =
+        await agent.acceptMessageImmediateResponse(feedbackEnvelope);
+
+      expect(result.envelopePayload.content.payload).toContain(
+        'Thank you for your feedback',
+      );
+    });
+
+    it('should handle <@USERID> format for feedback command', async () => {
+      const feedbackEnvelope = {
+        ...mockMessageEnvelope,
+        envelopePayload: {
+          ...mockMessageEnvelope.envelopePayload,
+          content: {
+            type: 'text/plain' as const,
+            payload: '<@U123456789> /feedback This is great feedback!',
+          },
+        },
+      };
+
+      const result =
+        await agent.acceptMessageImmediateResponse(feedbackEnvelope);
+
+      expect(result.envelopePayload.content.payload).toContain(
+        'Thank you for your feedback',
+      );
+    });
+
+    it('should handle @istack-buddy format for rating command', async () => {
+      const ratingEnvelope = {
+        ...mockMessageEnvelope,
+        envelopePayload: {
+          ...mockMessageEnvelope.envelopePayload,
+          content: {
+            type: 'text/plain' as const,
+            payload: '@istack-buddy /rating +4 Great service!',
+          },
+        },
+      };
+
+      const result = await agent.acceptMessageImmediateResponse(ratingEnvelope);
+
+      expect(result.envelopePayload.content.payload).toContain(
+        'Thank you for your rating',
+      );
+      expect(result.envelopePayload.content.payload).toContain('+4/5');
+    });
+
+    it('should handle <@USERID> format for rating command', async () => {
+      const ratingEnvelope = {
+        ...mockMessageEnvelope,
+        envelopePayload: {
+          ...mockMessageEnvelope.envelopePayload,
+          content: {
+            type: 'text/plain' as const,
+            payload: '<@U123456789> /rating -2 Information was wrong',
+          },
+        },
+      };
+
+      const result = await agent.acceptMessageImmediateResponse(ratingEnvelope);
+
+      expect(result.envelopePayload.content.payload).toContain(
+        'Thank you for your rating',
+      );
+      expect(result.envelopePayload.content.payload).toContain('-2/5');
+    });
+
+    it('should handle rating command without comment', async () => {
+      const ratingEnvelope = {
+        ...mockMessageEnvelope,
+        envelopePayload: {
+          ...mockMessageEnvelope.envelopePayload,
+          content: {
+            type: 'text/plain' as const,
+            payload: '@istack-buddy /rating 0',
+          },
+        },
+      };
+
+      const result = await agent.acceptMessageImmediateResponse(ratingEnvelope);
+
+      expect(result.envelopePayload.content.payload).toContain(
+        'Thank you for your rating',
+      );
+      expect(result.envelopePayload.content.payload).toContain('0/5');
+    });
+
+    it('should handle rating command with empty comment', async () => {
+      const ratingEnvelope = {
+        ...mockMessageEnvelope,
+        envelopePayload: {
+          ...mockMessageEnvelope.envelopePayload,
+          content: {
+            type: 'text/plain' as const,
+            payload: '@istack-buddy /rating +3 ',
+          },
+        },
+      };
+
+      const result = await agent.acceptMessageImmediateResponse(ratingEnvelope);
+
+      expect(result.envelopePayload.content.payload).toContain(
+        'Thank you for your rating',
+      );
+      expect(result.envelopePayload.content.payload).toContain('+3/5');
+    });
+  });
 });
