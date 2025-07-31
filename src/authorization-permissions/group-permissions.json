@@ -1,0 +1,22 @@
+{
+  "group_permissions": {
+    "admin-group": {
+      "permissions": [
+        "admin:users",
+        "admin:system",
+        "read:chat",
+        "write:chat",
+        "cx-agent:form-marv:read"
+      ],
+      "members": ["admin", "user1"]
+    },
+    "chat-group": {
+      "permissions": ["read:chat", "write:chat", "cx-agent:form-marv:read"],
+      "members": ["user1", "user2"]
+    },
+    "guest-group": {
+      "permissions": ["read:chat", "cx-agent:form-marv:read"],
+      "members": ["user3"]
+    }
+  }
+}

@@ -1,0 +1,49 @@
+import { Test, TestingModule } from '@nestjs/testing';
+import { ConversationListServiceModule } from './ConversationListService.module';
+import { ConversationListSlackAppService } from './ConversationListSlackAppService';
+
+describe('ConversationListServiceModule', () => {
+  let module: TestingModule;
+  let service: ConversationListSlackAppService;
+
+  beforeEach(async () => {
+    module = await Test.createTestingModule({
+      imports: [ConversationListServiceModule],
+    }).compile();
+
+    service = module.get<ConversationListSlackAppService>(
+      ConversationListSlackAppService,
+    );
+  });
+
+  afterEach(async () => {
+    await module.close();
+  });
+
+  it('should be defined', () => {
+    expect(module).toBeDefined();
+  });
+
+  it('should provide ConversationListSlackAppService', () => {
+    expect(service).toBeDefined();
+    expect(service).toBeInstanceOf(ConversationListSlackAppService);
+  });
+
+  it('should maintain singleton behavior within module', () => {
+    const service1 = module.get<ConversationListSlackAppService>(
+      ConversationListSlackAppService,
+    );
+    const service2 = module.get<ConversationListSlackAppService>(
+      ConversationListSlackAppService,
+    );
+
+    expect(service1).toBe(service2); // Should be the same instance
+
+    // Test that conversations are shared between service references
+    const conversationId = 'singleton-module-test';
+    const conversation1 = service1.getConversationOrCreate(conversationId);
+    const conversation2 = service2.getConversationById(conversationId);
+
+    expect(conversation2).toBe(conversation1);
+  });
+});

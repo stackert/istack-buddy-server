@@ -2,13 +2,13 @@ import { Injectable } from '@nestjs/common';
 import { AuthDto, AuthResponseDto } from './dto/auth.dto';
 import { UserDetailsDto } from './dto/user-details.dto';
 import { CustomLoggerService } from '../common/logger/custom-logger.service';
-import { AuthService } from '../auth/auth.service';
+import { AuthenticationService } from '../authentication/authentication.service';
 
 @Injectable()
 export class DevDebugService {
   constructor(
     private readonly logger: CustomLoggerService,
-    private readonly authService: AuthService,
+    private readonly authService: AuthenticationService,
   ) {}
   /**
    * Debug authentication endpoint
@@ -32,9 +32,11 @@ export class DevDebugService {
 
       const result = {
         success: authResult.success,
-        message: `${authResult.message} (via AuthService)`,
+        message: authResult.success
+          ? 'Authentication successful (via AuthService)'
+          : authResult.error || 'Authentication failed (via AuthService)',
         sessionId: authResult.sessionId,
-        permissions: authResult.permissions,
+        permissions: [], // Permissions are now handled separately via getUserPermissionSet
       };
 
       this.logger.auditLog(

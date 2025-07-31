@@ -1,0 +1,8 @@
+---
+NEVER RUN `npm run start:dev`.  The user runs this in the background.  It watches for file changes and restarts automatically.  Therefore there is NEVER a reason to run this.  You may need to 'sleep 1' or two seconds for a full restart - but never start yourself. 
+
+
+NEVER ADD Emoji to log messages it's just plain BAD.
+
+alwaysApply: true
+---

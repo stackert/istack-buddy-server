@@ -1,12 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { DevDebugService } from './dev-debug.service';
 import { CustomLoggerService } from '../common/logger/custom-logger.service';
-import { AuthService } from '../auth/auth.service';
+import { AuthenticationService } from '../authentication/authentication.service';
 
 describe('DevDebugService', () => {
   let service: DevDebugService;
   let mockLogger: jest.Mocked<CustomLoggerService>;
-  let mockAuthService: jest.Mocked<AuthService>;
+  let mockAuthService: jest.Mocked<AuthenticationService>;
 
   beforeEach(async () => {
     const mockLoggerService = {
@@ -29,7 +29,7 @@ describe('DevDebugService', () => {
           useValue: mockLoggerService,
         },
         {
-          provide: AuthService,
+          provide: AuthenticationService,
           useValue: mockAuth,
         },
       ],
@@ -39,9 +39,9 @@ describe('DevDebugService', () => {
     mockLogger = module.get<CustomLoggerService>(
       CustomLoggerService,
     ) as jest.Mocked<CustomLoggerService>;
-    mockAuthService = module.get<AuthService>(
-      AuthService,
-    ) as jest.Mocked<AuthService>;
+    mockAuthService = module.get<AuthenticationService>(
+      AuthenticationService,
+    ) as jest.Mocked<AuthenticationService>;
   });
 
   it('should be defined', () => {

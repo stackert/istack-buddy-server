@@ -1,0 +1,564 @@
+{
+  "created": "2025-05-11 23:47:52",
+  "db": "1",
+  "deleted": "0",
+  "folder": "328139",
+  "id": "6188929",
+  "name": "isBuddy_unit_test_simple_logic",
+  "num_columns": "1",
+  "progress_meter": "0",
+  "submissions": "0",
+  "submissions_unread": "0",
+  "updated": "2025-05-11 23:47:52",
+  "viewkey": "l5AMIA0AqV",
+  "views": "0",
+  "version": "4",
+  "language": "en",
+  "submissions_today": 0,
+  "url": "https://terarychambers.formstack.com/forms/isbuddy_unit_test_simple_logic",
+  "encrypted": false,
+  "thumbnail_url": null,
+  "submit_button_title": "Submit Form",
+  "inactive": false,
+  "timezone": "US/Eastern",
+  "should_display_one_question_at_a_time": false,
+  "can_access_1q_feature": true,
+  "is_workflow_form": false,
+  "is_workflow_published": false,
+  "has_approvers": false,
+  "edit_url": "https://www.formstack.com/admin/form/builder/6188929/build",
+  "data_url": "",
+  "summary_url": "",
+  "permissions": 150,
+  "can_edit": true,
+  "javascript": "<script type=\"text/javascript\" src=\"https://terarychambers.formstack.com/forms/js.php/isbuddy_unit_test_simple_logic\"></script><noscript><a href=\"https://terarychambers.formstack.com/forms/isbuddy_unit_test_simple_logic\" title=\"Online Form\">Online Form - isBuddy_unit_test_simple_logic</a></noscript>",
+  "html": "<!DOCTYPE html>\n<html lang=\"\">\n<head>\n<title>isBuddy_unit_test_simple_logic</title>\n<meta charset=\"utf-8\" />\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1, maximum-scale=1\">\n<!--[if IE]>\n<link rel=\"stylesheet\" type=\"text/css\" media=\"all\" href=\"https://www.formstack.com/forms/css/3/ie.css?20140508\" />\n<![endif]-->\n<!--[if IE 7]><link rel=\"stylesheet\" type=\"text/css\" media=\"all\" href=\"https://www.formstack.com/forms/css/3/ie7.css\" /><![endif]-->\n<!--[if IE 6]><link rel=\"stylesheet\" type=\"text/css\" media=\"all\" href=\"https://www.formstack.com/forms/css/3/ie6fixes.css\" /><![endif]-->\n<link rel=\"stylesheet\" type=\"text/css\" href=\"https://static.formstack.com/forms/css/3/reset.css\" />\n<link rel=\"stylesheet\" type=\"text/css\" href=\"https://static.formstack.com/forms/css/3/jquery-ui-1.13.2.min.css\" />\n<link rel=\"stylesheet\" type=\"text/css\" href=\"https://static.formstack.com/forms/css/3/default-v4.css\" />\n<link rel=\"stylesheet\" type=\"text/css\" href=\"https://static.formstack.com/forms/css/3/blueAfterglow.css\" />\n<link rel=\"stylesheet\" type=\"text/css\" href=\"https://static.formstack.com/forms/../common/css/uil-static.css\" />\n<link rel=\"stylesheet\" type=\"text/css\" href=\"https://static.formstack.com/forms/css/common/dialogs.css\" />\n<style type=\"text/css\">\n</style>\n</head>\n<body class=\"fsBody \" id=\"fsLocal\">\n<form method=\"post\" novalidate enctype=\"multipart/form-data\" action=\"https://www.formstack.com/forms/index.php\" class=\"fsForm fsSingleColumn fsMaxCol1\" id=\"fsForm6188929\">\n<input type=\"hidden\" name=\"form\" value=\"6188929\" />\n<input type=\"hidden\" name=\"viewkey\" value=\"l5AMIA0AqV\" />\n<input type=\"hidden\" name=\"displayTime\" value=\"\" />\n<input type=\"hidden\" name=\"hidden_fields\" id=\"hidden_fields6188929\" value=\"\" />\n<input type=\"hidden\" name=\"_submit\" value=\"1\" />\n<input type=\"hidden\" name=\"incomplete\" id=\"incomplete6188929\" value=\"\" />\n<input type=\"hidden\" name=\"incomplete_password\" id=\"incomplete_password6188929\" />\n<input type=\"hidden\" name=\"style_version\" value=\"3\" />\n<input type=\"hidden\" id=\"viewparam\" name=\"viewparam\" value=\"886227\" />\n<div id=\"requiredFieldsError\" style=\"display:none;\">Please fill in a valid value for all required fields</div>\n<div id=\"invalidFormatError\" style=\"display:none;\">Please ensure all values are in a proper format.</div>\n<div id=\"resumeConfirm\" style=\"display:none;\">Are you sure you want to leave this form and resume later?</div>\n<div id=\"resumeConfirmPassword\" style=\"display: none;\">Are you sure you want to leave this form and resume later? If so, please enter a password below to securely save your form.</div>\n<div id=\"saveAndResume\" style=\"display: none;\">Save and Resume Later</div>\n<div id=\"saveResumeProcess\" style=\"display: none;\">Save and get link</div>\n<div id=\"fileTypeAlert\" style=\"display:none;\">You must upload one of the following file types for the selected field:</div>\n<div id=\"embedError\" style=\"display:none;\">There was an error displaying the form. Please copy and paste the embed code again.</div>\n<div id=\"applyDiscountButton\" style=\"display:none;\">Apply Discount</div>\n<div id=\"dcmYouSaved\" style=\"display:none;\">You saved</div>\n<div id=\"dcmWithCode\" style=\"display:none;\">with code</div>\n<div id=\"submitButtonText\" style=\"display:none;\">Submit Form</div>\n<div id=\"submittingText\" style=\"display:none;\">Submitting</div>\n<div id=\"validatingText\" style=\"display:none;\">Validating</div>\n<div id=\"autocaptureDisabledText\" style=\"display:none;\"></div>\n<div id=\"paymentInitError\" style=\"display:none;\">There was an error initializing the payment processor on this form. Please contact the form owner to correct this issue.</div>\n<div id=\"checkFieldPrompt\" style=\"display:none;\">Please check the field: </div>\n<div id=\"translatedWord-fields\" style=\"display:none;\">Fields</div>\n<div class=\"fsPage\" id=\"fsPage6188929-1\">\n<div id=\"ReactContainer6188929\" style=\"display:none\" class=\"FsReactContainerInitApp\" data-fs-react-app-id=\"6188929\"></div>\n<div class=\"fsSection fs1Col\">\n<div id=\"fsRow6188929-1\" class=\"fsRow fsFieldRow fsLastRow\">\n<div class=\"fsRowBody fsCell fsFieldCell fsFirst fsLast fsLabelVertical fsSpan100\" id=\"fsCell183533060\" lang=\"en\" fs-field-type=\"text\" fs-field-validation-name=\"Short Answer\">\n<label id=\"label183533060\" class=\"fsLabel\" for=\"field183533060\">Short Answer                                                    </label>\n<input\ntype=\"text\" id=\"field183533060\"\nname=\"field183533060\"\nsize=\"50\"\nvalue=\"\"\nclass=\"fsField fsFormatText    \"\n/>\n</div>\n</div>\n</div>\n<div class=\"fsSection fs1Col\" id=\"fsSection183533061\">\n<div class=\"fsSectionHeader\">\n<h2 class=\"fsSectionHeading\">Simple Field Circular Reference (A-&gt;B-&gt;C-&gt;A)</h2>\n<div class=\"fsSectionText\"><p>This will demonstrate circular logic based solely on 'own' logic. &nbsp; Logic that is directly related to the field.<br><br>Not in this example but in life. &nbsp;A field can have 'own' logic and 'parent' logic. &nbsp;Also, sections are considered fields so they too have 'own' and 'parent', but there parent is always null/empty logic</p></div>\n</div>\n<div id=\"fsRow6188929-3\" class=\"fsRow fsFieldRow fsLastRow fsHidden\">\n<div class=\"fsRowBody fsCell fsFieldCell fsFirst fsLast fsLabelVertical fsHidden fsSpan100\" id=\"fsCell183533081\" lang=\"en\" fs-field-type=\"checkbox\" fs-field-validation-name=\"[A] A->B->C->A (fields)\">\n<fieldset role=\"group\" aria-labelledby=\"fsLegend183533081\" id=\"label183533081\">\n<legend id=\"fsLegend183533081\" class=\"fsLabel fsLabelVertical\"><span>[A] A->B->C->A (fields)</span></legend>\n<div class=\"fieldset-content\">\n<label class=\"fsOptionLabel vertical\" for=\"field183533081_1\"><input type=\"checkbox\" id=\"field183533081_1\" name=\"field183533081[]\" value=\"Option1\" class=\"fsField vertical\" disabled=\"disabled\" />Option1</label>\n<label class=\"fsOptionLabel vertical\" for=\"field183533081_2\"><input type=\"checkbox\" id=\"field183533081_2\" name=\"field183533081[]\" value=\"A Field\" class=\"fsField vertical\" disabled=\"disabled\" />A Field</label>\n<label class=\"fsOptionLabel vertical\" for=\"field183533081_3\"><input type=\"checkbox\" id=\"field183533081_3\" name=\"field183533081[]\" value=\"Option3\" class=\"fsField vertical\" disabled=\"disabled\" />Option3</label>\n</div></fieldset>\n</div>\n</div>\n<div id=\"fsRow6188929-4\" class=\"fsRow fsFieldRow fsLastRow fsHidden\">\n<div class=\"fsRowBody fsCell fsFieldCell fsFirst fsLast fsLabelVertical fsHidden fsSpan100\" id=\"fsCell183533098\" lang=\"en\" fs-field-type=\"checkbox\" fs-field-validation-name=\"[B] A->B->C->A (fields)\">\n<fieldset role=\"group\" aria-labelledby=\"fsLegend183533098\" id=\"label183533098\">\n<legend id=\"fsLegend183533098\" class=\"fsLabel fsLabelVertical\"><span>[B] A->B->C->A (fields)</span></legend>\n<div class=\"fieldset-content\">\n<label class=\"fsOptionLabel vertical\" for=\"field183533098_1\"><input type=\"checkbox\" id=\"field183533098_1\" name=\"field183533098[]\" value=\"Option1\" class=\"fsField vertical\" disabled=\"disabled\" />Option1</label>\n<label class=\"fsOptionLabel vertical\" for=\"field183533098_2\"><input type=\"checkbox\" id=\"field183533098_2\" name=\"field183533098[]\" value=\"B Field\" class=\"fsField vertical\" disabled=\"disabled\" />B Field</label>\n<label class=\"fsOptionLabel vertical\" for=\"field183533098_3\"><input type=\"checkbox\" id=\"field183533098_3\" name=\"field183533098[]\" value=\"Option3\" class=\"fsField vertical\" disabled=\"disabled\" />Option3</label>\n</div></fieldset>\n</div>\n</div>\n<div id=\"fsRow6188929-5\" class=\"fsRow fsFieldRow fsLastRow fsHidden\">\n<div class=\"fsRowBody fsCell fsFieldCell fsFirst fsLast fsLabelVertical fsHidden fsSpan100\" id=\"fsCell183533097\" lang=\"en\" fs-field-type=\"checkbox\" fs-field-validation-name=\"[C] A->B->C->A (fields)\">\n<fieldset role=\"group\" aria-labelledby=\"fsLegend183533097\" id=\"label183533097\">\n<legend id=\"fsLegend183533097\" class=\"fsLabel fsLabelVertical\"><span>[C] A->B->C->A (fields)</span></legend>\n<div class=\"fieldset-content\">\n<label class=\"fsOptionLabel vertical\" for=\"field183533097_1\"><input type=\"checkbox\" id=\"field183533097_1\" name=\"field183533097[]\" value=\"Option1\" class=\"fsField vertical\" disabled=\"disabled\" />Option1</label>\n<label class=\"fsOptionLabel vertical\" for=\"field183533097_2\"><input type=\"checkbox\" id=\"field183533097_2\" name=\"field183533097[]\" value=\"C Field\" class=\"fsField vertical\" disabled=\"disabled\" />C Field</label>\n<label class=\"fsOptionLabel vertical\" for=\"field183533097_3\"><input type=\"checkbox\" id=\"field183533097_3\" name=\"field183533097[]\" value=\"Option3\" class=\"fsField vertical\" disabled=\"disabled\" />Option3</label>\n</div></fieldset>\n</div>\n</div>\n</div>\n<div class=\"fsSection fs1Col\" id=\"fsSection183533079\">\n<div class=\"fsSectionHeader\">\n</div>\n</div>\n<div class=\"fsSection fs1Col fsHidden\" id=\"fsSection183533115\">\n<div class=\"fsSectionHeader\">\n<h2 class=\"fsSectionHeading\">[A] A-&gt;B-&gt;C-&gt;A (Sections)</h2>\n<div class=\"fsSectionText\"><p>The three sections will demonstrate circular logic bases solely on 'parent' logic. &nbsp;Because a section can not be used in a logic statement but it's visibility determines the visibility of its fields (which can be used in log), each section depends on a field. &nbsp;The circular reference will because by section visibility.</p></div>\n</div>\n<div id=\"fsRow6188929-8\" class=\"fsRow fsFieldRow fsLastRow\">\n<div class=\"fsRowBody fsCell fsFieldCell fsFirst fsLast fsLabelVertical fsSpan100\" id=\"fsCell183533130\" lang=\"en\" fs-field-type=\"checkbox\" fs-field-validation-name=\"[A] A->B->C->A (Section/field)\">\n<fieldset role=\"group\" aria-labelledby=\"fsLegend183533130\" id=\"label183533130\">\n<legend id=\"fsLegend183533130\" class=\"fsLabel fsLabelVertical\"><span>[A] A->B->C->A (Section/field)</span></legend>\n<div class=\"fieldset-content\">\n<label class=\"fsOptionLabel vertical\" for=\"field183533130_1\"><input type=\"checkbox\" id=\"field183533130_1\" name=\"field183533130[]\" value=\"Option1\" class=\"fsField vertical\" disabled=\"disabled\" />Option1</label>\n<label class=\"fsOptionLabel vertical\" for=\"field183533130_2\"><input type=\"checkbox\" id=\"field183533130_2\" name=\"field183533130[]\" value=\"fieldA\" class=\"fsField vertical\" disabled=\"disabled\" />fieldA</label>\n<label class=\"fsOptionLabel vertical\" for=\"field183533130_3\"><input type=\"checkbox\" id=\"field183533130_3\" name=\"field183533130[]\" value=\"Option3\" class=\"fsField vertical\" disabled=\"disabled\" />Option3</label>\n</div></fieldset>\n</div>\n</div>\n</div>\n<div class=\"fsSection fs1Col fsHidden\" id=\"fsSection183533137\">\n<div class=\"fsSectionHeader\">\n<h2 class=\"fsSectionHeading\">[B] A-&gt;B-&gt;C-&gt;A (Sections)</h2>\n<div class=\"fsSectionText\"><p>The three sections will demonstrate circular logic bases solely on 'parent' logic. &nbsp;Because a section can not be used in a logic statement but it's visibility determines the visibility of its fields (which can be used in log), each section depends on a field. &nbsp;The circular reference will because by section visibility.</p></div>\n</div>\n<div id=\"fsRow6188929-10\" class=\"fsRow fsFieldRow fsLastRow\">\n<div class=\"fsRowBody fsCell fsFieldCell fsFirst fsLast fsLabelVertical fsSpan100\" id=\"fsCell183533138\" lang=\"en\" fs-field-type=\"checkbox\" fs-field-validation-name=\"[B] A->B->C->A (Sections/field)\">\n<fieldset role=\"group\" aria-labelledby=\"fsLegend183533138\" id=\"label183533138\">\n<legend id=\"fsLegend183533138\" class=\"fsLabel fsLabelVertical\"><span>[B] A->B->C->A (Sections/field)</span></legend>\n<div class=\"fieldset-content\">\n<label class=\"fsOptionLabel vertical\" for=\"field183533138_1\"><input type=\"checkbox\" id=\"field183533138_1\" name=\"field183533138[]\" value=\"Option1\" class=\"fsField vertical\" disabled=\"disabled\" />Option1</label>\n<label class=\"fsOptionLabel vertical\" for=\"field183533138_2\"><input type=\"checkbox\" id=\"field183533138_2\" name=\"field183533138[]\" value=\"fieldB\" class=\"fsField vertical\" disabled=\"disabled\" />fieldB</label>\n<label class=\"fsOptionLabel vertical\" for=\"field183533138_3\"><input type=\"checkbox\" id=\"field183533138_3\" name=\"field183533138[]\" value=\"Option3\" class=\"fsField vertical\" disabled=\"disabled\" />Option3</label>\n</div></fieldset>\n</div>\n</div>\n</div>\n<div class=\"fsSection fs1Col fsHidden\" id=\"fsSection183533135\">\n<div class=\"fsSectionHeader\">\n<h2 class=\"fsSectionHeading\">[C] A-&gt;B-&gt;C-&gt;A (Sections)</h2>\n<div class=\"fsSectionText\"><p>The three sections will demonstrate circular logic bases solely on 'parent' logic. &nbsp;Because a section can not be used in a logic statement but it's visibility determines the visibility of its fields (which can be used in log), each section depends on a field. &nbsp;The circular reference will because by section visibility.</p></div>\n</div>\n<div id=\"fsRow6188929-12\" class=\"fsRow fsFieldRow fsLastRow\">\n<div class=\"fsRowBody fsCell fsFieldCell fsFirst fsLast fsLabelVertical fsSpan100\" id=\"fsCell183533136\" lang=\"en\" fs-field-type=\"checkbox\" fs-field-validation-name=\"[C] A->B->C->A (Section/feild)\">\n<fieldset role=\"group\" aria-labelledby=\"fsLegend183533136\" id=\"label183533136\">\n<legend id=\"fsLegend183533136\" class=\"fsLabel fsLabelVertical\"><span>[C] A->B->C->A (Section/feild)</span></legend>\n<div class=\"fieldset-content\">\n<label class=\"fsOptionLabel vertical\" for=\"field183533136_1\"><input type=\"checkbox\" id=\"field183533136_1\" name=\"field183533136[]\" value=\"Option1\" class=\"fsField vertical\" disabled=\"disabled\" />Option1</label>\n<label class=\"fsOptionLabel vertical\" for=\"field183533136_2\"><input type=\"checkbox\" id=\"field183533136_2\" name=\"field183533136[]\" value=\"fieldc\" class=\"fsField vertical\" disabled=\"disabled\" />fieldc</label>\n<label class=\"fsOptionLabel vertical\" for=\"field183533136_3\"><input type=\"checkbox\" id=\"field183533136_3\" name=\"field183533136[]\" value=\"Option3\" class=\"fsField vertical\" disabled=\"disabled\" />Option3</label>\n</div></fieldset>\n</div>\n</div>\n</div>\n</div>\n<div id=\"fsSubmit6188929\" class=\"fsSubmit fsPagination\">\n<button type=\"button\" id=\"fsPreviousButton6188929\" class=\"fsPreviousButton\" value=\"Previous Page\" style=\"display:none;\" aria-label=\"Previous\"><span class=\"fsFull\">Previous</span><span class=\"fsSlim\">&larr;</span></button>\n<button type=\"button\" id=\"fsNextButton6188929\" class=\"fsNextButton\" value=\"Next Page\" style=\"display:none;\" aria-label=\"Next\"><span class=\"fsFull\">Next</span><span class=\"fsSlim\">&rarr;</span></button>\n<input id=\"fsSubmitButton6188929\"\nclass=\"fsSubmitButton\"\nstyle=\"display: block;\"\ntype=\"submit\"\nvalue=\"Submit Form\" />\n<div class=\"clear\"></div>\n<div class=\"\">\n</div>\n</div>\n<script type=\"text/javascript\">\nwindow.FS_FIELD_DATA_6188929 = [];\n</script>\n<script type=\"text/javascript\" src=\"https://static.formstack.com/forms/js/3/jquery-3.5.1.min.js\" ></script>\n<script type=\"text/javascript\" src=\"https://static.formstack.com/forms/js/3/jquery-ui-1.13.2.min.js\" ></script>\n<script type=\"text/javascript\" src=\"https://static.formstack.com/forms/js/3/scripts.js\" ></script>\n<script type=\"text/javascript\" src=\"https://static.formstack.com/forms/js/3/analytics.js\" ></script>\n<script type=\"text/javascript\">\n(function() {\nvar isLocalStorageSafe = true;\ntry {\nif (typeof sessionStorage !== 'undefined' && sessionStorage.fsFonts) {\ndocument.documentElement.className = document.documentElement.className += ' wf-active';\n}\n} catch (e) {\nconsole.log('Failed to read from localStorage', e.message);\nisLocalStorageSafe = false;\n}\nvar pre = document.createElement('link');\npre.rel  = 'preconnect';\npre.href = 'https://fonts.googleapis.com/';\npre.setAttribute('crossorigin', '');\nvar s = document.getElementsByTagName('head')[0];\ns.appendChild(pre);\nvar fontConfig = {\ngoogle: {\nfamilies: [\n'Source Sans Pro:400,700'\n]\n},\ntimeout: 2000,\nactive: function() {\nif ( !isLocalStorageSafe || typeof sessionStorage === 'undefined') {\nreturn;\n}\nsessionStorage.fsFonts = true;\n}\n};\nif (typeof WebFont === 'undefined') {\nwindow.WebFontConfig = fontConfig;\nvar wf = document.createElement('script');\nwf.type  = 'text/javascript';\nwf.async = 'true';\nwf.src   = ('https:' == document.location.protocol ? 'https' : 'http') +\n'://ajax.googleapis.com/ajax/libs/webfont/1/webfont.js';\ns.appendChild(wf);\n} else {\nWebFont.load(fontConfig);\n}\n})();\nif(window.addEventListener) {\nwindow.addEventListener('load', loadFormstack, false);\n} else if(window.attachEvent) {\nwindow.attachEvent('onload', loadFormstack);\n} else {\nloadFormstack();\n}\nfunction loadFormstack() {\nvar form6188929 = new Formstack.Form(6188929, 'https://www.formstack.com/forms/');\nform6188929.checks.push({target: '183533081', action: 'Show', bool: 'AND', fields: ['183533098'],checks: [{field: '183533098', condition: '==', option: 'B Field'}]});\nform6188929.checks.push({target: '183533098', action: 'Show', bool: 'AND', fields: ['183533097'],checks: [{field: '183533097', condition: '==', option: 'C Field'}]});\nform6188929.checks.push({target: '183533097', action: 'Show', bool: 'AND', fields: ['183533081'],checks: [{field: '183533081', condition: '==', option: 'A Field'}]});\nform6188929.checks.push({target: '183533115', action: 'Show', bool: 'AND', fields: ['183533138'],checks: [{field: '183533138', condition: '==', option: 'fieldB'}]});\nform6188929.checks.push({target: '183533137', action: 'Show', bool: 'AND', fields: ['183533138'],checks: [{field: '183533138', condition: '==', option: 'fieldB'}]});\nform6188929.checks.push({target: '183533135', action: 'Show', bool: 'AND', fields: ['183533130'],checks: [{field: '183533130', condition: '==', option: 'fieldA'}]});\nform6188929.logicFields = ['183533130','183533138','183533081','183533097','183533098'];\nform6188929.calcFields = [];\nform6188929.dateCalcFields = [];\nform6188929.init();\nif (Formstack.Analytics) {\nform6188929.plugins.analytics = new Formstack.Analytics('https://www.formstack.com', 6188929, form6188929);\nform6188929.plugins.analytics.trackTouch();\nform6188929.plugins.analytics.trackBottleneck();\n}\nwindow.form6188929 = form6188929;\n};\n</script>\n</form>\n<div class=\"fs-ngdialog fs-modal-small fs-form-dialog fs-form-dialog--hidden\">\n<div class=\"fs-ngdialog-overlay\"></div>\n<div class=\"fs-ngdialog-content\">\n<div class=\"fs-modal__top fs-form-dialog__title\"></div>\n<div class=\"fs-modal__middle\">\n<div class=\"fs-form-dialog__message\"></div>\n<label class=\"hidden\"\nfor=\"fsSaveResumePassword\">Enter your save and resume password</label>\n<input type=\"password\"\nid=\"fsSaveResumePassword\"\nclass=\"fs-form-input fs-form-dialog__password fs-form-dialog--hidden fs--mt20\" placeholder=\"Enter your save and resume password\">\n<textarea class=\"fs-form-dialog__textarea fs-form-dialog--hidden\" rows=\"3\" style=\"width: 100%; margin-top: 10px\" aria-label=\"Add an optional comment\"></textarea>\n</div>\n<div class=\"fs-modal__bottom\">\n<a class=\"fs-form-dialog__cancel fs-btn2 fs-btn2--size_medium fs-btn2--style_edit-dark\" title=\"Cancel\">\n<div class=\"fs-btn2__content\">\n<div class=\"fs-btn2__text\">\n<span class=\"fs-form-dialog__button-text\">Cancel</span>\n</div>\n</div>\n</a>\n<a class=\"fs-form-dialog__confirm fs-btn2 fs-btn2--size_medium fs-btn2--style_create fs--float-right\" title=\"Confirm\">\n<div class=\"fs-btn2__content\">\n<div class=\"fs-btn2__text\">\n<span class=\"fs-form-dialog__button-text\">Confirm</span>\n</div>\n</div>\n</a>\n</div>\n</div>\n</div>\n</body>\n</html>",
+  "v4html": "<!DOCTYPE html>\n<html lang=\"\">\n<head>\n<meta charset=\"UTF-8\" />\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<meta name=\"robots\" content=\"noindex, nofollow\">\n<title>Formstack</title>\n<link rel=\"icon\" type=\"image/x-icon\" href=\"https://www.formstack.com/images/favicon/favicon.ico\" />\n</head>\n<body class=\"fsBody body-hosted-form\">\n<div id=\"fsform-container-6188929\" class=\"fsform-container\" data-formid=\"6188929\"></div>\n<script type=\"text/javascript\" src=\"https://static.formstack.com/forms/forms-renderer/builds/public/form.js\"></script>\n<script type=\"text/javascript\" nonce=\"39fbf8261e927a9d3ba1afc2c23d66e5e2fcb0c84978673701b904d28664d87c\">\nFSForm.render({\"fullscreen\":true,\"id\":6188929,\"loggingConfig\":{\"disabled\":false,\"sessionSampleRate\":1},\"shouldAutofocusForm\":true,\"target\":\"fsform-container-6188929\",\"viewKey\":\"l5AMIA0AqV\"},\n{\nformResponse: {\"error\":null,\"form\":{\"analytics\":{\"baseUrl\":\"https:\\/\\/www.formstack.com\",\"isEnabled\":true,\"viewMethod\":\"hosted\"},\"id\":\"6188929\",\"isEncrypted\":false,\"language\":\"en\",\"meta\":{\"ctaParams\":\"utm_source=formstack&utm_medium=product&utm_campaign=build+your+own\",\"ctaType\":\"s-prod-form\",\"extra\":{\"columns\":1,\"customIdentifier\":null,\"discountCode\":null,\"fileUploadsPerSubmission\":20,\"invisibleCaptcha\":false,\"invisibleCaptchaPublicKey\":\"\",\"kioskMode\":false,\"labelPosition\":\"top\",\"oneQuestion\":false,\"progressIndicator\":false,\"promptForLocation\":false,\"saveAndResume\":false,\"shareButtons\":null,\"showReferralBadge\":false,\"showSecurityLogo\":false,\"skipValidationBetweenPages\":false},\"fileUploadActionsDto\":{\"baseUrl\":\"https:\\/\\/www.formstack.com\",\"getUploadUrlAction\":\"\\/live-form\\/fileUpload\\/getUploadUrls\"},\"hasEncryptionPassword\":false,\"hiddenSubmitFields\":[{\"key\":\"displayTime\",\"value\":\"2025-05-12T00:12:19-04:00\"}],\"isWorkflowForm\":false,\"isWorkspaceSubmission\":null,\"redirectUrl\":null,\"shouldTrackPartialSubmission\":null,\"stylesheets\":null,\"submitButtonTitle\":\"Submit Form\",\"timezone\":\"US\\/Eastern\",\"welcomeMessage\":null},\"name\":\"isBuddy_unit_test_simple_logic\",\"password\":null,\"paymentIntegrations\":[],\"plugins\":[],\"portal\":null,\"publicFileUrl\":\"https:\\/\\/static.formstack.com\\/forms\\/forms-renderer\",\"sections\":[{\"calculation\":null,\"defaultValue\":null,\"fieldTypeAttributes\":{\"dtoType\":\"FieldAttributesSectionDto\",\"content\":\"\",\"heading\":\"\",\"labelPosition\":\"\",\"languageFormat\":\"\",\"numColumns\":0,\"usePageBreak\":false},\"fields\":[{\"calculation\":{\"calculationAllowNegatives\":0,\"calculationCategory\":\"text\",\"calculationOperator\":\"\",\"calculationUnits\":\"\",\"fieldOneCalculation\":0,\"fieldTwoCalculation\":0,\"rules\":[]},\"defaultValue\":{\"dtoType\":\"DefaultValueStringDto\",\"confirmValue\":\"\",\"value\":\"\"},\"fieldTypeAttributes\":{\"dtoType\":\"FieldAttributesTextDto\",\"autocompleteOptions\":null,\"calculationAllowNegatives\":0,\"calculationCategory\":\"text\",\"calculationOperator\":\"\",\"calculationUnits\":\"\",\"charactersWide\":50,\"confirmationText\":\"\",\"defaultValue\":\"\",\"fieldOneCalculation\":0,\"fieldTwoCalculation\":0,\"maxLength\":0,\"minLength\":0,\"placeholderText\":\"\"},\"fields\":null,\"general\":{\"autofill\":null,\"columnSpan\":\"1\",\"hidden\":false,\"hideLabel\":false,\"id\":\"183533060\",\"internalLabel\":null,\"isRootSection\":false,\"label\":\"Short Answer\",\"language\":\"en\",\"options\":[],\"parentTableMetadata\":null,\"readOnly\":false,\"required\":false,\"searchConfig\":{\"canSearchOptions\":false,\"useRemoteSearch\":false},\"section\":\"0\",\"shouldForceSkipValidation\":false,\"supportingText\":null,\"type\":\"text\",\"unique\":false,\"useCallout\":false},\"logic\":null,\"secureSettings\":{\"hideInputCharacters\":false,\"removeDataFromEmailNotifications\":false,\"requireConfirmation\":false,\"restrictDataAccess\":false}}],\"general\":{\"autofill\":null,\"columnSpan\":0,\"hidden\":false,\"hideLabel\":false,\"id\":\"0\",\"internalLabel\":null,\"isRootSection\":true,\"label\":\"\",\"language\":null,\"options\":[],\"parentTableMetadata\":null,\"readOnly\":false,\"required\":false,\"searchConfig\":null,\"section\":\"\",\"shouldForceSkipValidation\":null,\"supportingText\":null,\"type\":\"section\",\"unique\":false,\"useCallout\":null},\"logic\":null,\"secureSettings\":null},{\"calculation\":null,\"defaultValue\":null,\"fieldTypeAttributes\":{\"dtoType\":\"FieldAttributesSectionDto\",\"content\":\"<p>This will demonstrate circular logic based solely on 'own' logic. &nbsp; Logic that is directly related to the field.<br><br>Not in this example but in life. &nbsp;A field can have 'own' logic and 'parent' logic. &nbsp;Also, sections are considered fields so they too have 'own' and 'parent', but there parent is always null\\/empty logic<\\/p>\",\"heading\":\"Simple Field Circular Reference (A->B->C->A)\",\"labelPosition\":\"\",\"languageFormat\":\"default\",\"numColumns\":\"0\",\"usePageBreak\":false},\"fields\":[{\"calculation\":{\"calculationAllowNegatives\":\"\",\"calculationCategory\":\"text\",\"calculationOperator\":\"\",\"calculationUnits\":\"\",\"fieldOneCalculation\":\"\",\"fieldTwoCalculation\":\"\",\"rules\":[]},\"defaultValue\":{\"dtoType\":\"DefaultValueCheckboxDto\",\"otherValue\":null,\"useOtherValue\":false,\"value\":[]},\"fieldTypeAttributes\":{\"dtoType\":\"FieldAttributesCheckboxDto\",\"hideOptionButton\":true,\"imageDimensions\":\"customDimensions\",\"imageHeight\":100,\"imageLabelAlignment\":\"bottom\",\"imageWidth\":100,\"lockImageRatio\":true,\"lockImageRatioOption\":\"fitProportionally\",\"optionLayout\":\"vertical\",\"optionPartToStore\":\"value\",\"useCheckAll\":false,\"useImages\":false,\"useLabelsAndValues\":false,\"useOtherOption\":false,\"useRandomOption\":false},\"fields\":null,\"general\":{\"autofill\":null,\"columnSpan\":\"1\",\"hidden\":false,\"hideLabel\":false,\"id\":\"183533081\",\"internalLabel\":null,\"isRootSection\":false,\"label\":\"[A] A-&gt;B-&gt;C-&gt;A (fields)\",\"language\":\"en\",\"options\":[{\"label\":\"Option1\",\"value\":\"Option1\",\"imageUrl\":null},{\"label\":\"A Field\",\"value\":\"A Field\",\"imageUrl\":null},{\"label\":\"Option3\",\"value\":\"Option3\",\"imageUrl\":null}],\"parentTableMetadata\":null,\"readOnly\":false,\"required\":false,\"searchConfig\":{\"canSearchOptions\":false,\"useRemoteSearch\":false},\"section\":\"183533061\",\"shouldForceSkipValidation\":false,\"supportingText\":null,\"type\":\"checkbox\",\"unique\":false,\"useCallout\":false},\"logic\":{\"action\":\"Show\",\"fields\":[{\"comparisonOperator\":\"==\",\"fieldId\":\"183533098\",\"value\":\"B Field\"}],\"operator\":\"AND\",\"workflowSteps\":[]},\"secureSettings\":null},{\"calculation\":{\"calculationAllowNegatives\":\"\",\"calculationCategory\":\"text\",\"calculationOperator\":\"\",\"calculationUnits\":\"\",\"fieldOneCalculation\":\"\",\"fieldTwoCalculation\":\"\",\"rules\":[]},\"defaultValue\":{\"dtoType\":\"DefaultValueCheckboxDto\",\"otherValue\":null,\"useOtherValue\":false,\"value\":[]},\"fieldTypeAttributes\":{\"dtoType\":\"FieldAttributesCheckboxDto\",\"hideOptionButton\":true,\"imageDimensions\":\"customDimensions\",\"imageHeight\":100,\"imageLabelAlignment\":\"bottom\",\"imageWidth\":100,\"lockImageRatio\":true,\"lockImageRatioOption\":\"fitProportionally\",\"optionLayout\":\"vertical\",\"optionPartToStore\":\"value\",\"useCheckAll\":false,\"useImages\":false,\"useLabelsAndValues\":false,\"useOtherOption\":false,\"useRandomOption\":false},\"fields\":null,\"general\":{\"autofill\":null,\"columnSpan\":\"1\",\"hidden\":false,\"hideLabel\":false,\"id\":\"183533098\",\"internalLabel\":null,\"isRootSection\":false,\"label\":\"[B] A-&gt;B-&gt;C-&gt;A (fields)\",\"language\":\"en\",\"options\":[{\"label\":\"Option1\",\"value\":\"Option1\",\"imageUrl\":null},{\"label\":\"B Field\",\"value\":\"B Field\",\"imageUrl\":null},{\"label\":\"Option3\",\"value\":\"Option3\",\"imageUrl\":null}],\"parentTableMetadata\":null,\"readOnly\":false,\"required\":false,\"searchConfig\":{\"canSearchOptions\":false,\"useRemoteSearch\":false},\"section\":\"183533061\",\"shouldForceSkipValidation\":false,\"supportingText\":null,\"type\":\"checkbox\",\"unique\":false,\"useCallout\":false},\"logic\":{\"action\":\"Show\",\"fields\":[{\"comparisonOperator\":\"==\",\"fieldId\":\"183533097\",\"value\":\"C Field\"}],\"operator\":\"AND\",\"workflowSteps\":[]},\"secureSettings\":null},{\"calculation\":{\"calculationAllowNegatives\":\"\",\"calculationCategory\":\"text\",\"calculationOperator\":\"\",\"calculationUnits\":\"\",\"fieldOneCalculation\":\"\",\"fieldTwoCalculation\":\"\",\"rules\":[]},\"defaultValue\":{\"dtoType\":\"DefaultValueCheckboxDto\",\"otherValue\":null,\"useOtherValue\":false,\"value\":[]},\"fieldTypeAttributes\":{\"dtoType\":\"FieldAttributesCheckboxDto\",\"hideOptionButton\":true,\"imageDimensions\":\"customDimensions\",\"imageHeight\":100,\"imageLabelAlignment\":\"bottom\",\"imageWidth\":100,\"lockImageRatio\":true,\"lockImageRatioOption\":\"fitProportionally\",\"optionLayout\":\"vertical\",\"optionPartToStore\":\"value\",\"useCheckAll\":false,\"useImages\":false,\"useLabelsAndValues\":false,\"useOtherOption\":false,\"useRandomOption\":false},\"fields\":null,\"general\":{\"autofill\":null,\"columnSpan\":\"1\",\"hidden\":false,\"hideLabel\":false,\"id\":\"183533097\",\"internalLabel\":null,\"isRootSection\":false,\"label\":\"[C] A-&gt;B-&gt;C-&gt;A (fields)\",\"language\":\"en\",\"options\":[{\"label\":\"Option1\",\"value\":\"Option1\",\"imageUrl\":null},{\"label\":\"C Field\",\"value\":\"C Field\",\"imageUrl\":null},{\"label\":\"Option3\",\"value\":\"Option3\",\"imageUrl\":null}],\"parentTableMetadata\":null,\"readOnly\":false,\"required\":false,\"searchConfig\":{\"canSearchOptions\":false,\"useRemoteSearch\":false},\"section\":\"183533061\",\"shouldForceSkipValidation\":false,\"supportingText\":null,\"type\":\"checkbox\",\"unique\":false,\"useCallout\":false},\"logic\":{\"action\":\"Show\",\"fields\":[{\"comparisonOperator\":\"==\",\"fieldId\":\"183533081\",\"value\":\"A Field\"}],\"operator\":\"AND\",\"workflowSteps\":[]},\"secureSettings\":null}],\"general\":{\"autofill\":null,\"columnSpan\":\"1\",\"hidden\":false,\"hideLabel\":false,\"id\":\"183533061\",\"internalLabel\":null,\"isRootSection\":false,\"label\":\"\",\"language\":\"en\",\"options\":[],\"parentTableMetadata\":null,\"readOnly\":false,\"required\":false,\"searchConfig\":{\"canSearchOptions\":false,\"useRemoteSearch\":false},\"section\":\"\",\"shouldForceSkipValidation\":false,\"supportingText\":null,\"type\":\"section\",\"unique\":false,\"useCallout\":false},\"logic\":null,\"secureSettings\":null},{\"calculation\":null,\"defaultValue\":null,\"fieldTypeAttributes\":{\"dtoType\":\"FieldAttributesSectionDto\",\"content\":\"\",\"heading\":\"\",\"labelPosition\":\"\",\"languageFormat\":\"default\",\"numColumns\":\"0\",\"usePageBreak\":false},\"fields\":[],\"general\":{\"autofill\":null,\"columnSpan\":\"1\",\"hidden\":false,\"hideLabel\":false,\"id\":\"183533079\",\"internalLabel\":null,\"isRootSection\":false,\"label\":\"\",\"language\":\"en\",\"options\":[],\"parentTableMetadata\":null,\"readOnly\":false,\"required\":false,\"searchConfig\":{\"canSearchOptions\":false,\"useRemoteSearch\":false},\"section\":\"\",\"shouldForceSkipValidation\":false,\"supportingText\":null,\"type\":\"section\",\"unique\":false,\"useCallout\":false},\"logic\":null,\"secureSettings\":null},{\"calculation\":null,\"defaultValue\":null,\"fieldTypeAttributes\":{\"dtoType\":\"FieldAttributesSectionDto\",\"content\":\"<p>The three sections will demonstrate circular logic bases solely on 'parent' logic. &nbsp;Because a section can not be used in a logic statement but it's visibility determines the visibility of its fields (which can be used in log), each section depends on a field. &nbsp;The circular reference will because by section visibility.<\\/p>\",\"heading\":\"[A] A->B->C->A (Sections)\",\"labelPosition\":\"\",\"languageFormat\":\"default\",\"numColumns\":\"0\",\"usePageBreak\":false},\"fields\":[{\"calculation\":{\"calculationAllowNegatives\":\"\",\"calculationCategory\":\"text\",\"calculationOperator\":\"\",\"calculationUnits\":\"\",\"fieldOneCalculation\":\"\",\"fieldTwoCalculation\":\"\",\"rules\":[]},\"defaultValue\":{\"dtoType\":\"DefaultValueCheckboxDto\",\"otherValue\":null,\"useOtherValue\":false,\"value\":[]},\"fieldTypeAttributes\":{\"dtoType\":\"FieldAttributesCheckboxDto\",\"hideOptionButton\":true,\"imageDimensions\":\"customDimensions\",\"imageHeight\":100,\"imageLabelAlignment\":\"bottom\",\"imageWidth\":100,\"lockImageRatio\":true,\"lockImageRatioOption\":\"fitProportionally\",\"optionLayout\":\"vertical\",\"optionPartToStore\":\"value\",\"useCheckAll\":false,\"useImages\":false,\"useLabelsAndValues\":false,\"useOtherOption\":false,\"useRandomOption\":false},\"fields\":null,\"general\":{\"autofill\":null,\"columnSpan\":\"1\",\"hidden\":false,\"hideLabel\":false,\"id\":\"183533130\",\"internalLabel\":null,\"isRootSection\":false,\"label\":\"[A] A-&gt;B-&gt;C-&gt;A (Section\\/field)\",\"language\":\"en\",\"options\":[{\"label\":\"Option1\",\"value\":\"Option1\",\"imageUrl\":null},{\"label\":\"fieldA\",\"value\":\"fieldA\",\"imageUrl\":null},{\"label\":\"Option3\",\"value\":\"Option3\",\"imageUrl\":null}],\"parentTableMetadata\":null,\"readOnly\":false,\"required\":false,\"searchConfig\":{\"canSearchOptions\":false,\"useRemoteSearch\":false},\"section\":\"183533115\",\"shouldForceSkipValidation\":false,\"supportingText\":null,\"type\":\"checkbox\",\"unique\":false,\"useCallout\":false},\"logic\":null,\"secureSettings\":null}],\"general\":{\"autofill\":null,\"columnSpan\":\"1\",\"hidden\":false,\"hideLabel\":false,\"id\":\"183533115\",\"internalLabel\":null,\"isRootSection\":false,\"label\":\"\",\"language\":\"en\",\"options\":[],\"parentTableMetadata\":null,\"readOnly\":false,\"required\":false,\"searchConfig\":{\"canSearchOptions\":false,\"useRemoteSearch\":false},\"section\":\"\",\"shouldForceSkipValidation\":false,\"supportingText\":null,\"type\":\"section\",\"unique\":false,\"useCallout\":false},\"logic\":{\"action\":\"Show\",\"fields\":[{\"comparisonOperator\":\"==\",\"fieldId\":\"183533138\",\"value\":\"fieldB\"}],\"operator\":\"AND\",\"workflowSteps\":[]},\"secureSettings\":null},{\"calculation\":null,\"defaultValue\":null,\"fieldTypeAttributes\":{\"dtoType\":\"FieldAttributesSectionDto\",\"content\":\"<p>The three sections will demonstrate circular logic bases solely on 'parent' logic. &nbsp;Because a section can not be used in a logic statement but it's visibility determines the visibility of its fields (which can be used in log), each section depends on a field. &nbsp;The circular reference will because by section visibility.<\\/p>\",\"heading\":\"[B] A->B->C->A (Sections)\",\"labelPosition\":\"\",\"languageFormat\":\"default\",\"numColumns\":\"0\",\"usePageBreak\":false},\"fields\":[{\"calculation\":{\"calculationAllowNegatives\":\"\",\"calculationCategory\":\"text\",\"calculationOperator\":\"\",\"calculationUnits\":\"\",\"fieldOneCalculation\":\"\",\"fieldTwoCalculation\":\"\",\"rules\":[]},\"defaultValue\":{\"dtoType\":\"DefaultValueCheckboxDto\",\"otherValue\":null,\"useOtherValue\":false,\"value\":[]},\"fieldTypeAttributes\":{\"dtoType\":\"FieldAttributesCheckboxDto\",\"hideOptionButton\":true,\"imageDimensions\":\"customDimensions\",\"imageHeight\":100,\"imageLabelAlignment\":\"bottom\",\"imageWidth\":100,\"lockImageRatio\":true,\"lockImageRatioOption\":\"fitProportionally\",\"optionLayout\":\"vertical\",\"optionPartToStore\":\"value\",\"useCheckAll\":false,\"useImages\":false,\"useLabelsAndValues\":false,\"useOtherOption\":false,\"useRandomOption\":false},\"fields\":null,\"general\":{\"autofill\":null,\"columnSpan\":\"1\",\"hidden\":false,\"hideLabel\":false,\"id\":\"183533138\",\"internalLabel\":null,\"isRootSection\":false,\"label\":\"[B] A-&gt;B-&gt;C-&gt;A (Sections\\/field)\",\"language\":\"en\",\"options\":[{\"label\":\"Option1\",\"value\":\"Option1\",\"imageUrl\":null},{\"label\":\"fieldB\",\"value\":\"fieldB\",\"imageUrl\":null},{\"label\":\"Option3\",\"value\":\"Option3\",\"imageUrl\":null}],\"parentTableMetadata\":null,\"readOnly\":false,\"required\":false,\"searchConfig\":{\"canSearchOptions\":false,\"useRemoteSearch\":false},\"section\":\"183533137\",\"shouldForceSkipValidation\":false,\"supportingText\":null,\"type\":\"checkbox\",\"unique\":false,\"useCallout\":false},\"logic\":null,\"secureSettings\":null}],\"general\":{\"autofill\":null,\"columnSpan\":\"1\",\"hidden\":false,\"hideLabel\":false,\"id\":\"183533137\",\"internalLabel\":null,\"isRootSection\":false,\"label\":\"\",\"language\":\"en\",\"options\":[],\"parentTableMetadata\":null,\"readOnly\":false,\"required\":false,\"searchConfig\":{\"canSearchOptions\":false,\"useRemoteSearch\":false},\"section\":\"\",\"shouldForceSkipValidation\":false,\"supportingText\":null,\"type\":\"section\",\"unique\":false,\"useCallout\":false},\"logic\":{\"action\":\"Show\",\"fields\":[{\"comparisonOperator\":\"==\",\"fieldId\":\"183533138\",\"value\":\"fieldB\"}],\"operator\":\"AND\",\"workflowSteps\":[]},\"secureSettings\":null},{\"calculation\":null,\"defaultValue\":null,\"fieldTypeAttributes\":{\"dtoType\":\"FieldAttributesSectionDto\",\"content\":\"<p>The three sections will demonstrate circular logic bases solely on 'parent' logic. &nbsp;Because a section can not be used in a logic statement but it's visibility determines the visibility of its fields (which can be used in log), each section depends on a field. &nbsp;The circular reference will because by section visibility.<\\/p>\",\"heading\":\"[C] A->B->C->A (Sections)\",\"labelPosition\":\"\",\"languageFormat\":\"default\",\"numColumns\":\"0\",\"usePageBreak\":false},\"fields\":[{\"calculation\":{\"calculationAllowNegatives\":\"\",\"calculationCategory\":\"text\",\"calculationOperator\":\"\",\"calculationUnits\":\"\",\"fieldOneCalculation\":\"\",\"fieldTwoCalculation\":\"\",\"rules\":[]},\"defaultValue\":{\"dtoType\":\"DefaultValueCheckboxDto\",\"otherValue\":null,\"useOtherValue\":false,\"value\":[]},\"fieldTypeAttributes\":{\"dtoType\":\"FieldAttributesCheckboxDto\",\"hideOptionButton\":true,\"imageDimensions\":\"customDimensions\",\"imageHeight\":100,\"imageLabelAlignment\":\"bottom\",\"imageWidth\":100,\"lockImageRatio\":true,\"lockImageRatioOption\":\"fitProportionally\",\"optionLayout\":\"vertical\",\"optionPartToStore\":\"value\",\"useCheckAll\":false,\"useImages\":false,\"useLabelsAndValues\":false,\"useOtherOption\":false,\"useRandomOption\":false},\"fields\":null,\"general\":{\"autofill\":null,\"columnSpan\":\"1\",\"hidden\":false,\"hideLabel\":false,\"id\":\"183533136\",\"internalLabel\":null,\"isRootSection\":false,\"label\":\"[C] A-&gt;B-&gt;C-&gt;A (Section\\/feild)\",\"language\":\"en\",\"options\":[{\"label\":\"Option1\",\"value\":\"Option1\",\"imageUrl\":null},{\"label\":\"fieldc\",\"value\":\"fieldc\",\"imageUrl\":null},{\"label\":\"Option3\",\"value\":\"Option3\",\"imageUrl\":null}],\"parentTableMetadata\":null,\"readOnly\":false,\"required\":false,\"searchConfig\":{\"canSearchOptions\":false,\"useRemoteSearch\":false},\"section\":\"183533135\",\"shouldForceSkipValidation\":false,\"supportingText\":null,\"type\":\"checkbox\",\"unique\":false,\"useCallout\":false},\"logic\":null,\"secureSettings\":null}],\"general\":{\"autofill\":null,\"columnSpan\":\"1\",\"hidden\":false,\"hideLabel\":false,\"id\":\"183533135\",\"internalLabel\":null,\"isRootSection\":false,\"label\":\"\",\"language\":\"en\",\"options\":[],\"parentTableMetadata\":null,\"readOnly\":false,\"required\":false,\"searchConfig\":{\"canSearchOptions\":false,\"useRemoteSearch\":false},\"section\":\"\",\"shouldForceSkipValidation\":false,\"supportingText\":null,\"type\":\"section\",\"unique\":false,\"useCallout\":false},\"logic\":{\"action\":\"Show\",\"fields\":[{\"comparisonOperator\":\"==\",\"fieldId\":\"183533130\",\"value\":\"fieldA\"}],\"operator\":\"AND\",\"workflowSteps\":[]},\"secureSettings\":null}],\"shouldDisableSubmission\":null,\"submitUrl\":\"https:\\/\\/www.formstack.com\\/forms\\/index.php\",\"theme\":{\"backgroundImage\":\"\\/forms\\/images\\/3\\/stockTemplates\\/blueAfterglow\\/blueAfterglow.gif\",\"backgroundImageRepeat\":\"no-repeat\",\"bodyBgColor\":\"#1088b5\",\"buttonBgColor\":\"#645cb8\",\"buttonBorder\":\"0\",\"buttonBorderColor\":\"transparent\",\"buttonColor\":\"#ffffff\",\"buttonFontSize\":\"14px\",\"buttonFontStyle\":\"normal\",\"buttonFontVariant\":\"400\",\"buttonFontWeight\":\"400\",\"buttonPaddingLeftRight\":\"30px\",\"buttonPaddingTopBottom\":\"20px\",\"buttonRoundedCorners\":\"0\",\"colorMain\":\"#414247\",\"customCss\":null,\"errorBackgroundColor\":\"#fae9e9\",\"errorColorPrimary\":\"#ff3C3C\",\"errorColorSecondary\":\"#15232b\",\"extraneousPrimaryColor\":\"#645cb8\",\"extraneousSecondaryColor\":\"#f1f1f1\",\"extraneousTertiaryColor\":\"#ffffff\",\"fieldBgColor\":\"#ffffff\",\"fieldBorder\":\"1px\",\"fieldBorderColor\":\"#c4c6cc\",\"fieldColor\":\"#414247\",\"fieldFontStyle\":\"normal\",\"fieldFontVariant\":\"400\",\"fieldFontWeight\":\"400\",\"fieldRequiredBgColor\":\"#ffffff\",\"fieldRequiredBorder\":\"1px\",\"fieldRequiredBorderColor\":\"#cfd4d8\",\"fieldRoundedCorners\":\"0\",\"focusHighlightColor\":\"#5da9e6\",\"focusHighlightOpacity\":0.5,\"fontService\":\"google\",\"fontWeights\":\"400,700\",\"footerImageAlignment\":\"\",\"footerImageHeight\":\"\",\"footerImageUrl\":\"\",\"footerImageWidth\":\"\",\"formAlignment\":\"center\",\"formBgColor\":\"#ffffff\",\"formBgColorOpacity\":1,\"formBorder\":\"0\",\"formBorderColor\":\"transparent\",\"formBorderRoundedCorners\":\"0\",\"globalFont\":\"Source Sans Pro\",\"globalFontSize\":4,\"globalRoundedCorners\":0,\"globalSpacing\":2,\"headerImageAlignment\":\"\",\"headerImageHeight\":\"\",\"headerImageUrl\":\"\",\"headerImageWidth\":\"\",\"inputFocusHighlightColor\":\"#0197EC\",\"isNoStyleStrict\":false,\"labelRequiredColor\":\"#c12d29\",\"labelRequiredFontSize\":\"21px\",\"matrixLabelColumnPosition\":\"center\",\"matrixLabelRowPosition\":\"right\",\"placeholderTextColor\":\"\",\"productPriceColor\":\"#414247\",\"ratingIconColor\":\"#414247\",\"ratingIconSize\":\"25px\",\"readOnlyFieldBgColor\":\"#ffffff\",\"saveAndResumeButtonBackgroundColor\":\"#ffffff\",\"saveAndResumeButtonTextColor\":\"#645cb8\",\"sectionBgColor\":\"#ffffff\",\"sectionColor\":\"#595d64\",\"sectionHeadingAlignment\":\"center\",\"sectionHeadingColor\":\"#466ad1\",\"sectionHeadingFontStyle\":\"normal\",\"sectionHeadingFontVariant\":\"400\",\"sectionHeadingFontWeight\":\"400\",\"sectionHeadingSize\":\"31.5px\",\"sectionRoundedCorners\":\"0\",\"sizeField\":\"14px\",\"sizeLabel\":\"21px\",\"spacing\":\"10px\",\"successBackgroundColor\":\"#eefaf5\",\"successColorPrimary\":\"#21b573\",\"successColorSecondary\":\"#eefaf5\",\"supportingTextColor\":\"#414247\",\"supportingTextFontSize\":\"13px\",\"supportingTextFontStyle\":\"normal\",\"supportingTextFontVariant\":\"400\",\"supportingTextFontWeight\":\"\",\"tableCellEvenBgColor\":\"#ffffff33\",\"tableCellOddBgColor\":\"#f1f1f133\",\"transitionDuration\":\"0s\",\"transitionSpacingRightLeft\":\"10px\",\"transitionSpacingTopBottom\":\"10px\"},\"url\":\"https:\\/\\/www.formstack.com\",\"version\":\"4\",\"viewKey\":\"l5AMIA0AqV\",\"workflows\":null},\"isCached\":false,\"success\":true},\n}\n);\n(function(){\nvar link = document.createElement('link');\nlink.rel = 'stylesheet';\nlink.href = 'https://fonts.googleapis.com/css?family=Source Sans Pro:400,700';\ndocument.querySelector('head').appendChild(link);\n})();\n</script>\n</body>\n</html>",
+  "fields": [
+    {
+      "id": "183533060",
+      "label": "Short Answer",
+      "hide_label": "0",
+      "description": "",
+      "name": "short_answer",
+      "type": "text",
+      "options": "",
+      "required": "0",
+      "uniq": "0",
+      "hidden": "0",
+      "readonly": "0",
+      "colspan": "1",
+      "sort": "0",
+      "logic": null,
+      "calculation": "",
+      "workflow_access": "write",
+      "internal_label": null,
+      "default": "",
+      "text_size": 50,
+      "minlength": 0,
+      "maxlength": 0,
+      "placeholder": "",
+      "field_one_calculation": 0,
+      "field_two_calculation": 0,
+      "calculation_units": "",
+      "calculation_operator": "",
+      "calculation_type": "",
+      "calculation_allow_negatives": 0,
+      "hide_input_characters": 0,
+      "remove_data_from_emails": 0,
+      "require_confirmation": 0,
+      "confirmationText": "",
+      "restrict_data_access": 0
+    },
+    {
+      "id": "183533061",
+      "label": "",
+      "hide_label": "0",
+      "description": "",
+      "name": "",
+      "type": "section",
+      "options": "",
+      "required": "0",
+      "uniq": "0",
+      "hidden": "0",
+      "readonly": "0",
+      "colspan": "1",
+      "sort": "1",
+      "logic": null,
+      "calculation": "",
+      "workflow_access": "write",
+      "internal_label": null,
+      "default": "",
+      "section_break": 0,
+      "section_heading": "Simple Field Circular Reference (A->B->C->A)",
+      "section_text": "<p>This will demonstrate circular logic based solely on 'own' logic. &nbsp; Logic that is directly related to the field.<br><br>Not in this example but in life. &nbsp;A field can have 'own' logic and 'parent' logic. &nbsp;Also, sections are considered fields so they too have 'own' and 'parent', but there parent is always null/empty logic</p>",
+      "text_editor": "wysiwyg",
+      "label_position": "default",
+      "num_columns": "0"
+    },
+    {
+      "id": "183533081",
+      "label": "[A] A->B->C->A (fields)",
+      "hide_label": "0",
+      "description": "",
+      "name": "a_abca_fields",
+      "type": "checkbox",
+      "options": [
+        {
+          "label": "Option1",
+          "value": "Option1",
+          "imageUrl": null
+        },
+        {
+          "label": "A Field",
+          "value": "A Field",
+          "imageUrl": null
+        },
+        {
+          "label": "Option3",
+          "value": "Option3",
+          "imageUrl": null
+        }
+      ],
+      "required": "0",
+      "uniq": "0",
+      "hidden": "0",
+      "readonly": "0",
+      "colspan": "1",
+      "sort": "2",
+      "logic": {
+        "action": "show",
+        "conditional": "all",
+        "checks": [
+          {
+            "field": 183533098,
+            "condition": "equals",
+            "option": "B Field"
+          }
+        ]
+      },
+      "calculation": "",
+      "workflow_access": "write",
+      "internal_label": null,
+      "default": "",
+      "option_layout": "vertical",
+      "option_other": 0,
+      "option_checkall": 0,
+      "randomize_options": 0,
+      "option_store": "value",
+      "option_show_values": 0,
+      "use_images": 0,
+      "image_dimensions": "customDimensions",
+      "image_height": 100,
+      "image_width": 100,
+      "lock_image_ratio": true,
+      "lock_image_ratio_option": "fitProportionally",
+      "image_label_alignment": "bottom",
+      "hide_option_button": true
+    },
+    {
+      "id": "183533098",
+      "label": "[B] A->B->C->A (fields)",
+      "hide_label": "0",
+      "description": "",
+      "name": "b_abca_fields",
+      "type": "checkbox",
+      "options": [
+        {
+          "label": "Option1",
+          "value": "Option1",
+          "imageUrl": null
+        },
+        {
+          "label": "B Field",
+          "value": "B Field",
+          "imageUrl": null
+        },
+        {
+          "label": "Option3",
+          "value": "Option3",
+          "imageUrl": null
+        }
+      ],
+      "required": "0",
+      "uniq": "0",
+      "hidden": "0",
+      "readonly": "0",
+      "colspan": "1",
+      "sort": "3",
+      "logic": {
+        "action": "show",
+        "conditional": "all",
+        "checks": [
+          {
+            "field": 183533097,
+            "condition": "equals",
+            "option": "C Field"
+          }
+        ]
+      },
+      "calculation": "",
+      "workflow_access": "write",
+      "internal_label": null,
+      "default": "",
+      "option_layout": "vertical",
+      "option_other": 0,
+      "option_checkall": 0,
+      "randomize_options": 0,
+      "option_store": "value",
+      "option_show_values": 0,
+      "use_images": 0,
+      "image_dimensions": "customDimensions",
+      "image_height": 100,
+      "image_width": 100,
+      "lock_image_ratio": true,
+      "lock_image_ratio_option": "fitProportionally",
+      "image_label_alignment": "bottom",
+      "hide_option_button": true
+    },
+    {
+      "id": "183533097",
+      "label": "[C] A->B->C->A (fields)",
+      "hide_label": "0",
+      "description": "",
+      "name": "c_abca_fields",
+      "type": "checkbox",
+      "options": [
+        {
+          "label": "Option1",
+          "value": "Option1",
+          "imageUrl": null
+        },
+        {
+          "label": "C Field",
+          "value": "C Field",
+          "imageUrl": null
+        },
+        {
+          "label": "Option3",
+          "value": "Option3",
+          "imageUrl": null
+        }
+      ],
+      "required": "0",
+      "uniq": "0",
+      "hidden": "0",
+      "readonly": "0",
+      "colspan": "1",
+      "sort": "4",
+      "logic": {
+        "action": "show",
+        "conditional": "all",
+        "checks": [
+          {
+            "field": "183533081",
+            "condition": "equals",
+            "option": "A Field"
+          }
+        ]
+      },
+      "calculation": "",
+      "workflow_access": "write",
+      "internal_label": null,
+      "default": "",
+      "option_layout": "vertical",
+      "option_other": 0,
+      "option_checkall": 0,
+      "randomize_options": 0,
+      "option_store": "value",
+      "option_show_values": 0,
+      "use_images": 0,
+      "image_dimensions": "customDimensions",
+      "image_height": 100,
+      "image_width": 100,
+      "lock_image_ratio": true,
+      "lock_image_ratio_option": "fitProportionally",
+      "image_label_alignment": "bottom",
+      "hide_option_button": true
+    },
+    {
+      "id": "183533079",
+      "label": "",
+      "hide_label": "0",
+      "description": "",
+      "name": "",
+      "type": "section",
+      "options": "",
+      "required": "0",
+      "uniq": "0",
+      "hidden": "0",
+      "readonly": "0",
+      "colspan": "1",
+      "sort": "5",
+      "logic": null,
+      "calculation": "",
+      "workflow_access": "write",
+      "internal_label": null,
+      "default": "",
+      "section_break": 0,
+      "section_heading": "",
+      "section_text": "",
+      "text_editor": "wysiwyg",
+      "label_position": "default",
+      "num_columns": "0"
+    },
+    {
+      "id": "183533115",
+      "label": "",
+      "hide_label": "0",
+      "description": "",
+      "name": "",
+      "type": "section",
+      "options": "",
+      "required": "0",
+      "uniq": "0",
+      "hidden": "0",
+      "readonly": "0",
+      "colspan": "1",
+      "sort": "6",
+      "logic": {
+        "action": "show",
+        "conditional": "all",
+        "checks": [
+          {
+            "field": "183533138",
+            "condition": "equals",
+            "option": "fieldB"
+          }
+        ]
+      },
+      "calculation": "",
+      "workflow_access": "write",
+      "internal_label": null,
+      "default": "",
+      "section_break": 0,
+      "section_heading": "[A] A->B->C->A (Sections)",
+      "section_text": "<p>The three sections will demonstrate circular logic bases solely on 'parent' logic. &nbsp;Because a section can not be used in a logic statement but it's visibility determines the visibility of its fields (which can be used in log), each section depends on a field. &nbsp;The circular reference will because by section visibility.</p>",
+      "text_editor": "wysiwyg",
+      "label_position": "default",
+      "num_columns": "0"
+    },
+    {
+      "id": "183533130",
+      "label": "[A] A->B->C->A (Section/field)",
+      "hide_label": "0",
+      "description": "",
+      "name": "a_abca_sectionfield",
+      "type": "checkbox",
+      "options": [
+        {
+          "label": "Option1",
+          "value": "Option1",
+          "imageUrl": null
+        },
+        {
+          "label": "fieldA",
+          "value": "fieldA",
+          "imageUrl": null
+        },
+        {
+          "label": "Option3",
+          "value": "Option3",
+          "imageUrl": null
+        }
+      ],
+      "required": "0",
+      "uniq": "0",
+      "hidden": "0",
+      "readonly": "0",
+      "colspan": "1",
+      "sort": "7",
+      "logic": null,
+      "calculation": "",
+      "workflow_access": "write",
+      "internal_label": null,
+      "default": "",
+      "option_layout": "vertical",
+      "option_other": 0,
+      "option_checkall": 0,
+      "randomize_options": 0,
+      "option_store": "value",
+      "option_show_values": 0,
+      "use_images": 0,
+      "image_dimensions": "customDimensions",
+      "image_height": 100,
+      "image_width": 100,
+      "lock_image_ratio": true,
+      "lock_image_ratio_option": "fitProportionally",
+      "image_label_alignment": "bottom",
+      "hide_option_button": true
+    },
+    {
+      "id": "183533137",
+      "label": "",
+      "hide_label": "0",
+      "description": "",
+      "name": "",
+      "type": "section",
+      "options": "",
+      "required": "0",
+      "uniq": "0",
+      "hidden": "0",
+      "readonly": "0",
+      "colspan": "1",
+      "sort": "8",
+      "logic": {
+        "action": "show",
+        "conditional": "all",
+        "checks": [
+          {
+            "field": 183533138,
+            "condition": "equals",
+            "option": "fieldB"
+          }
+        ]
+      },
+      "calculation": "",
+      "workflow_access": "write",
+      "internal_label": null,
+      "default": "",
+      "section_break": 0,
+      "section_heading": "[B] A->B->C->A (Sections)",
+      "section_text": "<p>The three sections will demonstrate circular logic bases solely on 'parent' logic. &nbsp;Because a section can not be used in a logic statement but it's visibility determines the visibility of its fields (which can be used in log), each section depends on a field. &nbsp;The circular reference will because by section visibility.</p>",
+      "text_editor": "wysiwyg",
+      "label_position": "default",
+      "num_columns": "0"
+    },
+    {
+      "id": "183533138",
+      "label": "[B] A->B->C->A (Sections/field)",
+      "hide_label": "0",
+      "description": "",
+      "name": "b_abca_sectionsfield",
+      "type": "checkbox",
+      "options": [
+        {
+          "label": "Option1",
+          "value": "Option1",
+          "imageUrl": null
+        },
+        {
+          "label": "fieldB",
+          "value": "fieldB",
+          "imageUrl": null
+        },
+        {
+          "label": "Option3",
+          "value": "Option3",
+          "imageUrl": null
+        }
+      ],
+      "required": "0",
+      "uniq": "0",
+      "hidden": "0",
+      "readonly": "0",
+      "colspan": "1",
+      "sort": "9",
+      "logic": null,
+      "calculation": "",
+      "workflow_access": "write",
+      "internal_label": null,
+      "default": "",
+      "option_layout": "vertical",
+      "option_other": 0,
+      "option_checkall": 0,
+      "randomize_options": 0,
+      "option_store": "value",
+      "option_show_values": 0,
+      "use_images": 0,
+      "image_dimensions": "customDimensions",
+      "image_height": 100,
+      "image_width": 100,
+      "lock_image_ratio": true,
+      "lock_image_ratio_option": "fitProportionally",
+      "image_label_alignment": "bottom",
+      "hide_option_button": true
+    },
+    {
+      "id": "183533135",
+      "label": "",
+      "hide_label": "0",
+      "description": "",
+      "name": "",
+      "type": "section",
+      "options": "",
+      "required": "0",
+      "uniq": "0",
+      "hidden": "0",
+      "readonly": "0",
+      "colspan": "1",
+      "sort": "10",
+      "logic": {
+        "action": "show",
+        "conditional": "all",
+        "checks": [
+          {
+            "field": 183533130,
+            "condition": "equals",
+            "option": "fieldA"
+          }
+        ]
+      },
+      "calculation": "",
+      "workflow_access": "write",
+      "internal_label": null,
+      "default": "",
+      "section_break": 0,
+      "section_heading": "[C] A->B->C->A (Sections)",
+      "section_text": "<p>The three sections will demonstrate circular logic bases solely on 'parent' logic. &nbsp;Because a section can not be used in a logic statement but it's visibility determines the visibility of its fields (which can be used in log), each section depends on a field. &nbsp;The circular reference will because by section visibility.</p>",
+      "text_editor": "wysiwyg",
+      "label_position": "default",
+      "num_columns": "0"
+    },
+    {
+      "id": "183533136",
+      "label": "[C] A->B->C->A (Section/feild)",
+      "hide_label": "0",
+      "description": "",
+      "name": "c_abca_sectionfeild",
+      "type": "checkbox",
+      "options": [
+        {
+          "label": "Option1",
+          "value": "Option1",
+          "imageUrl": null
+        },
+        {
+          "label": "fieldc",
+          "value": "fieldc",
+          "imageUrl": null
+        },
+        {
+          "label": "Option3",
+          "value": "Option3",
+          "imageUrl": null
+        }
+      ],
+      "required": "0",
+      "uniq": "0",
+      "hidden": "0",
+      "readonly": "0",
+      "colspan": "1",
+      "sort": "11",
+      "logic": null,
+      "calculation": "",
+      "workflow_access": "write",
+      "internal_label": null,
+      "default": "",
+      "option_layout": "vertical",
+      "option_other": 0,
+      "option_checkall": 0,
+      "randomize_options": 0,
+      "option_store": "value",
+      "option_show_values": 0,
+      "use_images": 0,
+      "image_dimensions": "customDimensions",
+      "image_height": 100,
+      "image_width": 100,
+      "lock_image_ratio": true,
+      "lock_image_ratio_option": "fitProportionally",
+      "image_label_alignment": "bottom",
+      "hide_option_button": true
+    }
+  ]
+}

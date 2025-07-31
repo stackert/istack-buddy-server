@@ -2,23 +2,31 @@ import { Module } from '@nestjs/common';
 import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { IstackBuddyDataProxyModule } from './istack-buddy-data-proxy/istack-buddy-data-proxy.module';
 import { DevDebugModule } from './dev-debug/dev-debug.module';
-import { AuthModule } from './auth/auth.module';
-import { AuthenticationUserModule } from './authentication-user/authentication-user.module';
+import { AuthenticationModule } from './authentication/authentication.module';
+import { UserProfileModule } from './user-profile/user-profile.module';
+import { AuthorizationPermissionsModule } from './authorization-permissions/authorization-permissions.module';
 import { LoggerModule } from './common/logger/logger.module';
 import { CorrelationInterceptor } from './common/interceptors/correlation.interceptor';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { ValidationExceptionFilter } from './common/filters/validation-exception.filter';
+import { ChatManagerModule } from './chat-manager/chat-manager.module';
+import { IstackBuddySlackApiModule } from './istack-buddy-slack-api/istack-buddy-slack-api.module';
+import { RobotModule } from './robots/robot.module';
+import { PublicInterfaceModule } from './public-interface/public-interface.module';
 
 @Module({
   imports: [
     LoggerModule,
-    AuthModule,
-    AuthenticationUserModule,
-    IstackBuddyDataProxyModule,
+    AuthenticationModule,
+    UserProfileModule,
+    AuthorizationPermissionsModule,
     DevDebugModule,
+    ChatManagerModule,
+    IstackBuddySlackApiModule,
+    RobotModule,
+    PublicInterfaceModule,
   ],
   controllers: [AppController],
   providers: [

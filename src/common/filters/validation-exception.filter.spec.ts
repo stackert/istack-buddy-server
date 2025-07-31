@@ -4,7 +4,6 @@ import { Request, Response } from 'express';
 import {
   ValidationExceptionFilter,
   ValidationErrorResponse,
-  ValidationError,
 } from './validation-exception.filter';
 import { CustomLoggerService } from '../logger/custom-logger.service';
 

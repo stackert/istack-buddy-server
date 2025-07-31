@@ -2,9 +2,48 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as cookieParser from 'cookie-parser';
+import * as dotenv from 'dotenv';
+import { json } from 'express';
+import { CustomLoggerService } from './common/logger/custom-logger.service';
+
+// Load environment variables from .env.live file (real keys for development/production)
+dotenv.config({ path: '.env.live' });
 
 export async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  const logger = new CustomLoggerService('Bootstrap');
+
+  // Configure raw body parsing for Slack webhooks
+  app.use(
+    '/istack-buddy/slack-integration/slack/events',
+    json({
+      verify: (req: any, res, buf) => {
+        // Store raw body for Slack signature verification and logging
+        req.rawBody = buf;
+        req.rawBodyString = buf.toString();
+      },
+    }),
+  );
+
+  // CORS configuration for client communication - TEMPORARY: Allow all origins
+  app.enableCors({
+    origin: true, // Allow all origins (equivalent to '*' but works with credentials)
+    credentials: true, // Allow cookies/credentials
+    methods: '*', // Allow all HTTP methods
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'Accept',
+      'Origin',
+      'X-Requested-With',
+      'Accept-Language',
+      'Content-Language',
+      'Cookie',
+    ],
+    exposedHeaders: ['Set-Cookie', 'Authorization'],
+    optionsSuccessStatus: 200, // For legacy browser support
+    preflightContinue: false,
+  });
 
   // Enable cookie parsing
   app.use(cookieParser());
@@ -18,6 +57,8 @@ export async function bootstrap() {
     .setVersion('1.0')
     .addTag('authentication', 'User authentication and session management')
     .addTag('profile', 'User profile management')
+    .addTag('chat', 'Chat and messaging functionality')
+    .addTag('websocket', 'WebSocket real-time communication')
     .addCookieAuth('auth-token', {
       type: 'http',
       in: 'cookie',
@@ -29,7 +70,12 @@ export async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
 
-  await app.listen(process.env.PORT ?? 3000);
+  const port = process.env.ISTACK_BUDDY_BACKEND_SERVER_HOST_PORT || 3500;
+  await app.listen(port);
+
+  logger.log(`iStack Buddy Server running on: http://localhost:${port}`);
+  logger.log(`API Documentation available at: http://localhost:${port}/api`);
+  logger.warn(`CORS enabled for ALL origins (temporary)`);
 }
 
 // Only run bootstrap if this file is executed directly (not imported)
