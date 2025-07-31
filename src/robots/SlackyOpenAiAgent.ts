@@ -778,18 +778,43 @@ Need help? Just ask!`;
   ): OpenAI.Chat.Completions.ChatCompletionMessageParam[] {
     const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [];
 
+    // Debug: Log the history being processed
+    this.logger.log('Building OpenAI message history:', {
+      historyLength: history.length,
+      historyRoles: history.map((msg) => ({
+        fromRole: msg.fromRole,
+        content:
+          typeof msg.content === 'string'
+            ? msg.content.substring(0, 50) + '...'
+            : 'non-string content',
+      })),
+      currentMessage,
+    });
+
     // Add conversation history
     for (const msg of history) {
+      this.logger.log(`Processing message with role: ${msg.fromRole}`);
+
       if (msg.fromRole === UserRole.CUSTOMER) {
+        const content =
+          typeof msg.content === 'string' ? msg.content : String(msg.content);
+        this.logger.log(
+          `Adding customer message: ${content.substring(0, 50)}...`,
+        );
         messages.push({
           role: 'user' as const,
-          content: msg.content,
+          content,
         });
       } else if (msg.fromRole === UserRole.ROBOT) {
+        const content =
+          typeof msg.content === 'string' ? msg.content : String(msg.content);
+        this.logger.log(`Adding robot message: ${content.substring(0, 50)}...`);
         messages.push({
           role: 'assistant' as const,
-          content: msg.content,
+          content,
         });
+      } else {
+        this.logger.warn(`Unknown role in message: ${msg.fromRole}, skipping`);
       }
     }
 
@@ -801,16 +826,24 @@ Need help? Just ask!`;
       lastHistoryMessage.content === currentMessage;
 
     if (!isCurrentMessageInHistory) {
+      this.logger.log(
+        `Adding current message: ${currentMessage.substring(0, 50)}...`,
+      );
       messages.push({
         role: 'user' as const,
         content: currentMessage,
       });
+    } else {
+      this.logger.log('Current message already in history, skipping');
     }
 
     // Debug log the conversation being sent to the robot
     const conversationForLog = messages.map((msg) => ({
       author: msg.role === 'user' ? 'user' : 'robot',
-      content: msg.content,
+      content:
+        typeof msg.content === 'string'
+          ? msg.content.substring(0, 100) + '...'
+          : 'non-string content',
     }));
 
     this.logger.debug('Conversation being sent to robot:', conversationForLog);
@@ -928,6 +961,15 @@ Need help? Just ask!`;
         tools: this.tools,
       };
 
+      // Debug: Log the request being sent to OpenAI
+      this.logger.log('OpenAI request:', {
+        model: this.LLModelName,
+        maxTokens: 1024,
+        messageCount: messages.length,
+        toolsCount: this.tools.length,
+        tools: this.tools.map((tool) => tool.function?.name),
+      });
+
       const response = await client.chat.completions.create(request);
 
       // Extract text content and handle tool calls
@@ -939,6 +981,13 @@ Need help? Just ask!`;
         toolCalls.push(...(response.choices[0].message.tool_calls || []));
         this.logger.log(`Initial response: "${responseText}"`);
         this.logger.log(`Tool calls found: ${toolCalls.length}`);
+
+        // Debug: Log the full response to see what's happening
+        this.logger.log('Full OpenAI response:', {
+          choices: response.choices.length,
+          message: response.choices[0]?.message,
+          toolCalls: response.choices[0]?.message?.tool_calls,
+        });
       }
 
       // Execute any tool calls
