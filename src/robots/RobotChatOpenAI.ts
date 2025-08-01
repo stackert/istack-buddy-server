@@ -99,11 +99,11 @@ class RobotChatOpenAI extends AbstractRobotChat {
     callbacks: IStreamingCallbacks,
     getHistory?: () => IConversationMessage[],
   ): Promise<void> {
-    const openAiClient = this.getClient();
     const userMessage = messageEnvelope.envelopePayload.content.payload;
     let accumulatedContent = '';
 
     try {
+      const openAiClient = this.getClient();
       // Call onStreamStart with initial message
       if (callbacks.onStreamStart) {
         callbacks.onStreamStart(messageEnvelope);
