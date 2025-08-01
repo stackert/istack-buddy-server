@@ -1,13 +1,9 @@
-import { AbstractRobotChat } from './AbstractRobotChat';
-import {
-  TConversationTextMessageEnvelope,
-  TConversationTextMessage,
-} from './types';
 import { OpenAI } from 'openai';
-import { CustomLoggerService } from '../common/logger/custom-logger.service';
-import { IConversationMessage } from '../chat-manager/interfaces/message.interface';
 import { UserRole } from '../chat-manager/dto/create-message.dto';
+import { IConversationMessage } from '../chat-manager/interfaces/message.interface';
+import { AbstractRobotChat } from './AbstractRobotChat';
 import { marvToolSet } from './tool-definitions/marv';
+import { TConversationTextMessageEnvelope } from './types';
 
 // Type for tracking function calls during streaming
 type StreamingFunctionCall = {
@@ -24,6 +20,30 @@ const noOp = (...args: any[]) => {};
 const log = (...args: any[]) => {
   console.log(...args);
 };
+
+// Factory for creating message envelope with updated content
+// Type for streaming callbacks
+export interface IStreamingCallbacks {
+  onChunkReceived: (chunk: string) => void;
+  onStreamStart?: (message: TConversationTextMessageEnvelope) => void;
+  onStreamFinished?: (message: TConversationTextMessageEnvelope) => void;
+  onError?: (error: any) => void;
+}
+
+// Factory for creating message envelope with updated content
+const createMessageEnvelopeWithContent = (
+  originalEnvelope: TConversationTextMessageEnvelope,
+  newContent: string,
+): TConversationTextMessageEnvelope => ({
+  ...originalEnvelope,
+  envelopePayload: {
+    ...originalEnvelope.envelopePayload,
+    content: {
+      ...originalEnvelope.envelopePayload.content,
+      payload: newContent,
+    },
+  },
+});
 
 const fakeLogger = {
   debug: noOp,
@@ -69,14 +89,14 @@ class RobotChatOpenAI extends AbstractRobotChat {
     return this.constructor.name;
   }
 
+  /**
+   * Accepts a message and streams the response in real-time.
+   *
+   * @TMC_ We may want to allow options parameter ({disableStreaming: true}) to control streaming behavior
+   */
   public async acceptMessageStreamResponse(
     messageEnvelope: TConversationTextMessageEnvelope,
-    callbacks: {
-      onChunkReceived: (chunk: string) => void;
-      onStreamStart?: (message: TConversationTextMessageEnvelope) => void;
-      onStreamFinished?: (message: TConversationTextMessageEnvelope) => void;
-      onError?: (error: any) => void;
-    },
+    callbacks: IStreamingCallbacks,
     getHistory?: () => IConversationMessage[],
   ): Promise<void> {
     const openAiClient = this.getClient();
@@ -91,6 +111,9 @@ class RobotChatOpenAI extends AbstractRobotChat {
 
       // Build conversation history if provided
       const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
+        // _TMC_ Why is this necessary?
+        // This should come from the class definition.
+        // see: src/robots/SlackyAnthropicAgent.ts as example
         {
           role: 'system',
           content:
@@ -124,7 +147,6 @@ class RobotChatOpenAI extends AbstractRobotChat {
         stream: true,
       });
 
-      let isInFunctionCall = false;
       let currentFunctionCall: StreamingFunctionCall | null = null;
 
       for await (const chunk of stream) {
@@ -147,7 +169,6 @@ class RobotChatOpenAI extends AbstractRobotChat {
                   arguments: toolCall.function?.arguments || '',
                 },
               };
-              isInFunctionCall = true;
             }
 
             // Accumulate function call data
@@ -195,6 +216,11 @@ class RobotChatOpenAI extends AbstractRobotChat {
             accumulatedContent += functionResult;
             const chunkSize = 50; // Break into smaller chunks
             for (let i = 0; i < functionResult.length; i += chunkSize) {
+              // _TMC_ Why is this necessary?
+              // Why are we 'simulating' streaming
+              // I don't know there is a limit on chunk size?
+              // If there is good reason to intentionally chunk the response
+              // then keep it as is.  Otherwise send a larch chunk.
               const chunk = functionResult.slice(i, i + chunkSize);
               callbacks.onChunkReceived(chunk);
               // Small delay to simulate streaming
@@ -212,7 +238,6 @@ class RobotChatOpenAI extends AbstractRobotChat {
 
           // Reset for next function call
           currentFunctionCall = null;
-          isInFunctionCall = false;
         }
       }
     } catch (error) {
@@ -223,16 +248,10 @@ class RobotChatOpenAI extends AbstractRobotChat {
     } finally {
       // Call onStreamFinished with the complete message
       if (callbacks.onStreamFinished) {
-        const finishedMessage: TConversationTextMessageEnvelope = {
-          ...messageEnvelope,
-          envelopePayload: {
-            ...messageEnvelope.envelopePayload,
-            content: {
-              ...messageEnvelope.envelopePayload.content,
-              payload: accumulatedContent,
-            },
-          },
-        };
+        const finishedMessage = createMessageEnvelopeWithContent(
+          messageEnvelope,
+          accumulatedContent,
+        );
         callbacks.onStreamFinished(finishedMessage);
       }
     }
@@ -244,41 +263,59 @@ class RobotChatOpenAI extends AbstractRobotChat {
     return Promise.resolve(inboundMessage);
   }
 
+  /**
+   * @TMC_ New implementation using acceptMessageStreamResponse
+   * Calls acceptMessageStreamResponse and sends immediate response, then promises to send second message when streaming completes
+   */
   public async acceptMessageMultiPartResponse(
     messageEnvelope: TConversationTextMessageEnvelope,
     delayedMessageCallback: (
       response: TConversationTextMessageEnvelope,
     ) => void,
   ): Promise<TConversationTextMessageEnvelope> {
-    // Placeholder implementation for OpenAI chat robot
+    // Send immediate response first
     const immediateResponse =
       await this.acceptMessageImmediateResponse(messageEnvelope);
 
-    // Send delayed response after processing
-    setTimeout(() => {
-      const delayedRespMessage: TConversationTextMessage = {
-        ...messageEnvelope.envelopePayload,
-        content: {
-          type: 'text/plain',
-          payload: `OpenAI processing complete for: ${messageEnvelope.envelopePayload.content.payload}`,
-        },
-        author_role: 'assistant',
-        created_at: new Date().toISOString(),
-      };
-
-      const delayedMessage: TConversationTextMessageEnvelope = {
-        messageId: `response-${Date.now()}-delayed`,
-        requestOrResponse: 'response',
-        envelopePayload: delayedRespMessage,
-      };
-
+    // Start streaming in background and promise to send delayed message when complete
+    this.acceptMessageStreamResponse(messageEnvelope, {
+      onChunkReceived: noOp,
+      onStreamStart: noOp,
+      onStreamFinished: (finishedMessage) => {
+        // Send the complete response as delayed message
+        if (
+          delayedMessageCallback &&
+          typeof delayedMessageCallback === 'function'
+        ) {
+          delayedMessageCallback(finishedMessage);
+        }
+      },
+      onError: (error) => {
+        // Handle error in delayed message
+        const errorMessage = createMessageEnvelopeWithContent(
+          messageEnvelope,
+          `Error in streaming response: ${error.message}`,
+        );
+        if (
+          delayedMessageCallback &&
+          typeof delayedMessageCallback === 'function'
+        ) {
+          delayedMessageCallback(errorMessage);
+        }
+      },
+    }).catch((error) => {
+      // Handle any errors in the streaming process
+      const errorMessage = createMessageEnvelopeWithContent(
+        messageEnvelope,
+        `Error in streaming response: ${error.message}`,
+      );
       if (
         delayedMessageCallback &&
         typeof delayedMessageCallback === 'function'
       ) {
-        delayedMessageCallback(delayedMessage);
+        delayedMessageCallback(errorMessage);
       }
-    }, 1000);
+    });
 
     return immediateResponse;
   }

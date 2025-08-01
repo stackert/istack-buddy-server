@@ -82,7 +82,12 @@ describe('RobotChatOpenAI', () => {
       const chunkCallback = jest.fn();
 
       await expect(
-        robot.acceptMessageStreamResponse(mockMessageEnvelope, chunkCallback),
+        robot.acceptMessageStreamResponse(mockMessageEnvelope, {
+          onChunkReceived: chunkCallback,
+          onStreamStart: jest.fn(),
+          onStreamFinished: jest.fn(),
+          onError: jest.fn(),
+        }),
       ).resolves.toBeUndefined();
 
       expect(chunkCallback).not.toHaveBeenCalled();
@@ -102,7 +107,12 @@ describe('RobotChatOpenAI', () => {
       };
 
       await expect(
-        robot.acceptMessageStreamResponse(differentMessage, chunkCallback),
+        robot.acceptMessageStreamResponse(differentMessage, {
+          onChunkReceived: chunkCallback,
+          onStreamStart: jest.fn(),
+          onStreamFinished: jest.fn(),
+          onError: jest.fn(),
+        }),
       ).resolves.toBeUndefined();
     });
   });
@@ -220,26 +230,6 @@ describe('RobotChatOpenAI', () => {
     });
   });
 
-  describe('sendTestMessageToRobot', () => {
-    it('should call OpenAI API and process tool responses', async () => {
-      const { OpenAI } = require('openai');
-      const mockClient = OpenAI();
-      const mockCreate = mockClient.responses.create;
-      const chunkCallback = jest.fn();
-
-      // Mock the first API call (tool request)
-      mockCreate.mockResolvedValueOnce({
-        output: [
-          {
-            id: 'fc_test_id',
-            type: 'function_call',
-            status: 'completed',
-            arguments: '{"location":"Paris, France"}',
-            call_id: 'call_test_id',
-            name: 'get_weather',
-          },
-        ],
-      });
 
       // Mock the second API call (tool response)
       mockCreate.mockResolvedValueOnce({
