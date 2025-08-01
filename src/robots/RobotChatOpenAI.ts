@@ -71,19 +71,30 @@ class RobotChatOpenAI extends AbstractRobotChat {
 
   public async acceptMessageStreamResponse(
     messageEnvelope: TConversationTextMessageEnvelope,
-    chunkCallback: (chunk: string) => void,
+    callbacks: {
+      onChunkReceived: (chunk: string) => void;
+      onStreamStart?: (message: TConversationTextMessageEnvelope) => void;
+      onStreamFinished?: (message: TConversationTextMessageEnvelope) => void;
+      onError?: (error: any) => void;
+    },
     getHistory?: () => IConversationMessage[],
   ): Promise<void> {
     const openAiClient = this.getClient();
     const userMessage = messageEnvelope.envelopePayload.content.payload;
+    let accumulatedContent = '';
 
     try {
+      // Call onStreamStart with initial message
+      if (callbacks.onStreamStart) {
+        callbacks.onStreamStart(messageEnvelope);
+      }
+
       // Build conversation history if provided
       const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
         {
           role: 'system',
           content:
-            'You are a helpful assistant with access to tools. When asked about forms, use the available tools to get information. Always use tools when they would be helpful.',
+            'You are a helpful assistant with access to tools. When asked about forms, use the tools to get information. Always use tools when they would be helpful.',
         },
       ];
 
@@ -153,7 +164,8 @@ class RobotChatOpenAI extends AbstractRobotChat {
         // Handle content (text)
         const content = delta?.content;
         if (content) {
-          chunkCallback(content);
+          accumulatedContent += content;
+          callbacks.onChunkReceived(content);
         }
 
         // Handle function call completion
@@ -180,10 +192,11 @@ class RobotChatOpenAI extends AbstractRobotChat {
 
             // Stream the function result in chunks
             const functionResult = `\n[Function call: ${functionName}] Result: ${toolResult}\n`;
+            accumulatedContent += functionResult;
             const chunkSize = 50; // Break into smaller chunks
             for (let i = 0; i < functionResult.length; i += chunkSize) {
               const chunk = functionResult.slice(i, i + chunkSize);
-              chunkCallback(chunk);
+              callbacks.onChunkReceived(chunk);
               // Small delay to simulate streaming
               await new Promise((resolve) => setTimeout(resolve, 10));
             }
@@ -192,9 +205,9 @@ class RobotChatOpenAI extends AbstractRobotChat {
               error,
               currentFunctionCall,
             });
-            chunkCallback(
-              `\n[Error executing function call: ${error.message}]\n`,
-            );
+            const errorMessage = `\n[Error executing function call: ${error.message}]\n`;
+            accumulatedContent += errorMessage;
+            callbacks.onChunkReceived(errorMessage);
           }
 
           // Reset for next function call
@@ -204,7 +217,24 @@ class RobotChatOpenAI extends AbstractRobotChat {
       }
     } catch (error) {
       this.logger.error('Error in streaming response', { error });
-      chunkCallback(`Error: ${error.message}`);
+      const errorMessage = `Error: ${error.message}`;
+      accumulatedContent += errorMessage;
+      callbacks.onChunkReceived(errorMessage);
+    } finally {
+      // Call onStreamFinished with the complete message
+      if (callbacks.onStreamFinished) {
+        const finishedMessage: TConversationTextMessageEnvelope = {
+          ...messageEnvelope,
+          envelopePayload: {
+            ...messageEnvelope.envelopePayload,
+            content: {
+              ...messageEnvelope.envelopePayload.content,
+              payload: accumulatedContent,
+            },
+          },
+        };
+        callbacks.onStreamFinished(finishedMessage);
+      }
     }
   }
 

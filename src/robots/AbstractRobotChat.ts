@@ -10,7 +10,12 @@ export abstract class AbstractRobotChat extends AbstractRobot {
   // streaming response
   public abstract acceptMessageStreamResponse(
     messageEnvelope: TConversationTextMessageEnvelope,
-    chunkCallback: (chunk: string) => void,
+    callbacks: {
+      onChunkReceived: (chunk: string) => void;
+      onStreamStart?: (message: TConversationTextMessageEnvelope) => void;
+      onStreamFinished?: (message: TConversationTextMessageEnvelope) => void;
+      onError?: (error: any) => void;
+    },
     getHistory?: () => IConversationMessage[],
   ): Promise<void>;
 
