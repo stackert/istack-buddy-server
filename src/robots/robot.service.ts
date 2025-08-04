@@ -7,6 +7,7 @@ import { RobotChatAnthropic } from './RobotChatAnthropic';
 import { SlackyAnthropicAgent } from './SlackyAnthropicAgent';
 import { MarvOpenAiAgent } from './MarvOpenAiAgent';
 import { SlackyOpenAiAgent } from './SlackyOpenAiAgent';
+import { AnthropicMarv } from './AnthropicMarv';
 // import { PseudoRobotRouter } from './PseudoRobotRouter.ts.hidden';
 // import { PseudoRobotRouterSuggestions } from './PseudoRobotRouterSuggestions.ts.hidden';
 // import { PseudoRobotDocumentationSuggestions } from './PseudoRobotDocumentationSuggestions.ts.hidden';
@@ -45,6 +46,7 @@ export class RobotService implements OnModuleInit {
         'SlackyAnthropicAgent',
         'MarvOpenAiAgent',
         'SlackyOpenAiAgent',
+        'AnthropicMarv',
         'SlackAgentCoreFormsParrot',
         'SlackAgentCoreFormsSsoAutofillParrot',
       ];
@@ -66,6 +68,7 @@ export class RobotService implements OnModuleInit {
         new SlackyAnthropicAgent(),
         new MarvOpenAiAgent(),
         new SlackyOpenAiAgent(),
+        new AnthropicMarv(),
         // new PseudoRobotRouter(),
         // new PseudoRobotRouterSuggestions(),
         // new PseudoRobotDocumentationSuggestions(),

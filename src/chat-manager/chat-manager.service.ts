@@ -126,6 +126,27 @@ export class ChatManagerService {
         `Auto-created conversation for ${createMessageDto.conversationId}`,
       );
 
+    // Ensure conversation metadata exists
+    if (!this.conversationMetadata[createMessageDto.conversationId]) {
+      console.log(
+        `[ChatManagerService] Creating conversation metadata for: ${createMessageDto.conversationId}`,
+      );
+      const conversation: Conversation = {
+        id: createMessageDto.conversationId,
+        participantIds: [createMessageDto.fromUserId as string],
+        participantRoles: [createMessageDto.fromRole],
+        messageCount: 0,
+        lastMessageAt: now,
+        isActive: true,
+        createdAt: now,
+        updatedAt: now,
+      };
+      this.conversationMetadata[createMessageDto.conversationId] = conversation;
+      console.log(
+        `[ChatManagerService] Conversation metadata created. Total conversations: ${Object.keys(this.conversationMetadata).length}`,
+      );
+    }
+
     const message: IConversationMessage = {
       id: messageId,
       content: createMessageDto.content,
@@ -312,6 +333,13 @@ export class ChatManagerService {
     conversationId: string,
     joinRoomDto: JoinRoomDto,
   ): Promise<Participant> {
+    console.log(
+      `[ChatManagerService] Attempting to join conversation: ${conversationId}`,
+    );
+    console.log(
+      `[ChatManagerService] Available conversations:`,
+      Object.keys(this.conversationMetadata),
+    );
     const conversation = this.conversationMetadata[conversationId];
     if (!conversation) {
       throw new Error(`Conversation ${conversationId} not found`);
