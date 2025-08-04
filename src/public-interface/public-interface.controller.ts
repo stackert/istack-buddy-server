@@ -12,7 +12,6 @@ import {
 import { Response } from 'express';
 import { AuthPermissionGuard } from '../common/guards/auth-permission.guard';
 import { RequirePermissions } from '../common/decorators/require-permissions.decorator';
-import { FormMarvSessionService } from './form-marv-session.service';
 import { AuthenticationService } from '../authentication/authentication.service';
 import { AuthorizationPermissionsService } from '../authorization-permissions/authorization-permissions.service';
 import { ChatManagerService } from '../chat-manager/chat-manager.service';
@@ -26,15 +25,16 @@ import { AnthropicMarv } from '../robots/AnthropicMarv';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as jwt from 'jsonwebtoken';
+import { UserProfileService } from '../user-profile/user-profile.service';
 
 @Controller('public')
 export class PublicInterfaceController {
   constructor(
-    private readonly formMarvSessionService: FormMarvSessionService,
     private readonly authService: AuthenticationService,
     private readonly authPermissionsService: AuthorizationPermissionsService,
     private readonly chatManagerService: ChatManagerService,
     private readonly robotService: RobotService,
+    private readonly userProfileService: UserProfileService,
   ) {}
 
   @Get('/')
@@ -69,39 +69,53 @@ export class PublicInterfaceController {
     @Query('formId') formId?: string,
   ): Promise<void> {
     try {
+      // Generate a unique user ID for this session
+      const userId = `form-marv-temp-${Date.now()}`;
+
       // Create a temporary user profile for form-marv sessions
-      const tempUserId = `form-marv-temp-${Date.now()}`;
       const tempUserProfile = {
-        userId: tempUserId,
         email: `form-marv-${Date.now()}@example.com`,
-        firstName: 'Form',
-        lastName: 'Marv',
-        groups: ['form-marv-users'],
+        username: userId,
+        account_type_informal: 'TEMPORARY',
+        first_name: 'Form',
+        last_name: 'Marv',
       };
+
+      // Let UserProfileService create the user
+      this.userProfileService.addTemporaryUser(userId, tempUserProfile);
 
       // Create a JWT token for the temporary user
       const jwtToken = jwt.sign(
         {
-          userId: tempUserId,
-          email: `form-marv-${Date.now()}@example.com`,
-          username: tempUserId,
+          userId: userId,
+          email: tempUserProfile.email,
+          username: tempUserProfile.username,
           accountType: 'TEMPORARY',
         },
         'istack-buddy-secret-key-2024',
         { expiresIn: '8h' },
       );
 
-      const session = this.formMarvSessionService.createSession(
-        formId || '5375703',
+      // Add user to permissions system
+      this.authPermissionsService.addUser(
+        userId,
+        ['cx-agent:form-marv:read', 'cx-agent:form-marv:write'],
+        [],
       );
 
-      const sessionData = this.formMarvSessionService.getSession(session);
-      const conversationId = session; // The session IS the conversation ID
+      // Let ChatManagerService create the conversation and generate the conversation ID
+      const conversation = await this.chatManagerService.startConversation({
+        createdBy: userId,
+        createdByRole: UserRole.CUSTOMER,
+        title: 'Form Marv Conversation',
+        description: `Form Marv conversation for form ${formId || '5375703'}`,
+        initialParticipants: [userId],
+      });
 
       // Add debug message to conversation
       try {
         await this.chatManagerService.addMessage({
-          conversationId: session,
+          conversationId: conversation.id,
           fromUserId: 'form-marv-system',
           content: 'DEBUG - start of conversation',
           messageType: MessageType.SYSTEM,
@@ -111,7 +125,8 @@ export class PublicInterfaceController {
       } catch (error) {
         console.error('Failed to add debug message:', error);
       }
-      const link = `${req.protocol}://${req.get('host')}/public/form-marv/${session}/${sessionData?.formId}?jwtToken=${sessionData?.jwtToken}`;
+
+      const link = `${req.protocol}://${req.get('host')}/public/form-marv/${conversation.id}/${formId || '5375703'}?jwtToken=${jwtToken}`;
 
       const html = `
 <!DOCTYPE html>
@@ -123,11 +138,12 @@ export class PublicInterfaceController {
 </head>
 <body>
     <h1>Form Marv Session Created</h1>
-    <p><strong>Conversation ID:</strong> ${conversationId}</p>
-    <p><strong>Form ID:</strong> ${sessionData?.formId}</p>
-    <p><strong>JWT Token:</strong> ${sessionData?.jwtToken}</p>
+    <p><strong>Conversation ID:</strong> ${conversation.id}</p>
+    <p><strong>User ID:</strong> ${userId}</p>
+    <p><strong>Form ID:</strong> ${formId || '5375703'}</p>
+    <p><strong>JWT Token:</strong> ${jwtToken}</p>
     <p><strong>Link:</strong> <a href="${link}">${link}</a></p>
-    <p><strong>Chat Messages Endpoint:</strong> ${req.protocol}://${req.get('host')}/public/form-marv/${conversationId}/${sessionData?.formId}/chat-messages</p>
+    <p><strong>Chat Messages Endpoint:</strong> ${req.protocol}://${req.get('host')}/public/form-marv/${conversation.id}/${formId || '5375703'}/chat-messages</p>
 </body>
 </html>`;
 
@@ -135,82 +151,6 @@ export class PublicInterfaceController {
       res.send(html);
     } catch (error) {
       res.status(500).send('Error creating session');
-    }
-  }
-
-  @Get('/form-marv/:conversationId/jwt-token')
-  @UseGuards(AuthPermissionGuard)
-  @RequirePermissions('cx-agent:form-marv:read')
-  async getJwtToken(
-    @Param('conversationId') conversationId: string,
-    @Res() res: Response,
-  ): Promise<void> {
-    try {
-      const session = this.formMarvSessionService.getSession(conversationId);
-      if (!session) {
-        res.status(404).json({ error: 'Session not found or expired' });
-        return;
-      }
-
-      res.json({
-        jwtToken: session.jwtToken,
-        formId: session.formId,
-        userId: session.userId,
-        createdAt: session.createdAt,
-        lastActivityAt: session.lastActivityAt,
-      });
-    } catch (error) {
-      res.status(500).json({ error: 'Internal Server Error' });
-    }
-  }
-
-  @Get('/form-marv/:conversationId/session-data')
-  @UseGuards(AuthPermissionGuard)
-  @RequirePermissions('cx-agent:form-marv:read')
-  async getSessionData(
-    @Param('conversationId') conversationId: string,
-    @Res() res: Response,
-    @Req() req: any,
-  ): Promise<void> {
-    try {
-      const session = this.formMarvSessionService.getSession(conversationId);
-      if (!session) {
-        res.status(404).json({ error: 'Session not found or expired' });
-        return;
-      }
-
-      res.json({
-        conversationId: conversationId,
-        formId: session.formId,
-        userId: session.userId,
-        createdAt: session.createdAt,
-        lastActivityAt: session.lastActivityAt,
-        secureUrl: `${req.protocol}://${req.get('host')}/public/form-marv/${conversationId}/${session.formId}?jwtToken=${session.jwtToken}`,
-      });
-    } catch (error) {
-      res.status(500).json({ error: 'Internal Server Error' });
-    }
-  }
-
-  @Get('/form-marv/:conversationId/debug-session')
-  async debugSession(
-    @Param('conversationId') conversationId: string,
-    @Res() res: Response,
-  ): Promise<void> {
-    try {
-      const session = this.formMarvSessionService.getSession(conversationId);
-      if (!session) {
-        res.status(404).json({ error: 'Session not found or expired' });
-        return;
-      }
-
-      res.json({
-        conversationId,
-        session,
-        exists: true,
-      });
-    } catch (error) {
-      res.status(500).json({ error: 'Internal Server Error' });
     }
   }
 
@@ -235,8 +175,20 @@ export class PublicInterfaceController {
     @Req() req: any,
   ): Promise<void> {
     try {
-      // If JWT token is provided in query, set it as a cookie and redirect
+      // If JWT token is provided in query, authenticate and set it as a cookie
       if (jwtToken) {
+        // Authenticate the user using the authentication service
+        const authResult = await this.authService.authenticateUser(
+          conversationId,
+          jwtToken,
+        );
+
+        if (!authResult.success) {
+          res.status(401).send('Invalid JWT token');
+          return;
+        }
+
+        // Set JWT token as cookie
         res.cookie('jwtToken', jwtToken, {
           httpOnly: true,
           secure: process.env.NODE_ENV === 'production',
@@ -249,19 +201,8 @@ export class PublicInterfaceController {
         return;
       }
 
-      // Check if session exists
-      const session = this.formMarvSessionService.getSession(conversationId);
-      if (!session) {
-        res.status(404).send('Session not found or expired');
-        return;
-      }
-
-      // Validate that the formId in the URL matches the session's formId
-      if (session.formId !== formId) {
-        res.status(401).send('Invalid form ID for this session');
-        return;
-      }
-
+      // For subsequent requests, the JWT token should be in the cookie
+      // The AuthPermissionGuard will handle authentication using the cookie
       const html = `
 <!DOCTYPE html>
 <html lang="en">
@@ -272,7 +213,7 @@ export class PublicInterfaceController {
 </head>
 <body>
     <h1>Welcome to Forms Marv!</h1>
-    <p>Your session is active and ready for formId: ${session.formId}</p>
+    <p>Your session is active and ready for formId: ${formId}</p>
 </body>
 </html>`;
 

@@ -619,7 +619,7 @@ export class ChatManagerService {
   // Private helper methods
 
   private generateId(): string {
-    return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    return uuidv4();
   }
 
   private async updateConversationActivity(
