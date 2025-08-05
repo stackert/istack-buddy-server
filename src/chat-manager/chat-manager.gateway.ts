@@ -172,14 +172,43 @@ export class ChatManagerGateway
           },
         };
 
-        const robotResponse =
-          await robot.acceptMessageImmediateResponse(messageEnvelope);
+        // Stream robot response and collect full response
+        let fullResponse = '';
+        console.log(
+          `Starting streaming response for conversation: ${createMessageDto.conversationId}`,
+        );
 
-        if (robotResponse && robotResponse.envelopePayload.content.payload) {
+        await robot.acceptMessageStreamResponse(
+          messageEnvelope,
+          async (chunk: string) => {
+            console.log(`Received chunk from robot: "${chunk}"`);
+            if (chunk) {
+              fullResponse += chunk;
+              console.log(
+                `Broadcasting chunk to conversation ${createMessageDto.conversationId}: "${chunk}"`,
+              );
+              // Broadcast each chunk to all clients in the conversation
+              this.broadcastToConversation(
+                createMessageDto.conversationId,
+                'robot_chunk',
+                {
+                  chunk,
+                },
+              );
+              console.log(`Chunk broadcasted successfully`);
+            } else {
+              console.log(`Received null/empty chunk, skipping`);
+            }
+          },
+        );
+
+        console.log(`Streaming complete. Full response: "${fullResponse}"`);
+
+        if (fullResponse) {
           const robotMessage = await this.chatManagerService.createMessage({
             conversationId: createMessageDto.conversationId,
             fromUserId: 'anthropic-marv-robot',
-            content: robotResponse.envelopePayload.content.payload,
+            content: fullResponse,
             messageType: MessageType.ROBOT,
             fromRole: UserRole.ROBOT,
             toRole: UserRole.AGENT,
@@ -189,6 +218,15 @@ export class ChatManagerGateway
           this.server
             .to(createMessageDto.conversationId)
             .emit('new_message', robotMessage);
+
+          // Broadcast completion
+          this.broadcastToConversation(
+            createMessageDto.conversationId,
+            'robot_complete',
+            {
+              messageId: robotMessage.id,
+            },
+          );
         }
       }
     }
@@ -278,7 +316,12 @@ export class ChatManagerGateway
 
   // Method to broadcast to specific conversation
   broadcastToConversation(conversationId: string, event: string, data: any) {
+    console.log(
+      `Gateway: Broadcasting ${event} to conversation ${conversationId}:`,
+      data,
+    );
     this.server.to(conversationId).emit(event, data);
+    console.log(`Gateway: Broadcast completed`);
   }
 
   // Method to broadcast to dashboard listeners

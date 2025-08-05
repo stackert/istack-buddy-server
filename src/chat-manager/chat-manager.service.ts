@@ -36,6 +36,11 @@ export class ChatManagerService {
     this.gateway = gateway;
   }
 
+  // Method to get the gateway reference
+  getGateway(): any {
+    return this.gateway;
+  }
+
   /**
    * Convert Message to TConversationMessageEnvelope format for storage
    */

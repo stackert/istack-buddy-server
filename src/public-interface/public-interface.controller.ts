@@ -210,6 +210,7 @@ export class PublicInterfaceController {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Welcome to Forms Marv</title>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <style>
         body { font-family: Arial, sans-serif; margin: 20px; }
         .container { max-width: 1200px; margin: 0 auto; }
@@ -326,11 +327,71 @@ export class PublicInterfaceController {
         const conversationId = '${conversationId}';
         const formId = '${formId}';
         
-        // Load messages on page load
-        loadMessages();
+        // WebSocket connection
+        let socket;
+        let robotMessageDiv = null;
         
-        // Auto-refresh messages every 5 seconds
-        setInterval(loadMessages, 5000);
+        // Initialize WebSocket connection
+        function initializeWebSocket() {
+            // Connect to the existing WebSocket gateway
+            socket = io('ws://localhost:3500');
+            
+            // Join the conversation room
+            socket.emit('join_room', {
+                conversationId: conversationId,
+                joinData: {
+                    userId: 'form-marv-user',
+                    userRole: 'CUSTOMER'
+                }
+            });
+            
+            // Listen for new messages
+            socket.on('new_message', (data) => {
+                addMessageToUI(data.message.fromUserId, data.message.content);
+            });
+            
+            // Listen for robot streaming chunks
+            socket.on('robot_chunk', (data) => {
+                if (robotMessageDiv) {
+                    robotMessageDiv.textContent += data.chunk;
+                    robotMessageDiv.scrollIntoView({ behavior: 'smooth' });
+                }
+            });
+            
+            // Listen for robot completion
+            socket.on('robot_complete', (data) => {
+                robotMessageDiv = null;
+                console.log('Robot response complete');
+            });
+            
+            // Listen for user joined/left events
+            socket.on('user_joined', (data) => {
+                console.log('User joined:', data.participant);
+            });
+            
+            socket.on('user_left', (data) => {
+                console.log('User left:', data.userId);
+            });
+            
+            // Handle connection events
+            socket.on('connect', () => {
+                console.log('Connected to WebSocket');
+            });
+            
+            socket.on('disconnect', () => {
+                console.log('Disconnected from WebSocket');
+            });
+            
+            socket.on('connect_error', (error) => {
+                console.error('WebSocket connection error:', error);
+            });
+        }
+        
+        // Initialize WebSocket on page load
+        initializeWebSocket();
+        
+        // Load initial messages
+        loadMessages();
         
         function loadMessages() {
             fetch(\`/public/form-marv/\${conversationId}/\${formId}/chat-messages\`, {
@@ -342,18 +403,35 @@ export class PublicInterfaceController {
                 messagesDiv.innerHTML = '';
                 
                 messages.forEach(message => {
-                    const messageDiv = document.createElement('div');
-                    messageDiv.className = \`message \${message.fromUserId === 'form-marv-user' ? 'user-message' : 
-                                                   message.fromUserId === 'anthropic-marv-robot' ? 'robot-message' : 
-                                                   message.fromUserId === 'form-marv-system' ? 'system-message' : 'user-message'}\`;
-                    messageDiv.textContent = message.content;
-                    messagesDiv.appendChild(messageDiv);
+                    addMessageToUI(message.fromUserId, message.content);
                 });
                 
                 // Scroll to bottom
                 messagesDiv.scrollTop = messagesDiv.scrollHeight;
             })
             .catch(error => console.error('Error loading messages:', error));
+        }
+        
+        function addMessageToUI(fromUserId, content) {
+            const messagesDiv = document.getElementById('messages');
+            const messageDiv = document.createElement('div');
+            
+            let className = 'message user-message';
+            if (fromUserId === 'anthropic-marv-robot') {
+                className = 'message robot-message';
+                robotMessageDiv = messageDiv; // Track robot message for streaming
+            } else if (fromUserId === 'form-marv-system') {
+                className = 'message system-message';
+            }
+            
+            messageDiv.className = className;
+            messageDiv.textContent = content;
+            messagesDiv.appendChild(messageDiv);
+            
+            // Scroll to bottom
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            
+            return messageDiv;
         }
         
         function sendMessage() {
@@ -366,6 +444,14 @@ export class PublicInterfaceController {
             sendButton.disabled = true;
             sendButton.textContent = 'Sending...';
             
+            // Add user message to UI immediately
+            addMessageToUI('form-marv-user', message);
+            input.value = '';
+            
+            // Create robot message placeholder for streaming
+            robotMessageDiv = addMessageToUI('anthropic-marv-robot', '');
+            
+            // Send message via HTTP (WebSocket will receive the response)
             fetch(\`/public/form-marv/\${conversationId}/\${formId}/chat-messages\`, {
                 method: 'POST',
                 headers: {
@@ -376,10 +462,7 @@ export class PublicInterfaceController {
             })
             .then(response => response.json())
             .then(data => {
-                if (data.success) {
-                    input.value = '';
-                    loadMessages();
-                } else {
+                if (!data.success) {
                     alert('Failed to send message');
                 }
             })
@@ -412,7 +495,7 @@ export class PublicInterfaceController {
             }
         });
     </script>
-</body>
+  </body>
 </html>`;
 
       res.setHeader('Content-Type', 'text/html');
@@ -487,19 +570,57 @@ export class PublicInterfaceController {
           },
         };
 
-        // C) Get robot response and add to conversation
-        const robotResponse =
-          await robot.acceptMessageImmediateResponse(messageEnvelope);
+        // C) Stream robot response via WebSocket and collect full response
+        let fullResponse = '';
+        console.log(
+          `Starting streaming response for conversation: ${conversationId}`,
+        );
+        await robot.acceptMessageStreamResponse(
+          messageEnvelope,
+          async (chunk: string) => {
+            console.log(`Received chunk from robot: "${chunk}"`);
+            if (chunk) {
+              fullResponse += chunk;
+              console.log(
+                `Broadcasting chunk to conversation ${conversationId}: "${chunk}"`,
+              );
+              // Broadcast each chunk to all clients in the conversation
+              if (this.chatManagerService.getGateway()) {
+                this.chatManagerService
+                  .getGateway()
+                  .broadcastToConversation(conversationId, 'robot_chunk', {
+                    chunk,
+                  });
+                console.log(`Chunk broadcasted successfully`);
+              } else {
+                console.log(`No gateway available for broadcasting`);
+              }
+            } else {
+              console.log(`Received null/empty chunk, skipping`);
+            }
+          },
+        );
+        console.log(`Streaming complete. Full response: "${fullResponse}"`);
 
-        if (robotResponse && robotResponse.envelopePayload.content.payload) {
-          await this.chatManagerService.addMessage({
+        // D) Add complete robot response to conversation
+        if (fullResponse) {
+          const robotMessage = await this.chatManagerService.addMessage({
             conversationId: conversationId,
             fromUserId: 'anthropic-marv-robot',
-            content: robotResponse.envelopePayload.content.payload,
+            content: fullResponse,
             messageType: MessageType.ROBOT,
             fromRole: UserRole.ROBOT,
             toRole: UserRole.CUSTOMER,
           });
+
+          // E) Broadcast completion
+          if (this.chatManagerService.getGateway()) {
+            this.chatManagerService
+              .getGateway()
+              .broadcastToConversation(conversationId, 'robot_complete', {
+                messageId: robotMessage.id,
+              });
+          }
         }
       }
 
