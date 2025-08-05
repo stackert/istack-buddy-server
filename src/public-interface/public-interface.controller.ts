@@ -210,10 +210,208 @@ export class PublicInterfaceController {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Welcome to Forms Marv</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header { background: #f0f0f0; padding: 20px; border-radius: 5px; margin-bottom: 20px; }
+        .chat-container { display: flex; gap: 20px; }
+        .chat-area { flex: 2; }
+        .toolbox { flex: 1; background: #f9f9f9; padding: 15px; border-radius: 5px; }
+        .toolbox h3 { margin-top: 0; color: #333; }
+        .toolbox-section { margin-bottom: 20px; }
+        .toolbox-section h4 { margin-bottom: 10px; color: #666; }
+        .tool-button { 
+            display: block; 
+            width: 100%; 
+            padding: 8px 12px; 
+            margin: 5px 0; 
+            border: 1px solid #ddd; 
+            border-radius: 4px; 
+            background: white; 
+            cursor: pointer; 
+            text-align: left;
+            font-size: 12px;
+        }
+        .tool-button:hover { background: #e9e9e9; }
+        .direct-action { border-left: 4px solid #4CAF50; }
+        .template-text { border-left: 4px solid #2196F3; }
+        .messages { height: 400px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; margin-bottom: 10px; background: white; }
+        .message { margin-bottom: 10px; padding: 8px; border-radius: 4px; }
+        .user-message { background: #e3f2fd; margin-left: 20px; }
+        .robot-message { background: #f1f8e9; margin-right: 20px; }
+        .system-message { background: #fff3e0; font-style: italic; }
+        .input-area { display: flex; gap: 10px; }
+        .message-input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 4px; }
+        .send-button { padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .send-button:hover { background: #45a049; }
+        .send-button:disabled { background: #cccccc; cursor: not-allowed; }
+    </style>
 </head>
 <body>
-    <h1>Welcome to Forms Marv!</h1>
-    <p>Your session is active and ready for formId: ${formId}</p>
+    <div class="container">
+        <div class="header">
+            <h1>Welcome to Forms Marv!</h1>
+            <p>Your session is active and ready for formId: ${formId}</p>
+            <p><strong>Conversation ID:</strong> ${conversationId}</p>
+        </div>
+        
+        <div class="chat-container">
+            <div class="chat-area">
+                <div class="messages" id="messages">
+                    <!-- Messages will be loaded here -->
+                </div>
+                <div class="input-area">
+                    <input type="text" class="message-input" id="messageInput" placeholder="Type your message..." />
+                    <button class="send-button" id="sendButton" onclick="sendMessage()">Send</button>
+                </div>
+            </div>
+            
+            <div class="toolbox">
+                <h3>Marv Toolbox</h3>
+                
+                <div class="toolbox-section">
+                    <h4>Direct Actions (No Input Required)</h4>
+                    <button class="tool-button direct-action" onclick="executeDirectAction('formAndRelatedEntityOverview', {formId: '${formId}'})">
+                        📊 Get Form Overview
+                    </button>
+                    <button class="tool-button direct-action" onclick="executeDirectAction('formLogicValidation', {formId: '${formId}'})">
+                        🔍 Validate Form Logic
+                    </button>
+                    <button class="tool-button direct-action" onclick="executeDirectAction('formCalculationValidation', {formId: '${formId}'})">
+                        🧮 Validate Calculations
+                    </button>
+                    <button class="tool-button direct-action" onclick="executeDirectAction('fieldLogicRemove', {formId: '${formId}'})">
+                        🗑️ Remove All Logic
+                    </button>
+                    <button class="tool-button direct-action" onclick="executeDirectAction('fieldLabelUniqueSlugAdd', {formId: '${formId}'})">
+                        🏷️ Add Unique Slugs
+                    </button>
+                    <button class="tool-button direct-action" onclick="executeDirectAction('fieldLabelUniqueSlugRemove', {formId: '${formId}'})">
+                        🏷️ Remove Unique Slugs
+                    </button>
+                </div>
+                
+                <div class="toolbox-section">
+                    <h4>Template Text (Add to Input)</h4>
+                    <button class="tool-button template-text" onclick="addTemplateToInput('Create a new form with the following fields:')">
+                        📝 Create New Form
+                    </button>
+                    <button class="tool-button template-text" onclick="addTemplateToInput('Add a text field to the form')">
+                        ➕ Add Text Field
+                    </button>
+                    <button class="tool-button template-text" onclick="addTemplateToInput('Add a number field to the form')">
+                        ➕ Add Number Field
+                    </button>
+                    <button class="tool-button template-text" onclick="addTemplateToInput('Add an email field to the form')">
+                        ➕ Add Email Field
+                    </button>
+                    <button class="tool-button template-text" onclick="addTemplateToInput('Create a developer copy of this form')">
+                        📋 Create Developer Copy
+                    </button>
+                    <button class="tool-button template-text" onclick="addTemplateToInput('Create a logic stash for this form')">
+                        💾 Create Logic Stash
+                    </button>
+                    <button class="tool-button template-text" onclick="addTemplateToInput('Apply the logic stash to this form')">
+                        🔄 Apply Logic Stash
+                    </button>
+                    <button class="tool-button template-text" onclick="addTemplateToInput('Remove field with ID:')">
+                        🗑️ Remove Field
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const conversationId = '${conversationId}';
+        const formId = '${formId}';
+        
+        // Load messages on page load
+        loadMessages();
+        
+        // Auto-refresh messages every 5 seconds
+        setInterval(loadMessages, 5000);
+        
+        function loadMessages() {
+            fetch(\`/public/form-marv/\${conversationId}/\${formId}/chat-messages\`, {
+                credentials: 'include'
+            })
+            .then(response => response.json())
+            .then(messages => {
+                const messagesDiv = document.getElementById('messages');
+                messagesDiv.innerHTML = '';
+                
+                messages.forEach(message => {
+                    const messageDiv = document.createElement('div');
+                    messageDiv.className = \`message \${message.fromUserId === 'form-marv-user' ? 'user-message' : 
+                                                   message.fromUserId === 'anthropic-marv-robot' ? 'robot-message' : 
+                                                   message.fromUserId === 'form-marv-system' ? 'system-message' : 'user-message'}\`;
+                    messageDiv.textContent = message.content;
+                    messagesDiv.appendChild(messageDiv);
+                });
+                
+                // Scroll to bottom
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            })
+            .catch(error => console.error('Error loading messages:', error));
+        }
+        
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            const sendButton = document.getElementById('sendButton');
+            sendButton.disabled = true;
+            sendButton.textContent = 'Sending...';
+            
+            fetch(\`/public/form-marv/\${conversationId}/\${formId}/chat-messages\`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+                body: JSON.stringify({ content: message })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    input.value = '';
+                    loadMessages();
+                } else {
+                    alert('Failed to send message');
+                }
+            })
+            .catch(error => {
+                console.error('Error sending message:', error);
+                alert('Error sending message');
+            })
+            .finally(() => {
+                sendButton.disabled = false;
+                sendButton.textContent = 'Send';
+            });
+        }
+        
+        function executeDirectAction(toolName, params) {
+            const message = \`Execute \${toolName} with parameters: \${JSON.stringify(params)}\`;
+            document.getElementById('messageInput').value = message;
+            sendMessage();
+        }
+        
+        function addTemplateToInput(templateText) {
+            const input = document.getElementById('messageInput');
+            input.value = templateText;
+            input.focus();
+        }
+        
+        // Allow Enter key to send message
+        document.getElementById('messageInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+    </script>
 </body>
 </html>`;
 
