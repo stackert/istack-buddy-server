@@ -6,6 +6,8 @@ import { RobotModule } from '../robots/robot.module';
 import { ChatManagerModule } from '../chat-manager/chat-manager.module';
 import { AuthenticationModule } from '../authentication/authentication.module';
 import { LoggerModule } from '../common/logger/logger.module';
+import { AuthorizationPermissionsModule } from '../authorization-permissions/authorization-permissions.module';
+import { UserProfileModule } from '../user-profile/user-profile.module';
 
 describe('IstackBuddySlackApiController', () => {
   let controller: IstackBuddySlackApiController;
@@ -33,6 +35,8 @@ describe('IstackBuddySlackApiController', () => {
         ChatManagerModule,
         AuthenticationModule,
         LoggerModule,
+        AuthorizationPermissionsModule,
+        UserProfileModule,
       ],
       controllers: [IstackBuddySlackApiController],
       providers: [IstackBuddySlackApiService],

@@ -1,3 +1,15 @@
+// Mock the CustomLoggerService before any imports
+const mockLogger = {
+  debug: jest.fn(),
+  log: jest.fn(),
+  error: jest.fn(),
+  warn: jest.fn(),
+};
+
+jest.mock('../common/logger/custom-logger.service', () => ({
+  CustomLoggerService: jest.fn().mockImplementation(() => mockLogger),
+}));
+
 import { Test, TestingModule } from '@nestjs/testing';
 import { ChatManagerGateway } from './chat-manager.gateway';
 import { ChatManagerService } from './chat-manager.service';
@@ -9,18 +21,7 @@ import {
   MessageType,
 } from './dto/create-message.dto';
 import { Server, Socket } from 'socket.io';
-
-// Mock the CustomLoggerService
-const mockLogger = {
-  debug: jest.fn(),
-  log: jest.fn(),
-  error: jest.fn(),
-  warn: jest.fn(),
-};
-
-jest.mock('../common/logger/custom-logger.service', () => ({
-  CustomLoggerService: jest.fn().mockImplementation(() => mockLogger),
-}));
+import { RobotService } from '../robots/robot.service';
 
 describe('ChatManagerGateway', () => {
   let gateway: ChatManagerGateway;
@@ -36,6 +37,16 @@ describe('ChatManagerGateway', () => {
     setGateway: jest.fn(),
   };
 
+  const mockRobotService = {
+    getRobotByName: jest.fn(),
+    processMessage: jest.fn(),
+    getAllRobots: jest.fn(),
+    hasRobot: jest.fn(),
+    getRobotsByClass: jest.fn(),
+    registerRobot: jest.fn(),
+    unregisterRobot: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -43,6 +54,10 @@ describe('ChatManagerGateway', () => {
         {
           provide: ChatManagerService,
           useValue: mockChatManagerService,
+        },
+        {
+          provide: RobotService,
+          useValue: mockRobotService,
         },
         ConversationListSlackAppService,
         ChatConversationListService,
