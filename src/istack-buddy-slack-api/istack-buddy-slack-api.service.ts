@@ -5,6 +5,9 @@ import { v4 as uuidv4 } from 'uuid';
 import { ChatManagerService } from '../chat-manager/chat-manager.service';
 import { MessageType, UserRole } from '../chat-manager/dto/create-message.dto';
 import { TConversationTextMessageEnvelope } from '../robots/types';
+import * as jwt from 'jsonwebtoken';
+import { AuthorizationPermissionsService } from '../authorization-permissions/authorization-permissions.service';
+import { UserProfileService } from '../user-profile/user-profile.service';
 
 // Interface for storing Slack conversation mapping and callback
 interface TSlackInterfaceRecord {
@@ -38,6 +41,8 @@ export class IstackBuddySlackApiService implements OnModuleDestroy {
   public constructor(
     private readonly chatManagerService: ChatManagerService,
     private readonly robotService: RobotService,
+    private readonly authorizationPermissionsService: AuthorizationPermissionsService,
+    private readonly userProfileService: UserProfileService,
   ) {
     // Clean up old processed events and slack mappings every minute
     this.cleanupIntervalId = setInterval(() => {
@@ -113,6 +118,25 @@ export class IstackBuddySlackApiService implements OnModuleDestroy {
         return;
       }
 
+      // Handle message events (for command interception)
+      if (body.event && body.event.type === 'message') {
+        this.logger.log('Received message event');
+
+        // Create simplified event for message events
+        const simpleEvent = this.makeSimplifiedEvent(body.event);
+
+        if (this.uniqueEventList[simpleEvent.eventTs]) {
+          this.logger.log(`Duplicate event detected: ${body.event_id}`);
+          res.status(200).json({ status: 'ok' });
+          return;
+        }
+        this.uniqueEventList[simpleEvent.eventTs] = body;
+
+        await this.handleMessageEvent(body.event);
+        res.status(200).json({ status: 'ok' });
+        return;
+      }
+
       // Handle other event types (ignore for now)
       this.logger.log(
         `Received unhandled event type: ${body.event?.type || 'unknown'}`,
@@ -135,6 +159,95 @@ export class IstackBuddySlackApiService implements OnModuleDestroy {
     const simpleEvent = this.makeSimplifiedEvent(event);
 
     try {
+      // Check if this is a /marv-session command (for both conversation_start and thread_reply)
+      this.logger.log(
+        `DEBUG: Event text: "${event.text}", trimmed: "${event.text?.trim()}"`,
+      );
+
+      // Check for /marv-session command (with or without bot mention)
+      const trimmedText = event.text?.trim();
+      if (
+        trimmedText === '/marv-session' ||
+        trimmedText?.endsWith(' /marv-session')
+      ) {
+        this.logger.log('Received /marv-session command via app mention');
+
+        try {
+          // Get the existing conversation ID from the Slack thread mapping
+          const conversationId = event.thread_ts || event.ts;
+          const conversationRecord =
+            this.slackThreadToConversationMap[conversationId];
+
+          this.logger.log(`DEBUG: Slack conversationId: ${conversationId}`);
+          this.logger.log(
+            `DEBUG: Conversation record: ${JSON.stringify(conversationRecord)}`,
+          );
+          this.logger.log(
+            `DEBUG: Internal conversation ID: ${conversationRecord?.internalConversationId}`,
+          );
+
+          if (!conversationRecord) {
+            // No existing conversation found - this shouldn't happen in a thread
+            await this.sendSlackMessage(
+              'session link: http://localhost:3500/public/form-marv/_CONVERSATION_ID_UNKNOWN_/_FORM_ID_UNKNOWN_?jwtToken=_JWT_TOKEN_UNKNOWN_',
+              event.channel,
+              event.thread_ts || event.ts,
+            );
+            return;
+          }
+
+          // Create a new form-marv session
+          const tempUserId = conversationRecord.internalConversationId; // Use conversation ID as user ID
+
+          // Create a JWT token for the temporary user
+          const jwtToken = jwt.sign(
+            {
+              userId: tempUserId,
+              email: `form-marv-${Date.now()}@example.com`,
+              username: tempUserId,
+              accountType: 'TEMPORARY',
+            },
+            'istack-buddy-secret-key-2024',
+            { expiresIn: '8h' },
+          );
+
+          // Add user to permissions system
+          this.authorizationPermissionsService.addUser(
+            tempUserId,
+            ['cx-agent:form-marv:read', 'cx-agent:form-marv:write'],
+            [],
+          );
+
+          // Create temporary user profile
+          this.userProfileService.addTemporaryUser(tempUserId, {
+            email: `form-marv-${Date.now()}@example.com`,
+            username: tempUserId,
+            account_type_informal: 'TEMPORARY',
+            first_name: 'Form',
+            last_name: 'Marv',
+          });
+
+          // Generate the session URL using the internal conversation ID
+          const sessionUrl = `http://localhost:3500/public/form-marv/${conversationRecord.internalConversationId}/5375703?jwtToken=${jwtToken}`;
+
+          // Send immediate response to Slack with the session link
+          await this.sendSlackMessage(
+            `session link: ${sessionUrl}`,
+            event.channel,
+            event.thread_ts || event.ts, // Use thread_ts if available, otherwise ts
+          );
+        } catch (error) {
+          this.logger.error('Error creating marv session:', error);
+          await this.sendSlackMessage(
+            'Error creating marv session. Please try again.',
+            event.channel,
+            event.thread_ts || event.ts,
+          );
+        }
+
+        return;
+      }
+
       if (simpleEvent.eventType === 'conversation_start') {
         // IMMEDIATE ACKNOWLEDGMENT - Add thinking emoji reaction
         await this.addSlackReaction('thinking_face', event.channel, event.ts);
@@ -268,6 +381,153 @@ export class IstackBuddySlackApiService implements OnModuleDestroy {
       }
     } catch (error) {
       this.logger.error('Error handling app mention:', error);
+
+      // Send error message to Slack (in correct thread)
+      try {
+        const responseThreadTs = event.thread_ts || event.ts;
+        await this.sendSlackMessage(
+          `Sorry, I encountered an error processing your request: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          event.channel,
+          responseThreadTs,
+        );
+      } catch (sendError) {
+        this.logger.error('Failed to send error message to Slack:', sendError);
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Handle Slack message events (for command interception)
+   * Currently handles /marv-session command in thread messages only
+   */
+  private async handleMessageEvent(event: any): Promise<void> {
+    const simpleEvent = this.makeSimplifiedEvent(event);
+
+    try {
+      // Only handle thread messages (not channel messages)
+      if (simpleEvent.eventType !== 'thread_reply') {
+        this.logger.log('Ignoring non-thread message event');
+        return;
+      }
+
+      // Check if this is a /marv-session command
+      if (event.text && event.text.trim() === '/marv-session') {
+        this.logger.log('Received /marv-session command in thread');
+
+        try {
+          // Get the existing conversation ID from the Slack thread mapping
+          const conversationId = event.thread_ts;
+          const conversationRecord =
+            this.slackThreadToConversationMap[conversationId];
+
+          if (!conversationRecord) {
+            // No existing conversation found - this shouldn't happen in a thread
+            await this.sendSlackMessage(
+              'session link: http://localhost:3500/public/form-marv/_CONVERSATION_ID_UNKNOWN_/_FORM_ID_UNKNOWN_?jwtToken=_JWT_TOKEN_UNKNOWN_',
+              event.channel,
+              event.thread_ts,
+            );
+            return;
+          }
+
+          // Create a new form-marv session
+          const tempUserId = conversationRecord.internalConversationId; // Use conversation ID as user ID
+
+          // Create a JWT token for the temporary user
+          const jwtToken = jwt.sign(
+            {
+              userId: tempUserId,
+              email: `form-marv-${Date.now()}@example.com`,
+              username: tempUserId,
+              accountType: 'TEMPORARY',
+            },
+            'istack-buddy-secret-key-2024',
+            { expiresIn: '8h' },
+          );
+
+          // Add user to permissions system
+          this.authorizationPermissionsService.addUser(
+            tempUserId,
+            ['cx-agent:form-marv:read', 'cx-agent:form-marv:write'],
+            [],
+          );
+
+          // Create temporary user profile
+          this.userProfileService.addTemporaryUser(tempUserId, {
+            email: `form-marv-${Date.now()}@example.com`,
+            username: tempUserId,
+            account_type_informal: 'TEMPORARY',
+            first_name: 'Form',
+            last_name: 'Marv',
+          });
+
+          // Generate the session URL using the internal conversation ID
+          const sessionUrl = `http://localhost:3500/public/form-marv/${conversationRecord.internalConversationId}/5375703?jwtToken=${jwtToken}`;
+
+          // Send immediate response to Slack with the session link
+          await this.sendSlackMessage(
+            `session link: ${sessionUrl}`,
+            event.channel,
+            event.thread_ts,
+          );
+        } catch (error) {
+          this.logger.error('Error creating marv session:', error);
+          await this.sendSlackMessage(
+            'Error creating marv session. Please try again.',
+            event.channel,
+            event.thread_ts,
+          );
+        }
+
+        return;
+      }
+
+      // For other messages in threads, continue with normal conversation flow
+      const conversationRecord =
+        this.slackThreadToConversationMap[event.thread_ts];
+
+      if (!conversationRecord) {
+        // Unknown scenario - log and ignore
+        this.logger.log(
+          `Ignoring event - thread_ts: ${event.thread_ts}, no mapping found or unrecognized pattern`,
+        );
+        return;
+      }
+
+      // IMMEDIATE ACKNOWLEDGMENT - Add thinking emoji reaction for thread replies
+      await this.addSlackReaction('thinking_face', event.channel, event.ts);
+
+      const userMessage = await this.chatManagerService.addMessage({
+        conversationId: conversationRecord.internalConversationId,
+        fromUserId: 'cx-slack-robot', // Generic Slack robot user - actual Slack user not tracked
+        content: event.text,
+        messageType: MessageType.TEXT,
+        fromRole: UserRole.CUSTOMER,
+        toRole: UserRole.AGENT,
+      });
+
+      // --------------------
+      const robot =
+        this.robotService.getRobotByName<SlackyOpenAiAgent>(
+          'SlackyOpenAiAgent',
+        )!;
+
+      const { messageEnvelope, conversationHistory } =
+        await this.createMessageEnvelopeWithHistory({
+          conversationId: conversationRecord.internalConversationId,
+          fromUserId: event.user,
+          content: event.text,
+        });
+
+      const response = await robot.acceptMessageMultiPartResponse(
+        messageEnvelope,
+        conversationRecord.sendConversationResponseToSlack,
+        () => conversationHistory, // Pass getHistory callback
+      );
+      // ----------------------
+    } catch (error) {
+      this.logger.error('Error handling message event:', error);
 
       // Send error message to Slack (in correct thread)
       try {

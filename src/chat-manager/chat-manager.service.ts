@@ -36,6 +36,11 @@ export class ChatManagerService {
     this.gateway = gateway;
   }
 
+  // Method to get the gateway reference
+  getGateway(): any {
+    return this.gateway;
+  }
+
   /**
    * Convert Message to TConversationMessageEnvelope format for storage
    */
@@ -125,6 +130,27 @@ export class ChatManagerService {
         `Conversation ${createMessageDto.conversationId}`,
         `Auto-created conversation for ${createMessageDto.conversationId}`,
       );
+
+    // Ensure conversation metadata exists
+    if (!this.conversationMetadata[createMessageDto.conversationId]) {
+      console.log(
+        `[ChatManagerService] Creating conversation metadata for: ${createMessageDto.conversationId}`,
+      );
+      const conversation: Conversation = {
+        id: createMessageDto.conversationId,
+        participantIds: [createMessageDto.fromUserId as string],
+        participantRoles: [createMessageDto.fromRole],
+        messageCount: 0,
+        lastMessageAt: now,
+        isActive: true,
+        createdAt: now,
+        updatedAt: now,
+      };
+      this.conversationMetadata[createMessageDto.conversationId] = conversation;
+      console.log(
+        `[ChatManagerService] Conversation metadata created. Total conversations: ${Object.keys(this.conversationMetadata).length}`,
+      );
+    }
 
     const message: IConversationMessage = {
       id: messageId,
@@ -312,6 +338,13 @@ export class ChatManagerService {
     conversationId: string,
     joinRoomDto: JoinRoomDto,
   ): Promise<Participant> {
+    console.log(
+      `[ChatManagerService] Attempting to join conversation: ${conversationId}`,
+    );
+    console.log(
+      `[ChatManagerService] Available conversations:`,
+      Object.keys(this.conversationMetadata),
+    );
     const conversation = this.conversationMetadata[conversationId];
     if (!conversation) {
       throw new Error(`Conversation ${conversationId} not found`);
@@ -591,7 +624,7 @@ export class ChatManagerService {
   // Private helper methods
 
   private generateId(): string {
-    return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    return uuidv4();
   }
 
   private async updateConversationActivity(

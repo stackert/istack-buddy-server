@@ -10,6 +10,7 @@ export interface FormMarvSession {
   userId: string;
   jwtToken: string;
   formId: string;
+  conversationId: string;
   createdAt: Date;
   lastActivityAt: Date;
   expiresInMs: number;
@@ -80,6 +81,7 @@ export class FormMarvSessionService {
       userId,
       jwtToken,
       formId: sessionFormId,
+      conversationId: '', // Will be set after conversation creation
       createdAt: now,
       lastActivityAt: now,
       expiresInMs,
@@ -133,6 +135,23 @@ export class FormMarvSessionService {
     this.formMarvSessions.set(secretKey, session);
 
     return session;
+  }
+
+  /**
+   * Update an existing session
+   * @param secretKey The secret key of the session to update
+   * @param updatedSession The updated session data
+   */
+  updateSession(secretKey: string, updatedSession: FormMarvSession): void {
+    this.formMarvSessions.set(secretKey, updatedSession);
+
+    this.logger.logWithContext(
+      'log',
+      'Form-marv session updated',
+      'FormMarvSessionService.updateSession',
+      undefined,
+      { secretKey, conversationId: updatedSession.conversationId },
+    );
   }
 
   /**

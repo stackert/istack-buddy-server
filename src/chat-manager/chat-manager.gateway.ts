@@ -9,9 +9,15 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { ChatManagerService } from './chat-manager.service';
-import { CreateMessageDto, UserRole } from './dto/create-message.dto';
+import {
+  CreateMessageDto,
+  UserRole,
+  MessageType,
+} from './dto/create-message.dto';
 import { JoinRoomDto } from './dto/join-room.dto';
 import { CustomLoggerService } from '../common/logger/custom-logger.service';
+import { RobotService } from '../robots/robot.service';
+import { AnthropicMarv } from '../robots/AnthropicMarv';
 
 @WebSocketGateway({
   cors: {
@@ -27,7 +33,10 @@ export class ChatManagerGateway
 
   private readonly logger = new CustomLoggerService('ChatManagerGateway');
 
-  constructor(private readonly chatManagerService: ChatManagerService) {
+  constructor(
+    private readonly chatManagerService: ChatManagerService,
+    private readonly robotService: RobotService,
+  ) {
     // Set the gateway reference in the service so it can broadcast messages
     this.chatManagerService.setGateway(this);
   }
@@ -122,6 +131,19 @@ export class ChatManagerGateway
     @MessageBody() createMessageDto: CreateMessageDto,
     @ConnectedSocket() client: Socket,
   ) {
+    // Debug logging for message received
+    this.logger.debug('WebSocket message received', {
+      conversationId: createMessageDto.conversationId,
+      fromUserId: createMessageDto.fromUserId,
+      fromRole: createMessageDto.fromRole,
+      toRole: createMessageDto.toRole,
+      messageType: createMessageDto.messageType,
+      content:
+        createMessageDto.content?.substring(0, 100) +
+        (createMessageDto.content?.length > 100 ? '...' : ''),
+      clientId: client.id,
+    });
+
     const message =
       await this.chatManagerService.createMessage(createMessageDto);
 
@@ -129,6 +151,85 @@ export class ChatManagerGateway
     this.server
       .to(createMessageDto.conversationId)
       .emit('new_message', message);
+
+    // Send to robot if message is to robot
+    if (createMessageDto.toRole === 'robot') {
+      const robot =
+        this.robotService.getRobotByName<AnthropicMarv>('AnthropicMarv');
+      if (robot) {
+        const messageEnvelope = {
+          messageId: `msg-${Date.now()}`,
+          requestOrResponse: 'request' as const,
+          envelopePayload: {
+            messageId: `msg-${Date.now()}`,
+            author_role: 'user',
+            content: {
+              type: 'text/plain' as const,
+              payload: createMessageDto.content,
+            },
+            created_at: new Date().toISOString(),
+            estimated_token_count: 50,
+          },
+        };
+
+        // Stream robot response and collect full response
+        let fullResponse = '';
+        console.log(
+          `Starting streaming response for conversation: ${createMessageDto.conversationId}`,
+        );
+
+        await robot.acceptMessageStreamResponse(
+          messageEnvelope,
+          async (chunk: string) => {
+            console.log(`Received chunk from robot: "${chunk}"`);
+            if (chunk) {
+              fullResponse += chunk;
+              console.log(
+                `Broadcasting chunk to conversation ${createMessageDto.conversationId}: "${chunk}"`,
+              );
+              // Broadcast each chunk to all clients in the conversation
+              this.broadcastToConversation(
+                createMessageDto.conversationId,
+                'robot_chunk',
+                {
+                  chunk,
+                },
+              );
+              console.log(`Chunk broadcasted successfully`);
+            } else {
+              console.log(`Received null/empty chunk, skipping`);
+            }
+          },
+        );
+
+        console.log(`Streaming complete. Full response: "${fullResponse}"`);
+
+        if (fullResponse) {
+          const robotMessage = await this.chatManagerService.createMessage({
+            conversationId: createMessageDto.conversationId,
+            fromUserId: 'anthropic-marv-robot',
+            content: fullResponse,
+            messageType: MessageType.ROBOT,
+            fromRole: UserRole.ROBOT,
+            toRole: UserRole.AGENT,
+          });
+
+          // Broadcast robot response to all users in the conversation
+          this.server
+            .to(createMessageDto.conversationId)
+            .emit('new_message', robotMessage);
+
+          // Broadcast completion
+          this.broadcastToConversation(
+            createMessageDto.conversationId,
+            'robot_complete',
+            {
+              messageId: robotMessage.id,
+            },
+          );
+        }
+      }
+    }
 
     return message;
   }
@@ -215,7 +316,12 @@ export class ChatManagerGateway
 
   // Method to broadcast to specific conversation
   broadcastToConversation(conversationId: string, event: string, data: any) {
+    console.log(
+      `Gateway: Broadcasting ${event} to conversation ${conversationId}:`,
+      data,
+    );
     this.server.to(conversationId).emit(event, data);
+    console.log(`Gateway: Broadcast completed`);
   }
 
   // Method to broadcast to dashboard listeners
