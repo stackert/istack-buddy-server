@@ -5,6 +5,8 @@ import { RobotService } from '../robots/robot.service';
 import { ConversationListSlackAppService } from '../ConversationLists/ConversationListSlackAppService';
 import { ChatConversationListService } from '../ConversationLists/ChatConversationListService';
 import { UserRole, MessageType } from '../chat-manager/dto/create-message.dto';
+import { AuthorizationPermissionsService } from '../authorization-permissions/authorization-permissions.service';
+import { UserProfileService } from '../user-profile/user-profile.service';
 
 describe('IstackBuddySlackApiService', () => {
   let service: IstackBuddySlackApiService;
@@ -68,6 +70,17 @@ describe('IstackBuddySlackApiService', () => {
       getRobotByName: jest.fn().mockReturnValue(mockRobot),
     };
 
+    const mockAuthorizationPermissionsService = {
+      evaluatePermission: jest.fn(),
+      getUserEffectivePermissionChain: jest.fn(),
+    };
+
+    const mockUserProfileService = {
+      getUserProfile: jest.fn(),
+      createUserProfile: jest.fn(),
+      updateUserProfile: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         IstackBuddySlackApiService,
@@ -77,6 +90,14 @@ describe('IstackBuddySlackApiService', () => {
         {
           provide: RobotService,
           useValue: mockRobotService,
+        },
+        {
+          provide: AuthorizationPermissionsService,
+          useValue: mockAuthorizationPermissionsService,
+        },
+        {
+          provide: UserProfileService,
+          useValue: mockUserProfileService,
         },
       ],
     }).compile();

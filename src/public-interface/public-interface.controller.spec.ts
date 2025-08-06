@@ -9,6 +9,9 @@ import { CustomLoggerService } from '../common/logger/custom-logger.service';
 import { Reflector } from '@nestjs/core';
 import * as fs from 'fs';
 import * as path from 'path';
+import { ChatManagerService } from '../chat-manager/chat-manager.service';
+import { RobotService } from '../robots/robot.service';
+import { UserProfileService } from '../user-profile/user-profile.service';
 
 // Mock fs and path modules
 jest.mock('fs');
@@ -42,6 +45,32 @@ describe('PublicInterfaceController', () => {
       canActivate: jest.fn().mockReturnValue(true),
     };
 
+    const mockChatManagerService = {
+      createMessage: jest.fn(),
+      joinConversation: jest.fn(),
+      leaveConversation: jest.fn(),
+      getLastMessages: jest.fn(),
+      setGateway: jest.fn(),
+      getMessages: jest.fn().mockResolvedValue([]),
+      addMessage: jest.fn().mockResolvedValue({ id: 'msg_123_abc123def' }),
+    };
+
+    const mockRobotService = {
+      getRobotByName: jest.fn(),
+      processMessage: jest.fn(),
+      getAllRobots: jest.fn(),
+      hasRobot: jest.fn(),
+      getRobotsByClass: jest.fn(),
+      registerRobot: jest.fn(),
+      unregisterRobot: jest.fn(),
+    };
+
+    const mockUserProfileService = {
+      getUserProfile: jest.fn(),
+      createUserProfile: jest.fn(),
+      updateUserProfile: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       controllers: [PublicInterfaceController],
       providers: [
@@ -56,6 +85,18 @@ describe('PublicInterfaceController', () => {
         {
           provide: AuthorizationPermissionsService,
           useValue: mockAuthPermissionsService,
+        },
+        {
+          provide: ChatManagerService,
+          useValue: mockChatManagerService,
+        },
+        {
+          provide: RobotService,
+          useValue: mockRobotService,
+        },
+        {
+          provide: UserProfileService,
+          useValue: mockUserProfileService,
         },
         {
           provide: CustomLoggerService,
@@ -166,6 +207,7 @@ describe('PublicInterfaceController', () => {
         userId: 'form-marv-temp-123',
         jwtToken: mockJwtToken,
         formId: mockFormId,
+        conversationId: 'test-conversation-id',
         createdAt: new Date(),
         lastActivityAt: new Date(),
         expiresInMs: 24 * 60 * 60 * 1000,
@@ -255,6 +297,7 @@ describe('PublicInterfaceController', () => {
       userId: 'form-marv-temp-123',
       jwtToken: 'test-jwt-token',
       formId: '123456',
+      conversationId: 'test-conversation-id',
       createdAt: new Date(),
       lastActivityAt: new Date(),
       expiresInMs: 24 * 60 * 60 * 1000,
