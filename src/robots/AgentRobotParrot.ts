@@ -118,4 +118,62 @@ export class AgentRobotParrot extends AbstractRobotAgent {
 
     return Promise.resolve(immediateResponseEnvelope);
   }
+
+  public acceptMessageStreamResponse(
+    messageEnvelope: TConversationTextMessageEnvelope,
+    chunkCallback: (chunk: string) => void,
+  ): Promise<void> {
+    const recvMessage: TConversationTextMessage =
+      messageEnvelope.envelopePayload;
+
+    const randomNumber = Math.floor(Math.random() * 10000);
+    const response = `(${randomNumber}) ${recvMessage.content.payload}`;
+
+    console.log(
+      `AgentRobotParrot: Starting streaming for message: "${recvMessage.content.payload}"`,
+    );
+    console.log(`AgentRobotParrot: Full response will be: "${response}"`);
+
+    // Break response into 5 chunks of similar size
+    const chunkSize = Math.ceil(response.length / 5);
+    const chunks: string[] = [];
+
+    for (let i = 0; i < response.length; i += chunkSize) {
+      chunks.push(response.slice(i, i + chunkSize));
+    }
+
+    console.log(`AgentRobotParrot: Created ${chunks.length} chunks:`, chunks);
+
+    return new Promise<void>((resolve) => {
+      let chunkIndex = 0;
+
+      const interval = setInterval(() => {
+        try {
+          if (chunkIndex < chunks.length) {
+            console.log(
+              `AgentRobotParrot: Sending chunk ${chunkIndex + 1}/${chunks.length}: "${chunks[chunkIndex]}"`,
+            );
+            chunkCallback(chunks[chunkIndex]);
+            chunkIndex++;
+          } else {
+            // Send null after all chunks are sent
+            console.log(`AgentRobotParrot: Sending final null chunk`);
+            chunkCallback(null as any);
+            clearInterval(interval);
+            console.log(`AgentRobotParrot: Streaming complete`);
+            resolve();
+          }
+        } catch (error) {
+          console.log(`AgentRobotParrot: Error in chunk callback:`, error);
+          // Continue even if callback throws an error
+          if (chunkIndex < chunks.length) {
+            chunkIndex++;
+          } else {
+            clearInterval(interval);
+            resolve();
+          }
+        }
+      }, 500);
+    });
+  }
 }
