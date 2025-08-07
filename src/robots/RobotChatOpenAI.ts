@@ -1,45 +1,77 @@
-import { AbstractRobotChat } from './AbstractRobotChat';
-import {
-  TConversationTextMessageEnvelope,
-  TConversationTextMessage,
-} from './types';
 import { OpenAI } from 'openai';
-import { CustomLoggerService } from '../common/logger/custom-logger.service';
-const OPEN_AI_API_KEY = '_OPEN_AI_KEY_';
-// OpenAI.Responses.Tool[]
-type OpenAiTool = OpenAI.Responses.Tool;
-const tools: OpenAiTool[] = [
-  {
-    type: 'function',
-    name: 'get_weather',
-    strict: true, // false -> best effort, true -> adhere to the schema.
-    // I assume it will abort if not able to determine function/parameters to high degree of certainty.
-    description: 'Get current temperature for a given location.',
-    parameters: {
-      type: 'object',
-      properties: {
-        location: {
-          type: 'string',
-          description: 'City and country e.g. Bogotá, Colombia',
-        },
-      },
-      required: ['location'],
-      additionalProperties: false,
-    },
-  },
-];
+import { UserRole } from '../chat-manager/dto/create-message.dto';
+import { IConversationMessage } from '../chat-manager/interfaces/message.interface';
+import { AbstractRobotChat } from './AbstractRobotChat';
+import { marvToolSet } from './tool-definitions/marv';
+import { TConversationTextMessageEnvelope } from './types';
 
-type TOpenAIFunctionCallRequest = {
-  id: string; // "fc_6856bd53d0288191b5dde94d741e04f503d0b60e2bffb674",
-  type: 'function_call'; // could be others  "function_call",
-  status: 'completed'; // seems odd but that is how it returns from openAi
-  arguments: string; // "{\"location\":\"Paris, France\"}",
-  call_id: string; // "call_UQIk1KA44wK7rtourKjyvxuG",
-  name: string; // "get_weather",
+// Type for tracking function calls during streaming
+type StreamingFunctionCall = {
+  index: number;
+  id: string;
+  type: 'function';
+  function: {
+    name: string;
+    arguments: string;
+  };
+} | null;
+
+const noOp = (...args: any[]) => {};
+const log = (...args: any[]) => {
+  console.log(...args);
 };
 
+// Factory for creating message envelope with updated content
+// Type for streaming callbacks
+export interface IStreamingCallbacks {
+  onChunkReceived: (chunk: string) => void;
+  onStreamStart?: (message: TConversationTextMessageEnvelope) => void;
+  onStreamFinished?: (message: TConversationTextMessageEnvelope) => void;
+  onError?: (error: any) => void;
+}
+
+// Factory for creating message envelope with updated content
+const createMessageEnvelopeWithContent = (
+  originalEnvelope: TConversationTextMessageEnvelope,
+  newContent: string,
+): TConversationTextMessageEnvelope => ({
+  ...originalEnvelope,
+  envelopePayload: {
+    ...originalEnvelope.envelopePayload,
+    content: {
+      ...originalEnvelope.envelopePayload.content,
+      payload: newContent,
+    },
+  },
+});
+
+const fakeLogger = {
+  debug: noOp,
+  log: noOp,
+  error: noOp,
+  warn: noOp,
+  verbose: noOp,
+};
+
+// OpenAI API key will be read from environment at runtime
+// Convert Marv tools to OpenAI format
+const tools: OpenAI.Chat.Completions.ChatCompletionTool[] =
+  marvToolSet.toolDefinitions.map((tool) => ({
+    type: 'function' as const,
+    function: {
+      name: tool.name,
+      description: tool.description,
+      parameters: tool.input_schema,
+    },
+  }));
+
 class RobotChatOpenAI extends AbstractRobotChat {
-  private readonly logger = new CustomLoggerService('RobotChatOpenAI');
+  // logger = new CustomLoggerService('RobotChatOpenAI');
+  logger = fakeLogger;
+
+  constructor() {
+    super();
+  }
 
   public readonly version: string = '1.0.0-test-dev';
 
@@ -57,11 +89,172 @@ class RobotChatOpenAI extends AbstractRobotChat {
     return this.constructor.name;
   }
 
+  /**
+   * Accepts a message and streams the response in real-time.
+   *
+   * @TMC_ We may want to allow options parameter ({disableStreaming: true}) to control streaming behavior
+   */
   public async acceptMessageStreamResponse(
     messageEnvelope: TConversationTextMessageEnvelope,
-    chunkCallback: (chunk: string) => void,
+    callbacks: IStreamingCallbacks,
+    getHistory?: () => IConversationMessage[],
   ): Promise<void> {
-    return Promise.resolve();
+    const userMessage = messageEnvelope.envelopePayload.content.payload;
+    let accumulatedContent = '';
+
+    try {
+      const openAiClient = this.getClient();
+      // Call onStreamStart with initial message
+      if (callbacks.onStreamStart) {
+        callbacks.onStreamStart(messageEnvelope);
+      }
+
+      // Build conversation history if provided
+      const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
+        // _TMC_ Why is this necessary?
+        // This should come from the class definition.
+        // see: src/robots/SlackyAnthropicAgent.ts as example
+        {
+          role: 'system',
+          content:
+            'You are a helpful assistant with access to tools. When asked about forms, use the tools to get information. Always use tools when they would be helpful.',
+        },
+      ];
+
+      if (getHistory) {
+        const history = getHistory();
+        this.logger.debug('Building conversation history', {
+          historyLength: history.length,
+        });
+
+        // Convert history to OpenAI format
+        for (const msg of history) {
+          if (msg.fromRole === UserRole.CUSTOMER) {
+            messages.push({ role: 'user', content: msg.content });
+          } else if (msg.fromRole === UserRole.ROBOT) {
+            messages.push({ role: 'assistant', content: msg.content });
+          }
+        }
+      }
+
+      // Add current message
+      messages.push({ role: 'user', content: userMessage });
+
+      const stream = await openAiClient.chat.completions.create({
+        model: this.LLModelName,
+        messages,
+        tools,
+        stream: true,
+      });
+
+      let currentFunctionCall: StreamingFunctionCall | null = null;
+
+      for await (const chunk of stream) {
+        const delta = chunk.choices[0]?.delta;
+
+        // Handle function calls
+        if (delta?.tool_calls) {
+          for (const toolCall of delta.tool_calls) {
+            // Initialize function call
+            if (
+              !currentFunctionCall ||
+              currentFunctionCall.index !== toolCall.index
+            ) {
+              currentFunctionCall = {
+                index: toolCall.index,
+                id: toolCall.id || '',
+                type: toolCall.type || 'function',
+                function: {
+                  name: toolCall.function?.name || '',
+                  arguments: toolCall.function?.arguments || '',
+                },
+              };
+            }
+
+            // Accumulate function call data
+            if (currentFunctionCall && toolCall.function?.name) {
+              currentFunctionCall.function.name = toolCall.function.name;
+            }
+            if (currentFunctionCall && toolCall.function?.arguments) {
+              currentFunctionCall.function.arguments +=
+                toolCall.function.arguments;
+            }
+          }
+        }
+
+        // Handle content (text)
+        const content = delta?.content;
+        if (content) {
+          accumulatedContent += content;
+          callbacks.onChunkReceived(content);
+        }
+
+        // Handle function call completion
+        if (
+          chunk.choices[0]?.finish_reason === 'tool_calls' &&
+          currentFunctionCall
+        ) {
+          try {
+            // Execute the function call
+            const functionName = currentFunctionCall.function.name;
+            const functionArgs = JSON.parse(
+              currentFunctionCall.function.arguments,
+            );
+
+            this.logger.debug('Executing function call', {
+              functionName,
+              functionArgs,
+            });
+
+            const toolResult = await this.makeToolCall(
+              functionName,
+              functionArgs,
+            );
+
+            // Stream the function result in chunks
+            const functionResult = `\n[Function call: ${functionName}] Result: ${toolResult}\n`;
+            accumulatedContent += functionResult;
+            const chunkSize = 50; // Break into smaller chunks
+            for (let i = 0; i < functionResult.length; i += chunkSize) {
+              // _TMC_ Why is this necessary?
+              // Why are we 'simulating' streaming
+              // I don't know there is a limit on chunk size?
+              // If there is good reason to intentionally chunk the response
+              // then keep it as is.  Otherwise send a larch chunk.
+              const chunk = functionResult.slice(i, i + chunkSize);
+              callbacks.onChunkReceived(chunk);
+              // Small delay to simulate streaming
+              await new Promise((resolve) => setTimeout(resolve, 10));
+            }
+          } catch (error) {
+            this.logger.error('Error executing function call', {
+              error,
+              currentFunctionCall,
+            });
+            const errorMessage = `\n[Error executing function call: ${error.message}]\n`;
+            accumulatedContent += errorMessage;
+            callbacks.onChunkReceived(errorMessage);
+          }
+
+          // Reset for next function call
+          currentFunctionCall = null;
+        }
+      }
+    } catch (error) {
+      this.logger.error('Error in streaming response', { error });
+      const errorMessage = `Error: ${error.message}`;
+      accumulatedContent += errorMessage;
+      callbacks.onChunkReceived(errorMessage);
+    } finally {
+      // Call onStreamFinished with the complete message
+      if (callbacks.onStreamFinished) {
+        const finishedMessage = createMessageEnvelopeWithContent(
+          messageEnvelope,
+          accumulatedContent,
+        );
+        callbacks.onStreamFinished(finishedMessage);
+      }
+    }
   }
 
   public async acceptMessageImmediateResponse(
@@ -70,131 +263,91 @@ class RobotChatOpenAI extends AbstractRobotChat {
     return Promise.resolve(inboundMessage);
   }
 
+  /**
+   * @TMC_ New implementation using acceptMessageStreamResponse
+   * Calls acceptMessageStreamResponse and sends immediate response, then promises to send second message when streaming completes
+   */
   public async acceptMessageMultiPartResponse(
     messageEnvelope: TConversationTextMessageEnvelope,
     delayedMessageCallback: (
       response: TConversationTextMessageEnvelope,
     ) => void,
   ): Promise<TConversationTextMessageEnvelope> {
-    // Placeholder implementation for OpenAI chat robot
+    // Send immediate response first
     const immediateResponse =
       await this.acceptMessageImmediateResponse(messageEnvelope);
 
-    // Send delayed response after processing
-    setTimeout(() => {
-      const delayedRespMessage: TConversationTextMessage = {
-        ...messageEnvelope.envelopePayload,
-        content: {
-          type: 'text/plain',
-          payload: `OpenAI processing complete for: ${messageEnvelope.envelopePayload.content.payload}`,
-        },
-        author_role: 'assistant',
-        created_at: new Date().toISOString(),
-      };
-
-      const delayedMessage: TConversationTextMessageEnvelope = {
-        messageId: `response-${Date.now()}-delayed`,
-        requestOrResponse: 'response',
-        envelopePayload: delayedRespMessage,
-      };
-
+    // Start streaming in background and promise to send delayed message when complete
+    this.acceptMessageStreamResponse(messageEnvelope, {
+      onChunkReceived: noOp,
+      onStreamStart: noOp,
+      onStreamFinished: (finishedMessage) => {
+        // Send the complete response as delayed message
+        if (
+          delayedMessageCallback &&
+          typeof delayedMessageCallback === 'function'
+        ) {
+          delayedMessageCallback(finishedMessage);
+        }
+      },
+      onError: (error) => {
+        // Handle error in delayed message
+        const errorMessage = createMessageEnvelopeWithContent(
+          messageEnvelope,
+          `Error in streaming response: ${error.message}`,
+        );
+        if (
+          delayedMessageCallback &&
+          typeof delayedMessageCallback === 'function'
+        ) {
+          delayedMessageCallback(errorMessage);
+        }
+      },
+    }).catch((error) => {
+      // Handle any errors in the streaming process
+      const errorMessage = createMessageEnvelopeWithContent(
+        messageEnvelope,
+        `Error in streaming response: ${error.message}`,
+      );
       if (
         delayedMessageCallback &&
         typeof delayedMessageCallback === 'function'
       ) {
-        delayedMessageCallback(delayedMessage);
+        delayedMessageCallback(errorMessage);
       }
-    }, 1000);
+    });
 
     return immediateResponse;
   }
 
-  public async sendTestMessageToRobot(
-    inboundMessage: TConversationTextMessageEnvelope,
-    chunkCallback: (chunk: string) => void,
-  ): Promise<TConversationTextMessageEnvelope> {
-    const openAiClient = this.getClient();
-    const responseToCallTools = await openAiClient.responses.create({
-      model: 'gpt-4.1',
-      input: [
-        { role: 'user', content: 'What is the weather like in Paris today?' },
-      ],
-      tools,
-    });
-
-    const functionCallResponses: any[] = [];
-    responseToCallTools.output.forEach(
-      (toolCall: TOpenAIFunctionCallRequest) => {
-        const {
-          type: responseType,
-          name: functionName,
-          arguments: functionArgs,
-          call_id,
-        } = toolCall;
-
-        this.logger.debug('OpenAI function call', {
-          responseType,
-          functionName,
-          functionArgs,
-        });
-        const toolResult = this.makeToolCall(functionName, functionArgs);
-        functionCallResponses.push(toolCall);
-        functionCallResponses.push({
-          //   ...toolCall,
-          output: toolResult,
-          call_id: toolCall.call_id,
-          //   id: toolCall.id,
-          //   name: toolCall.name,
-          //   status: toolCall.status,
-          //   arguments: toolCall.arguments,
-          type: 'function_call_output',
-        });
-      },
-    );
-
-    const response2 = await openAiClient.responses.create({
-      model: 'gpt-4.1',
-      input: functionCallResponses,
-      tools,
-      store: true,
-    });
-
-    this.logger.debug('OpenAI response', { response2 });
-    // if (toolCall) {
-    //   const toolName = toolCall.function.name;
-    //   const toolArgs = JSON.parse(toolCall.function.arguments);
-    //   const toolResult = this.makeToolCall(toolName, toolArgs);
-    //   console.log('toolResult', toolResult);
-    // }
-
-    return Promise.resolve(inboundMessage);
-  }
-
-  private robot_getWeather(toolArgs: any): string {
-    const theWeather = `
-        Warm with light breeze somewhere I am sure.
-        
-        But I have no idea about your location '${toolArgs?.location}'.
-
-        toolArgs: '${JSON.stringify(toolArgs)}'
-
-    
-    `;
-    return theWeather;
-  }
-  private makeToolCall(toolName: string, toolArgs: any) {
-    switch (toolName) {
-      case 'get_weather':
-      case 'getWeather':
-        return this.robot_getWeather(toolArgs);
-      default:
-        return `Failed to recognize the tool call: '${toolName}'.`;
+  private async makeToolCall(toolName: string, toolArgs: any): Promise<string> {
+    this.logger.debug(`Executing tool: ${toolName}`, { toolArgs });
+    try {
+      const result = marvToolSet.executeToolCall(toolName, toolArgs);
+      const finalResult = typeof result === 'string' ? result : await result;
+      this.logger.debug(`Tool ${toolName} executed successfully`, {
+        resultType: typeof finalResult,
+      });
+      const jsonResult = JSON.stringify(finalResult, null, 2);
+      this.logger.debug(`Complete tool result`, { result: jsonResult });
+      return jsonResult;
+    } catch (error) {
+      this.logger.error(`Tool ${toolName} execution failed`, error);
+      return `Error executing tool ${toolName}: ${error instanceof Error ? error.message : 'Unknown error'}`;
     }
   }
 
   private getClient(): OpenAI {
+    const apiKey = process.env.OPENAI_API_KEY;
+
+    if (!apiKey || apiKey === '_OPEN_AI_KEY_') {
+      throw new Error(
+        `OPENAI_API_KEY environment variable is required but not set. Please set the OPENAI_API_KEY environment variable with your OpenAI API key.`,
+      );
+    }
+
     return new OpenAI({
-      apiKey: OPEN_AI_API_KEY,
+      apiKey: apiKey,
     });
   }
 }

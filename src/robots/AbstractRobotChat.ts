@@ -1,6 +1,7 @@
 import { AbstractRobot } from './AbstractRobot';
 import type { TConversationTextMessageEnvelope } from './types';
 import type { IConversationMessage } from '../chat-manager/interfaces/message.interface';
+import type { IStreamingCallbacks } from './RobotChatOpenAI';
 
 /**
  * Abstract chat robot class that extends the base robot functionality
@@ -10,7 +11,7 @@ export abstract class AbstractRobotChat extends AbstractRobot {
   // streaming response
   public abstract acceptMessageStreamResponse(
     messageEnvelope: TConversationTextMessageEnvelope,
-    chunkCallback: (chunk: string) => void,
+    callbacks: IStreamingCallbacks,
     getHistory?: () => IConversationMessage[],
   ): Promise<void>;
 
