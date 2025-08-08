@@ -551,95 +551,64 @@ export class PublicInterfaceController {
         toRole: UserRole.AGENT,
       });
 
-      // B) Send to robot (AnthropicMarv)
-      const robot =
-        this.robotService.getRobotByName<AnthropicMarv>('AnthropicMarv');
-      if (robot) {
-        const messageEnvelope = {
-          messageId: `msg-${Date.now()}`,
-          requestOrResponse: 'request' as const,
-          envelopePayload: {
-            messageId: `msg-${Date.now()}`,
-            author_role: 'user',
-            content: {
-              type: 'text/plain' as const,
-              payload: messageData.content || messageData.message,
-            },
-            created_at: new Date().toISOString(),
-            estimated_token_count: 50,
-          },
-        };
-
-        // Get conversation history for context
-        const conversationHistory =
-          await this.chatManagerService.getLastMessages(
-            conversationId,
-            50, // Get last 50 messages for context
-          );
-
-        // C) Stream robot response via WebSocket and collect full response
-        let fullResponse = '';
-        console.log(
-          `Starting streaming response for conversation: ${conversationId}`,
-        );
-        await robot.acceptMessageStreamResponse(
-          messageEnvelope,
-          {
-            onChunkReceived: async (chunk: string) => {
-              console.log(`Received chunk from robot: "${chunk}"`);
-              if (chunk) {
-                fullResponse += chunk;
-                console.log(
-                  `Broadcasting chunk to conversation ${conversationId}: "${chunk}"`,
-                );
-                // Broadcast each chunk to all clients in the conversation
-                if (this.chatManagerService.getGateway()) {
-                  this.chatManagerService
-                    .getGateway()
-                    .broadcastToConversation(conversationId, 'robot_chunk', {
-                      chunk,
-                    });
-                  console.log(`Chunk broadcasted successfully`);
-                } else {
-                  console.log(`No gateway available for broadcasting`);
-                }
-              } else {
-                console.log(`Received null/empty chunk, skipping`);
-              }
-            },
-            onStreamStart: (message) => {
-              console.log('Stream started');
-            },
-            onStreamFinished: (message) => {
-              console.log('Stream finished');
-            },
-            onError: (error) => {
-              console.error('Stream error:', error);
-            },
-          },
-          () => conversationHistory, // Pass conversation history
-        );
-        console.log(`Streaming complete. Full response: "${fullResponse}"`);
-
-        // D) Add complete robot response to conversation
-        if (fullResponse) {
-          const robotMessage = await this.chatManagerService.addMessage({
-            conversationId: conversationId,
-            fromUserId: 'anthropic-marv-robot',
-            content: fullResponse,
-            messageType: MessageType.ROBOT,
-            fromRole: UserRole.ROBOT,
-            toRole: UserRole.CUSTOMER,
-          });
-
-          // E) Broadcast completion
-          if (this.chatManagerService.getGateway()) {
-            this.chatManagerService
-              .getGateway()
-              .broadcastToConversation(conversationId, 'robot_complete', {
-                messageId: robotMessage.id,
-              });
+      // C) Stream robot response via WebSocket and collect full response
+      let fullResponse = '';
+      console.log(
+        `Starting streaming response for conversation: ${conversationId}`,
+      );
+      await this.chatManagerService.handleRobotStreamingResponse(
+        conversationId,
+        'AnthropicMarv',
+        messageData.content || messageData.message,
+        async (chunk: string) => {
+          console.log(`Received chunk from robot: "${chunk}"`);
+          if (chunk) {
+            fullResponse += chunk;
+            console.log(
+              `Broadcasting chunk to conversation ${conversationId}: "${chunk}"`,
+            );
+            // Broadcast each chunk to all clients in the conversation
+            if (this.chatManagerService.getGateway()) {
+              this.chatManagerService
+                .getGateway()
+                .broadcastToConversation(conversationId, 'robot_chunk', {
+                  chunk,
+                });
+              console.log(`Chunk broadcasted successfully`);
+            } else {
+              console.log(`No gateway available for broadcasting`);
+            }
+          } else {
+            console.log(`Received null/empty chunk, skipping`);
           }
+        },
+        (fullResponse: string) => {
+          console.log('Stream finished');
+        },
+        (error) => {
+          console.error('Stream error:', error);
+        },
+      );
+      console.log(`Streaming complete. Full response: "${fullResponse}"`);
+
+      // D) Add complete robot response to conversation
+      if (fullResponse) {
+        const robotMessage = await this.chatManagerService.addMessage({
+          conversationId: conversationId,
+          fromUserId: 'anthropic-marv-robot',
+          content: fullResponse,
+          messageType: MessageType.ROBOT,
+          fromRole: UserRole.ROBOT,
+          toRole: UserRole.CUSTOMER,
+        });
+
+        // E) Broadcast completion
+        if (this.chatManagerService.getGateway()) {
+          this.chatManagerService
+            .getGateway()
+            .broadcastToConversation(conversationId, 'robot_complete', {
+              messageId: robotMessage.id,
+            });
         }
       }
 

@@ -1,7 +1,9 @@
 import { AbstractRobot } from './AbstractRobot';
-import type { TConversationTextMessageEnvelope } from './types';
+import type {
+  TConversationTextMessageEnvelope,
+  IStreamingCallbacks,
+} from './types';
 import type { IConversationMessage } from '../chat-manager/interfaces/message.interface';
-import type { IStreamingCallbacks } from './RobotChatOpenAI';
 
 /**
  * Abstract chat robot class that extends the base robot functionality

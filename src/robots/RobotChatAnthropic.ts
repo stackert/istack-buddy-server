@@ -1,20 +1,16 @@
 import { AbstractRobotChat } from './AbstractRobotChat';
-import type { TConversationTextMessageEnvelope } from './types';
+import type {
+  TConversationTextMessageEnvelope,
+  IStreamingCallbacks,
+} from './types';
 import { IConversationMessage } from '../chat-manager/interfaces/message.interface';
 import { UserRole } from '../chat-manager/dto/create-message.dto';
 import Anthropic from '@anthropic-ai/sdk';
 import { marvToolSet } from './tool-definitions/marv';
 import { CustomLoggerService } from '../common/logger/custom-logger.service';
 
-// Helper functions and interfaces for the streaming pattern
+// Helper functions for the streaming pattern
 const noOp = (...args: any[]) => {};
-
-export interface IStreamingCallbacks {
-  onChunkReceived: (chunk: string) => void;
-  onStreamStart?: (message: TConversationTextMessageEnvelope) => void;
-  onStreamFinished?: (message: TConversationTextMessageEnvelope) => void;
-  onError?: (error: any) => void;
-}
 
 // Factory for creating message envelope with updated content
 const createMessageEnvelopeWithContent = (
@@ -227,7 +223,7 @@ Please provide helpful, accurate, and detailed responses to user questions. If y
           chunk.delta.type === 'text_delta'
         ) {
           accumulatedContent += chunk.delta.text;
-          callbacks.onChunkReceived(chunk.delta.text);
+          callbacks.onStreamChunkReceived(chunk.delta.text);
         } else if (
           chunk.type === 'content_block_delta' &&
           chunk.delta.type === 'input_json_delta'
@@ -251,40 +247,26 @@ Please provide helpful, accurate, and detailed responses to user questions. If y
             try {
               toolArgs = JSON.parse(toolArgs);
             } catch (parseError) {
-              callbacks.onChunkReceived(
+              callbacks.onStreamChunkReceived(
                 `\n\nError parsing tool arguments: ${parseError instanceof Error ? parseError.message : 'Parse error'}`,
               );
               continue;
             }
           }
           const toolResult = await this.executeToolCall(toolUse.name, toolArgs);
-          callbacks.onChunkReceived(`\n\n${toolResult}`);
+          callbacks.onStreamChunkReceived(`\n\n${toolResult}`);
           accumulatedContent += `\n\n${toolResult}`;
         } catch (error) {
-          callbacks.onChunkReceived(
+          callbacks.onStreamChunkReceived(
             `\n\nError executing tool ${toolUse.name}: ${error instanceof Error ? error.message : 'Unknown error'}`,
           );
           accumulatedContent += `\n\nError executing tool ${toolUse.name}: ${error instanceof Error ? error.message : 'Unknown error'}`;
         }
       }
 
-      // Call onStreamFinished if provided
-      if (callbacks.onStreamFinished) {
-        const finishedMessage: TConversationTextMessageEnvelope = {
-          messageId: `response-${Date.now()}`,
-          requestOrResponse: 'response',
-          envelopePayload: {
-            messageId: `msg-${Date.now()}`,
-            author_role: 'assistant',
-            content: {
-              type: 'text/plain',
-              payload: accumulatedContent,
-            },
-            created_at: new Date().toISOString(),
-            estimated_token_count: this.estimateTokens(accumulatedContent),
-          },
-        };
-        callbacks.onStreamFinished(finishedMessage);
+      // Call onStreamFinished with minimal data
+      if (typeof callbacks.onStreamFinished === 'function') {
+        callbacks.onStreamFinished(accumulatedContent, 'assistant');
       }
     } catch (error) {
       const errorMessage =
@@ -294,8 +276,8 @@ Please provide helpful, accurate, and detailed responses to user questions. If y
       if (callbacks.onError) {
         callbacks.onError(error);
       } else {
-        // Fallback to onChunkReceived for error
-        callbacks.onChunkReceived(`Error: ${errorMessage}`);
+        // Fallback to onStreamChunkReceived for error
+        callbacks.onStreamChunkReceived(`Error: ${errorMessage}`);
       }
     }
   }

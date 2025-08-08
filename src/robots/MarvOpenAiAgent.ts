@@ -1,19 +1,15 @@
 import { AbstractRobotChat } from './AbstractRobotChat';
-import type { TConversationTextMessageEnvelope } from './types';
+import type {
+  TConversationTextMessageEnvelope,
+  IStreamingCallbacks,
+} from './types';
 import { IConversationMessage } from '../chat-manager/interfaces/message.interface';
 import { OpenAI } from 'openai';
 import { marvToolSet } from './tool-definitions/marv';
 import { CustomLoggerService } from '../common/logger/custom-logger.service';
 
-// Helper functions and interfaces for the streaming pattern
+// Helper functions for the streaming pattern
 const noOp = (...args: any[]) => {};
-
-export interface IStreamingCallbacks {
-  onChunkReceived: (chunk: string) => void;
-  onStreamStart?: (message: TConversationTextMessageEnvelope) => void;
-  onStreamFinished?: (message: TConversationTextMessageEnvelope) => void;
-  onError?: (error: any) => void;
-}
 
 // Factory for creating message envelope with updated content
 const createMessageEnvelopeWithContent = (
@@ -218,27 +214,13 @@ IMPORTANT: Never use emojis, emoticons, or any graphical symbols in your respons
         const content = chunk.choices[0]?.delta?.content;
         if (content) {
           accumulatedContent += content;
-          callbacks.onChunkReceived(content);
+          callbacks.onStreamChunkReceived(content);
         }
       }
 
-      // Call onStreamFinished if provided
-      if (callbacks.onStreamFinished) {
-        const finishedMessage: TConversationTextMessageEnvelope = {
-          messageId: `response-${Date.now()}`,
-          requestOrResponse: 'response',
-          envelopePayload: {
-            messageId: `msg-${Date.now()}`,
-            author_role: 'assistant',
-            content: {
-              type: 'text/plain',
-              payload: accumulatedContent,
-            },
-            created_at: new Date().toISOString(),
-            estimated_token_count: this.estimateTokens(accumulatedContent),
-          },
-        };
-        callbacks.onStreamFinished(finishedMessage);
+      // Call onStreamFinished with minimal data
+      if (typeof callbacks.onStreamFinished === 'function') {
+        callbacks.onStreamFinished(accumulatedContent, 'assistant');
       }
     } catch (error) {
       const errorMessage =
@@ -248,8 +230,8 @@ IMPORTANT: Never use emojis, emoticons, or any graphical symbols in your respons
       if (callbacks.onError) {
         callbacks.onError(error);
       } else {
-        // Fallback to onChunkReceived for error
-        callbacks.onChunkReceived(
+        // Fallback to onStreamChunkReceived for error
+        callbacks.onStreamChunkReceived(
           `Error in streaming response: ${errorMessage}`,
         );
       }
@@ -292,12 +274,11 @@ IMPORTANT: Never use emojis, emoticons, or any graphical symbols in your respons
       }
 
       // Create response envelope
-      // we need to verify where/who/how messageId are generated.  Is it the responsibility of the robot? or conversation manager.
       const responseEnvelope: TConversationTextMessageEnvelope = {
-        messageId: `response-${Date.now()}`,
+        messageId: '', // Will be set by conversation manager
         requestOrResponse: 'response',
         envelopePayload: {
-          messageId: `msg-${Date.now()}`,
+          messageId: '', // Will be set by conversation manager
           author_role: 'assistant',
           content: {
             type: 'text/plain',
@@ -314,12 +295,11 @@ IMPORTANT: Never use emojis, emoticons, or any graphical symbols in your respons
         error instanceof Error ? error.message : 'Unknown error occurred';
 
       // Return error response envelope
-      // we need to verify where/who/how messageId are generated.  Is it the responsibility of the robot? or conversation manager.
       const errorResponse: TConversationTextMessageEnvelope = {
-        messageId: `error-${Date.now()}`,
+        messageId: '', // Will be set by conversation manager
         requestOrResponse: 'response',
         envelopePayload: {
-          messageId: `error-msg-${Date.now()}`,
+          messageId: '', // Will be set by conversation manager
           author_role: 'assistant',
           content: {
             type: 'text/plain',

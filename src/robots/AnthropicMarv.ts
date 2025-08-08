@@ -1,19 +1,15 @@
 import { AbstractRobotChat } from './AbstractRobotChat';
-import type { TConversationTextMessageEnvelope } from './types';
+import type {
+  TConversationTextMessageEnvelope,
+  IStreamingCallbacks,
+} from './types';
 import { IConversationMessage } from '../chat-manager/interfaces/message.interface';
 import { UserRole } from '../chat-manager/dto/create-message.dto';
 import Anthropic from '@anthropic-ai/sdk';
 import { marvToolSet } from './tool-definitions/marv';
 
-// Helper functions and interfaces for the streaming pattern
+// Helper functions for the streaming pattern
 const noOp = (...args: any[]) => {};
-
-export interface IStreamingCallbacks {
-  onChunkReceived: (chunk: string) => void;
-  onStreamStart?: (message: TConversationTextMessageEnvelope) => void;
-  onStreamFinished?: (message: TConversationTextMessageEnvelope) => void;
-  onError?: (error: any) => void;
-}
 
 // Factory for creating message envelope with updated content
 const createMessageEnvelopeWithContent = (
@@ -221,7 +217,7 @@ Your goal is to help users efficiently manage their Formstack forms through thes
           chunk.delta.type === 'text_delta'
         ) {
           accumulatedContent += chunk.delta.text;
-          callbacks.onChunkReceived(chunk.delta.text);
+          callbacks.onStreamChunkReceived(chunk.delta.text);
         } else if (
           chunk.type === 'content_block_delta' &&
           chunk.delta.type === 'input_json_delta'
@@ -245,40 +241,26 @@ Your goal is to help users efficiently manage their Formstack forms through thes
             try {
               toolArgs = JSON.parse(toolArgs);
             } catch (parseError) {
-              callbacks.onChunkReceived(
+              callbacks.onStreamChunkReceived(
                 `\n\nError parsing tool arguments: ${parseError instanceof Error ? parseError.message : 'Parse error'}`,
               );
               continue;
             }
           }
           const toolResult = await this.executeToolCall(toolUse.name, toolArgs);
-          callbacks.onChunkReceived(`\n\n${toolResult}`);
+          callbacks.onStreamChunkReceived(`\n\n${toolResult}`);
           accumulatedContent += `\n\n${toolResult}`;
         } catch (error) {
-          callbacks.onChunkReceived(
+          callbacks.onStreamChunkReceived(
             `\n\nError executing tool ${toolUse.name}: ${error instanceof Error ? error.message : 'Unknown error'}`,
           );
           accumulatedContent += `\n\nError executing tool ${toolUse.name}: ${error instanceof Error ? error.message : 'Unknown error'}`;
         }
       }
 
-      // Call onStreamFinished if provided
-      if (callbacks.onStreamFinished) {
-        const finishedMessage: TConversationTextMessageEnvelope = {
-          messageId: `response-${Date.now()}`,
-          requestOrResponse: 'response',
-          envelopePayload: {
-            messageId: `msg-${Date.now()}`,
-            author_role: 'assistant',
-            content: {
-              type: 'text/plain',
-              payload: accumulatedContent,
-            },
-            created_at: new Date().toISOString(),
-            estimated_token_count: this.estimateTokens(accumulatedContent),
-          },
-        };
-        callbacks.onStreamFinished(finishedMessage);
+      // Call onStreamFinished with minimal data
+      if (typeof callbacks.onStreamFinished === 'function') {
+        callbacks.onStreamFinished(accumulatedContent, 'assistant');
       }
     } catch (error) {
       const errorMessage =
@@ -288,8 +270,8 @@ Your goal is to help users efficiently manage their Formstack forms through thes
       if (callbacks.onError) {
         callbacks.onError(error);
       } else {
-        // Fallback to onChunkReceived for error
-        callbacks.onChunkReceived(
+        // Fallback to onStreamChunkReceived for error
+        callbacks.onStreamChunkReceived(
           `Error in streaming response: ${errorMessage}`,
         );
       }
@@ -311,26 +293,34 @@ Your goal is to help users efficiently manage their Formstack forms through thes
       await this.acceptMessageStreamResponse(
         messageEnvelope,
         {
-          onChunkReceived: (chunk: string) => {
+          onStreamChunkReceived: (chunk: string) => {
             if (chunk !== null) {
               accumulatedContent += chunk;
             }
           },
-          onStreamStart: noOp,
-          onStreamFinished: (message) => {
-            finalResponse = message;
+          onStreamStart: (message) => {
+            // Handle stream start if needed
           },
-          onError: noOp,
+          onStreamFinished: (content: string, authorRole: string) => {
+            // Store the content for return
+            accumulatedContent = content;
+          },
+          onFullMessageReceived: (content: string, authorRole: string) => {
+            // Handle full message if needed
+          },
+          onError: (error) => {
+            throw error;
+          },
         },
         getHistory,
       );
 
-      // Create the final response envelope
+      // Create the final response envelope with minimal data
       finalResponse = {
-        messageId: `response-${Date.now()}`,
+        messageId: '', // Will be set by conversation manager
         requestOrResponse: 'response',
         envelopePayload: {
-          messageId: `msg-${Date.now()}`,
+          messageId: '', // Will be set by conversation manager
           author_role: 'assistant',
           content: {
             type: 'text/plain',
@@ -346,10 +336,10 @@ Your goal is to help users efficiently manage their Formstack forms through thes
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
       const errorResponse: TConversationTextMessageEnvelope = {
-        messageId: `error-${Date.now()}`,
+        messageId: '', // Will be set by conversation manager
         requestOrResponse: 'response',
         envelopePayload: {
-          messageId: `error-msg-${Date.now()}`,
+          messageId: '', // Will be set by conversation manager
           author_role: 'assistant',
           content: {
             type: 'text/plain',
@@ -385,9 +375,28 @@ Your goal is to help users efficiently manage their Formstack forms through thes
     this.acceptMessageStreamResponse(
       messageEnvelope,
       {
-        onChunkReceived: noOp,
-        onStreamStart: noOp,
-        onStreamFinished: (finishedMessage) => {
+        onStreamChunkReceived: (chunk: string) => {
+          // Handle chunks if needed
+        },
+        onStreamStart: (message) => {
+          // Handle stream start if needed
+        },
+        onStreamFinished: (content: string, authorRole: string) => {
+          // Create a minimal message envelope for the callback
+          const finishedMessage: TConversationTextMessageEnvelope = {
+            messageId: '', // Will be set by conversation manager
+            requestOrResponse: 'response',
+            envelopePayload: {
+              messageId: '', // Will be set by conversation manager
+              author_role: authorRole as any,
+              content: {
+                type: 'text/plain',
+                payload: content,
+              },
+              created_at: new Date().toISOString(),
+              estimated_token_count: this.estimateTokens(content),
+            },
+          };
           // Send the complete response as delayed message
           if (
             delayedMessageCallback &&
@@ -395,6 +404,9 @@ Your goal is to help users efficiently manage their Formstack forms through thes
           ) {
             delayedMessageCallback(finishedMessage);
           }
+        },
+        onFullMessageReceived: (content: string, authorRole: string) => {
+          // Handle full message if needed
         },
         onError: (error) => {
           // Handle error in delayed message

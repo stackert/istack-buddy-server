@@ -15,3 +15,18 @@ type TAnthropicIstackToolSet = {
 };
 
 export type { TAnthropicIstackToolSet };
+
+/**
+ * Streaming callbacks interface for robot chat responses
+ * All handlers are required and should be implemented by the conversation manager
+ * Callbacks receive minimal necessary data - conversation manager handles message IDs, timestamps, etc.
+ */
+export interface IStreamingCallbacks {
+  onStreamChunkReceived: (chunk: string) => void;
+  onStreamStart: (
+    message: import('../ConversationLists/types').TConversationTextMessageEnvelope,
+  ) => void;
+  onStreamFinished: (content: string, authorRole: string) => void;
+  onFullMessageReceived: (content: string, authorRole: string) => void;
+  onError: (error: any) => void;
+}

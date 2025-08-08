@@ -16,8 +16,6 @@ import {
 } from './dto/create-message.dto';
 import { JoinRoomDto } from './dto/join-room.dto';
 import { CustomLoggerService } from '../common/logger/custom-logger.service';
-import { RobotService } from '../robots/robot.service';
-import { AnthropicMarv } from '../robots/AnthropicMarv';
 
 @WebSocketGateway({
   cors: {
@@ -33,10 +31,7 @@ export class ChatManagerGateway
 
   private readonly logger = new CustomLoggerService('ChatManagerGateway');
 
-  constructor(
-    private readonly chatManagerService: ChatManagerService,
-    private readonly robotService: RobotService,
-  ) {
+  constructor(private readonly chatManagerService: ChatManagerService) {
     // Set the gateway reference in the service so it can broadcast messages
     this.chatManagerService.setGateway(this);
   }
@@ -154,99 +149,69 @@ export class ChatManagerGateway
 
     // Send to robot if message is to robot
     if (createMessageDto.toRole === 'robot') {
-      const robot =
-        this.robotService.getRobotByName<AnthropicMarv>('AnthropicMarv');
-      if (robot) {
-        const messageEnvelope = {
-          messageId: `msg-${Date.now()}`,
-          requestOrResponse: 'request' as const,
-          envelopePayload: {
-            messageId: `msg-${Date.now()}`,
-            author_role: 'user',
-            content: {
-              type: 'text/plain' as const,
-              payload: createMessageDto.content,
-            },
-            created_at: new Date().toISOString(),
-            estimated_token_count: 50,
-          },
-        };
+      // Stream robot response and collect full response
+      let fullResponse = '';
+      console.log(
+        `Starting streaming response for conversation: ${createMessageDto.conversationId}`,
+      );
 
-        // Get conversation history for context
-        const conversationHistory =
-          await this.chatManagerService.getLastMessages(
-            createMessageDto.conversationId,
-            50, // Get last 50 messages for context
-          );
+      await this.chatManagerService.handleRobotStreamingResponse(
+        createMessageDto.conversationId,
+        'AnthropicMarv',
+        createMessageDto.content,
+        async (chunk: string) => {
+          console.log(`Received chunk from robot: "${chunk}"`);
+          if (chunk) {
+            fullResponse += chunk;
+            console.log(
+              `Broadcasting chunk to conversation ${createMessageDto.conversationId}: "${chunk}"`,
+            );
+            // Broadcast each chunk to all clients in the conversation
+            this.broadcastToConversation(
+              createMessageDto.conversationId,
+              'robot_chunk',
+              {
+                chunk,
+              },
+            );
+            console.log(`Chunk broadcasted successfully`);
+          } else {
+            console.log(`Received null/empty chunk, skipping`);
+          }
+        },
+        (fullResponse: string) => {
+          console.log('Stream finished');
+        },
+        (error) => {
+          console.error('Stream error:', error);
+        },
+      );
 
-        // Stream robot response and collect full response
-        let fullResponse = '';
-        console.log(
-          `Starting streaming response for conversation: ${createMessageDto.conversationId}`,
-        );
+      console.log(`Streaming complete. Full response: "${fullResponse}"`);
 
-        await robot.acceptMessageStreamResponse(
-          messageEnvelope,
+      if (fullResponse) {
+        const robotMessage = await this.chatManagerService.createMessage({
+          conversationId: createMessageDto.conversationId,
+          fromUserId: 'anthropic-marv-robot',
+          content: fullResponse,
+          messageType: MessageType.ROBOT,
+          fromRole: UserRole.ROBOT,
+          toRole: UserRole.AGENT,
+        });
+
+        // Broadcast robot response to all users in the conversation
+        this.server
+          .to(createMessageDto.conversationId)
+          .emit('new_message', robotMessage);
+
+        // Broadcast completion
+        this.broadcastToConversation(
+          createMessageDto.conversationId,
+          'robot_complete',
           {
-            onChunkReceived: async (chunk: string) => {
-              console.log(`Received chunk from robot: "${chunk}"`);
-              if (chunk) {
-                fullResponse += chunk;
-                console.log(
-                  `Broadcasting chunk to conversation ${createMessageDto.conversationId}: "${chunk}"`,
-                );
-                // Broadcast each chunk to all clients in the conversation
-                this.broadcastToConversation(
-                  createMessageDto.conversationId,
-                  'robot_chunk',
-                  {
-                    chunk,
-                  },
-                );
-                console.log(`Chunk broadcasted successfully`);
-              } else {
-                console.log(`Received null/empty chunk, skipping`);
-              }
-            },
-            onStreamStart: (message) => {
-              console.log('Stream started');
-            },
-            onStreamFinished: (message) => {
-              console.log('Stream finished');
-            },
-            onError: (error) => {
-              console.error('Stream error:', error);
-            },
+            messageId: robotMessage.id,
           },
-          () => conversationHistory, // Pass conversation history
         );
-
-        console.log(`Streaming complete. Full response: "${fullResponse}"`);
-
-        if (fullResponse) {
-          const robotMessage = await this.chatManagerService.createMessage({
-            conversationId: createMessageDto.conversationId,
-            fromUserId: 'anthropic-marv-robot',
-            content: fullResponse,
-            messageType: MessageType.ROBOT,
-            fromRole: UserRole.ROBOT,
-            toRole: UserRole.AGENT,
-          });
-
-          // Broadcast robot response to all users in the conversation
-          this.server
-            .to(createMessageDto.conversationId)
-            .emit('new_message', robotMessage);
-
-          // Broadcast completion
-          this.broadcastToConversation(
-            createMessageDto.conversationId,
-            'robot_complete',
-            {
-              messageId: robotMessage.id,
-            },
-          );
-        }
       }
     }
 

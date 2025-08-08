@@ -2,18 +2,12 @@ import { AbstractRobotChat } from './AbstractRobotChat';
 import type {
   TConversationTextMessageEnvelope,
   TConversationTextMessage,
+  IStreamingCallbacks,
 } from './types';
 import { IConversationMessage } from '../chat-manager/interfaces/message.interface';
 
-// Helper functions and interfaces for the streaming pattern
+// Helper functions for the streaming pattern
 const noOp = (...args: any[]) => {};
-
-export interface IStreamingCallbacks {
-  onChunkReceived: (chunk: string) => void;
-  onStreamStart?: (message: TConversationTextMessageEnvelope) => void;
-  onStreamFinished?: (message: TConversationTextMessageEnvelope) => void;
-  onError?: (error: any) => void;
-}
 
 // Factory for creating message envelope with updated content
 const createMessageEnvelopeWithContent = (
@@ -71,13 +65,16 @@ export class ChatRobotParrot extends AbstractRobotChat {
   ): Promise<TConversationTextMessageEnvelope> {
     const recvMessage: TConversationTextMessage =
       messageEnvelope.envelopePayload;
-    const respMessage: TConversationTextMessage = { ...recvMessage };
+    const respMessage: TConversationTextMessage = {
+      ...recvMessage,
+      messageId: '', // Will be set by conversation manager
+    };
     const randomNumber = Math.floor(Math.random() * 10000);
 
     respMessage.content.payload = `(${randomNumber}) ${recvMessage.content.payload}`;
 
     const responseEnvelope: TConversationTextMessageEnvelope = {
-      messageId: `response-${Date.now()}`,
+      messageId: '', // Will be set by conversation manager
       requestOrResponse: 'response',
       envelopePayload: respMessage,
     };
@@ -102,6 +99,7 @@ export class ChatRobotParrot extends AbstractRobotChat {
     setTimeout(() => {
       const delayedRespMessage: TConversationTextMessage = {
         ...messageEnvelope.envelopePayload,
+        messageId: '', // Will be set by conversation manager
         content: {
           type: 'text/plain',
           payload: `Follow-up chat response for: ${messageEnvelope.envelopePayload.content.payload}`,
@@ -111,7 +109,7 @@ export class ChatRobotParrot extends AbstractRobotChat {
       };
 
       const delayedMessage: TConversationTextMessageEnvelope = {
-        messageId: `response-${Date.now()}-delayed`,
+        messageId: '', // Will be set by conversation manager
         requestOrResponse: 'response',
         envelopePayload: delayedRespMessage,
       };
@@ -139,7 +137,7 @@ export class ChatRobotParrot extends AbstractRobotChat {
     const response = `(${randomNumber}) ${recvMessage.content.payload}`;
 
     // Call onStreamStart if provided
-    if (callbacks.onStreamStart) {
+    if (typeof callbacks.onStreamStart === 'function') {
       callbacks.onStreamStart(messageEnvelope);
     }
 
@@ -157,30 +155,16 @@ export class ChatRobotParrot extends AbstractRobotChat {
       const interval = setInterval(() => {
         try {
           if (chunkIndex < chunks.length) {
-            callbacks.onChunkReceived(chunks[chunkIndex]);
+            if (typeof callbacks.onStreamChunkReceived === 'function') {
+              callbacks.onStreamChunkReceived(chunks[chunkIndex]);
+            }
             chunkIndex++;
           } else {
-            // Send null after all chunks are sent
-            callbacks.onChunkReceived(null as any);
             clearInterval(interval);
 
-            // Call onStreamFinished if provided
-            if (callbacks.onStreamFinished) {
-              const finishedMessage: TConversationTextMessageEnvelope = {
-                messageId: `response-${Date.now()}`,
-                requestOrResponse: 'response',
-                envelopePayload: {
-                  messageId: `msg-${Date.now()}`,
-                  author_role: 'assistant',
-                  content: {
-                    type: 'text/plain',
-                    payload: response,
-                  },
-                  created_at: new Date().toISOString(),
-                  estimated_token_count: this.estimateTokens(response),
-                },
-              };
-              callbacks.onStreamFinished(finishedMessage);
+            // Call onStreamFinished with minimal data
+            if (typeof callbacks.onStreamFinished === 'function') {
+              callbacks.onStreamFinished(response, 'assistant');
             }
             resolve();
           }

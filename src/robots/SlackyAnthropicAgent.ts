@@ -1,5 +1,8 @@
 import { AbstractRobotChat } from './AbstractRobotChat';
-import type { TConversationTextMessageEnvelope } from './types';
+import type {
+  TConversationTextMessageEnvelope,
+  IStreamingCallbacks,
+} from './types';
 import { IConversationMessage } from '../chat-manager/interfaces/message.interface';
 import { UserRole } from '../chat-manager/dto/create-message.dto';
 import Anthropic from '@anthropic-ai/sdk';
@@ -12,15 +15,8 @@ import {
 import { createCompositeToolSet } from './tool-definitions/toolCatalog';
 import { CustomLoggerService } from '../common/logger/custom-logger.service';
 
-// Helper functions and interfaces for the streaming pattern
+// Helper functions for the streaming pattern
 const noOp = (...args: any[]) => {};
-
-export interface IStreamingCallbacks {
-  onChunkReceived: (chunk: string) => void;
-  onStreamStart?: (message: TConversationTextMessageEnvelope) => void;
-  onStreamFinished?: (message: TConversationTextMessageEnvelope) => void;
-  onError?: (error: any) => void;
-}
 
 // Factory for creating message envelope with updated content
 const createMessageEnvelopeWithContent = (
@@ -388,25 +384,11 @@ I'm designed to help you solve Forms Core issues quickly and effectively. Just a
       // If no tools were used, stream the response directly
       if (toolUses.length === 0) {
         accumulatedContent += responseText;
-        callbacks.onChunkReceived(responseText);
+        callbacks.onStreamChunkReceived(responseText);
 
-        // Call onStreamFinished if provided
-        if (callbacks.onStreamFinished) {
-          const finishedMessage: TConversationTextMessageEnvelope = {
-            messageId: `response-${Date.now()}`,
-            requestOrResponse: 'response',
-            envelopePayload: {
-              messageId: `msg-${Date.now()}`,
-              author_role: 'assistant',
-              content: {
-                type: 'text/plain',
-                payload: accumulatedContent,
-              },
-              created_at: new Date().toISOString(),
-              estimated_token_count: this.estimateTokens(accumulatedContent),
-            },
-          };
-          callbacks.onStreamFinished(finishedMessage);
+        // Call onStreamFinished with minimal data
+        if (typeof callbacks.onStreamFinished === 'function') {
+          callbacks.onStreamFinished(accumulatedContent, 'assistant');
         }
         return;
       }
@@ -414,7 +396,7 @@ I'm designed to help you solve Forms Core issues quickly and effectively. Just a
       // Stream initial response if any
       if (responseText) {
         accumulatedContent += responseText;
-        callbacks.onChunkReceived(responseText);
+        callbacks.onStreamChunkReceived(responseText);
       }
 
       // Execute tools and collect results
@@ -424,7 +406,7 @@ I'm designed to help you solve Forms Core issues quickly and effectively. Just a
         try {
           const executingMsg = `\n\nExecuting ${toolUse.name}...`;
           accumulatedContent += executingMsg;
-          callbacks.onChunkReceived(executingMsg);
+          callbacks.onStreamChunkReceived(executingMsg);
 
           const toolResult = await this.executeToolCall(
             toolUse.name,
@@ -434,7 +416,7 @@ I'm designed to help you solve Forms Core issues quickly and effectively. Just a
           // Stream raw tool result for user visibility
           const toolResultMsg = `\n\n**Tool: ${toolUse.name}**\n${toolResult}`;
           accumulatedContent += toolResultMsg;
-          callbacks.onChunkReceived(toolResultMsg);
+          callbacks.onStreamChunkReceived(toolResultMsg);
 
           // Collect for Claude processing
           toolResultMessages.push({
@@ -448,7 +430,7 @@ I'm designed to help you solve Forms Core issues quickly and effectively. Just a
           // Stream raw error for user visibility
           const errorMsgFormatted = `\n\n**Tool Error: ${toolUse.name}**\n${errorMsg}`;
           accumulatedContent += errorMsgFormatted;
-          callbacks.onChunkReceived(errorMsgFormatted);
+          callbacks.onStreamChunkReceived(errorMsgFormatted);
 
           // Collect for Claude processing
           toolResultMessages.push({
@@ -463,7 +445,7 @@ I'm designed to help you solve Forms Core issues quickly and effectively. Just a
       // Stream Claude's analysis header
       const analysisHeader = '\n\n---\n\n**Analysis:**\n';
       accumulatedContent += analysisHeader;
-      callbacks.onChunkReceived(analysisHeader);
+      callbacks.onStreamChunkReceived(analysisHeader);
 
       // Stream follow-up request to Claude with tool results
       const finalStream = await client.messages.create({
@@ -490,38 +472,24 @@ I'm designed to help you solve Forms Core issues quickly and effectively. Just a
           chunk.delta.type === 'text_delta'
         ) {
           accumulatedContent += chunk.delta.text;
-          callbacks.onChunkReceived(chunk.delta.text);
+          callbacks.onStreamChunkReceived(chunk.delta.text);
         }
       }
 
-      // Call onStreamFinished if provided
-      if (callbacks.onStreamFinished) {
-        const finishedMessage: TConversationTextMessageEnvelope = {
-          messageId: `response-${Date.now()}`,
-          requestOrResponse: 'response',
-          envelopePayload: {
-            messageId: `msg-${Date.now()}`,
-            author_role: 'assistant',
-            content: {
-              type: 'text/plain',
-              payload: accumulatedContent,
-            },
-            created_at: new Date().toISOString(),
-            estimated_token_count: this.estimateTokens(accumulatedContent),
-          },
-        };
-        callbacks.onStreamFinished(finishedMessage);
+      // Call onStreamFinished with minimal data
+      if (typeof callbacks.onStreamFinished === 'function') {
+        callbacks.onStreamFinished(accumulatedContent, 'assistant');
       }
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
 
       // Call onError if provided
-      if (callbacks.onError) {
+      if (typeof callbacks.onError === 'function') {
         callbacks.onError(error);
       } else {
-        // Fallback to onChunkReceived for error
-        callbacks.onChunkReceived(
+        // Fallback to onStreamChunkReceived for error
+        callbacks.onStreamChunkReceived(
           `Error in streaming response: ${errorMessage}`,
         );
       }

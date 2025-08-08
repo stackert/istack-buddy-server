@@ -18,6 +18,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { ConversationListSlackAppService } from '../ConversationLists/ConversationListSlackAppService';
 import { ChatConversationListService } from '../ConversationLists/ChatConversationListService';
 import { TConversationTextMessageEnvelope } from '../ConversationLists/types';
+import { RobotService } from '../robots/robot.service';
+import { IStreamingCallbacks } from '../robots/types';
 
 @Injectable()
 export class ChatManagerService {
@@ -29,7 +31,95 @@ export class ChatManagerService {
   constructor(
     private readonly conversationListService: ConversationListSlackAppService,
     private readonly chatConversationListService: ChatConversationListService,
+    private readonly robotService: RobotService,
   ) {}
+
+  /**
+   * Handle robot streaming response for a conversation
+   * This is the proper way to handle robot communication - through the conversation manager
+   */
+  async handleRobotStreamingResponse(
+    conversationId: string,
+    robotName: string,
+    userMessage: string,
+    onChunkReceived?: (chunk: string) => void,
+    onStreamComplete?: (fullResponse: string) => void,
+    onError?: (error: any) => void,
+  ): Promise<void> {
+    try {
+      // Get the robot
+      const robot = this.robotService.getRobotByName(robotName);
+      if (!robot) {
+        throw new Error(`Robot ${robotName} not found`);
+      }
+
+      // Create message envelope
+      const messageEnvelope: TConversationTextMessageEnvelope = {
+        messageId: '', // Will be set by conversation manager
+        requestOrResponse: 'request',
+        envelopePayload: {
+          messageId: '', // Will be set by conversation manager
+          author_role: 'user',
+          content: {
+            type: 'text/plain',
+            payload: userMessage,
+          },
+          created_at: new Date().toISOString(),
+          estimated_token_count: Math.ceil(userMessage.length / 4),
+        },
+      };
+
+      // Get conversation history for context
+      const conversationHistory = await this.getLastMessages(
+        conversationId,
+        50,
+      );
+
+      // Create streaming callbacks
+      const callbacks: IStreamingCallbacks = {
+        onStreamChunkReceived: (chunk: string) => {
+          if (chunk && onChunkReceived) {
+            onChunkReceived(chunk);
+          }
+        },
+        onStreamStart: (message) => {
+          // Handle stream start if needed
+        },
+        onStreamFinished: (content: string, authorRole: string) => {
+          if (onStreamComplete) {
+            onStreamComplete(content);
+          }
+        },
+        onFullMessageReceived: (content: string, authorRole: string) => {
+          // Handle full message if needed
+        },
+        onError: (error: any) => {
+          if (onError) {
+            onError(error);
+          }
+        },
+      };
+
+      // Call robot streaming response
+      if ('acceptMessageStreamResponse' in robot) {
+        await (robot as any).acceptMessageStreamResponse(
+          messageEnvelope,
+          callbacks,
+          () => conversationHistory,
+        );
+      } else {
+        throw new Error(
+          `Robot ${robotName} does not support streaming responses`,
+        );
+      }
+    } catch (error) {
+      if (onError) {
+        onError(error);
+      } else {
+        throw error;
+      }
+    }
+  }
 
   // Method to set the gateway reference (called by the gateway)
   setGateway(gateway: any) {

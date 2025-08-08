@@ -3,7 +3,7 @@ import { UserRole } from '../chat-manager/dto/create-message.dto';
 import { IConversationMessage } from '../chat-manager/interfaces/message.interface';
 import { AbstractRobotChat } from './AbstractRobotChat';
 import { marvToolSet } from './tool-definitions/marv';
-import { TConversationTextMessageEnvelope } from './types';
+import { TConversationTextMessageEnvelope, IStreamingCallbacks } from './types';
 
 // Type for tracking function calls during streaming
 type StreamingFunctionCall = {
@@ -22,13 +22,6 @@ const log = (...args: any[]) => {
 };
 
 // Factory for creating message envelope with updated content
-// Type for streaming callbacks
-export interface IStreamingCallbacks {
-  onChunkReceived: (chunk: string) => void;
-  onStreamStart?: (message: TConversationTextMessageEnvelope) => void;
-  onStreamFinished?: (message: TConversationTextMessageEnvelope) => void;
-  onError?: (error: any) => void;
-}
 
 // Factory for creating message envelope with updated content
 const createMessageEnvelopeWithContent = (
@@ -186,7 +179,7 @@ class RobotChatOpenAI extends AbstractRobotChat {
         const content = delta?.content;
         if (content) {
           accumulatedContent += content;
-          callbacks.onChunkReceived(content);
+          callbacks.onStreamChunkReceived(content);
         }
 
         // Handle function call completion
@@ -222,7 +215,7 @@ class RobotChatOpenAI extends AbstractRobotChat {
               // If there is good reason to intentionally chunk the response
               // then keep it as is.  Otherwise send a larch chunk.
               const chunk = functionResult.slice(i, i + chunkSize);
-              callbacks.onChunkReceived(chunk);
+              callbacks.onStreamChunkReceived(chunk);
               // Small delay to simulate streaming
               await new Promise((resolve) => setTimeout(resolve, 10));
             }
@@ -233,7 +226,7 @@ class RobotChatOpenAI extends AbstractRobotChat {
             });
             const errorMessage = `\n[Error executing function call: ${error.message}]\n`;
             accumulatedContent += errorMessage;
-            callbacks.onChunkReceived(errorMessage);
+            callbacks.onStreamChunkReceived(errorMessage);
           }
 
           // Reset for next function call
@@ -244,15 +237,11 @@ class RobotChatOpenAI extends AbstractRobotChat {
       this.logger.error('Error in streaming response', { error });
       const errorMessage = `Error: ${error.message}`;
       accumulatedContent += errorMessage;
-      callbacks.onChunkReceived(errorMessage);
+      callbacks.onStreamChunkReceived(errorMessage);
     } finally {
-      // Call onStreamFinished with the complete message
-      if (callbacks.onStreamFinished) {
-        const finishedMessage = createMessageEnvelopeWithContent(
-          messageEnvelope,
-          accumulatedContent,
-        );
-        callbacks.onStreamFinished(finishedMessage);
+      // Call onStreamFinished with minimal data
+      if (typeof callbacks.onStreamFinished === 'function') {
+        callbacks.onStreamFinished(accumulatedContent, 'assistant');
       }
     }
   }
@@ -279,9 +268,28 @@ class RobotChatOpenAI extends AbstractRobotChat {
 
     // Start streaming in background and promise to send delayed message when complete
     this.acceptMessageStreamResponse(messageEnvelope, {
-      onChunkReceived: noOp,
-      onStreamStart: noOp,
-      onStreamFinished: (finishedMessage) => {
+      onStreamChunkReceived: (chunk: string) => {
+        // Handle chunks if needed
+      },
+      onStreamStart: (message) => {
+        // Handle stream start if needed
+      },
+      onStreamFinished: (content: string, authorRole: string) => {
+        // Create a minimal message envelope for the callback
+        const finishedMessage: TConversationTextMessageEnvelope = {
+          messageId: '', // Will be set by conversation manager
+          requestOrResponse: 'response',
+          envelopePayload: {
+            messageId: '', // Will be set by conversation manager
+            author_role: authorRole as any,
+            content: {
+              type: 'text/plain',
+              payload: content,
+            },
+            created_at: new Date().toISOString(),
+            estimated_token_count: this.estimateTokens(content),
+          },
+        };
         // Send the complete response as delayed message
         if (
           delayedMessageCallback &&
@@ -289,6 +297,9 @@ class RobotChatOpenAI extends AbstractRobotChat {
         ) {
           delayedMessageCallback(finishedMessage);
         }
+      },
+      onFullMessageReceived: (content: string, authorRole: string) => {
+        // Handle full message if needed
       },
       onError: (error) => {
         // Handle error in delayed message

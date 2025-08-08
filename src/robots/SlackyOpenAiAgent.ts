@@ -1,5 +1,8 @@
 import { AbstractRobotChat } from './AbstractRobotChat';
-import type { TConversationTextMessageEnvelope } from './types';
+import type {
+  TConversationTextMessageEnvelope,
+  IStreamingCallbacks,
+} from './types';
 import { IConversationMessage } from '../chat-manager/interfaces/message.interface';
 import { UserRole } from '../chat-manager/dto/create-message.dto';
 import { OpenAI } from 'openai';
@@ -12,15 +15,8 @@ import {
 import { createCompositeToolSet } from './tool-definitions/toolCatalog';
 import { CustomLoggerService } from '../common/logger/custom-logger.service';
 
-// Helper functions and interfaces for the streaming pattern
+// Helper functions for the streaming pattern
 const noOp = (...args: any[]) => {};
-
-export interface IStreamingCallbacks {
-  onChunkReceived: (chunk: string) => void;
-  onStreamStart?: (message: TConversationTextMessageEnvelope) => void;
-  onStreamFinished?: (message: TConversationTextMessageEnvelope) => void;
-  onError?: (error: any) => void;
-}
 
 // Factory for creating message envelope with updated content
 const createMessageEnvelopeWithContent = (
@@ -352,38 +348,24 @@ Need help? Just ask!`;
         const content = chunk.choices[0]?.delta?.content;
         if (content) {
           accumulatedContent += content;
-          callbacks.onChunkReceived(content);
+          callbacks.onStreamChunkReceived(content);
         }
       }
 
-      // Call onStreamFinished if provided
-      if (callbacks.onStreamFinished) {
-        const finishedMessage: TConversationTextMessageEnvelope = {
-          messageId: `response-${Date.now()}`,
-          requestOrResponse: 'response',
-          envelopePayload: {
-            messageId: `msg-${Date.now()}`,
-            author_role: 'assistant',
-            content: {
-              type: 'text/plain',
-              payload: accumulatedContent,
-            },
-            created_at: new Date().toISOString(),
-            estimated_token_count: this.estimateTokens(accumulatedContent),
-          },
-        };
-        callbacks.onStreamFinished(finishedMessage);
+      // Call onStreamFinished with minimal data
+      if (typeof callbacks.onStreamFinished === 'function') {
+        callbacks.onStreamFinished(accumulatedContent, 'assistant');
       }
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
 
       // Call onError if provided
-      if (callbacks.onError) {
+      if (typeof callbacks.onError === 'function') {
         callbacks.onError(error);
       } else {
-        // Fallback to onChunkReceived for error
-        callbacks.onChunkReceived(
+        // Fallback to onStreamChunkReceived for error
+        callbacks.onStreamChunkReceived(
           `Error in streaming response: ${errorMessage}`,
         );
       }
@@ -998,7 +980,7 @@ Need help? Just ask!`;
       await this.acceptMessageStreamResponse(
         messageEnvelope,
         {
-          onChunkReceived: (chunk) => {
+          onStreamChunkReceived: (chunk: string) => {
             if (chunk !== null) {
               accumulatedContent += chunk;
             }
@@ -1007,10 +989,25 @@ Need help? Just ask!`;
             // This callback is not directly used in the new acceptMessageStreamResponse
             // but can be used if needed for initial setup.
           },
-          onStreamFinished: (message) => {
-            // This callback is now directly used in acceptMessageStreamResponse
-            // to create the final response envelope.
-            finalResponse = message;
+          onStreamFinished: (content: string, authorRole: string) => {
+            // Create a minimal message envelope for the callback
+            finalResponse = {
+              messageId: '', // Will be set by conversation manager
+              requestOrResponse: 'response',
+              envelopePayload: {
+                messageId: '', // Will be set by conversation manager
+                author_role: authorRole as any,
+                content: {
+                  type: 'text/plain',
+                  payload: content,
+                },
+                created_at: new Date().toISOString(),
+                estimated_token_count: this.estimateTokens(content),
+              },
+            };
+          },
+          onFullMessageReceived: (content: string, authorRole: string) => {
+            // Handle full message if needed
           },
           onError: (error) => {
             // This callback is now directly used in acceptMessageStreamResponse
@@ -1095,9 +1092,28 @@ Need help? Just ask!`;
     this.acceptMessageStreamResponse(
       messageEnvelope,
       {
-        onChunkReceived: noOp,
-        onStreamStart: noOp,
-        onStreamFinished: (finishedMessage) => {
+        onStreamChunkReceived: (chunk: string) => {
+          // Handle chunks if needed
+        },
+        onStreamStart: (message) => {
+          // Handle stream start if needed
+        },
+        onStreamFinished: (content: string, authorRole: string) => {
+          // Create a minimal message envelope for the callback
+          const finishedMessage: TConversationTextMessageEnvelope = {
+            messageId: '', // Will be set by conversation manager
+            requestOrResponse: 'response',
+            envelopePayload: {
+              messageId: '', // Will be set by conversation manager
+              author_role: authorRole as any,
+              content: {
+                type: 'text/plain',
+                payload: content,
+              },
+              created_at: new Date().toISOString(),
+              estimated_token_count: this.estimateTokens(content),
+            },
+          };
           // Send the complete response as delayed message
           if (
             delayedMessageCallback &&
@@ -1105,6 +1121,9 @@ Need help? Just ask!`;
           ) {
             delayedMessageCallback(finishedMessage);
           }
+        },
+        onFullMessageReceived: (content: string, authorRole: string) => {
+          // Handle full message if needed
         },
         onError: (error) => {
           // Handle error in delayed message
