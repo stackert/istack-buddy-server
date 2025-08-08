@@ -570,6 +570,13 @@ export class PublicInterfaceController {
           },
         };
 
+        // Get conversation history for context
+        const conversationHistory =
+          await this.chatManagerService.getLastMessages(
+            conversationId,
+            50, // Get last 50 messages for context
+          );
+
         // C) Stream robot response via WebSocket and collect full response
         let fullResponse = '';
         console.log(
@@ -577,28 +584,40 @@ export class PublicInterfaceController {
         );
         await robot.acceptMessageStreamResponse(
           messageEnvelope,
-          async (chunk: string) => {
-            console.log(`Received chunk from robot: "${chunk}"`);
-            if (chunk) {
-              fullResponse += chunk;
-              console.log(
-                `Broadcasting chunk to conversation ${conversationId}: "${chunk}"`,
-              );
-              // Broadcast each chunk to all clients in the conversation
-              if (this.chatManagerService.getGateway()) {
-                this.chatManagerService
-                  .getGateway()
-                  .broadcastToConversation(conversationId, 'robot_chunk', {
-                    chunk,
-                  });
-                console.log(`Chunk broadcasted successfully`);
+          {
+            onChunkReceived: async (chunk: string) => {
+              console.log(`Received chunk from robot: "${chunk}"`);
+              if (chunk) {
+                fullResponse += chunk;
+                console.log(
+                  `Broadcasting chunk to conversation ${conversationId}: "${chunk}"`,
+                );
+                // Broadcast each chunk to all clients in the conversation
+                if (this.chatManagerService.getGateway()) {
+                  this.chatManagerService
+                    .getGateway()
+                    .broadcastToConversation(conversationId, 'robot_chunk', {
+                      chunk,
+                    });
+                  console.log(`Chunk broadcasted successfully`);
+                } else {
+                  console.log(`No gateway available for broadcasting`);
+                }
               } else {
-                console.log(`No gateway available for broadcasting`);
+                console.log(`Received null/empty chunk, skipping`);
               }
-            } else {
-              console.log(`Received null/empty chunk, skipping`);
-            }
+            },
+            onStreamStart: (message) => {
+              console.log('Stream started');
+            },
+            onStreamFinished: (message) => {
+              console.log('Stream finished');
+            },
+            onError: (error) => {
+              console.error('Stream error:', error);
+            },
           },
+          () => conversationHistory, // Pass conversation history
         );
         console.log(`Streaming complete. Full response: "${fullResponse}"`);
 

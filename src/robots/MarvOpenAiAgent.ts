@@ -1,8 +1,34 @@
 import { AbstractRobotChat } from './AbstractRobotChat';
 import type { TConversationTextMessageEnvelope } from './types';
+import { IConversationMessage } from '../chat-manager/interfaces/message.interface';
 import { OpenAI } from 'openai';
 import { marvToolSet } from './tool-definitions/marv';
 import { CustomLoggerService } from '../common/logger/custom-logger.service';
+
+// Helper functions and interfaces for the streaming pattern
+const noOp = (...args: any[]) => {};
+
+export interface IStreamingCallbacks {
+  onChunkReceived: (chunk: string) => void;
+  onStreamStart?: (message: TConversationTextMessageEnvelope) => void;
+  onStreamFinished?: (message: TConversationTextMessageEnvelope) => void;
+  onError?: (error: any) => void;
+}
+
+// Factory for creating message envelope with updated content
+const createMessageEnvelopeWithContent = (
+  originalEnvelope: TConversationTextMessageEnvelope,
+  newContent: string,
+): TConversationTextMessageEnvelope => ({
+  ...originalEnvelope,
+  envelopePayload: {
+    ...originalEnvelope.envelopePayload,
+    content: {
+      ...originalEnvelope.envelopePayload.content,
+      payload: newContent,
+    },
+  },
+});
 
 /**
  * Marv OpenAI - Specialized Formstack API Robot
@@ -170,27 +196,63 @@ IMPORTANT: Never use emojis, emoticons, or any graphical symbols in your respons
    */
   public async acceptMessageStreamResponse(
     messageEnvelope: TConversationTextMessageEnvelope,
-    chunkCallback: (chunk: string) => void,
+    callbacks: IStreamingCallbacks,
+    getHistory?: () => IConversationMessage[],
   ): Promise<void> {
     try {
       const client = this.getClient();
       const request = this.createOpenAIMessageRequest(messageEnvelope);
+
+      // Call onStreamStart if provided
+      if (callbacks.onStreamStart) {
+        callbacks.onStreamStart(messageEnvelope);
+      }
 
       const stream = await client.chat.completions.create({
         ...request,
         stream: true,
       });
 
+      let accumulatedContent = '';
       for await (const chunk of stream) {
         const content = chunk.choices[0]?.delta?.content;
         if (content) {
-          chunkCallback(content);
+          accumulatedContent += content;
+          callbacks.onChunkReceived(content);
         }
+      }
+
+      // Call onStreamFinished if provided
+      if (callbacks.onStreamFinished) {
+        const finishedMessage: TConversationTextMessageEnvelope = {
+          messageId: `response-${Date.now()}`,
+          requestOrResponse: 'response',
+          envelopePayload: {
+            messageId: `msg-${Date.now()}`,
+            author_role: 'assistant',
+            content: {
+              type: 'text/plain',
+              payload: accumulatedContent,
+            },
+            created_at: new Date().toISOString(),
+            estimated_token_count: this.estimateTokens(accumulatedContent),
+          },
+        };
+        callbacks.onStreamFinished(finishedMessage);
       }
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
-      chunkCallback(`Error in streaming response: ${errorMessage}`);
+
+      // Call onError if provided
+      if (callbacks.onError) {
+        callbacks.onError(error);
+      } else {
+        // Fallback to onChunkReceived for error
+        callbacks.onChunkReceived(
+          `Error in streaming response: ${errorMessage}`,
+        );
+      }
     }
   }
 

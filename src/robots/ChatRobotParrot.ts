@@ -1,9 +1,34 @@
+import { AbstractRobotChat } from './AbstractRobotChat';
 import type {
   TConversationTextMessageEnvelope,
   TConversationTextMessage,
 } from './types';
-import type { IConversationMessage } from '../chat-manager/interfaces/message.interface';
-import { AbstractRobotChat } from './AbstractRobotChat';
+import { IConversationMessage } from '../chat-manager/interfaces/message.interface';
+
+// Helper functions and interfaces for the streaming pattern
+const noOp = (...args: any[]) => {};
+
+export interface IStreamingCallbacks {
+  onChunkReceived: (chunk: string) => void;
+  onStreamStart?: (message: TConversationTextMessageEnvelope) => void;
+  onStreamFinished?: (message: TConversationTextMessageEnvelope) => void;
+  onError?: (error: any) => void;
+}
+
+// Factory for creating message envelope with updated content
+const createMessageEnvelopeWithContent = (
+  originalEnvelope: TConversationTextMessageEnvelope,
+  newContent: string,
+): TConversationTextMessageEnvelope => ({
+  ...originalEnvelope,
+  envelopePayload: {
+    ...originalEnvelope.envelopePayload,
+    content: {
+      ...originalEnvelope.envelopePayload.content,
+      payload: newContent,
+    },
+  },
+});
 
 /**
  * A concrete chat robot that parrots (repeats) messages back to the user
@@ -104,13 +129,19 @@ export class ChatRobotParrot extends AbstractRobotChat {
 
   public acceptMessageStreamResponse(
     messageEnvelope: TConversationTextMessageEnvelope,
-    chunkCallback: (chunk: string) => void,
+    callbacks: IStreamingCallbacks,
+    getHistory?: () => IConversationMessage[],
   ): Promise<void> {
     const recvMessage: TConversationTextMessage =
       messageEnvelope.envelopePayload;
 
     const randomNumber = Math.floor(Math.random() * 10000);
     const response = `(${randomNumber}) ${recvMessage.content.payload}`;
+
+    // Call onStreamStart if provided
+    if (callbacks.onStreamStart) {
+      callbacks.onStreamStart(messageEnvelope);
+    }
 
     // Break response into 5 chunks of similar size
     const chunkSize = Math.ceil(response.length / 5);
@@ -126,12 +157,31 @@ export class ChatRobotParrot extends AbstractRobotChat {
       const interval = setInterval(() => {
         try {
           if (chunkIndex < chunks.length) {
-            chunkCallback(chunks[chunkIndex]);
+            callbacks.onChunkReceived(chunks[chunkIndex]);
             chunkIndex++;
           } else {
             // Send null after all chunks are sent
-            chunkCallback(null as any);
+            callbacks.onChunkReceived(null as any);
             clearInterval(interval);
+
+            // Call onStreamFinished if provided
+            if (callbacks.onStreamFinished) {
+              const finishedMessage: TConversationTextMessageEnvelope = {
+                messageId: `response-${Date.now()}`,
+                requestOrResponse: 'response',
+                envelopePayload: {
+                  messageId: `msg-${Date.now()}`,
+                  author_role: 'assistant',
+                  content: {
+                    type: 'text/plain',
+                    payload: response,
+                  },
+                  created_at: new Date().toISOString(),
+                  estimated_token_count: this.estimateTokens(response),
+                },
+              };
+              callbacks.onStreamFinished(finishedMessage);
+            }
             resolve();
           }
         } catch (error) {

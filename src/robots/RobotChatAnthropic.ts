@@ -3,8 +3,34 @@ import type { TConversationTextMessageEnvelope } from './types';
 import { IConversationMessage } from '../chat-manager/interfaces/message.interface';
 import { UserRole } from '../chat-manager/dto/create-message.dto';
 import Anthropic from '@anthropic-ai/sdk';
-import { anthropicToolSet } from './tool-definitions/toolCatalog';
+import { marvToolSet } from './tool-definitions/marv';
 import { CustomLoggerService } from '../common/logger/custom-logger.service';
+
+// Helper functions and interfaces for the streaming pattern
+const noOp = (...args: any[]) => {};
+
+export interface IStreamingCallbacks {
+  onChunkReceived: (chunk: string) => void;
+  onStreamStart?: (message: TConversationTextMessageEnvelope) => void;
+  onStreamFinished?: (message: TConversationTextMessageEnvelope) => void;
+  onError?: (error: any) => void;
+}
+
+// Factory for creating message envelope with updated content
+const createMessageEnvelopeWithContent = (
+  originalEnvelope: TConversationTextMessageEnvelope,
+  newContent: string,
+): TConversationTextMessageEnvelope => ({
+  ...originalEnvelope,
+  envelopePayload: {
+    ...originalEnvelope.envelopePayload,
+    content: {
+      ...originalEnvelope.envelopePayload.content,
+      payload: newContent,
+    },
+  },
+});
+
 /**
  * Anthropic Claude Chat Robot implementation
  * Connects to Anthropic's API for real chat functionality with tool support
@@ -59,7 +85,7 @@ Please provide helpful, accurate, and detailed responses to user questions. If y
 
   // Tool definitions for Anthropic API
   private readonly tools: Anthropic.Messages.Tool[] =
-    anthropicToolSet.toolDefinitions;
+    marvToolSet.toolDefinitions;
 
   /**
    * Set conversation history for context-aware responses
@@ -150,7 +176,7 @@ Please provide helpful, accurate, and detailed responses to user questions. If y
   ): Promise<string> {
     this.logger.debug(`Executing tool: ${toolName}`, { toolArgs });
     try {
-      const result = anthropicToolSet.executeToolCall(toolName, toolArgs);
+      const result = marvToolSet.executeToolCall(toolName, toolArgs);
       const finalResult = typeof result === 'string' ? result : await result;
       this.logger.debug(`Tool ${toolName} executed successfully`, {
         resultType: typeof finalResult,
@@ -169,11 +195,17 @@ Please provide helpful, accurate, and detailed responses to user questions. If y
    */
   public async acceptMessageStreamResponse(
     messageEnvelope: TConversationTextMessageEnvelope,
-    chunkCallback: (chunk: string) => void,
+    callbacks: IStreamingCallbacks,
+    getHistory?: () => IConversationMessage[],
   ): Promise<void> {
     try {
       const client = this.getClient();
       const request = this.createAnthropicMessageRequest(messageEnvelope);
+
+      // Call onStreamStart if provided
+      if (callbacks.onStreamStart) {
+        callbacks.onStreamStart(messageEnvelope);
+      }
 
       const stream = await client.messages.create({
         ...request,
@@ -182,6 +214,7 @@ Please provide helpful, accurate, and detailed responses to user questions. If y
 
       const toolUseBlocks: any[] = [];
       let currentToolUse: any = null;
+      let accumulatedContent = '';
 
       for await (const chunk of stream) {
         if (
@@ -193,7 +226,8 @@ Please provide helpful, accurate, and detailed responses to user questions. If y
           chunk.type === 'content_block_delta' &&
           chunk.delta.type === 'text_delta'
         ) {
-          chunkCallback(chunk.delta.text);
+          accumulatedContent += chunk.delta.text;
+          callbacks.onChunkReceived(chunk.delta.text);
         } else if (
           chunk.type === 'content_block_delta' &&
           chunk.delta.type === 'input_json_delta'
@@ -217,25 +251,52 @@ Please provide helpful, accurate, and detailed responses to user questions. If y
             try {
               toolArgs = JSON.parse(toolArgs);
             } catch (parseError) {
-              chunkCallback(
+              callbacks.onChunkReceived(
                 `\n\nError parsing tool arguments: ${parseError instanceof Error ? parseError.message : 'Parse error'}`,
               );
               continue;
             }
           }
           const toolResult = await this.executeToolCall(toolUse.name, toolArgs);
-          chunkCallback(`\n\n${toolResult}`);
+          callbacks.onChunkReceived(`\n\n${toolResult}`);
+          accumulatedContent += `\n\n${toolResult}`;
         } catch (error) {
-          chunkCallback(
+          callbacks.onChunkReceived(
             `\n\nError executing tool ${toolUse.name}: ${error instanceof Error ? error.message : 'Unknown error'}`,
           );
+          accumulatedContent += `\n\nError executing tool ${toolUse.name}: ${error instanceof Error ? error.message : 'Unknown error'}`;
         }
+      }
+
+      // Call onStreamFinished if provided
+      if (callbacks.onStreamFinished) {
+        const finishedMessage: TConversationTextMessageEnvelope = {
+          messageId: `response-${Date.now()}`,
+          requestOrResponse: 'response',
+          envelopePayload: {
+            messageId: `msg-${Date.now()}`,
+            author_role: 'assistant',
+            content: {
+              type: 'text/plain',
+              payload: accumulatedContent,
+            },
+            created_at: new Date().toISOString(),
+            estimated_token_count: this.estimateTokens(accumulatedContent),
+          },
+        };
+        callbacks.onStreamFinished(finishedMessage);
       }
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error occurred';
-      chunkCallback(`Error: ${errorMessage}`);
-      throw error;
+
+      // Call onError if provided
+      if (callbacks.onError) {
+        callbacks.onError(error);
+      } else {
+        // Fallback to onChunkReceived for error
+        callbacks.onChunkReceived(`Error: ${errorMessage}`);
+      }
     }
   }
 

@@ -12,6 +12,31 @@ import {
 import { createCompositeToolSet } from './tool-definitions/toolCatalog';
 import { CustomLoggerService } from '../common/logger/custom-logger.service';
 
+// Helper functions and interfaces for the streaming pattern
+const noOp = (...args: any[]) => {};
+
+export interface IStreamingCallbacks {
+  onChunkReceived: (chunk: string) => void;
+  onStreamStart?: (message: TConversationTextMessageEnvelope) => void;
+  onStreamFinished?: (message: TConversationTextMessageEnvelope) => void;
+  onError?: (error: any) => void;
+}
+
+// Factory for creating message envelope with updated content
+const createMessageEnvelopeWithContent = (
+  originalEnvelope: TConversationTextMessageEnvelope,
+  newContent: string,
+): TConversationTextMessageEnvelope => ({
+  ...originalEnvelope,
+  envelopePayload: {
+    ...originalEnvelope.envelopePayload,
+    content: {
+      ...originalEnvelope.envelopePayload.content,
+      payload: newContent,
+    },
+  },
+});
+
 /**
  * Slack-specific Anthropic Claude Chat Robot implementation
  * Specialized for Slack integration with comprehensive tool support
@@ -321,12 +346,18 @@ I'm designed to help you solve Forms Core issues quickly and effectively. Just a
    */
   public async acceptMessageStreamResponse(
     messageEnvelope: TConversationTextMessageEnvelope,
-    chunkCallback: (chunk: string) => void,
+    callbacks: IStreamingCallbacks,
+    getHistory?: () => IConversationMessage[],
   ): Promise<void> {
     const client = this.getClient();
     const userMessage = messageEnvelope.envelopePayload.content.payload;
 
     try {
+      // Call onStreamStart if provided
+      if (callbacks.onStreamStart) {
+        callbacks.onStreamStart(messageEnvelope);
+      }
+
       // Initial request to Claude
       const initialResponse = (await client.messages.create({
         model: this.LLModelName,
@@ -344,6 +375,7 @@ I'm designed to help you solve Forms Core issues quickly and effectively. Just a
       // Check if Claude wants to use any tools
       let responseText = '';
       const toolUses: any[] = [];
+      let accumulatedContent = '';
 
       for (const content of initialResponse.content) {
         if (content.type === 'text') {
@@ -355,13 +387,34 @@ I'm designed to help you solve Forms Core issues quickly and effectively. Just a
 
       // If no tools were used, stream the response directly
       if (toolUses.length === 0) {
-        chunkCallback(responseText);
+        accumulatedContent += responseText;
+        callbacks.onChunkReceived(responseText);
+
+        // Call onStreamFinished if provided
+        if (callbacks.onStreamFinished) {
+          const finishedMessage: TConversationTextMessageEnvelope = {
+            messageId: `response-${Date.now()}`,
+            requestOrResponse: 'response',
+            envelopePayload: {
+              messageId: `msg-${Date.now()}`,
+              author_role: 'assistant',
+              content: {
+                type: 'text/plain',
+                payload: accumulatedContent,
+              },
+              created_at: new Date().toISOString(),
+              estimated_token_count: this.estimateTokens(accumulatedContent),
+            },
+          };
+          callbacks.onStreamFinished(finishedMessage);
+        }
         return;
       }
 
       // Stream initial response if any
       if (responseText) {
-        chunkCallback(responseText);
+        accumulatedContent += responseText;
+        callbacks.onChunkReceived(responseText);
       }
 
       // Execute tools and collect results
@@ -369,14 +422,19 @@ I'm designed to help you solve Forms Core issues quickly and effectively. Just a
 
       for (const toolUse of toolUses) {
         try {
-          chunkCallback(`\n\nExecuting ${toolUse.name}...`);
+          const executingMsg = `\n\nExecuting ${toolUse.name}...`;
+          accumulatedContent += executingMsg;
+          callbacks.onChunkReceived(executingMsg);
+
           const toolResult = await this.executeToolCall(
             toolUse.name,
             toolUse.input,
           );
 
           // Stream raw tool result for user visibility
-          chunkCallback(`\n\n**Tool: ${toolUse.name}**\n${toolResult}`);
+          const toolResultMsg = `\n\n**Tool: ${toolUse.name}**\n${toolResult}`;
+          accumulatedContent += toolResultMsg;
+          callbacks.onChunkReceived(toolResultMsg);
 
           // Collect for Claude processing
           toolResultMessages.push({
@@ -388,7 +446,9 @@ I'm designed to help you solve Forms Core issues quickly and effectively. Just a
           const errorMsg = `Error executing tool ${toolUse.name}: ${error instanceof Error ? error.message : 'Unknown error'}`;
 
           // Stream raw error for user visibility
-          chunkCallback(`\n\n**Tool Error: ${toolUse.name}**\n${errorMsg}`);
+          const errorMsgFormatted = `\n\n**Tool Error: ${toolUse.name}**\n${errorMsg}`;
+          accumulatedContent += errorMsgFormatted;
+          callbacks.onChunkReceived(errorMsgFormatted);
 
           // Collect for Claude processing
           toolResultMessages.push({
@@ -401,7 +461,9 @@ I'm designed to help you solve Forms Core issues quickly and effectively. Just a
       }
 
       // Stream Claude's analysis header
-      chunkCallback('\n\n---\n\n**Analysis:**\n');
+      const analysisHeader = '\n\n---\n\n**Analysis:**\n';
+      accumulatedContent += analysisHeader;
+      callbacks.onChunkReceived(analysisHeader);
 
       // Stream follow-up request to Claude with tool results
       const finalStream = await client.messages.create({
@@ -417,27 +479,52 @@ I'm designed to help you solve Forms Core issues quickly and effectively. Just a
             role: 'assistant',
             content: initialResponse.content,
           },
-          {
-            role: 'user',
-            content: toolResultMessages,
-          },
+          ...toolResultMessages,
         ],
         stream: true,
       });
 
-      // Stream the final response
       for await (const chunk of finalStream) {
         if (
           chunk.type === 'content_block_delta' &&
           chunk.delta.type === 'text_delta'
         ) {
-          chunkCallback(chunk.delta.text);
+          accumulatedContent += chunk.delta.text;
+          callbacks.onChunkReceived(chunk.delta.text);
         }
       }
+
+      // Call onStreamFinished if provided
+      if (callbacks.onStreamFinished) {
+        const finishedMessage: TConversationTextMessageEnvelope = {
+          messageId: `response-${Date.now()}`,
+          requestOrResponse: 'response',
+          envelopePayload: {
+            messageId: `msg-${Date.now()}`,
+            author_role: 'assistant',
+            content: {
+              type: 'text/plain',
+              payload: accumulatedContent,
+            },
+            created_at: new Date().toISOString(),
+            estimated_token_count: this.estimateTokens(accumulatedContent),
+          },
+        };
+        callbacks.onStreamFinished(finishedMessage);
+      }
     } catch (error) {
-      const errorMessage = `Error: ${error instanceof Error ? error.message : 'Unknown error occurred'}`;
-      chunkCallback(errorMessage);
-      throw error;
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+
+      // Call onError if provided
+      if (callbacks.onError) {
+        callbacks.onError(error);
+      } else {
+        // Fallback to onChunkReceived for error
+        callbacks.onChunkReceived(
+          `Error in streaming response: ${errorMessage}`,
+        );
+      }
     }
   }
 

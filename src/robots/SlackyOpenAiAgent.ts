@@ -12,6 +12,31 @@ import {
 import { createCompositeToolSet } from './tool-definitions/toolCatalog';
 import { CustomLoggerService } from '../common/logger/custom-logger.service';
 
+// Helper functions and interfaces for the streaming pattern
+const noOp = (...args: any[]) => {};
+
+export interface IStreamingCallbacks {
+  onChunkReceived: (chunk: string) => void;
+  onStreamStart?: (message: TConversationTextMessageEnvelope) => void;
+  onStreamFinished?: (message: TConversationTextMessageEnvelope) => void;
+  onError?: (error: any) => void;
+}
+
+// Factory for creating message envelope with updated content
+const createMessageEnvelopeWithContent = (
+  originalEnvelope: TConversationTextMessageEnvelope,
+  newContent: string,
+): TConversationTextMessageEnvelope => ({
+  ...originalEnvelope,
+  envelopePayload: {
+    ...originalEnvelope.envelopePayload,
+    content: {
+      ...originalEnvelope.envelopePayload.content,
+      payload: newContent,
+    },
+  },
+});
+
 /**
  * Slack-specific OpenAI Chat Robot implementation
  * Specialized for Slack integration with comprehensive tool support using OpenAI
@@ -290,7 +315,7 @@ Need help? Just ask!`;
    */
   public async acceptMessageStreamResponse(
     messageEnvelope: TConversationTextMessageEnvelope,
-    chunkCallback: (chunk: string) => void,
+    callbacks: IStreamingCallbacks,
     getHistory?: () => IConversationMessage[],
   ): Promise<void> {
     try {
@@ -302,6 +327,11 @@ Need help? Just ask!`;
         messageEnvelope.envelopePayload.content.payload,
         history,
       );
+
+      // Call onStreamStart if provided
+      if (callbacks.onStreamStart) {
+        callbacks.onStreamStart(messageEnvelope);
+      }
 
       const stream = await client.chat.completions.create({
         model: this.LLModelName,
@@ -317,16 +347,46 @@ Need help? Just ask!`;
         stream: true,
       });
 
+      let accumulatedContent = '';
       for await (const chunk of stream) {
         const content = chunk.choices[0]?.delta?.content;
         if (content) {
-          chunkCallback(content);
+          accumulatedContent += content;
+          callbacks.onChunkReceived(content);
         }
+      }
+
+      // Call onStreamFinished if provided
+      if (callbacks.onStreamFinished) {
+        const finishedMessage: TConversationTextMessageEnvelope = {
+          messageId: `response-${Date.now()}`,
+          requestOrResponse: 'response',
+          envelopePayload: {
+            messageId: `msg-${Date.now()}`,
+            author_role: 'assistant',
+            content: {
+              type: 'text/plain',
+              payload: accumulatedContent,
+            },
+            created_at: new Date().toISOString(),
+            estimated_token_count: this.estimateTokens(accumulatedContent),
+          },
+        };
+        callbacks.onStreamFinished(finishedMessage);
       }
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
-      chunkCallback(`Error in streaming response: ${errorMessage}`);
+
+      // Call onError if provided
+      if (callbacks.onError) {
+        callbacks.onError(error);
+      } else {
+        // Fallback to onChunkReceived for error
+        callbacks.onChunkReceived(
+          `Error in streaming response: ${errorMessage}`,
+        );
+      }
     }
   }
 
@@ -931,165 +991,72 @@ Need help? Just ask!`;
         };
       }
 
-      const client = this.getClient();
+      // Use the streaming pattern to get the complete response
+      let finalResponse: TConversationTextMessageEnvelope | null = null;
+      let accumulatedContent = '';
 
-      // Use getHistory callback if provided, otherwise fall back to internal conversationHistory
-      const history = getHistory ? getHistory() : this.conversationHistory;
-
-      // Debug logging to see what conversation history is being passed
-      this.logger.log('Conversation history received:', {
-        historyLength: history.length,
-        history: history.map((msg) => ({
-          fromRole: msg.fromRole,
-          content: msg.content,
-        })),
-        currentMessage: userMessage,
-      });
-
-      const messages = this.buildOpenAIMessageHistory(userMessage, history);
-
-      const request: OpenAI.Chat.Completions.ChatCompletionCreateParams = {
-        model: this.LLModelName,
-        max_tokens: 1024,
-        messages: [
-          {
-            role: 'system' as const,
-            content: this.robotRole,
+      await this.acceptMessageStreamResponse(
+        messageEnvelope,
+        {
+          onChunkReceived: (chunk) => {
+            if (chunk !== null) {
+              accumulatedContent += chunk;
+            }
           },
-          ...messages,
-        ],
-        tools: this.tools,
-      };
-
-      // Debug: Log the request being sent to OpenAI
-      this.logger.log('OpenAI request:', {
-        model: this.LLModelName,
-        maxTokens: 1024,
-        messageCount: messages.length,
-        toolsCount: this.tools.length,
-        tools: this.tools.map((tool) => tool.function?.name),
-      });
-
-      const response = await client.chat.completions.create(request);
-
-      // Extract text content and handle tool calls
-      let responseText = '';
-      const toolCalls: any[] = [];
-
-      if ('choices' in response && response.choices[0]?.message) {
-        responseText = response.choices[0].message.content || '';
-        toolCalls.push(...(response.choices[0].message.tool_calls || []));
-        this.logger.log(`Initial response: "${responseText}"`);
-        this.logger.log(`Tool calls found: ${toolCalls.length}`);
-
-        // Debug: Log the full response to see what's happening
-        this.logger.log('Full OpenAI response:', {
-          choices: response.choices.length,
-          message: response.choices[0]?.message,
-          toolCalls: response.choices[0]?.message?.tool_calls,
-        });
-      }
-
-      // Execute any tool calls
-      if (toolCalls.length > 0) {
-        const toolResults = await this.executeToolAllCalls(toolCalls);
-
-        // Add tool results to the conversation and get final response
-        this.logger.log(`Tool results: ${JSON.stringify(toolResults)}`);
-        // Ensure tool results are properly formatted for OpenAI API
-        const formattedToolResults = toolResults.map((result) => ({
-          tool_call_id: result.tool_call_id,
-          role: 'tool' as const,
-          content:
-            typeof result.content === 'string'
-              ? result.content
-              : JSON.stringify(result.content),
-        }));
-
-        const finalMessages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] =
-          [
-            ...messages,
-            {
-              role: 'assistant' as const,
-              content: responseText,
-              tool_calls: toolCalls,
-            },
-            ...formattedToolResults,
-            {
-              role: 'user' as const,
-              content:
-                'Please provide a summary of the tool results and any actionable insights.',
-            },
-          ];
-
-        try {
-          const finalResponse = await client.chat.completions.create({
-            model: this.LLModelName,
-            max_tokens: 1024,
-            messages: [
-              {
-                role: 'system' as const,
-                content: this.robotRole,
+          onStreamStart: (message) => {
+            // This callback is not directly used in the new acceptMessageStreamResponse
+            // but can be used if needed for initial setup.
+          },
+          onStreamFinished: (message) => {
+            // This callback is now directly used in acceptMessageStreamResponse
+            // to create the final response envelope.
+            finalResponse = message;
+          },
+          onError: (error) => {
+            // This callback is now directly used in acceptMessageStreamResponse
+            // to handle streaming errors.
+            finalResponse = {
+              messageId: `error-${Date.now()}`,
+              requestOrResponse: 'response',
+              envelopePayload: {
+                messageId: `error-msg-${Date.now()}`,
+                author_role: 'assistant',
+                content: {
+                  type: 'text/plain',
+                  payload: `Error in streaming response: ${error.message}`,
+                },
+                created_at: new Date().toISOString(),
+                estimated_token_count: this.estimateTokens(error.message),
               },
-              ...finalMessages,
-            ],
-          });
-
-          if ('choices' in finalResponse && finalResponse.choices[0]?.message) {
-            responseText = finalResponse.choices[0].message.content || '';
-            this.logger.log(
-              `Final response after tool execution: "${responseText}"`,
-            );
-          } else {
-            this.logger.warn(
-              'No content in final response after tool execution',
-            );
-          }
-        } catch (finalResponseError) {
-          this.logger.error(
-            'Error generating final response after tool execution:',
-            finalResponseError,
-          );
-          // Use fallback response instead of failing completely
-          responseText = this.createFallbackResponse(toolResults);
-        }
-
-        // If we still don't have a response after tool execution, create a fallback response
-        if (!responseText || responseText.trim() === '') {
-          this.logger.warn(
-            'Creating fallback response due to empty final response',
-          );
-          responseText = this.createFallbackResponse(toolResults);
-        }
-      }
-
-      // Create response envelope
-      // we need to verify where/who/how messageId are generated.  Is it the responsibility of the robot? or conversation manager.
-      this.logger.log(
-        `Creating response envelope with text: "${responseText}"`,
-      );
-      const responseEnvelope: TConversationTextMessageEnvelope = {
-        messageId: `response-${Date.now()}`,
-        requestOrResponse: 'response',
-        envelopePayload: {
-          messageId: `msg-${Date.now()}`,
-          author_role: 'assistant',
-          content: {
-            type: 'text/plain',
-            payload: responseText,
+            };
           },
-          created_at: new Date().toISOString(),
-          estimated_token_count: this.estimateTokens(responseText),
         },
-      };
+        getHistory,
+      );
 
-      return responseEnvelope;
+      // Create the final response envelope
+      if (finalResponse) {
+        return finalResponse;
+      } else {
+        // Fallback if finalResponse is not set (should not happen with new logic)
+        return {
+          messageId: `response-${Date.now()}`,
+          requestOrResponse: 'response',
+          envelopePayload: {
+            messageId: `msg-${Date.now()}`,
+            author_role: 'assistant',
+            content: {
+              type: 'text/plain',
+              payload: accumulatedContent,
+            },
+            created_at: new Date().toISOString(),
+            estimated_token_count: this.estimateTokens(accumulatedContent),
+          },
+        };
+      }
     } catch (error) {
       const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error occurred';
-
-      // Return error response envelope
-      // we need to verify where/who/how messageId are generated.  Is it the responsibility of the robot? or conversation manager.
+        error instanceof Error ? error.message : 'Unknown error';
       const errorResponse: TConversationTextMessageEnvelope = {
         messageId: `error-${Date.now()}`,
         requestOrResponse: 'response',
@@ -1110,7 +1077,8 @@ Need help? Just ask!`;
   }
 
   /**
-   * Handle multi-part response with monitoring and tool status updates
+   * @TMC_ New implementation using acceptMessageStreamResponse
+   * Calls acceptMessageStreamResponse and sends immediate response, then promises to send second message when streaming completes
    */
   public async acceptMessageMultiPartResponse(
     messageEnvelope: TConversationTextMessageEnvelope,
@@ -1119,39 +1087,53 @@ Need help? Just ask!`;
     ) => void,
     getHistory?: () => IConversationMessage[],
   ): Promise<TConversationTextMessageEnvelope> {
-    // Stop any existing monitoring first
-    this.stopMonitoring();
+    // Send immediate response first
+    const immediateResponse =
+      await this.acceptMessageImmediateResponse(messageEnvelope);
 
-    // Clear any previous tool status, read message IDs, and tool results
-    this.toolStatus = { executing: [], completed: [], errors: [] };
-    this.readMessageIds.clear();
-    this.lastToolResults = [];
-    this.hasSentFinalResponse = false;
-
-    // 1. Return immediate meaningless acknowledgment
-    const immediateResponse: TConversationTextMessageEnvelope = {
-      messageId: `ack-${Date.now()}`,
-      requestOrResponse: 'response',
-      envelopePayload: {
-        messageId: `ack-msg-${Date.now()}`,
-        author_role: 'assistant',
-        content: {
-          type: 'text/plain',
-          payload: 'Working on it...',
+    // Start streaming in background and promise to send delayed message when complete
+    this.acceptMessageStreamResponse(
+      messageEnvelope,
+      {
+        onChunkReceived: noOp,
+        onStreamStart: noOp,
+        onStreamFinished: (finishedMessage) => {
+          // Send the complete response as delayed message
+          if (
+            delayedMessageCallback &&
+            typeof delayedMessageCallback === 'function'
+          ) {
+            delayedMessageCallback(finishedMessage);
+          }
         },
-        created_at: new Date().toISOString(),
-        estimated_token_count: this.estimateTokens('Working on it...'),
+        onError: (error) => {
+          // Handle error in delayed message
+          const errorMessage = createMessageEnvelopeWithContent(
+            messageEnvelope,
+            `Error in streaming response: ${error.message}`,
+          );
+          if (
+            delayedMessageCallback &&
+            typeof delayedMessageCallback === 'function'
+          ) {
+            delayedMessageCallback(errorMessage);
+          }
+        },
       },
-    };
-
-    // 2. Store the callback for use in processRequestAsync
-    this.currentCallback = delayedMessageCallback;
-
-    // 3. Start monitoring for tool status and final responses
-    this.startResponseMonitoring(messageEnvelope, delayedMessageCallback);
-
-    // 4. Process the actual request asynchronously
-    this.processRequestAsync(messageEnvelope, getHistory);
+      getHistory,
+    ).catch((error) => {
+      // Handle any errors in the streaming process
+      const errorMessage = createMessageEnvelopeWithContent(
+        messageEnvelope,
+        `Error in streaming response: ${error.message}`,
+      );
+      if (
+        delayedMessageCallback &&
+        typeof delayedMessageCallback === 'function'
+      ) {
+        delayedMessageCallback(errorMessage);
+      }
+    });
 
     return immediateResponse;
   }

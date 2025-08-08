@@ -172,6 +172,13 @@ export class ChatManagerGateway
           },
         };
 
+        // Get conversation history for context
+        const conversationHistory =
+          await this.chatManagerService.getLastMessages(
+            createMessageDto.conversationId,
+            50, // Get last 50 messages for context
+          );
+
         // Stream robot response and collect full response
         let fullResponse = '';
         console.log(
@@ -180,26 +187,38 @@ export class ChatManagerGateway
 
         await robot.acceptMessageStreamResponse(
           messageEnvelope,
-          async (chunk: string) => {
-            console.log(`Received chunk from robot: "${chunk}"`);
-            if (chunk) {
-              fullResponse += chunk;
-              console.log(
-                `Broadcasting chunk to conversation ${createMessageDto.conversationId}: "${chunk}"`,
-              );
-              // Broadcast each chunk to all clients in the conversation
-              this.broadcastToConversation(
-                createMessageDto.conversationId,
-                'robot_chunk',
-                {
-                  chunk,
-                },
-              );
-              console.log(`Chunk broadcasted successfully`);
-            } else {
-              console.log(`Received null/empty chunk, skipping`);
-            }
+          {
+            onChunkReceived: async (chunk: string) => {
+              console.log(`Received chunk from robot: "${chunk}"`);
+              if (chunk) {
+                fullResponse += chunk;
+                console.log(
+                  `Broadcasting chunk to conversation ${createMessageDto.conversationId}: "${chunk}"`,
+                );
+                // Broadcast each chunk to all clients in the conversation
+                this.broadcastToConversation(
+                  createMessageDto.conversationId,
+                  'robot_chunk',
+                  {
+                    chunk,
+                  },
+                );
+                console.log(`Chunk broadcasted successfully`);
+              } else {
+                console.log(`Received null/empty chunk, skipping`);
+              }
+            },
+            onStreamStart: (message) => {
+              console.log('Stream started');
+            },
+            onStreamFinished: (message) => {
+              console.log('Stream finished');
+            },
+            onError: (error) => {
+              console.error('Stream error:', error);
+            },
           },
+          () => conversationHistory, // Pass conversation history
         );
 
         console.log(`Streaming complete. Full response: "${fullResponse}"`);
