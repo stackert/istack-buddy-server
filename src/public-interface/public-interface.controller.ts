@@ -112,18 +112,27 @@ export class PublicInterfaceController {
         initialParticipants: [userId],
       });
 
-      // Add debug message to conversation
+      // Add debug messages to conversation
       try {
         await this.chatManagerService.addMessage({
           conversationId: conversation.id,
-          fromUserId: 'form-marv-system',
-          content: 'DEBUG - start of conversation',
-          messageType: MessageType.SYSTEM,
-          fromRole: UserRole.AGENT,
+          fromUserId: userId,
+          content: 'DEBUG - User Message',
+          messageType: MessageType.TEXT,
+          fromRole: UserRole.CUSTOMER,
+          toRole: UserRole.ROBOT,
+        });
+
+        await this.chatManagerService.addMessage({
+          conversationId: conversation.id,
+          fromUserId: 'AnthropicMarv',
+          content: 'DEBUG - Conversation Message',
+          messageType: MessageType.TEXT,
+          fromRole: UserRole.ROBOT,
           toRole: UserRole.CUSTOMER,
         });
       } catch (error) {
-        console.error('Failed to add debug message:', error);
+        console.error('Failed to add debug messages:', error);
       }
 
       const link = `${req.protocol}://${req.get('host')}/public/form-marv/${conversation.id}/${formId || '5375703'}?jwtToken=${jwtToken}`;

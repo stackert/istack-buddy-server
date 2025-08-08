@@ -1,0 +1,858 @@
+
+> istack-buddy-server-take1@0.0.1 start:dev
+> nest start --watch
+
+[2J[3J[H[[90m1:10:08 PM[0m] Starting compilation in watch mode...
+
+[[90m1:10:10 PM[0m] Found 0 errors. Watching for file changes.
+
+[32m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+[32m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mRobotModule dependencies initialized[39m[38;5;3m +13ms[39m
+[32m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConversationListServiceModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mLoggerModule dependencies initialized[39m[38;5;3m +0ms[39m
+[95m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [95m  DEBUG[39m [38;5;3m[AuthorizationPermissionsService.constructor] [39m[95mFile-based permissions loaded successfully[39m
+[95m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [95m  DEBUG[39m [38;5;3m[AuthorizationPermissionsService.constructor] [39m[95mData: {
+  "userPermissionsCount": 0,
+  "groupPermissionsCount": 0,
+  "userGroupMembershipsCount": 0
+}[39m
+[32m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAuthorizationPermissionsModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +0ms[39m
+[95m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [95m  DEBUG[39m [38;5;3m[AuthenticationService.constructor] [39m[95mAuthentication service initialized with configuration[39m
+[95m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [95m  DEBUG[39m [38;5;3m[AuthenticationService.constructor] [39m[95mData: {
+  "sessionTimeoutSeconds": 28800
+}[39m
+[32m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAuthenticationModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mGuardsModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mIstackBuddySlackApiModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mDevDebugModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mPublicInterfaceModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mChatManagerModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mUserProfileModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [32m    LOG[39m [38;5;3m[WebSocketsController] [39m[32mChatManagerGateway subscribed to the "join_room" message[39m[38;5;3m +21ms[39m
+[32m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [32m    LOG[39m [38;5;3m[WebSocketsController] [39m[32mChatManagerGateway subscribed to the "leave_room" message[39m[38;5;3m +0ms[39m
+[32m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [32m    LOG[39m [38;5;3m[WebSocketsController] [39m[32mChatManagerGateway subscribed to the "send_message" message[39m[38;5;3m +0ms[39m
+[32m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [32m    LOG[39m [38;5;3m[WebSocketsController] [39m[32mChatManagerGateway subscribed to the "typing_start" message[39m[38;5;3m +0ms[39m
+[32m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [32m    LOG[39m [38;5;3m[WebSocketsController] [39m[32mChatManagerGateway subscribed to the "typing_stop" message[39m[38;5;3m +0ms[39m
+[32m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [32m    LOG[39m [38;5;3m[WebSocketsController] [39m[32mChatManagerGateway subscribed to the "get_messages" message[39m[38;5;3m +0ms[39m
+[32m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [32m    LOG[39m [38;5;3m[WebSocketsController] [39m[32mChatManagerGateway subscribed to the "share_robot_message" message[39m[38;5;3m +0ms[39m
+[32m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [32m    LOG[39m [38;5;3m[WebSocketsController] [39m[32mChatManagerGateway subscribed to the "join_dashboard" message[39m[38;5;3m +0ms[39m
+[32m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [32m    LOG[39m [38;5;3m[WebSocketsController] [39m[32mChatManagerGateway subscribed to the "leave_dashboard" message[39m[38;5;3m +0ms[39m
+[32m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAppController {/}:[39m[38;5;3m +1ms[39m
+[32m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAuthenticationController {/auth}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/user, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/profile/me, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mUserProfileController {/user-profiles}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/user-profiles/me, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mDevDebugController {/dev-debug}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/dev-debug/auth, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/dev-debug/user-details/:userId, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/dev-debug/users, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/dev-debug/auth-status/:userId, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mChatManagerController {/chat}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/chat/messages, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/chat/conversations, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/chat/conversations/:conversationId/messages, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/chat/conversations/:conversationId/messages/last/:count, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/chat/conversations/:conversationId/join, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/chat/conversations/:conversationId/participants, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/chat/dashboard/stats, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/chat/conversations/start, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/chat/conversations/:conversationId/leave, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mIstackBuddySlackApiController {/}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/istack-buddy/slack-integration/health, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/istack-buddy/slack-integration/debug, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/istack-buddy/slack-integration/slack/events, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mPublicInterfaceController {/public}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/public, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/public/form-marv, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/public/form-marv/debug-create, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/public/form-marv/:conversationId, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/public/form-marv/:conversationId/:formId, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/public/form-marv/:conversationId/:formId/chat-messages, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/public/form-marv/:conversationId/:formId/chat-messages, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [32m    LOG[39m [38;5;3m[SlackyAnthropicAgent] [39m[32mSlackyAnthropicAgent constructor called - class loaded[39m
+[32m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [32m    LOG[39m [38;5;3m[SlackyOpenAiAgent] [39m[32mSlackyOpenAiAgent constructor called - class loaded[39m
+[95m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [95m  DEBUG[39m [38;5;3m[RobotService] [39m[95mRegistered robot: ChatRobotParrot v1.0.0[39m
+[95m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [95m  DEBUG[39m [38;5;3m[RobotService] [39m[95mRegistered robot: AgentRobotParrot v1.0.0[39m
+[95m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [95m  DEBUG[39m [38;5;3m[RobotService] [39m[95mRegistered robot: RobotChatOpenAI v1.0.0-test-dev[39m
+[95m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [95m  DEBUG[39m [38;5;3m[RobotService] [39m[95mRegistered robot: RobotChatAnthropic v1.0.0[39m
+[95m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [95m  DEBUG[39m [38;5;3m[RobotService] [39m[95mRegistered robot: SlackyAnthropicAgent v1.0.0[39m
+[95m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [95m  DEBUG[39m [38;5;3m[RobotService] [39m[95mRegistered robot: MarvOpenAiAgent v1.0.0[39m
+[95m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [95m  DEBUG[39m [38;5;3m[RobotService] [39m[95mRegistered robot: SlackyOpenAiAgent v1.0.0[39m
+[95m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [95m  DEBUG[39m [38;5;3m[RobotService] [39m[95mRegistered robot: AnthropicMarv v1.0.0[39m
+[95m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [95m  DEBUG[39m [38;5;3m[RobotService] [39m[95mRegistered robot: SlackAgentCoreFormsParrot v1.0.0[39m
+[95m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [95m  DEBUG[39m [38;5;3m[RobotService] [39m[95mRegistered robot: SlackAgentCoreFormsSsoAutofillParrot v1.0.0[39m
+[32m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [32m    LOG[39m [38;5;3m[RobotService] [39m[32mInitialized 10 robots[39m
+[32m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +1ms[39m
+[32m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [32m    LOG[39m [38;5;3m[Bootstrap] [39m[32miStack Buddy Server running on: http://localhost:3500[39m
+[32m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [32m    LOG[39m [38;5;3m[Bootstrap] [39m[32mAPI Documentation available at: http://localhost:3500/api[39m
+[33m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [33m   WARN[39m [38;5;3m[Bootstrap] [39m[33mCORS enabled for ALL origins (temporary)[39m
+[32m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [32m    LOG[39m [38;5;3m[ChatManagerGateway] [39m[32mClient connected: 2H-3mDJK7onrRf44AAAB[39m
+[95m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mJoin room data received[39m
+[95m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mObject:[39m
+{
+  "data": {
+    "conversationId": "4605a6eb-b349-4db8-8176-99205b999f29",
+    "userId": "form-marv-user",
+    "userRole": "cx-agent"
+  }
+}
+
+[95m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mApplied default joinData[39m
+[95m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mObject:[39m
+{
+  "joinData": {
+    "userId": "form-marv-user",
+    "userRole": "cx-agent"
+  }
+}
+
+[ChatManagerService] Attempting to join conversation: 4605a6eb-b349-4db8-8176-99205b999f29
+[ChatManagerService] Available conversations: []
+[31m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [31m  ERROR[39m [38;5;3m[ChatManagerGateway] [39m[31mError in handleJoinRoom[39m
+[31m[Nest] 1629689  - [39m08/08/2025, 1:10:11 PM [31m  ERROR[39m [38;5;3m[ChatManagerGateway] [39m[31mError: Conversation 4605a6eb-b349-4db8-8176-99205b999f29 not found[39m
+[32m[Nest] 1629689  - [39m08/08/2025, 1:10:14 PM [32m    LOG[39m [38;5;3m[ChatManagerGateway] [39m[32mClient connected: 5g6piGTI866eMJDmAAAD[39m
+[95m[Nest] 1629689  - [39m08/08/2025, 1:10:14 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mJoin room data received[39m
+[95m[Nest] 1629689  - [39m08/08/2025, 1:10:14 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mObject:[39m
+{
+  "data": {
+    "conversationId": "85d9684b-d407-4653-b66b-dcb0b3b840a5",
+    "userId": "form-marv-user",
+    "userRole": "cx-agent"
+  }
+}
+
+[95m[Nest] 1629689  - [39m08/08/2025, 1:10:14 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mApplied default joinData[39m
+[95m[Nest] 1629689  - [39m08/08/2025, 1:10:14 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mObject:[39m
+{
+  "joinData": {
+    "userId": "form-marv-user",
+    "userRole": "cx-agent"
+  }
+}
+
+[ChatManagerService] Attempting to join conversation: 85d9684b-d407-4653-b66b-dcb0b3b840a5
+[ChatManagerService] Available conversations: []
+[31m[Nest] 1629689  - [39m08/08/2025, 1:10:14 PM [31m  ERROR[39m [38;5;3m[ChatManagerGateway] [39m[31mError in handleJoinRoom[39m
+[31m[Nest] 1629689  - [39m08/08/2025, 1:10:14 PM [31m  ERROR[39m [38;5;3m[ChatManagerGateway] [39m[31mError: Conversation 85d9684b-d407-4653-b66b-dcb0b3b840a5 not found[39m
+[32m[Nest] 1629689  - [39m08/08/2025, 1:10:16 PM [32m    LOG[39m [38;5;3m[HttpRequest] [39m[32m[1dfbd591-31ac-4829-a92a-fb90aa9019bd] Incoming GET /public/form-marv/debug-create?formId=5375703[39m
+[32m[Nest] 1629689  - [39m08/08/2025, 1:10:16 PM [32m    LOG[39m [38;5;3m[HttpRequest] [39m[32mData: {
+  "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36",
+  "ip": "::1",
+  "params": {},
+  "query": {
+    "formId": "5375703"
+  }
+}[39m
+[32m[Nest] 1629689  - [39m08/08/2025, 1:10:16 PM [32m    LOG[39m [38;5;3m[UserProfileService.addTemporaryUser] [39m[32mTemporary user profile added[39m
+[32m[Nest] 1629689  - [39m08/08/2025, 1:10:16 PM [32m    LOG[39m [38;5;3m[UserProfileService.addTemporaryUser] [39m[32mData: {
+  "userId": "form-marv-temp-1754676616708"
+}[39m
+[95m[Nest] 1629689  - [39m08/08/2025, 1:10:16 PM [95m  DEBUG[39m [38;5;3m[AuthorizationPermissionsService.addUser] [39m[95mUser added successfully[39m
+[95m[Nest] 1629689  - [39m08/08/2025, 1:10:16 PM [95m  DEBUG[39m [38;5;3m[AuthorizationPermissionsService.addUser] [39m[95mData: {
+  "userId": "form-marv-temp-1754676616708",
+  "ownPermissionsCount": 2,
+  "groupMembershipsCount": 0
+}[39m
+[95m[Nest] 1629689  - [39m08/08/2025, 1:10:16 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mBroadcasting dashboard event: conversation_created[39m
+{
+  allConversationMessages: [
+    {
+      id: '123bac0e-d050-45f1-bd3e-3828968b1bbd',
+      content: 'DEBUG - start of conversation',
+      conversationId: 'cfefee4f-730b-48d1-aea9-cbdd7d192fe3',
+      fromUserId: 'form-marv-system',
+      fromRole: 'cx-agent',
+      toRole: 'cx-customer',
+      messageType: 'system',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-08T18:10:16.712Z,
+      updatedAt: 2025-08-08T18:10:16.712Z
+    }
+  ]
+}
+[95m[Nest] 1629689  - [39m08/08/2025, 1:10:16 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mBroadcasting dashboard event: conversation_updated[39m
+Gateway: Broadcasting new_message to conversation cfefee4f-730b-48d1-aea9-cbdd7d192fe3: {
+  message: {
+    id: '123bac0e-d050-45f1-bd3e-3828968b1bbd',
+    content: 'DEBUG - start of conversation',
+    conversationId: 'cfefee4f-730b-48d1-aea9-cbdd7d192fe3',
+    fromUserId: 'form-marv-system',
+    fromRole: 'cx-agent',
+    toRole: 'cx-customer',
+    messageType: 'system',
+    threadId: undefined,
+    originalMessageId: undefined,
+    createdAt: 2025-08-08T18:10:16.712Z,
+    updatedAt: 2025-08-08T18:10:16.712Z
+  },
+  timestamp: '2025-08-08T18:10:16.712Z'
+}
+Gateway: Broadcast completed
+[32m[Nest] 1629689  - [39m08/08/2025, 1:10:16 PM [32m    LOG[39m [38;5;3m[HttpResponse] [39m[32m[1dfbd591-31ac-4829-a92a-fb90aa9019bd] Response GET /public/form-marv/debug-create?formId=5375703 200 - 7ms[39m
+[32m[Nest] 1629689  - [39m08/08/2025, 1:10:16 PM [32m    LOG[39m [38;5;3m[HttpResponse] [39m[32mData: {
+  "statusCode": 200,
+  "elapsed": "7ms"
+}[39m
+[32m[Nest] 1629689  - [39m08/08/2025, 1:10:19 PM [32m    LOG[39m [38;5;3m[ChatManagerGateway] [39m[32mClient connected: LVHxRTm8cWCxQazvAAAF[39m
+[95m[Nest] 1629689  - [39m08/08/2025, 1:10:19 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mJoin room data received[39m
+[95m[Nest] 1629689  - [39m08/08/2025, 1:10:19 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mObject:[39m
+{
+  "data": {
+    "conversationId": "cfefee4f-730b-48d1-aea9-cbdd7d192fe3",
+    "userId": "form-marv-user",
+    "userRole": "cx-agent"
+  }
+}
+
+[95m[Nest] 1629689  - [39m08/08/2025, 1:10:19 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mApplied default joinData[39m
+[95m[Nest] 1629689  - [39m08/08/2025, 1:10:19 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mObject:[39m
+{
+  "joinData": {
+    "userId": "form-marv-user",
+    "userRole": "cx-agent"
+  }
+}
+
+[ChatManagerService] Attempting to join conversation: cfefee4f-730b-48d1-aea9-cbdd7d192fe3
+[ChatManagerService] Available conversations: [ 'cfefee4f-730b-48d1-aea9-cbdd7d192fe3' ]
+[95m[Nest] 1629689  - [39m08/08/2025, 1:10:19 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mBroadcasting dashboard event: conversation_participant_added[39m
+[32m[Nest] 1629689  - [39m08/08/2025, 1:11:11 PM [32m    LOG[39m [38;5;3m[IstackBuddySlackApiService] [39m[32mGarbage collection completed. Cleaned up old events.[39m
+[32m[Nest] 1629689  - [39m08/08/2025, 1:12:11 PM [32m    LOG[39m [38;5;3m[IstackBuddySlackApiService] [39m[32mGarbage collection completed. Cleaned up old events.[39m
+[32m[Nest] 1629689  - [39m08/08/2025, 1:13:11 PM [32m    LOG[39m [38;5;3m[IstackBuddySlackApiService] [39m[32mGarbage collection completed. Cleaned up old events.[39m
+[2J[3J[H[[90m1:13:36 PM[0m] File change detected. Starting incremental compilation...
+
+[[90m1:13:36 PM[0m] Found 0 errors. Watching for file changes.
+
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mRobotModule dependencies initialized[39m[38;5;3m +9ms[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConversationListServiceModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mLoggerModule dependencies initialized[39m[38;5;3m +0ms[39m
+[95m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [95m  DEBUG[39m [38;5;3m[AuthorizationPermissionsService.constructor] [39m[95mFile-based permissions loaded successfully[39m
+[95m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [95m  DEBUG[39m [38;5;3m[AuthorizationPermissionsService.constructor] [39m[95mData: {
+  "userPermissionsCount": 0,
+  "groupPermissionsCount": 0,
+  "userGroupMembershipsCount": 0
+}[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAuthorizationPermissionsModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +0ms[39m
+[95m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [95m  DEBUG[39m [38;5;3m[AuthenticationService.constructor] [39m[95mAuthentication service initialized with configuration[39m
+[95m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [95m  DEBUG[39m [38;5;3m[AuthenticationService.constructor] [39m[95mData: {
+  "sessionTimeoutSeconds": 28800
+}[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAuthenticationModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mGuardsModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mIstackBuddySlackApiModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mDevDebugModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mPublicInterfaceModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mChatManagerModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mUserProfileModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [32m    LOG[39m [38;5;3m[WebSocketsController] [39m[32mChatManagerGateway subscribed to the "join_room" message[39m[38;5;3m +18ms[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [32m    LOG[39m [38;5;3m[WebSocketsController] [39m[32mChatManagerGateway subscribed to the "leave_room" message[39m[38;5;3m +1ms[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [32m    LOG[39m [38;5;3m[WebSocketsController] [39m[32mChatManagerGateway subscribed to the "send_message" message[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [32m    LOG[39m [38;5;3m[WebSocketsController] [39m[32mChatManagerGateway subscribed to the "typing_start" message[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [32m    LOG[39m [38;5;3m[WebSocketsController] [39m[32mChatManagerGateway subscribed to the "typing_stop" message[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [32m    LOG[39m [38;5;3m[WebSocketsController] [39m[32mChatManagerGateway subscribed to the "get_messages" message[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [32m    LOG[39m [38;5;3m[WebSocketsController] [39m[32mChatManagerGateway subscribed to the "share_robot_message" message[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [32m    LOG[39m [38;5;3m[WebSocketsController] [39m[32mChatManagerGateway subscribed to the "join_dashboard" message[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [32m    LOG[39m [38;5;3m[WebSocketsController] [39m[32mChatManagerGateway subscribed to the "leave_dashboard" message[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAppController {/}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAuthenticationController {/auth}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/user, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/profile/me, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mUserProfileController {/user-profiles}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/user-profiles/me, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mDevDebugController {/dev-debug}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/dev-debug/auth, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/dev-debug/user-details/:userId, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/dev-debug/users, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/dev-debug/auth-status/:userId, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mChatManagerController {/chat}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/chat/messages, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/chat/conversations, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/chat/conversations/:conversationId/messages, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/chat/conversations/:conversationId/messages/last/:count, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/chat/conversations/:conversationId/join, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/chat/conversations/:conversationId/participants, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/chat/dashboard/stats, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/chat/conversations/start, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/chat/conversations/:conversationId/leave, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mIstackBuddySlackApiController {/}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/istack-buddy/slack-integration/health, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/istack-buddy/slack-integration/debug, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/istack-buddy/slack-integration/slack/events, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mPublicInterfaceController {/public}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/public, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/public/form-marv, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/public/form-marv/debug-create, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/public/form-marv/:conversationId, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/public/form-marv/:conversationId/:formId, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/public/form-marv/:conversationId/:formId/chat-messages, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/public/form-marv/:conversationId/:formId/chat-messages, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [32m    LOG[39m [38;5;3m[SlackyAnthropicAgent] [39m[32mSlackyAnthropicAgent constructor called - class loaded[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [32m    LOG[39m [38;5;3m[SlackyOpenAiAgent] [39m[32mSlackyOpenAiAgent constructor called - class loaded[39m
+[95m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [95m  DEBUG[39m [38;5;3m[RobotService] [39m[95mRegistered robot: ChatRobotParrot v1.0.0[39m
+[95m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [95m  DEBUG[39m [38;5;3m[RobotService] [39m[95mRegistered robot: AgentRobotParrot v1.0.0[39m
+[95m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [95m  DEBUG[39m [38;5;3m[RobotService] [39m[95mRegistered robot: RobotChatOpenAI v1.0.0-test-dev[39m
+[95m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [95m  DEBUG[39m [38;5;3m[RobotService] [39m[95mRegistered robot: RobotChatAnthropic v1.0.0[39m
+[95m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [95m  DEBUG[39m [38;5;3m[RobotService] [39m[95mRegistered robot: SlackyAnthropicAgent v1.0.0[39m
+[95m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [95m  DEBUG[39m [38;5;3m[RobotService] [39m[95mRegistered robot: MarvOpenAiAgent v1.0.0[39m
+[95m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [95m  DEBUG[39m [38;5;3m[RobotService] [39m[95mRegistered robot: SlackyOpenAiAgent v1.0.0[39m
+[95m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [95m  DEBUG[39m [38;5;3m[RobotService] [39m[95mRegistered robot: AnthropicMarv v1.0.0[39m
+[95m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [95m  DEBUG[39m [38;5;3m[RobotService] [39m[95mRegistered robot: SlackAgentCoreFormsParrot v1.0.0[39m
+[95m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [95m  DEBUG[39m [38;5;3m[RobotService] [39m[95mRegistered robot: SlackAgentCoreFormsSsoAutofillParrot v1.0.0[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [32m    LOG[39m [38;5;3m[RobotService] [39m[32mInitialized 10 robots[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +1ms[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [32m    LOG[39m [38;5;3m[Bootstrap] [39m[32miStack Buddy Server running on: http://localhost:3500[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [32m    LOG[39m [38;5;3m[Bootstrap] [39m[32mAPI Documentation available at: http://localhost:3500/api[39m
+[33m[Nest] 1630163  - [39m08/08/2025, 1:13:37 PM [33m   WARN[39m [38;5;3m[Bootstrap] [39m[33mCORS enabled for ALL origins (temporary)[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:38 PM [32m    LOG[39m [38;5;3m[ChatManagerGateway] [39m[32mClient connected: LSGpy_ghrzThvIGLAAAB[39m
+[95m[Nest] 1630163  - [39m08/08/2025, 1:13:38 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mJoin room data received[39m
+[95m[Nest] 1630163  - [39m08/08/2025, 1:13:38 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mObject:[39m
+{
+  "data": {
+    "conversationId": "85d9684b-d407-4653-b66b-dcb0b3b840a5",
+    "userId": "form-marv-user",
+    "userRole": "cx-agent"
+  }
+}
+
+[95m[Nest] 1630163  - [39m08/08/2025, 1:13:38 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mApplied default joinData[39m
+[95m[Nest] 1630163  - [39m08/08/2025, 1:13:38 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mObject:[39m
+{
+  "joinData": {
+    "userId": "form-marv-user",
+    "userRole": "cx-agent"
+  }
+}
+
+[ChatManagerService] Attempting to join conversation: 85d9684b-d407-4653-b66b-dcb0b3b840a5
+[ChatManagerService] Available conversations: []
+[31m[Nest] 1630163  - [39m08/08/2025, 1:13:38 PM [31m  ERROR[39m [38;5;3m[ChatManagerGateway] [39m[31mError in handleJoinRoom[39m
+[31m[Nest] 1630163  - [39m08/08/2025, 1:13:38 PM [31m  ERROR[39m [38;5;3m[ChatManagerGateway] [39m[31mError: Conversation 85d9684b-d407-4653-b66b-dcb0b3b840a5 not found[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:38 PM [32m    LOG[39m [38;5;3m[ChatManagerGateway] [39m[32mClient connected: TN18wqHiuoN8GPaEAAAD[39m
+[95m[Nest] 1630163  - [39m08/08/2025, 1:13:38 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mJoin room data received[39m
+[95m[Nest] 1630163  - [39m08/08/2025, 1:13:38 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mObject:[39m
+{
+  "data": {
+    "conversationId": "4605a6eb-b349-4db8-8176-99205b999f29",
+    "userId": "form-marv-user",
+    "userRole": "cx-agent"
+  }
+}
+
+[95m[Nest] 1630163  - [39m08/08/2025, 1:13:38 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mApplied default joinData[39m
+[95m[Nest] 1630163  - [39m08/08/2025, 1:13:38 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mObject:[39m
+{
+  "joinData": {
+    "userId": "form-marv-user",
+    "userRole": "cx-agent"
+  }
+}
+
+[ChatManagerService] Attempting to join conversation: 4605a6eb-b349-4db8-8176-99205b999f29
+[ChatManagerService] Available conversations: []
+[31m[Nest] 1630163  - [39m08/08/2025, 1:13:38 PM [31m  ERROR[39m [38;5;3m[ChatManagerGateway] [39m[31mError in handleJoinRoom[39m
+[31m[Nest] 1630163  - [39m08/08/2025, 1:13:38 PM [31m  ERROR[39m [38;5;3m[ChatManagerGateway] [39m[31mError: Conversation 4605a6eb-b349-4db8-8176-99205b999f29 not found[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:38 PM [32m    LOG[39m [38;5;3m[ChatManagerGateway] [39m[32mClient connected: tMy6t6r502nbxJ3wAAAF[39m
+[95m[Nest] 1630163  - [39m08/08/2025, 1:13:38 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mJoin room data received[39m
+[95m[Nest] 1630163  - [39m08/08/2025, 1:13:38 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mObject:[39m
+{
+  "data": {
+    "conversationId": "cfefee4f-730b-48d1-aea9-cbdd7d192fe3",
+    "userId": "form-marv-user",
+    "userRole": "cx-agent"
+  }
+}
+
+[95m[Nest] 1630163  - [39m08/08/2025, 1:13:38 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mApplied default joinData[39m
+[95m[Nest] 1630163  - [39m08/08/2025, 1:13:38 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mObject:[39m
+{
+  "joinData": {
+    "userId": "form-marv-user",
+    "userRole": "cx-agent"
+  }
+}
+
+[ChatManagerService] Attempting to join conversation: cfefee4f-730b-48d1-aea9-cbdd7d192fe3
+[ChatManagerService] Available conversations: []
+[31m[Nest] 1630163  - [39m08/08/2025, 1:13:38 PM [31m  ERROR[39m [38;5;3m[ChatManagerGateway] [39m[31mError in handleJoinRoom[39m
+[31m[Nest] 1630163  - [39m08/08/2025, 1:13:38 PM [31m  ERROR[39m [38;5;3m[ChatManagerGateway] [39m[31mError: Conversation cfefee4f-730b-48d1-aea9-cbdd7d192fe3 not found[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:49 PM [32m    LOG[39m [38;5;3m[ChatManagerGateway] [39m[32mClient disconnected: tMy6t6r502nbxJ3wAAAF[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:50 PM [32m    LOG[39m [38;5;3m[ChatManagerGateway] [39m[32mClient connected: xfzMnb0QKxHjUiotAAAH[39m
+[95m[Nest] 1630163  - [39m08/08/2025, 1:13:50 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mJoin room data received[39m
+[95m[Nest] 1630163  - [39m08/08/2025, 1:13:50 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mObject:[39m
+{
+  "data": {
+    "conversationId": "cfefee4f-730b-48d1-aea9-cbdd7d192fe3",
+    "userId": "form-marv-user",
+    "userRole": "cx-agent"
+  }
+}
+
+[95m[Nest] 1630163  - [39m08/08/2025, 1:13:50 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mApplied default joinData[39m
+[95m[Nest] 1630163  - [39m08/08/2025, 1:13:50 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mObject:[39m
+{
+  "joinData": {
+    "userId": "form-marv-user",
+    "userRole": "cx-agent"
+  }
+}
+
+[ChatManagerService] Attempting to join conversation: cfefee4f-730b-48d1-aea9-cbdd7d192fe3
+[ChatManagerService] Available conversations: []
+[31m[Nest] 1630163  - [39m08/08/2025, 1:13:50 PM [31m  ERROR[39m [38;5;3m[ChatManagerGateway] [39m[31mError in handleJoinRoom[39m
+[31m[Nest] 1630163  - [39m08/08/2025, 1:13:50 PM [31m  ERROR[39m [38;5;3m[ChatManagerGateway] [39m[31mError: Conversation cfefee4f-730b-48d1-aea9-cbdd7d192fe3 not found[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:54 PM [32m    LOG[39m [38;5;3m[HttpRequest] [39m[32m[40a3453c-b606-48d3-979d-30781f964499] Incoming GET /public/form-marv/debug-create?formId=5375703[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:54 PM [32m    LOG[39m [38;5;3m[HttpRequest] [39m[32mData: {
+  "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36",
+  "ip": "::1",
+  "params": {},
+  "query": {
+    "formId": "5375703"
+  }
+}[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:54 PM [32m    LOG[39m [38;5;3m[UserProfileService.addTemporaryUser] [39m[32mTemporary user profile added[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:54 PM [32m    LOG[39m [38;5;3m[UserProfileService.addTemporaryUser] [39m[32mData: {
+  "userId": "form-marv-temp-1754676834148"
+}[39m
+[95m[Nest] 1630163  - [39m08/08/2025, 1:13:54 PM [95m  DEBUG[39m [38;5;3m[AuthorizationPermissionsService.addUser] [39m[95mUser added successfully[39m
+[95m[Nest] 1630163  - [39m08/08/2025, 1:13:54 PM [95m  DEBUG[39m [38;5;3m[AuthorizationPermissionsService.addUser] [39m[95mData: {
+  "userId": "form-marv-temp-1754676834148",
+  "ownPermissionsCount": 2,
+  "groupMembershipsCount": 0
+}[39m
+[95m[Nest] 1630163  - [39m08/08/2025, 1:13:54 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mBroadcasting dashboard event: conversation_created[39m
+{
+  allConversationMessages: [
+    {
+      id: '309fb343-48d4-4c74-ae1e-2a336389c011',
+      content: 'DEBUG - User Message',
+      conversationId: '3122a64a-ad38-450a-861f-48b000e3e318',
+      fromUserId: 'AnthropicMarv',
+      fromRole: 'robot',
+      toRole: 'cx-customer',
+      messageType: 'text',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-08T18:13:54.152Z,
+      updatedAt: 2025-08-08T18:13:54.152Z
+    }
+  ]
+}
+[95m[Nest] 1630163  - [39m08/08/2025, 1:13:54 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mBroadcasting dashboard event: conversation_updated[39m
+Gateway: Broadcasting new_message to conversation 3122a64a-ad38-450a-861f-48b000e3e318: {
+  message: {
+    id: '309fb343-48d4-4c74-ae1e-2a336389c011',
+    content: 'DEBUG - User Message',
+    conversationId: '3122a64a-ad38-450a-861f-48b000e3e318',
+    fromUserId: 'AnthropicMarv',
+    fromRole: 'robot',
+    toRole: 'cx-customer',
+    messageType: 'text',
+    threadId: undefined,
+    originalMessageId: undefined,
+    createdAt: 2025-08-08T18:13:54.152Z,
+    updatedAt: 2025-08-08T18:13:54.152Z
+  },
+  timestamp: '2025-08-08T18:13:54.152Z'
+}
+Gateway: Broadcast completed
+{
+  allConversationMessages: [
+    {
+      id: '309fb343-48d4-4c74-ae1e-2a336389c011',
+      content: 'DEBUG - User Message',
+      conversationId: '3122a64a-ad38-450a-861f-48b000e3e318',
+      fromUserId: 'AnthropicMarv',
+      fromRole: 'robot',
+      toRole: 'cx-customer',
+      messageType: 'text',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-08T18:13:54.152Z,
+      updatedAt: 2025-08-08T18:13:54.152Z
+    },
+    {
+      id: 'bb0f701a-2ede-4267-9398-371cb922b254',
+      content: 'DEBUG - Conversation Message',
+      conversationId: '3122a64a-ad38-450a-861f-48b000e3e318',
+      fromUserId: 'AnthropicMarv',
+      fromRole: 'robot',
+      toRole: 'cx-customer',
+      messageType: 'text',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-08T18:13:54.153Z,
+      updatedAt: 2025-08-08T18:13:54.153Z
+    }
+  ]
+}
+[95m[Nest] 1630163  - [39m08/08/2025, 1:13:54 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mBroadcasting dashboard event: conversation_updated[39m
+Gateway: Broadcasting new_message to conversation 3122a64a-ad38-450a-861f-48b000e3e318: {
+  message: {
+    id: 'bb0f701a-2ede-4267-9398-371cb922b254',
+    content: 'DEBUG - Conversation Message',
+    conversationId: '3122a64a-ad38-450a-861f-48b000e3e318',
+    fromUserId: 'AnthropicMarv',
+    fromRole: 'robot',
+    toRole: 'cx-customer',
+    messageType: 'text',
+    threadId: undefined,
+    originalMessageId: undefined,
+    createdAt: 2025-08-08T18:13:54.153Z,
+    updatedAt: 2025-08-08T18:13:54.153Z
+  },
+  timestamp: '2025-08-08T18:13:54.153Z'
+}
+Gateway: Broadcast completed
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:54 PM [32m    LOG[39m [38;5;3m[HttpResponse] [39m[32m[40a3453c-b606-48d3-979d-30781f964499] Response GET /public/form-marv/debug-create?formId=5375703 200 - 8ms[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:54 PM [32m    LOG[39m [38;5;3m[HttpResponse] [39m[32mData: {
+  "statusCode": 200,
+  "elapsed": "8ms"
+}[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:55 PM [32m    LOG[39m [38;5;3m[ChatManagerGateway] [39m[32mClient connected: 8sTlxXPawvOaR50aAAAJ[39m
+[95m[Nest] 1630163  - [39m08/08/2025, 1:13:55 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mJoin room data received[39m
+[95m[Nest] 1630163  - [39m08/08/2025, 1:13:55 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mObject:[39m
+{
+  "data": {
+    "conversationId": "3122a64a-ad38-450a-861f-48b000e3e318",
+    "userId": "form-marv-user",
+    "userRole": "cx-agent"
+  }
+}
+
+[95m[Nest] 1630163  - [39m08/08/2025, 1:13:55 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mApplied default joinData[39m
+[95m[Nest] 1630163  - [39m08/08/2025, 1:13:55 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mObject:[39m
+{
+  "joinData": {
+    "userId": "form-marv-user",
+    "userRole": "cx-agent"
+  }
+}
+
+[ChatManagerService] Attempting to join conversation: 3122a64a-ad38-450a-861f-48b000e3e318
+[ChatManagerService] Available conversations: [ '3122a64a-ad38-450a-861f-48b000e3e318' ]
+[95m[Nest] 1630163  - [39m08/08/2025, 1:13:55 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mBroadcasting dashboard event: conversation_participant_added[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:13:57 PM [32m    LOG[39m [38;5;3m[ChatManagerGateway] [39m[32mClient disconnected: xfzMnb0QKxHjUiotAAAH[39m
+[32m[Nest] 1630163  - [39m08/08/2025, 1:14:37 PM [32m    LOG[39m [38;5;3m[IstackBuddySlackApiService] [39m[32mGarbage collection completed. Cleaned up old events.[39m
+[2J[3J[H[[90m1:14:47 PM[0m] File change detected. Starting incremental compilation...
+
+[[90m1:14:48 PM[0m] Found 0 errors. Watching for file changes.
+
+[32m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mRobotModule dependencies initialized[39m[38;5;3m +8ms[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConversationListServiceModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mLoggerModule dependencies initialized[39m[38;5;3m +0ms[39m
+[95m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [95m  DEBUG[39m [38;5;3m[AuthorizationPermissionsService.constructor] [39m[95mFile-based permissions loaded successfully[39m
+[95m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [95m  DEBUG[39m [38;5;3m[AuthorizationPermissionsService.constructor] [39m[95mData: {
+  "userPermissionsCount": 0,
+  "groupPermissionsCount": 0,
+  "userGroupMembershipsCount": 0
+}[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAuthorizationPermissionsModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +0ms[39m
+[95m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [95m  DEBUG[39m [38;5;3m[AuthenticationService.constructor] [39m[95mAuthentication service initialized with configuration[39m
+[95m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [95m  DEBUG[39m [38;5;3m[AuthenticationService.constructor] [39m[95mData: {
+  "sessionTimeoutSeconds": 28800
+}[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAuthenticationModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mGuardsModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mIstackBuddySlackApiModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mDevDebugModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mPublicInterfaceModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mChatManagerModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mUserProfileModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [32m    LOG[39m [38;5;3m[WebSocketsController] [39m[32mChatManagerGateway subscribed to the "join_room" message[39m[38;5;3m +18ms[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [32m    LOG[39m [38;5;3m[WebSocketsController] [39m[32mChatManagerGateway subscribed to the "leave_room" message[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [32m    LOG[39m [38;5;3m[WebSocketsController] [39m[32mChatManagerGateway subscribed to the "send_message" message[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [32m    LOG[39m [38;5;3m[WebSocketsController] [39m[32mChatManagerGateway subscribed to the "typing_start" message[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [32m    LOG[39m [38;5;3m[WebSocketsController] [39m[32mChatManagerGateway subscribed to the "typing_stop" message[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [32m    LOG[39m [38;5;3m[WebSocketsController] [39m[32mChatManagerGateway subscribed to the "get_messages" message[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [32m    LOG[39m [38;5;3m[WebSocketsController] [39m[32mChatManagerGateway subscribed to the "share_robot_message" message[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [32m    LOG[39m [38;5;3m[WebSocketsController] [39m[32mChatManagerGateway subscribed to the "join_dashboard" message[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [32m    LOG[39m [38;5;3m[WebSocketsController] [39m[32mChatManagerGateway subscribed to the "leave_dashboard" message[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAppController {/}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAuthenticationController {/auth}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/user, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/profile/me, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mUserProfileController {/user-profiles}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/user-profiles/me, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mDevDebugController {/dev-debug}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/dev-debug/auth, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/dev-debug/user-details/:userId, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/dev-debug/users, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/dev-debug/auth-status/:userId, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mChatManagerController {/chat}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/chat/messages, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/chat/conversations, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/chat/conversations/:conversationId/messages, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/chat/conversations/:conversationId/messages/last/:count, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/chat/conversations/:conversationId/join, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/chat/conversations/:conversationId/participants, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/chat/dashboard/stats, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/chat/conversations/start, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/chat/conversations/:conversationId/leave, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mIstackBuddySlackApiController {/}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/istack-buddy/slack-integration/health, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/istack-buddy/slack-integration/debug, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/istack-buddy/slack-integration/slack/events, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mPublicInterfaceController {/public}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/public, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/public/form-marv, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/public/form-marv/debug-create, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/public/form-marv/:conversationId, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/public/form-marv/:conversationId/:formId, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/public/form-marv/:conversationId/:formId/chat-messages, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/public/form-marv/:conversationId/:formId/chat-messages, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [32m    LOG[39m [38;5;3m[SlackyAnthropicAgent] [39m[32mSlackyAnthropicAgent constructor called - class loaded[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [32m    LOG[39m [38;5;3m[SlackyOpenAiAgent] [39m[32mSlackyOpenAiAgent constructor called - class loaded[39m
+[95m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [95m  DEBUG[39m [38;5;3m[RobotService] [39m[95mRegistered robot: ChatRobotParrot v1.0.0[39m
+[95m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [95m  DEBUG[39m [38;5;3m[RobotService] [39m[95mRegistered robot: AgentRobotParrot v1.0.0[39m
+[95m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [95m  DEBUG[39m [38;5;3m[RobotService] [39m[95mRegistered robot: RobotChatOpenAI v1.0.0-test-dev[39m
+[95m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [95m  DEBUG[39m [38;5;3m[RobotService] [39m[95mRegistered robot: RobotChatAnthropic v1.0.0[39m
+[95m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [95m  DEBUG[39m [38;5;3m[RobotService] [39m[95mRegistered robot: SlackyAnthropicAgent v1.0.0[39m
+[95m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [95m  DEBUG[39m [38;5;3m[RobotService] [39m[95mRegistered robot: MarvOpenAiAgent v1.0.0[39m
+[95m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [95m  DEBUG[39m [38;5;3m[RobotService] [39m[95mRegistered robot: SlackyOpenAiAgent v1.0.0[39m
+[95m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [95m  DEBUG[39m [38;5;3m[RobotService] [39m[95mRegistered robot: AnthropicMarv v1.0.0[39m
+[95m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [95m  DEBUG[39m [38;5;3m[RobotService] [39m[95mRegistered robot: SlackAgentCoreFormsParrot v1.0.0[39m
+[95m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [95m  DEBUG[39m [38;5;3m[RobotService] [39m[95mRegistered robot: SlackAgentCoreFormsSsoAutofillParrot v1.0.0[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [32m    LOG[39m [38;5;3m[RobotService] [39m[32mInitialized 10 robots[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +1ms[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [32m    LOG[39m [38;5;3m[Bootstrap] [39m[32miStack Buddy Server running on: http://localhost:3500[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [32m    LOG[39m [38;5;3m[Bootstrap] [39m[32mAPI Documentation available at: http://localhost:3500/api[39m
+[33m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [33m   WARN[39m [38;5;3m[Bootstrap] [39m[33mCORS enabled for ALL origins (temporary)[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [32m    LOG[39m [38;5;3m[ChatManagerGateway] [39m[32mClient connected: HcQxGs7-F9eDzLgaAAAB[39m
+[95m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mJoin room data received[39m
+[95m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mObject:[39m
+{
+  "data": {
+    "conversationId": "85d9684b-d407-4653-b66b-dcb0b3b840a5",
+    "userId": "form-marv-user",
+    "userRole": "cx-agent"
+  }
+}
+
+[95m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mApplied default joinData[39m
+[95m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mObject:[39m
+{
+  "joinData": {
+    "userId": "form-marv-user",
+    "userRole": "cx-agent"
+  }
+}
+
+[ChatManagerService] Attempting to join conversation: 85d9684b-d407-4653-b66b-dcb0b3b840a5
+[ChatManagerService] Available conversations: []
+[31m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [31m  ERROR[39m [38;5;3m[ChatManagerGateway] [39m[31mError in handleJoinRoom[39m
+[31m[Nest] 1630407  - [39m08/08/2025, 1:14:48 PM [31m  ERROR[39m [38;5;3m[ChatManagerGateway] [39m[31mError: Conversation 85d9684b-d407-4653-b66b-dcb0b3b840a5 not found[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:14:49 PM [32m    LOG[39m [38;5;3m[ChatManagerGateway] [39m[32mClient connected: j0kKjBAGoICsjAmGAAAD[39m
+[95m[Nest] 1630407  - [39m08/08/2025, 1:14:49 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mJoin room data received[39m
+[95m[Nest] 1630407  - [39m08/08/2025, 1:14:49 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mObject:[39m
+{
+  "data": {
+    "conversationId": "3122a64a-ad38-450a-861f-48b000e3e318",
+    "userId": "form-marv-user",
+    "userRole": "cx-agent"
+  }
+}
+
+[95m[Nest] 1630407  - [39m08/08/2025, 1:14:49 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mApplied default joinData[39m
+[95m[Nest] 1630407  - [39m08/08/2025, 1:14:49 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mObject:[39m
+{
+  "joinData": {
+    "userId": "form-marv-user",
+    "userRole": "cx-agent"
+  }
+}
+
+[ChatManagerService] Attempting to join conversation: 3122a64a-ad38-450a-861f-48b000e3e318
+[ChatManagerService] Available conversations: []
+[31m[Nest] 1630407  - [39m08/08/2025, 1:14:49 PM [31m  ERROR[39m [38;5;3m[ChatManagerGateway] [39m[31mError in handleJoinRoom[39m
+[31m[Nest] 1630407  - [39m08/08/2025, 1:14:49 PM [31m  ERROR[39m [38;5;3m[ChatManagerGateway] [39m[31mError: Conversation 3122a64a-ad38-450a-861f-48b000e3e318 not found[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:14:49 PM [32m    LOG[39m [38;5;3m[ChatManagerGateway] [39m[32mClient connected: UJA0pKX7yLwyAcA1AAAF[39m
+[95m[Nest] 1630407  - [39m08/08/2025, 1:14:49 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mJoin room data received[39m
+[95m[Nest] 1630407  - [39m08/08/2025, 1:14:49 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mObject:[39m
+{
+  "data": {
+    "conversationId": "4605a6eb-b349-4db8-8176-99205b999f29",
+    "userId": "form-marv-user",
+    "userRole": "cx-agent"
+  }
+}
+
+[95m[Nest] 1630407  - [39m08/08/2025, 1:14:49 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mApplied default joinData[39m
+[95m[Nest] 1630407  - [39m08/08/2025, 1:14:49 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mObject:[39m
+{
+  "joinData": {
+    "userId": "form-marv-user",
+    "userRole": "cx-agent"
+  }
+}
+
+[ChatManagerService] Attempting to join conversation: 4605a6eb-b349-4db8-8176-99205b999f29
+[ChatManagerService] Available conversations: []
+[31m[Nest] 1630407  - [39m08/08/2025, 1:14:49 PM [31m  ERROR[39m [38;5;3m[ChatManagerGateway] [39m[31mError in handleJoinRoom[39m
+[31m[Nest] 1630407  - [39m08/08/2025, 1:14:49 PM [31m  ERROR[39m [38;5;3m[ChatManagerGateway] [39m[31mError: Conversation 4605a6eb-b349-4db8-8176-99205b999f29 not found[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:15:04 PM [32m    LOG[39m [38;5;3m[ChatManagerGateway] [39m[32mClient disconnected: j0kKjBAGoICsjAmGAAAD[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:15:04 PM [32m    LOG[39m [38;5;3m[ChatManagerGateway] [39m[32mClient connected: C63-9kCPepV6DsmXAAAH[39m
+[95m[Nest] 1630407  - [39m08/08/2025, 1:15:04 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mJoin room data received[39m
+[95m[Nest] 1630407  - [39m08/08/2025, 1:15:04 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mObject:[39m
+{
+  "data": {
+    "conversationId": "3122a64a-ad38-450a-861f-48b000e3e318",
+    "userId": "form-marv-user",
+    "userRole": "cx-agent"
+  }
+}
+
+[95m[Nest] 1630407  - [39m08/08/2025, 1:15:04 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mApplied default joinData[39m
+[95m[Nest] 1630407  - [39m08/08/2025, 1:15:04 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mObject:[39m
+{
+  "joinData": {
+    "userId": "form-marv-user",
+    "userRole": "cx-agent"
+  }
+}
+
+[ChatManagerService] Attempting to join conversation: 3122a64a-ad38-450a-861f-48b000e3e318
+[ChatManagerService] Available conversations: []
+[31m[Nest] 1630407  - [39m08/08/2025, 1:15:04 PM [31m  ERROR[39m [38;5;3m[ChatManagerGateway] [39m[31mError in handleJoinRoom[39m
+[31m[Nest] 1630407  - [39m08/08/2025, 1:15:04 PM [31m  ERROR[39m [38;5;3m[ChatManagerGateway] [39m[31mError: Conversation 3122a64a-ad38-450a-861f-48b000e3e318 not found[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:15:12 PM [32m    LOG[39m [38;5;3m[ChatManagerGateway] [39m[32mClient disconnected: C63-9kCPepV6DsmXAAAH[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:15:13 PM [32m    LOG[39m [38;5;3m[HttpRequest] [39m[32m[7e88e0f8-1aae-451d-8f98-1b5707735201] Incoming GET /public/form-marv/debug-create?formId=5375703[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:15:13 PM [32m    LOG[39m [38;5;3m[HttpRequest] [39m[32mData: {
+  "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36",
+  "ip": "::1",
+  "params": {},
+  "query": {
+    "formId": "5375703"
+  }
+}[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:15:13 PM [32m    LOG[39m [38;5;3m[UserProfileService.addTemporaryUser] [39m[32mTemporary user profile added[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:15:13 PM [32m    LOG[39m [38;5;3m[UserProfileService.addTemporaryUser] [39m[32mData: {
+  "userId": "form-marv-temp-1754676913986"
+}[39m
+[95m[Nest] 1630407  - [39m08/08/2025, 1:15:13 PM [95m  DEBUG[39m [38;5;3m[AuthorizationPermissionsService.addUser] [39m[95mUser added successfully[39m
+[95m[Nest] 1630407  - [39m08/08/2025, 1:15:13 PM [95m  DEBUG[39m [38;5;3m[AuthorizationPermissionsService.addUser] [39m[95mData: {
+  "userId": "form-marv-temp-1754676913986",
+  "ownPermissionsCount": 2,
+  "groupMembershipsCount": 0
+}[39m
+[95m[Nest] 1630407  - [39m08/08/2025, 1:15:13 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mBroadcasting dashboard event: conversation_created[39m
+{
+  allConversationMessages: [
+    {
+      id: 'f5703a84-eb5c-488e-8df5-343dcea05340',
+      content: 'DEBUG - User Message',
+      conversationId: '9fc87f84-35e8-4a7c-8de4-dedf002797dc',
+      fromUserId: 'form-marv-temp-1754676913986',
+      fromRole: 'cx-customer',
+      toRole: 'robot',
+      messageType: 'text',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-08T18:15:13.989Z,
+      updatedAt: 2025-08-08T18:15:13.989Z
+    }
+  ]
+}
+[95m[Nest] 1630407  - [39m08/08/2025, 1:15:13 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mBroadcasting dashboard event: conversation_updated[39m
+Gateway: Broadcasting new_message to conversation 9fc87f84-35e8-4a7c-8de4-dedf002797dc: {
+  message: {
+    id: 'f5703a84-eb5c-488e-8df5-343dcea05340',
+    content: 'DEBUG - User Message',
+    conversationId: '9fc87f84-35e8-4a7c-8de4-dedf002797dc',
+    fromUserId: 'form-marv-temp-1754676913986',
+    fromRole: 'cx-customer',
+    toRole: 'robot',
+    messageType: 'text',
+    threadId: undefined,
+    originalMessageId: undefined,
+    createdAt: 2025-08-08T18:15:13.989Z,
+    updatedAt: 2025-08-08T18:15:13.989Z
+  },
+  timestamp: '2025-08-08T18:15:13.989Z'
+}
+Gateway: Broadcast completed
+{
+  allConversationMessages: [
+    {
+      id: 'f5703a84-eb5c-488e-8df5-343dcea05340',
+      content: 'DEBUG - User Message',
+      conversationId: '9fc87f84-35e8-4a7c-8de4-dedf002797dc',
+      fromUserId: 'form-marv-temp-1754676913986',
+      fromRole: 'cx-customer',
+      toRole: 'robot',
+      messageType: 'text',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-08T18:15:13.989Z,
+      updatedAt: 2025-08-08T18:15:13.989Z
+    },
+    {
+      id: '90ba6af1-ef6a-468e-a974-33dcfc96b3c9',
+      content: 'DEBUG - Conversation Message',
+      conversationId: '9fc87f84-35e8-4a7c-8de4-dedf002797dc',
+      fromUserId: 'AnthropicMarv',
+      fromRole: 'robot',
+      toRole: 'cx-customer',
+      messageType: 'text',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-08T18:15:13.990Z,
+      updatedAt: 2025-08-08T18:15:13.990Z
+    }
+  ]
+}
+[95m[Nest] 1630407  - [39m08/08/2025, 1:15:13 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mBroadcasting dashboard event: conversation_updated[39m
+Gateway: Broadcasting new_message to conversation 9fc87f84-35e8-4a7c-8de4-dedf002797dc: {
+  message: {
+    id: '90ba6af1-ef6a-468e-a974-33dcfc96b3c9',
+    content: 'DEBUG - Conversation Message',
+    conversationId: '9fc87f84-35e8-4a7c-8de4-dedf002797dc',
+    fromUserId: 'AnthropicMarv',
+    fromRole: 'robot',
+    toRole: 'cx-customer',
+    messageType: 'text',
+    threadId: undefined,
+    originalMessageId: undefined,
+    createdAt: 2025-08-08T18:15:13.990Z,
+    updatedAt: 2025-08-08T18:15:13.990Z
+  },
+  timestamp: '2025-08-08T18:15:13.990Z'
+}
+Gateway: Broadcast completed
+[32m[Nest] 1630407  - [39m08/08/2025, 1:15:13 PM [32m    LOG[39m [38;5;3m[HttpResponse] [39m[32m[7e88e0f8-1aae-451d-8f98-1b5707735201] Response GET /public/form-marv/debug-create?formId=5375703 200 - 6ms[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:15:13 PM [32m    LOG[39m [38;5;3m[HttpResponse] [39m[32mData: {
+  "statusCode": 200,
+  "elapsed": "6ms"
+}[39m
+[32m[Nest] 1630407  - [39m08/08/2025, 1:15:16 PM [32m    LOG[39m [38;5;3m[ChatManagerGateway] [39m[32mClient connected: _B-w4MLwgRJQKix_AAAJ[39m
+[95m[Nest] 1630407  - [39m08/08/2025, 1:15:16 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mJoin room data received[39m
+[95m[Nest] 1630407  - [39m08/08/2025, 1:15:16 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mObject:[39m
+{
+  "data": {
+    "conversationId": "9fc87f84-35e8-4a7c-8de4-dedf002797dc",
+    "userId": "form-marv-user",
+    "userRole": "cx-agent"
+  }
+}
+
+[95m[Nest] 1630407  - [39m08/08/2025, 1:15:16 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mApplied default joinData[39m
+[95m[Nest] 1630407  - [39m08/08/2025, 1:15:16 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mObject:[39m
+{
+  "joinData": {
+    "userId": "form-marv-user",
+    "userRole": "cx-agent"
+  }
+}
+
+[ChatManagerService] Attempting to join conversation: 9fc87f84-35e8-4a7c-8de4-dedf002797dc
+[ChatManagerService] Available conversations: [ '9fc87f84-35e8-4a7c-8de4-dedf002797dc' ]
+[95m[Nest] 1630407  - [39m08/08/2025, 1:15:16 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mBroadcasting dashboard event: conversation_participant_added[39m
