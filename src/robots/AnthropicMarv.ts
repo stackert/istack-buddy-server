@@ -186,6 +186,10 @@ Your goal is to help users efficiently manage their Formstack forms through thes
     getHistory?: () => IConversationMessage[],
   ): Promise<void> {
     try {
+      if (true && !process.env.DOES_NOT_EXIST) {
+        throw Error('Test Error Handler');
+      }
+
       const client = this.getClient();
       const request = this.createAnthropicMessageRequest(
         messageEnvelope,

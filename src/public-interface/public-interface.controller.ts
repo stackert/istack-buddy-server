@@ -585,8 +585,27 @@ export class PublicInterfaceController {
         (fullResponse: string) => {
           console.log('Stream finished');
         },
-        (error) => {
+        async (error) => {
           console.error('Stream error:', error);
+
+          // Create an error message in the conversation
+          const errorMessage = await this.chatManagerService.addMessage({
+            conversationId: conversationId,
+            fromUserId: 'anthropic-marv-robot',
+            content: `I apologize, but I encountered an error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            messageType: MessageType.TEXT,
+            fromRole: UserRole.AGENT,
+            toRole: UserRole.CUSTOMER,
+          });
+
+          // Broadcast error message if gateway is available
+          if (this.chatManagerService.getGateway()) {
+            this.chatManagerService
+              .getGateway()
+              .broadcastToConversation(conversationId, 'robot_complete', {
+                messageId: errorMessage.id,
+              });
+          }
         },
       );
       console.log(`Streaming complete. Full response: "${fullResponse}"`);

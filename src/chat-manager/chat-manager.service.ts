@@ -113,6 +113,10 @@ export class ChatManagerService {
         );
       }
     } catch (error) {
+      console.error(
+        `Error in handleRobotStreamingResponse for robot ${robotName}:`,
+        error,
+      );
       if (onError) {
         onError(error);
       } else {

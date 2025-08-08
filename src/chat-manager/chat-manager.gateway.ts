@@ -182,8 +182,32 @@ export class ChatManagerGateway
         (fullResponse: string) => {
           console.log('Stream finished');
         },
-        (error) => {
+        async (error) => {
           console.error('Stream error:', error);
+
+          // Create an error message in the conversation
+          const errorMessage = await this.chatManagerService.createMessage({
+            conversationId: createMessageDto.conversationId,
+            fromUserId: 'anthropic-marv-robot',
+            content: `I apologize, but I encountered an error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            messageType: MessageType.TEXT,
+            fromRole: UserRole.AGENT,
+            toRole: UserRole.CUSTOMER,
+          });
+
+          // Broadcast error message to all users in the conversation
+          this.server
+            .to(createMessageDto.conversationId)
+            .emit('new_message', errorMessage);
+
+          // Broadcast error completion
+          this.broadcastToConversation(
+            createMessageDto.conversationId,
+            'robot_complete',
+            {
+              messageId: errorMessage.id,
+            },
+          );
         },
       );
 
