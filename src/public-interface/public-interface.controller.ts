@@ -117,7 +117,7 @@ export class PublicInterfaceController {
         await this.chatManagerService.addMessage({
           conversationId: conversation.id,
           fromUserId: userId,
-          content: 'DEBUG - User Message',
+          content: 'DEBUG - User Message II',
           messageType: MessageType.TEXT,
           fromRole: UserRole.CUSTOMER,
           toRole: UserRole.ROBOT,
@@ -131,6 +131,26 @@ export class PublicInterfaceController {
           fromRole: UserRole.ROBOT,
           toRole: UserRole.CUSTOMER,
         });
+        await this.chatManagerService.addMessage({
+          conversationId: conversation.id,
+          fromUserId: 'AnthropicMarv',
+          content: 'DEBUG - Conversation Message II',
+          messageType: MessageType.TEXT,
+          fromRole: UserRole.ROBOT,
+          toRole: UserRole.CUSTOMER,
+        });
+
+        // demonstrate callback usage here
+        const callbacks = this.chatManagerService.createConversationCallback(
+          conversation.id,
+        );
+
+        // Demonstrate each callback being called
+        await callbacks.onStreamStart({} as any);
+        await callbacks.onStreamChunkReceived('test chunk');
+        await callbacks.onStreamFinished('test content', 'assistant');
+        await callbacks.onFullMessageReceived('test full message', 'assistant');
+        await callbacks.onError(new Error('test error'));
       } catch (error) {
         console.error('Failed to add debug messages:', error);
       }

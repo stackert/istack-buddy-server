@@ -35,6 +35,65 @@ export class ChatManagerService {
   ) {}
 
   /**
+   * Create conversation callbacks for streaming responses
+   * Returns IStreamingCallbacks that add debug messages to the conversation
+   */
+  createConversationCallback(conversationId: string): IStreamingCallbacks {
+    return {
+      onStreamChunkReceived: async (chunk: string) => {
+        await this.addMessage({
+          conversationId: conversationId,
+          fromUserId: 'AnthropicMarv',
+          content: 'DEBUG onStreamChunkReceived',
+          messageType: MessageType.TEXT,
+          fromRole: UserRole.ROBOT,
+          toRole: UserRole.CUSTOMER,
+        });
+      },
+      onStreamStart: async (message) => {
+        await this.addMessage({
+          conversationId: conversationId,
+          fromUserId: 'AnthropicMarv',
+          content: 'DEBUG onStreamStart',
+          messageType: MessageType.TEXT,
+          fromRole: UserRole.ROBOT,
+          toRole: UserRole.CUSTOMER,
+        });
+      },
+      onStreamFinished: async (content: string, authorRole: string) => {
+        await this.addMessage({
+          conversationId: conversationId,
+          fromUserId: 'AnthropicMarv',
+          content: 'DEBUG onStreamFinished',
+          messageType: MessageType.TEXT,
+          fromRole: UserRole.ROBOT,
+          toRole: UserRole.CUSTOMER,
+        });
+      },
+      onFullMessageReceived: async (content: string, authorRole: string) => {
+        await this.addMessage({
+          conversationId: conversationId,
+          fromUserId: 'AnthropicMarv',
+          content: 'DEBUG onFullMessageReceived',
+          messageType: MessageType.TEXT,
+          fromRole: UserRole.ROBOT,
+          toRole: UserRole.CUSTOMER,
+        });
+      },
+      onError: async (error: any) => {
+        await this.addMessage({
+          conversationId: conversationId,
+          fromUserId: 'AnthropicMarv',
+          content: 'DEBUG onError',
+          messageType: MessageType.TEXT,
+          fromRole: UserRole.ROBOT,
+          toRole: UserRole.CUSTOMER,
+        });
+      },
+    };
+  }
+
+  /**
    * Handle robot streaming response for a conversation
    * This is the proper way to handle robot communication - through the conversation manager
    */
