@@ -1,30 +1,23 @@
 import {
+  Body,
   Controller,
   Get,
-  Post,
   Param,
+  Post,
   Query,
   Req,
   Res,
   UseGuards,
-  Body,
 } from '@nestjs/common';
 import { Response } from 'express';
-import { AuthPermissionGuard } from '../common/guards/auth-permission.guard';
-import { RequirePermissions } from '../common/decorators/require-permissions.decorator';
+import * as jwt from 'jsonwebtoken';
 import { AuthenticationService } from '../authentication/authentication.service';
 import { AuthorizationPermissionsService } from '../authorization-permissions/authorization-permissions.service';
 import { ChatManagerService } from '../chat-manager/chat-manager.service';
+import { MessageType, UserRole } from '../chat-manager/dto/create-message.dto';
+import { RequirePermissions } from '../common/decorators/require-permissions.decorator';
+import { AuthPermissionGuard } from '../common/guards/auth-permission.guard';
 import { RobotService } from '../robots/robot.service';
-import {
-  CreateMessageDto,
-  MessageType,
-  UserRole,
-} from '../chat-manager/dto/create-message.dto';
-import { AnthropicMarv } from '../robots/AnthropicMarv';
-import * as path from 'path';
-import * as fs from 'fs';
-import * as jwt from 'jsonwebtoken';
 import { UserProfileService } from '../user-profile/user-profile.service';
 
 @Controller('public')

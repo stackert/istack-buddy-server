@@ -176,7 +176,15 @@ Your goal is to help users efficiently manage their Formstack forms through thes
 
       // If there's a chat response, send it as a full message
       if (chatResponse && onFullMessageReceived) {
+        console.log(
+          'Sending chat response to onFullMessageReceived:',
+          chatResponse.message.substring(0, 100) + '...',
+        );
         onFullMessageReceived(chatResponse.message);
+      } else {
+        console.log(
+          'No chat response or onFullMessageReceived callback available',
+        );
       }
 
       // Return the robot response

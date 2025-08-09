@@ -118,10 +118,16 @@ export class ChatManagerService {
         }
       },
       onFullMessageReceived: async (content: string) => {
+        console.log(
+          'onFullMessageReceived called with content:',
+          content.substring(0, 100) + '...',
+        );
+
+        // Add tool response to conversation database
         await this.addMessage({
           conversationId: conversationId,
-          fromUserId: 'AnthropicMarv',
-          content: `DEBUG FROM CALLBACK ${content}`,
+          fromUserId: 'anthropic-marv-robot',
+          content: content,
           messageType: MessageType.TEXT,
           fromRole: UserRole.ROBOT,
           toRole: UserRole.CUSTOMER,
@@ -151,7 +157,7 @@ export class ChatManagerService {
           );
         }
 
-        console.log('Full message received:', content);
+        console.log('Tool response added to conversation');
       },
       onError: async (error: any) => {
         await this.addMessage({
