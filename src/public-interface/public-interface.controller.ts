@@ -22,6 +22,7 @@ import {
   UserRole,
 } from '../chat-manager/dto/create-message.dto';
 import { AnthropicMarv } from '../robots/AnthropicMarv';
+import { IStreamingCallbacks } from '../robots/types';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as jwt from 'jsonwebtoken';
@@ -141,7 +142,7 @@ export class PublicInterfaceController {
         });
 
         // demonstrate callback usage here
-        const callbacks = this.chatManagerService.createConversationCallback(
+        const callbacks = this.chatManagerService.createConversationCallbacks(
           conversation.id,
         );
 
@@ -585,57 +586,25 @@ export class PublicInterfaceController {
       console.log(
         `Starting streaming response for conversation: ${conversationId}`,
       );
+
+      // Create conversation manager callbacks
+      const theCallbacks =
+        this.chatManagerService.createConversationCallbacks(conversationId);
+
+      // Create custom callbacks that combine debug messages with existing functionality
+      const customCallbacks: IStreamingCallbacks = {
+        onStreamStart: theCallbacks.onStreamStart,
+        onStreamChunkReceived: theCallbacks.onStreamChunkReceived,
+        onStreamFinished: theCallbacks.onStreamFinished,
+        onFullMessageReceived: theCallbacks.onFullMessageReceived,
+        onError: theCallbacks.onError,
+      };
+
       await this.chatManagerService.handleRobotStreamingResponse(
         conversationId,
         'AnthropicMarv',
         messageData.content || messageData.message,
-        async (chunk: string) => {
-          console.log(`Received chunk from robot: "${chunk}"`);
-          if (chunk) {
-            fullResponse += chunk;
-            console.log(
-              `Broadcasting chunk to conversation ${conversationId}: "${chunk}"`,
-            );
-            // Broadcast each chunk to all clients in the conversation
-            if (this.chatManagerService.getGateway()) {
-              this.chatManagerService
-                .getGateway()
-                .broadcastToConversation(conversationId, 'robot_chunk', {
-                  chunk,
-                });
-              console.log(`Chunk broadcasted successfully`);
-            } else {
-              console.log(`No gateway available for broadcasting`);
-            }
-          } else {
-            console.log(`Received null/empty chunk, skipping`);
-          }
-        },
-        (fullResponse: string) => {
-          console.log('Stream finished');
-        },
-        async (error) => {
-          console.error('Stream error:', error);
-
-          // Create an error message in the conversation
-          const errorMessage = await this.chatManagerService.addMessage({
-            conversationId: conversationId,
-            fromUserId: 'anthropic-marv-robot',
-            content: `I apologize, but I encountered an error: ${error instanceof Error ? error.message : 'Unknown error'}`,
-            messageType: MessageType.TEXT,
-            fromRole: UserRole.AGENT,
-            toRole: UserRole.CUSTOMER,
-          });
-
-          // Broadcast error message if gateway is available
-          if (this.chatManagerService.getGateway()) {
-            this.chatManagerService
-              .getGateway()
-              .broadcastToConversation(conversationId, 'robot_complete', {
-                messageId: errorMessage.id,
-              });
-          }
-        },
+        customCallbacks,
       );
       console.log(`Streaming complete. Full response: "${fullResponse}"`);
 

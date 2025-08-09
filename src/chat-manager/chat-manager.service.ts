@@ -38,9 +38,12 @@ export class ChatManagerService {
    * Create conversation callbacks for streaming responses
    * Returns IStreamingCallbacks that add debug messages to the conversation
    */
-  createConversationCallback(conversationId: string): IStreamingCallbacks {
+  createConversationCallbacks(conversationId: string): IStreamingCallbacks {
+    let accumulatedContent = '';
+
     return {
       onStreamChunkReceived: async (chunk: string) => {
+        accumulatedContent += chunk;
         await this.addMessage({
           conversationId: conversationId,
           fromUserId: 'AnthropicMarv',
@@ -49,8 +52,22 @@ export class ChatManagerService {
           fromRole: UserRole.ROBOT,
           toRole: UserRole.CUSTOMER,
         });
+
+        // Only broadcast non-empty chunks
+        if (chunk && chunk.trim()) {
+          if (this.getGateway()) {
+            this.getGateway().broadcastToConversation(
+              conversationId,
+              'robot_chunk',
+              {
+                chunk,
+              },
+            );
+          }
+        }
       },
       onStreamStart: async (message) => {
+        accumulatedContent = '';
         await this.addMessage({
           conversationId: conversationId,
           fromUserId: 'AnthropicMarv',
@@ -59,16 +76,20 @@ export class ChatManagerService {
           fromRole: UserRole.ROBOT,
           toRole: UserRole.CUSTOMER,
         });
+
+        console.log('Stream started');
       },
       onStreamFinished: async (content: string, authorRole: string) => {
         await this.addMessage({
           conversationId: conversationId,
           fromUserId: 'AnthropicMarv',
-          content: 'DEBUG onStreamFinished',
+          content: `DEBUG onStreamFinished - Accumulated: ${accumulatedContent}`,
           messageType: MessageType.TEXT,
           fromRole: UserRole.ROBOT,
           toRole: UserRole.CUSTOMER,
         });
+
+        console.log('Stream finished');
       },
       onFullMessageReceived: async (content: string, authorRole: string) => {
         await this.addMessage({
@@ -79,6 +100,8 @@ export class ChatManagerService {
           fromRole: UserRole.ROBOT,
           toRole: UserRole.CUSTOMER,
         });
+
+        console.log('Full message received');
       },
       onError: async (error: any) => {
         await this.addMessage({
@@ -89,6 +112,17 @@ export class ChatManagerService {
           fromRole: UserRole.ROBOT,
           toRole: UserRole.CUSTOMER,
         });
+
+        // Broadcast error message if gateway is available
+        if (this.getGateway()) {
+          this.getGateway().broadcastToConversation(
+            conversationId,
+            'robot_complete',
+            {
+              messageId: 'error-message',
+            },
+          );
+        }
       },
     };
   }
@@ -101,9 +135,7 @@ export class ChatManagerService {
     conversationId: string,
     robotName: string,
     userMessage: string,
-    onChunkReceived?: (chunk: string) => void,
-    onStreamComplete?: (fullResponse: string) => void,
-    onError?: (error: any) => void,
+    callbacks: IStreamingCallbacks,
   ): Promise<void> {
     try {
       // Get the robot
@@ -134,30 +166,7 @@ export class ChatManagerService {
         50,
       );
 
-      // Create streaming callbacks
-      const callbacks: IStreamingCallbacks = {
-        onStreamChunkReceived: (chunk: string) => {
-          if (chunk && onChunkReceived) {
-            onChunkReceived(chunk);
-          }
-        },
-        onStreamStart: (message) => {
-          // Handle stream start if needed
-        },
-        onStreamFinished: (content: string, authorRole: string) => {
-          if (onStreamComplete) {
-            onStreamComplete(content);
-          }
-        },
-        onFullMessageReceived: (content: string, authorRole: string) => {
-          // Handle full message if needed
-        },
-        onError: (error: any) => {
-          if (onError) {
-            onError(error);
-          }
-        },
-      };
+      // Use the provided callbacks directly
 
       // Call robot streaming response
       if ('acceptMessageStreamResponse' in robot) {
@@ -176,11 +185,7 @@ export class ChatManagerService {
         `Error in handleRobotStreamingResponse for robot ${robotName}:`,
         error,
       );
-      if (onError) {
-        onError(error);
-      } else {
-        throw error;
-      }
+      await callbacks.onError(error);
     }
   }
 

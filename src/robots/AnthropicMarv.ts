@@ -186,9 +186,9 @@ Your goal is to help users efficiently manage their Formstack forms through thes
     getHistory?: () => IConversationMessage[],
   ): Promise<void> {
     try {
-      if (true && !process.env.DOES_NOT_EXIST) {
-        throw Error('Test Error Handler');
-      }
+      // if (true && !process.env.DOES_NOT_EXIST) {
+      //   throw Error('XX Test Error Handler XX..');
+      // }
 
       const client = this.getClient();
       const request = this.createAnthropicMessageRequest(
@@ -284,6 +284,8 @@ Your goal is to help users efficiently manage their Formstack forms through thes
 
   /**
    * Handle immediate response using Anthropic's messages API
+   * TODO - REFACTOR TO USE super class predefined callbacks - need to define them in super class.
+   * WARN - THESE CALL BACKS ARE STUBBED AND SERVE NO PURPOSE
    */
   public async acceptMessageImmediateResponse(
     messageEnvelope: TConversationTextMessageEnvelope,
@@ -347,7 +349,7 @@ Your goal is to help users efficiently manage their Formstack forms through thes
           author_role: 'assistant',
           content: {
             type: 'text/plain',
-            payload: `I apologize, but I encountered an error: ${errorMessage}`,
+            payload: `Error: ${errorMessage}`,
           },
           created_at: new Date().toISOString(),
           estimated_token_count: this.estimateTokens(errorMessage),
@@ -369,7 +371,7 @@ Your goal is to help users efficiently manage their Formstack forms through thes
     ) => void,
     getHistory?: () => IConversationMessage[],
   ): Promise<TConversationTextMessageEnvelope> {
-    // Send immediate response first
+    // Send immediate response first - TODO: Change to use acceptMessageStreamResponse directly
     const immediateResponse = await this.acceptMessageImmediateResponse(
       messageEnvelope,
       getHistory,

@@ -155,11 +155,12 @@ export class ChatManagerGateway
         `Starting streaming response for conversation: ${createMessageDto.conversationId}`,
       );
 
-      await this.chatManagerService.handleRobotStreamingResponse(
-        createMessageDto.conversationId,
-        'AnthropicMarv',
-        createMessageDto.content,
-        async (chunk: string) => {
+      // Create callbacks for robot streaming
+      const callbacks = {
+        onStreamStart: async (message: any) => {
+          console.log('Stream started');
+        },
+        onStreamChunkReceived: async (chunk: string) => {
           console.log(`Received chunk from robot: "${chunk}"`);
           if (chunk) {
             fullResponse += chunk;
@@ -179,17 +180,20 @@ export class ChatManagerGateway
             console.log(`Received null/empty chunk, skipping`);
           }
         },
-        (fullResponse: string) => {
+        onStreamFinished: async (content: string, authorRole: string) => {
           console.log('Stream finished');
         },
-        async (error) => {
+        onFullMessageReceived: async (content: string, authorRole: string) => {
+          console.log('Full message received');
+        },
+        onError: async (error: any) => {
           console.error('Stream error:', error);
 
           // Create an error message in the conversation
           const errorMessage = await this.chatManagerService.createMessage({
             conversationId: createMessageDto.conversationId,
             fromUserId: 'anthropic-marv-robot',
-            content: `I apologize, but I encountered an error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            content: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
             messageType: MessageType.TEXT,
             fromRole: UserRole.AGENT,
             toRole: UserRole.CUSTOMER,
@@ -209,6 +213,13 @@ export class ChatManagerGateway
             },
           );
         },
+      };
+
+      await this.chatManagerService.handleRobotStreamingResponse(
+        createMessageDto.conversationId,
+        'AnthropicMarv',
+        createMessageDto.content,
+        callbacks,
       );
 
       console.log(`Streaming complete. Full response: "${fullResponse}"`);
