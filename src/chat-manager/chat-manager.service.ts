@@ -53,7 +53,7 @@ export class ChatManagerService {
           toRole: UserRole.CUSTOMER,
         });
 
-        // Only broadcast non-empty chunks
+        // Only broadcast non-empty chunks through gateway
         if (chunk && chunk.trim()) {
           if (this.getGateway()) {
             this.getGateway().broadcastToConversation(
@@ -90,6 +90,32 @@ export class ChatManagerService {
         });
 
         console.log('Stream finished');
+
+        // Create final robot message and broadcast through gateway
+        if (accumulatedContent && accumulatedContent.trim()) {
+          const robotMessage = await this.createMessage({
+            conversationId: conversationId,
+            fromUserId: 'anthropic-marv-robot',
+            content: accumulatedContent,
+            messageType: MessageType.ROBOT,
+            fromRole: UserRole.ROBOT,
+            toRole: UserRole.AGENT,
+          });
+
+          // Broadcast robot response and completion through gateway
+          if (this.getGateway()) {
+            this.getGateway()
+              .server.to(conversationId)
+              .emit('new_message', robotMessage);
+            this.getGateway().broadcastToConversation(
+              conversationId,
+              'robot_complete',
+              {
+                messageId: robotMessage.id,
+              },
+            );
+          }
+        }
       },
       onFullMessageReceived: async (content: string, authorRole: string) => {
         await this.addMessage({
@@ -113,18 +139,58 @@ export class ChatManagerService {
           toRole: UserRole.CUSTOMER,
         });
 
-        // Broadcast error message if gateway is available
+        // Create error message and broadcast through gateway
+        const errorMessage = await this.createMessage({
+          conversationId: conversationId,
+          fromUserId: 'anthropic-marv-robot',
+          content: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          messageType: MessageType.TEXT,
+          fromRole: UserRole.AGENT,
+          toRole: UserRole.CUSTOMER,
+        });
+
+        // Broadcast error message and completion through gateway
         if (this.getGateway()) {
+          this.getGateway()
+            .server.to(conversationId)
+            .emit('new_message', errorMessage);
           this.getGateway().broadcastToConversation(
             conversationId,
             'robot_complete',
             {
-              messageId: 'error-message',
+              messageId: errorMessage.id,
             },
           );
         }
       },
     };
+  }
+
+  /**
+   * Handle robot message from gateway
+   * This orchestrates the entire robot interaction flow
+   */
+  async handleRobotMessage(createMessageDto: CreateMessageDto): Promise<void> {
+    const conversationId = createMessageDto.conversationId;
+    const userMessage = createMessageDto.content;
+    const robotName = 'AnthropicMarv';
+
+    console.log(
+      `Starting streaming response for conversation: ${conversationId}`,
+    );
+
+    // Create callbacks that handle both debug messages and broadcasting
+    const callbacks = this.createConversationCallbacks(conversationId);
+
+    // Handle the robot streaming response
+    await this.handleRobotStreamingResponse(
+      conversationId,
+      robotName,
+      userMessage,
+      callbacks,
+    );
+
+    console.log(`Streaming complete for conversation: ${conversationId}`);
   }
 
   /**

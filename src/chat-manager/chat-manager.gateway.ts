@@ -147,61 +147,9 @@ export class ChatManagerGateway
       .to(createMessageDto.conversationId)
       .emit('new_message', message);
 
-    // Send to robot if message is to robot
+    // Delegate robot handling to conversation manager
     if (createMessageDto.toRole === 'robot') {
-      // Stream robot response and collect full response
-      let fullResponse = '';
-      console.log(
-        `Starting streaming response for conversation: ${createMessageDto.conversationId}`,
-      );
-
-      // Create conversation manager callbacks
-      const theCallbacks = this.chatManagerService.createConversationCallbacks(
-        createMessageDto.conversationId,
-      );
-
-      // Create callbacks for robot streaming
-      const callbacks = {
-        onStreamStart: theCallbacks.onStreamStart,
-        onStreamChunkReceived: theCallbacks.onStreamChunkReceived,
-        onStreamFinished: theCallbacks.onStreamFinished,
-        onFullMessageReceived: theCallbacks.onFullMessageReceived,
-        onError: theCallbacks.onError,
-      };
-
-      await this.chatManagerService.handleRobotStreamingResponse(
-        createMessageDto.conversationId,
-        'AnthropicMarv',
-        createMessageDto.content,
-        callbacks,
-      );
-
-      console.log(`Streaming complete. Full response: "${fullResponse}"`);
-
-      if (fullResponse) {
-        const robotMessage = await this.chatManagerService.createMessage({
-          conversationId: createMessageDto.conversationId,
-          fromUserId: 'anthropic-marv-robot',
-          content: fullResponse,
-          messageType: MessageType.ROBOT,
-          fromRole: UserRole.ROBOT,
-          toRole: UserRole.AGENT,
-        });
-
-        // Broadcast robot response to all users in the conversation
-        this.server
-          .to(createMessageDto.conversationId)
-          .emit('new_message', robotMessage);
-
-        // Broadcast completion
-        this.broadcastToConversation(
-          createMessageDto.conversationId,
-          'robot_complete',
-          {
-            messageId: robotMessage.id,
-          },
-        );
-      }
+      await this.chatManagerService.handleRobotMessage(createMessageDto);
     }
 
     return message;
