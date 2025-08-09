@@ -127,7 +127,7 @@ export class ChatManagerService {
         await this.addMessage({
           conversationId: conversationId,
           fromUserId: 'anthropic-marv-robot',
-          content: content,
+          content: 'tmc-debug-add' + content,
           messageType: MessageType.TEXT,
           fromRole: UserRole.ROBOT,
           toRole: UserRole.CUSTOMER,
@@ -137,11 +137,45 @@ export class ChatManagerService {
         const fullMessage = await this.createMessage({
           conversationId: conversationId,
           fromUserId: 'anthropic-marv-robot',
-          content: content,
+
+          // from public-interface.controller.ts
           messageType: MessageType.TEXT,
-          fromRole: UserRole.AGENT,
+          fromRole: UserRole.ROBOT,
           toRole: UserRole.CUSTOMER,
+
+          // from above
+          // messageType: MessageType.ROBOT,
+          // fromRole: UserRole.ROBOT,
+          // toRole: UserRole.AGENT,
+
+          // original
+          // messageType: MessageType.TEXT,
+          // fromRole: UserRole.AGENT,
+          // toRole: UserRole.CUSTOMER,
+          content: 'tmc-debug-create' + content,
         });
+
+        `
+
+         // from public-interface.controller.ts
+           conversationId: conversationId,
+          fromUserId: 'anthropic-marv-robot',
+          messageType: MessageType.TEXT,
+          fromRole: UserRole.ROBOT,
+          toRole: UserRole.CUSTOMER,
+          content: 'DEBUG - Conversation Message II',
+
+
+
+        // from above somewhere
+            conversationId: conversationId,
+            fromUserId: 'anthropic-marv-robot',
+            messageType: MessageType.ROBOT,
+            fromRole: UserRole.ROBOT,
+            toRole: UserRole.AGENT,
+            content: accumulatedContent,
+
+`;
 
         // Broadcast message and completion through gateway
         if (this.getGateway()) {
