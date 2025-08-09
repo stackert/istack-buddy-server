@@ -155,64 +155,18 @@ export class ChatManagerGateway
         `Starting streaming response for conversation: ${createMessageDto.conversationId}`,
       );
 
+      // Create conversation manager callbacks
+      const theCallbacks = this.chatManagerService.createConversationCallbacks(
+        createMessageDto.conversationId,
+      );
+
       // Create callbacks for robot streaming
       const callbacks = {
-        onStreamStart: async (message: any) => {
-          console.log('Stream started');
-        },
-        onStreamChunkReceived: async (chunk: string) => {
-          console.log(`Received chunk from robot: "${chunk}"`);
-          if (chunk) {
-            fullResponse += chunk;
-            console.log(
-              `Broadcasting chunk to conversation ${createMessageDto.conversationId}: "${chunk}"`,
-            );
-            // Broadcast each chunk to all clients in the conversation
-            this.broadcastToConversation(
-              createMessageDto.conversationId,
-              'robot_chunk',
-              {
-                chunk,
-              },
-            );
-            console.log(`Chunk broadcasted successfully`);
-          } else {
-            console.log(`Received null/empty chunk, skipping`);
-          }
-        },
-        onStreamFinished: async (content: string, authorRole: string) => {
-          console.log('Stream finished');
-        },
-        onFullMessageReceived: async (content: string, authorRole: string) => {
-          console.log('Full message received');
-        },
-        onError: async (error: any) => {
-          console.error('Stream error:', error);
-
-          // Create an error message in the conversation
-          const errorMessage = await this.chatManagerService.createMessage({
-            conversationId: createMessageDto.conversationId,
-            fromUserId: 'anthropic-marv-robot',
-            content: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
-            messageType: MessageType.TEXT,
-            fromRole: UserRole.AGENT,
-            toRole: UserRole.CUSTOMER,
-          });
-
-          // Broadcast error message to all users in the conversation
-          this.server
-            .to(createMessageDto.conversationId)
-            .emit('new_message', errorMessage);
-
-          // Broadcast error completion
-          this.broadcastToConversation(
-            createMessageDto.conversationId,
-            'robot_complete',
-            {
-              messageId: errorMessage.id,
-            },
-          );
-        },
+        onStreamStart: theCallbacks.onStreamStart,
+        onStreamChunkReceived: theCallbacks.onStreamChunkReceived,
+        onStreamFinished: theCallbacks.onStreamFinished,
+        onFullMessageReceived: theCallbacks.onFullMessageReceived,
+        onError: theCallbacks.onError,
       };
 
       await this.chatManagerService.handleRobotStreamingResponse(
