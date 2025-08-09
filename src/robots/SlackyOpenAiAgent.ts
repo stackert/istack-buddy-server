@@ -1006,7 +1006,7 @@ Need help? Just ask!`;
               },
             };
           },
-          onFullMessageReceived: (content: string, authorRole: string) => {
+          onFullMessageReceived: (content: string) => {
             // Handle full message if needed
           },
           onError: (error) => {
@@ -1122,7 +1122,7 @@ Need help? Just ask!`;
             delayedMessageCallback(finishedMessage);
           }
         },
-        onFullMessageReceived: (content: string, authorRole: string) => {
+        onFullMessageReceived: (content: string) => {
           // Handle full message if needed
         },
         onError: (error) => {

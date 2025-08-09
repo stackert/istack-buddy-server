@@ -3,6 +3,7 @@
 import { TAnthropicIstackToolSet } from '../../types';
 import { marvToolDefinitions } from './marvToolDefinitions';
 import { performMarvToolCall } from './performMarvToolCall';
+import { transformMarvToolResponse } from './transformMarvToolResponse';
 
 const marvToolSet: TAnthropicIstackToolSet = {
   toolDefinitions: marvToolDefinitions,
@@ -16,6 +17,7 @@ const marvToolSet: TAnthropicIstackToolSet = {
     }
     return performMarvToolCall(toolName, toolArgs);
   },
+  transformToolResponse: transformMarvToolResponse,
 };
 
 // Export types from types.ts

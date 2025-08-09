@@ -22,7 +22,6 @@ import {
   UserRole,
 } from '../chat-manager/dto/create-message.dto';
 import { AnthropicMarv } from '../robots/AnthropicMarv';
-import { IStreamingCallbacks } from '../robots/types';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as jwt from 'jsonwebtoken';
@@ -150,7 +149,7 @@ export class PublicInterfaceController {
         await callbacks.onStreamStart({} as any);
         await callbacks.onStreamChunkReceived('test chunk');
         await callbacks.onStreamFinished('test content', 'assistant');
-        await callbacks.onFullMessageReceived('test full message', 'assistant');
+        await callbacks.onFullMessageReceived('test full message');
         await callbacks.onError(new Error('test error'));
       } catch (error) {
         console.error('Failed to add debug messages:', error);
@@ -587,24 +586,15 @@ export class PublicInterfaceController {
         `Starting streaming response for conversation: ${conversationId}`,
       );
 
-      // Create conversation manager callbacks
-      const theCallbacks =
+      // Use conversation manager callbacks directly
+      const callbacks =
         this.chatManagerService.createConversationCallbacks(conversationId);
-
-      // Create custom callbacks that combine debug messages with existing functionality
-      const customCallbacks: IStreamingCallbacks = {
-        onStreamStart: theCallbacks.onStreamStart,
-        onStreamChunkReceived: theCallbacks.onStreamChunkReceived,
-        onStreamFinished: theCallbacks.onStreamFinished,
-        onFullMessageReceived: theCallbacks.onFullMessageReceived,
-        onError: theCallbacks.onError,
-      };
 
       await this.chatManagerService.handleRobotStreamingResponse(
         conversationId,
         'AnthropicMarv',
         messageData.content || messageData.message,
-        customCallbacks,
+        callbacks,
       );
       console.log(`Streaming complete. Full response: "${fullResponse}"`);
 

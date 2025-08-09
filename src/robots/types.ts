@@ -12,6 +12,7 @@ export type {
 type TAnthropicIstackToolSet = {
   toolDefinitions: Anthropic.Messages.Tool[];
   executeToolCall: (toolName: string, toolArgs: any) => any | Promise<any>;
+  transformToolResponse?: (functionName: string, functionResponse: any) => any;
 };
 
 export type { TAnthropicIstackToolSet };
@@ -27,6 +28,6 @@ export interface IStreamingCallbacks {
     message: import('../ConversationLists/types').TConversationTextMessageEnvelope,
   ) => void;
   onStreamFinished: (content: string, authorRole: string) => void;
-  onFullMessageReceived: (content: string, authorRole: string) => void;
+  onFullMessageReceived: (content: string) => void;
   onError: (error: any) => void;
 }

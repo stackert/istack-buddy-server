@@ -117,17 +117,41 @@ export class ChatManagerService {
           }
         }
       },
-      onFullMessageReceived: async (content: string, authorRole: string) => {
+      onFullMessageReceived: async (content: string) => {
         await this.addMessage({
           conversationId: conversationId,
           fromUserId: 'AnthropicMarv',
-          content: 'DEBUG onFullMessageReceived',
+          content: `DEBUG FROM CALLBACK ${content}`,
           messageType: MessageType.TEXT,
           fromRole: UserRole.ROBOT,
           toRole: UserRole.CUSTOMER,
         });
 
-        console.log('Full message received');
+        // Create message and broadcast through gateway like onError does
+        const fullMessage = await this.createMessage({
+          conversationId: conversationId,
+          fromUserId: 'anthropic-marv-robot',
+          content: content,
+          messageType: MessageType.TEXT,
+          fromRole: UserRole.AGENT,
+          toRole: UserRole.CUSTOMER,
+        });
+
+        // Broadcast message and completion through gateway
+        if (this.getGateway()) {
+          this.getGateway()
+            .server.to(conversationId)
+            .emit('new_message', fullMessage);
+          this.getGateway().broadcastToConversation(
+            conversationId,
+            'robot_complete',
+            {
+              messageId: fullMessage.id,
+            },
+          );
+        }
+
+        console.log('Full message received:', content);
       },
       onError: async (error: any) => {
         await this.addMessage({

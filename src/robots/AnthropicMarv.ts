@@ -159,17 +159,28 @@ Your goal is to help users efficiently manage their Formstack forms through thes
   private async executeToolCall(
     toolName: string,
     toolArgs: any,
+    onFullMessageReceived?: (content: string) => void,
   ): Promise<string> {
     try {
       // All our tools are Formstack API calls
-      const result = await marvToolSet.executeToolCall(toolName, toolArgs);
+      const response = await marvToolSet.executeToolCall(toolName, toolArgs);
 
-      // Convert the API response to a readable string format
-      if (result.isSuccess) {
-        return `${toolName} completed successfully\n\nResult: ${JSON.stringify(result.response, null, 2)}`;
-      } else {
-        return `${toolName} failed\n\nErrors: ${result.errorItems?.join(', ') || 'Unknown error'}`;
+      // Transform the response using the tool set's transformer
+      const { robotResponse, chatResponse } =
+        marvToolSet.transformToolResponse?.(toolName, response) || {
+          robotResponse: {
+            status: 'ok',
+            message: `${toolName} completed successfully`,
+          },
+        };
+
+      // If there's a chat response, send it as a full message
+      if (chatResponse && onFullMessageReceived) {
+        onFullMessageReceived(chatResponse.message);
       }
+
+      // Return the robot response
+      return robotResponse.message;
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
@@ -251,7 +262,11 @@ Your goal is to help users efficiently manage their Formstack forms through thes
               continue;
             }
           }
-          const toolResult = await this.executeToolCall(toolUse.name, toolArgs);
+          const toolResult = await this.executeToolCall(
+            toolUse.name,
+            toolArgs,
+            callbacks.onFullMessageReceived,
+          );
           callbacks.onStreamChunkReceived(`\n\n${toolResult}`);
           accumulatedContent += `\n\n${toolResult}`;
         } catch (error) {
@@ -311,7 +326,7 @@ Your goal is to help users efficiently manage their Formstack forms through thes
             // Store the content for return
             accumulatedContent = content;
           },
-          onFullMessageReceived: (content: string, authorRole: string) => {
+          onFullMessageReceived: (content: string) => {
             // Handle full message if needed
           },
           onError: (error) => {
@@ -411,7 +426,7 @@ Your goal is to help users efficiently manage their Formstack forms through thes
             delayedMessageCallback(finishedMessage);
           }
         },
-        onFullMessageReceived: (content: string, authorRole: string) => {
+        onFullMessageReceived: (content: string) => {
           // Handle full message if needed
         },
         onError: (error) => {
