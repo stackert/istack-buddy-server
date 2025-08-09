@@ -823,49 +823,75 @@ Need help? Just ask!`;
     // Debug: Log the history being processed
     this.logger.log('Building OpenAI message history:', {
       historyLength: history.length,
-      historyRoles: history.map((msg) => ({
-        fromRole: msg.fromRole,
-        content:
-          typeof msg.content === 'string'
-            ? msg.content.substring(0, 50) + '...'
-            : 'non-string content',
-      })),
+      historyRoles: history.map((msg) => {
+        const content = (msg.content as any).payload || msg.content;
+        const contentStr =
+          typeof content === 'string' ? content : String(content);
+        return {
+          fromRole: msg.fromRole,
+          content: contentStr.substring(0, 50) + '...',
+        };
+      }),
       currentMessage,
     });
 
     // Add conversation history
     for (const msg of history) {
-      this.logger.log(`Processing message with role: ${msg.fromRole}`);
-
-      if (msg.fromRole === UserRole.CUSTOMER) {
-        const content =
-          typeof msg.content === 'string' ? msg.content : String(msg.content);
-        this.logger.log(
-          `Adding customer message: ${content.substring(0, 50)}...`,
-        );
+      // Check if this is already in the new format (has role property)
+      if ('role' in msg && typeof msg.role === 'string') {
+        // Already in new format
+        const content = (msg.content as any).payload || msg.content;
+        const contentStr =
+          typeof content === 'string' ? content : String(content);
+        this.logger.log(`Adding message with role: ${msg.role}`);
         messages.push({
-          role: 'user' as const,
-          content,
-        });
-      } else if (msg.fromRole === UserRole.ROBOT) {
-        const content =
-          typeof msg.content === 'string' ? msg.content : String(msg.content);
-        this.logger.log(`Adding robot message: ${content.substring(0, 50)}...`);
-        messages.push({
-          role: 'assistant' as const,
-          content,
+          role: msg.role as 'user' | 'assistant',
+          content: contentStr,
         });
       } else {
-        this.logger.warn(`Unknown role in message: ${msg.fromRole}, skipping`);
+        // Convert from old format
+        this.logger.log(`Processing message with role: ${msg.fromRole}`);
+
+        if (msg.fromRole === UserRole.CUSTOMER) {
+          const content = (msg.content as any).payload || msg.content;
+          const contentStr =
+            typeof content === 'string' ? content : String(content);
+          this.logger.log(
+            `Adding customer message: ${contentStr.substring(0, 50)}...`,
+          );
+          messages.push({
+            role: 'user' as const,
+            content: contentStr,
+          });
+        } else if (msg.fromRole === UserRole.ROBOT) {
+          const content = (msg.content as any).payload || msg.content;
+          const contentStr =
+            typeof content === 'string' ? content : String(content);
+          this.logger.log(
+            `Adding robot message: ${contentStr.substring(0, 50)}...`,
+          );
+          messages.push({
+            role: 'assistant' as const,
+            content: contentStr,
+          });
+        } else {
+          this.logger.warn(
+            `Unknown role in message: ${msg.fromRole}, skipping`,
+          );
+        }
       }
     }
 
     // Only add current message if it's not already in the history
     const lastHistoryMessage = history[history.length - 1];
+    const lastMessageContent = lastHistoryMessage
+      ? (lastHistoryMessage.content as any).payload ||
+        lastHistoryMessage.content
+      : null;
     const isCurrentMessageInHistory =
       lastHistoryMessage &&
       lastHistoryMessage.fromRole === UserRole.CUSTOMER &&
-      lastHistoryMessage.content === currentMessage;
+      lastMessageContent === currentMessage;
 
     if (!isCurrentMessageInHistory) {
       this.logger.log(

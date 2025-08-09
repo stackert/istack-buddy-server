@@ -76,6 +76,8 @@ type TConversationMixedMessageEnvelope =
   | TConversationFileMessageEnvelope;
 
 export type {
+  // Media types
+  TConversationMessageContentMediaTypes,
   // Content types
   TConversationMessageContent,
   TConversationMessageContentString,

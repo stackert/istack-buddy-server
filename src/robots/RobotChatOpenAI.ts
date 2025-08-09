@@ -1,6 +1,9 @@
 import { OpenAI } from 'openai';
 import { UserRole } from '../chat-manager/dto/create-message.dto';
-import { IConversationMessage } from '../chat-manager/interfaces/message.interface';
+import {
+  IConversationMessage,
+  IConversationMessageOpenAI,
+} from '../chat-manager/interfaces/message.interface';
 import { AbstractRobotChat } from './AbstractRobotChat';
 import { marvToolSet } from './tool-definitions/marv';
 import { TConversationTextMessageEnvelope, IStreamingCallbacks } from './types';
@@ -122,10 +125,26 @@ class RobotChatOpenAI extends AbstractRobotChat {
 
         // Convert history to OpenAI format
         for (const msg of history) {
-          if (msg.fromRole === UserRole.CUSTOMER) {
-            messages.push({ role: 'user', content: msg.content });
-          } else if (msg.fromRole === UserRole.ROBOT) {
-            messages.push({ role: 'assistant', content: msg.content });
+          // Check if this is already in the new format (has role property)
+          if ('role' in msg && typeof msg.role === 'string') {
+            // Already in new format
+            messages.push({
+              role: msg.role as 'user' | 'assistant',
+              content: (msg.content as any).payload || msg.content,
+            });
+          } else {
+            // Convert from old format
+            if (msg.fromRole === UserRole.CUSTOMER) {
+              messages.push({
+                role: 'user',
+                content: (msg.content as any).payload || msg.content,
+              });
+            } else if (msg.fromRole === UserRole.ROBOT) {
+              messages.push({
+                role: 'assistant',
+                content: (msg.content as any).payload || msg.content,
+              });
+            }
           }
         }
       }

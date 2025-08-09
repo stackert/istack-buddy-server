@@ -3,7 +3,10 @@ import type {
   TConversationTextMessageEnvelope,
   IStreamingCallbacks,
 } from './types';
-import { IConversationMessage } from '../chat-manager/interfaces/message.interface';
+import {
+  IConversationMessage,
+  IConversationMessageAnthropic,
+} from '../chat-manager/interfaces/message.interface';
 import { UserRole } from '../chat-manager/dto/create-message.dto';
 import Anthropic from '@anthropic-ai/sdk';
 import { marvToolSet } from './tool-definitions/marv';
@@ -127,14 +130,24 @@ Your goal is to help users efficiently manage their Formstack forms through thes
     if (getHistory) {
       const history = getHistory();
       for (const msg of history) {
-        messages.push({
-          role:
-            msg.fromRole === UserRole.CUSTOMER ||
-            msg.fromRole === UserRole.AGENT
-              ? 'user'
-              : 'assistant',
-          content: msg.content,
-        });
+        // Check if this is already in the new format (has role property)
+        if ('role' in msg && typeof msg.role === 'string') {
+          // Already in new format
+          messages.push({
+            role: msg.role as 'user' | 'assistant',
+            content: (msg.content as any).payload || msg.content,
+          });
+        } else {
+          // Convert from old format
+          messages.push({
+            role:
+              msg.fromRole === UserRole.CUSTOMER ||
+              msg.fromRole === UserRole.AGENT
+                ? 'user'
+                : 'assistant',
+            content: (msg.content as any).payload || msg.content,
+          });
+        }
       }
     }
 

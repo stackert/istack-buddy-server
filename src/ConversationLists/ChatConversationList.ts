@@ -134,7 +134,10 @@ export class ChatConversationList {
     let totalTokens = 0;
 
     for (const message of messages) {
-      const messageTokens = estimateTokens(message.content);
+      const contentStr = (message.content as any).payload || message.content;
+      const messageTokens = estimateTokens(
+        typeof contentStr === 'string' ? contentStr : String(contentStr),
+      );
       if (totalTokens + messageTokens > maxTokens) {
         break;
       }

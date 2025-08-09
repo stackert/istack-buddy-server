@@ -1,8 +1,9 @@
 import { MessageType, UserRole } from '../dto/create-message.dto';
+import { TConversationMessageContent } from '../../ConversationLists/types';
 
 export interface IConversationMessage {
   id: string;
-  content: string;
+  content: TConversationMessageContent;
   conversationId: string;
   fromUserId: string | null;
   fromRole: UserRole;
@@ -36,4 +37,16 @@ export interface DashboardStats {
   totalMessages: number;
   activeUsers: number;
   queuedConversations: number;
+}
+
+// Anthropic message format
+export interface IConversationMessageAnthropic {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+// OpenAI message format
+export interface IConversationMessageOpenAI {
+  role: 'user' | 'assistant';
+  content: string;
 }

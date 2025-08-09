@@ -13,11 +13,16 @@ import {
   Conversation,
   Participant,
   DashboardStats,
+  IConversationMessageAnthropic,
+  IConversationMessageOpenAI,
 } from './interfaces/message.interface';
 import { v4 as uuidv4 } from 'uuid';
 import { ConversationListSlackAppService } from '../ConversationLists/ConversationListSlackAppService';
 import { ChatConversationListService } from '../ConversationLists/ChatConversationListService';
-import { TConversationTextMessageEnvelope } from '../ConversationLists/types';
+import {
+  TConversationTextMessageEnvelope,
+  TConversationMessageContentString,
+} from '../ConversationLists/types';
 import { RobotService } from '../robots/robot.service';
 import { IStreamingCallbacks } from '../robots/types';
 
@@ -290,11 +295,28 @@ export class ChatManagerService {
         },
       };
 
-      // Get conversation history for context
-      const conversationHistory = await this.getLastMessages(
-        conversationId,
-        50,
-      );
+      // Get conversation history for context - use appropriate format based on robot type
+      const getHistory = () => {
+        try {
+          if (
+            robotName.toLowerCase().includes('anthropic') ||
+            robotName === 'AnthropicMarv'
+          ) {
+            return this.getHistoryForAnthropic(conversationId, 50);
+          } else if (
+            robotName.toLowerCase().includes('openai') ||
+            robotName === 'MarvOpenAiAgent'
+          ) {
+            return this.getHistoryForOpenAI(conversationId, 50);
+          } else {
+            // For other robots, return the raw format (backward compatibility)
+            return this.getLastMessages(conversationId, 50);
+          }
+        } catch (error) {
+          console.error('Error loading history:', error);
+          return [];
+        }
+      };
 
       // Use the provided callbacks directly
 
@@ -303,7 +325,7 @@ export class ChatManagerService {
         await (robot as any).acceptMessageStreamResponse(
           messageEnvelope,
           callbacks,
-          () => conversationHistory,
+          getHistory,
         );
       } else {
         throw new Error(
@@ -339,12 +361,12 @@ export class ChatManagerService {
       messageId: message.id,
       author_role: message.fromRole,
       fromUserId: message.fromUserId, // Preserve the original fromUserId
-      content: {
-        type: 'text/plain',
-        payload: message.content,
-      },
+      content: message.content,
       created_at: message.createdAt.toISOString(),
-      estimated_token_count: Math.ceil(message.content.length / 4), // Rough token estimate
+      estimated_token_count: Math.ceil(
+        (message.content as TConversationMessageContentString).payload.length /
+          4,
+      ), // Rough token estimate
       messageType: message.messageType, // Preserve messageType
       toRole: message.toRole, // Preserve toRole
     };
@@ -367,7 +389,7 @@ export class ChatManagerService {
     const payload = envelope.envelope.envelopePayload;
     return {
       id: payload.messageId,
-      content: payload.content.payload,
+      content: payload.content,
       conversationId: conversationId,
       fromUserId: payload.fromUserId || null, // Use preserved fromUserId or null as fallback
       fromRole: payload.author_role as UserRole,
@@ -404,12 +426,10 @@ export class ChatManagerService {
    */
   async addMessage(
     createMessageDto: CreateMessageDto,
+    contentType: string = 'text',
   ): Promise<IConversationMessage> {
     const messageId = uuidv4();
     const now = new Date();
-
-    // Generate content hash for deduplication
-    const contentHash = this.generateMessageContentHash(createMessageDto);
 
     // Ensure conversation exists in conversation list service
     const conversationList =
@@ -421,9 +441,6 @@ export class ChatManagerService {
 
     // Ensure conversation metadata exists
     if (!this.conversationMetadata[createMessageDto.conversationId]) {
-      console.log(
-        `[ChatManagerService] Creating conversation metadata for: ${createMessageDto.conversationId}`,
-      );
       const conversation: Conversation = {
         id: createMessageDto.conversationId,
         participantIds: [createMessageDto.fromUserId as string],
@@ -435,14 +452,14 @@ export class ChatManagerService {
         updatedAt: now,
       };
       this.conversationMetadata[createMessageDto.conversationId] = conversation;
-      console.log(
-        `[ChatManagerService] Conversation metadata created. Total conversations: ${Object.keys(this.conversationMetadata).length}`,
-      );
     }
 
     const message: IConversationMessage = {
       id: messageId,
-      content: createMessageDto.content,
+      content: {
+        type: contentType === 'text' ? 'text/plain' : contentType,
+        payload: createMessageDto.content,
+      } as TConversationMessageContentString,
       conversationId: createMessageDto.conversationId,
       fromUserId: createMessageDto.fromUserId,
       fromRole: createMessageDto.fromRole,
@@ -452,7 +469,7 @@ export class ChatManagerService {
       originalMessageId: createMessageDto.originalMessageId,
       createdAt: now, // this is 'our' time - the message may have a different creation time
       // using our time makes sense.  The calling code should be guarding
-      // against create time overwite - if that turns out to a an issue
+      // against create time overwrite - if that turns out to a an issue
       updatedAt: now,
     };
 
@@ -592,6 +609,88 @@ export class ChatManagerService {
 
     // Return the last N messages
     return allMessages.slice(-count);
+  }
+
+  /**
+   * Get conversation history formatted for Anthropic API
+   * Transforms internal message structure to format expected by Anthropic
+   */
+  getHistoryForAnthropic(
+    conversationId: string,
+    count: number = 50,
+  ): IConversationMessageAnthropic[] {
+    const conversationList =
+      this.conversationListService.getConversationById(conversationId);
+
+    if (!conversationList) {
+      return [];
+    }
+
+    // Get all envelopes and convert to messages
+    const allEnvelopes = conversationList.getLastAddedEnvelopes();
+    const allMessages = allEnvelopes
+      .map((envelope) => this.envelopeToMessage(envelope, conversationId))
+      .sort((a, b) => {
+        // Primary sort by createdAt timestamp
+        const timeDiff = a.createdAt.getTime() - b.createdAt.getTime();
+        if (timeDiff !== 0) {
+          return timeDiff;
+        }
+        // Secondary sort by message ID for stability when timestamps are identical
+        return a.id.localeCompare(b.id);
+      });
+
+    // Return the last N messages
+    const messages = allMessages.slice(-count);
+
+    return messages.map((msg) => ({
+      role:
+        msg.fromRole === UserRole.CUSTOMER || msg.fromRole === UserRole.AGENT
+          ? 'user'
+          : 'assistant',
+      content: (msg.content as TConversationMessageContentString).payload,
+    }));
+  }
+
+  /**
+   * Get conversation history formatted for OpenAI API
+   * Transforms internal message structure to format expected by OpenAI
+   */
+  getHistoryForOpenAI(
+    conversationId: string,
+    count: number = 50,
+  ): IConversationMessageOpenAI[] {
+    const conversationList =
+      this.conversationListService.getConversationById(conversationId);
+
+    if (!conversationList) {
+      return [];
+    }
+
+    // Get all envelopes and convert to messages
+    const allEnvelopes = conversationList.getLastAddedEnvelopes();
+    const allMessages = allEnvelopes
+      .map((envelope) => this.envelopeToMessage(envelope, conversationId))
+      .sort((a, b) => {
+        // Primary sort by createdAt timestamp
+        const timeDiff = a.createdAt.getTime() - b.createdAt.getTime();
+        if (timeDiff !== 0) {
+          return timeDiff;
+        }
+        // Secondary sort by message ID for stability when timestamps are identical
+        return a.id.localeCompare(b.id);
+      });
+
+    // Return the last N messages
+    const messages = allMessages.slice(-count);
+
+    return messages.map((msg) => ({
+      role:
+        msg.fromRole === UserRole.CUSTOMER || msg.fromRole === UserRole.AGENT
+          ? 'user'
+          : 'assistant',
+      content: (msg.content as TConversationMessageContentString).payload,
+    }));
   }
 
   /**
