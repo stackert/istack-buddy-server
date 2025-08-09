@@ -172,7 +172,7 @@ Your goal is to help users efficiently manage their Formstack forms through thes
   private async executeToolCall(
     toolName: string,
     toolArgs: any,
-    onFullMessageReceived?: (content: string) => void,
+    onFullMessageReceived?: (content: string, contentType?: string) => void,
   ): Promise<string> {
     try {
       // All our tools are Formstack API calls
@@ -187,13 +187,13 @@ Your goal is to help users efficiently manage their Formstack forms through thes
           },
         };
 
-      // If there's a chat response, send it as a full message
+      // If there's a chat response, send it as a full message with JSON content type
       if (chatResponse && onFullMessageReceived) {
         console.log(
           'Sending chat response to onFullMessageReceived:',
           chatResponse.message.substring(0, 100) + '...',
         );
-        onFullMessageReceived(chatResponse.message);
+        onFullMessageReceived(chatResponse.message, 'application/json');
       } else {
         console.log(
           'No chat response or onFullMessageReceived callback available',

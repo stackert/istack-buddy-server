@@ -47,16 +47,22 @@ export class ChatManagerService {
     let accumulatedContent = '';
 
     return {
-      onStreamChunkReceived: async (chunk: string) => {
+      onStreamChunkReceived: async (
+        chunk: string,
+        contentType: string = 'text/plain',
+      ) => {
         accumulatedContent += chunk;
-        await this.addMessage({
-          conversationId: conversationId,
-          fromUserId: 'AnthropicMarv',
-          content: 'DEBUG onStreamChunkReceived',
-          messageType: MessageType.TEXT,
-          fromRole: UserRole.ROBOT,
-          toRole: UserRole.CUSTOMER,
-        });
+        await this.addMessage(
+          {
+            conversationId: conversationId,
+            fromUserId: 'AnthropicMarv',
+            content: 'DEBUG onStreamChunkReceived',
+            messageType: MessageType.TEXT,
+            fromRole: UserRole.ROBOT,
+            toRole: UserRole.CUSTOMER,
+          },
+          contentType,
+        );
 
         // Only broadcast non-empty chunks through gateway
         if (chunk && chunk.trim()) {
@@ -84,15 +90,22 @@ export class ChatManagerService {
 
         console.log('Stream started');
       },
-      onStreamFinished: async (content: string, authorRole: string) => {
-        await this.addMessage({
-          conversationId: conversationId,
-          fromUserId: 'AnthropicMarv',
-          content: `DEBUG onStreamFinished - Accumulated: ${accumulatedContent}`,
-          messageType: MessageType.TEXT,
-          fromRole: UserRole.ROBOT,
-          toRole: UserRole.CUSTOMER,
-        });
+      onStreamFinished: async (
+        content: string,
+        authorRole: string,
+        contentType: string = 'text/plain',
+      ) => {
+        await this.addMessage(
+          {
+            conversationId: conversationId,
+            fromUserId: 'AnthropicMarv',
+            content: `DEBUG onStreamFinished - Accumulated: ${accumulatedContent}`,
+            messageType: MessageType.TEXT,
+            fromRole: UserRole.ROBOT,
+            toRole: UserRole.CUSTOMER,
+          },
+          contentType,
+        );
 
         console.log('Stream finished');
 
@@ -122,43 +135,52 @@ export class ChatManagerService {
           }
         }
       },
-      onFullMessageReceived: async (content: string) => {
+      onFullMessageReceived: async (
+        content: string,
+        contentType: string = 'text/plain',
+      ) => {
         console.log(
           'onFullMessageReceived called with content:',
           content.substring(0, 100) + '...',
         );
 
         // Add tool response to conversation database
-        await this.addMessage({
-          conversationId: conversationId,
-          fromUserId: 'anthropic-marv-robot',
-          content: 'tmc-debug-add' + content,
-          messageType: MessageType.TEXT,
-          fromRole: UserRole.ROBOT,
-          toRole: UserRole.CUSTOMER,
-        });
+        await this.addMessage(
+          {
+            conversationId: conversationId,
+            fromUserId: 'anthropic-marv-robot',
+            content: content,
+            messageType: MessageType.TEXT,
+            fromRole: UserRole.ROBOT,
+            toRole: UserRole.CUSTOMER,
+          },
+          contentType,
+        );
 
         // Create message and broadcast through gateway like onError does
-        const fullMessage = await this.createMessage({
-          conversationId: conversationId,
-          fromUserId: 'anthropic-marv-robot',
+        const fullMessage = await this.createMessage(
+          {
+            conversationId: conversationId,
+            fromUserId: 'anthropic-marv-robot',
 
-          // from public-interface.controller.ts
-          messageType: MessageType.TEXT,
-          fromRole: UserRole.ROBOT,
-          toRole: UserRole.CUSTOMER,
+            // from public-interface.controller.ts
+            messageType: MessageType.TEXT,
+            fromRole: UserRole.ROBOT,
+            toRole: UserRole.CUSTOMER,
 
-          // from above
-          // messageType: MessageType.ROBOT,
-          // fromRole: UserRole.ROBOT,
-          // toRole: UserRole.AGENT,
+            // from above
+            // messageType: MessageType.ROBOT,
+            // fromRole: UserRole.ROBOT,
+            // toRole: UserRole.AGENT,
 
-          // original
-          // messageType: MessageType.TEXT,
-          // fromRole: UserRole.AGENT,
-          // toRole: UserRole.CUSTOMER,
-          content: 'tmc-debug-create' + content,
-        });
+            // original
+            // messageType: MessageType.TEXT,
+            // fromRole: UserRole.AGENT,
+            // toRole: UserRole.CUSTOMER,
+            content: content,
+          },
+          contentType,
+        );
 
         `
 
@@ -507,8 +529,9 @@ export class ChatManagerService {
    */
   async createMessage(
     createMessageDto: CreateMessageDto,
+    contentType: string = 'text',
   ): Promise<IConversationMessage> {
-    return this.addMessage(createMessageDto);
+    return this.addMessage(createMessageDto, contentType);
   }
 
   /**

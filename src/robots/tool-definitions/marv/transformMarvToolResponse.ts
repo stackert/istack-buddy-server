@@ -33,7 +33,7 @@ export function transformMarvToolResponse(
       },
       chatResponse: {
         status: 'ok',
-        message: `<pre><code>${JSON.stringify({ debug: functionResponse }, null, 2)}</code></pre>`,
+        message: `${JSON.stringify(functionResponse || {})}`,
       },
     };
   } else {

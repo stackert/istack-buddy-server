@@ -23,11 +23,15 @@ export type { TAnthropicIstackToolSet };
  * Callbacks receive minimal necessary data - conversation manager handles message IDs, timestamps, etc.
  */
 export interface IStreamingCallbacks {
-  onStreamChunkReceived: (chunk: string) => void;
+  onStreamChunkReceived: (chunk: string, contentType?: string) => void;
   onStreamStart: (
     message: import('../ConversationLists/types').TConversationTextMessageEnvelope,
   ) => void;
-  onStreamFinished: (content: string, authorRole: string) => void;
-  onFullMessageReceived: (content: string) => void;
+  onStreamFinished: (
+    content: string,
+    authorRole: string,
+    contentType?: string,
+  ) => void;
+  onFullMessageReceived: (content: string, contentType?: string) => void;
   onError: (error: any) => void;
 }
