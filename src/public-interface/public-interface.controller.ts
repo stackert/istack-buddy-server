@@ -30,6 +30,24 @@ export class PublicInterfaceController {
     private readonly userProfileService: UserProfileService,
   ) {}
 
+  /**
+   * Get the base URL for generating links with proper fallbacks
+   */
+  private getBaseUrl(): string {
+    // Priority 1: NGROK_URL environment variable
+    if (process.env.NGROK_URL) {
+      return process.env.NGROK_URL.replace(/\/$/, ''); // Remove trailing slash if present
+    }
+
+    // Priority 2: ISTACK_BUDDY_FRONT_END_HOST environment variable
+    if (process.env.ISTACK_BUDDY_FRONT_END_HOST) {
+      return process.env.ISTACK_BUDDY_FRONT_END_HOST.replace(/\/$/, ''); // Remove trailing slash if present
+    }
+
+    // Priority 3: Fallback to relative path
+    return '';
+  }
+
   @Get('/')
   async serveRootContent(@Res() res: Response): Promise<void> {
     const html = `
@@ -148,7 +166,8 @@ export class PublicInterfaceController {
         console.error('Failed to add debug messages:', error);
       }
 
-      const link = `${req.protocol}://${req.get('host')}/public/form-marv/${conversation.id}/${formId || '5375703'}?jwtToken=${jwtToken}`;
+      const baseUrl = this.getBaseUrl();
+      const link = `${baseUrl}/public/form-marv/${conversation.id}/${formId || '5375703'}?jwtToken=${jwtToken}`;
 
       const html = `
 <!DOCTYPE html>
@@ -165,7 +184,7 @@ export class PublicInterfaceController {
     <p><strong>Form ID:</strong> ${formId || '5375703'}</p>
     <p><strong>JWT Token:</strong> ${jwtToken}</p>
     <p><strong>Link:</strong> <a href="${link}">${link}</a></p>
-    <p><strong>Chat Messages Endpoint:</strong> ${req.protocol}://${req.get('host')}/public/form-marv/${conversation.id}/${formId || '5375703'}/chat-messages</p>
+    <p><strong>Chat Messages Endpoint:</strong> ${baseUrl}/public/form-marv/${conversation.id}/${formId || '5375703'}/chat-messages</p>
 </body>
 </html>`;
 

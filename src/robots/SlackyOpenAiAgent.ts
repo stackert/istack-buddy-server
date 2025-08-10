@@ -33,6 +33,460 @@ const createMessageEnvelopeWithContent = (
   },
 });
 
+import {
+  ObservationMakers,
+  EObservationSubjectType,
+} from 'istack-buddy-utilities';
+
+import type {
+  IObservationResult,
+  IObservationLogItem,
+  IObservationContext,
+} from 'istack-buddy-utilities';
+
+/**
+ * ObservationMakerViewer - Extends ObservationMaker for display purposes
+ * Filters and formats observations for Slack display
+ */
+class ObservationMakerViewer extends ObservationMakers.AbstractObservationMaker {
+  protected subjectType = EObservationSubjectType.FORM;
+  protected observationClass = this.constructor.name;
+  protected messagePrimary = 'Observation Viewer';
+  private logItems: IObservationLogItem[] = [];
+
+  constructor() {
+    super();
+  }
+
+  getRequiredResources(): string[] {
+    return ['formModel'];
+  }
+
+  async makeObservation(
+    context: IObservationContext,
+  ): Promise<IObservationResult> {
+    // This is a viewer class, not a real observation maker
+    // It just displays existing observation results
+    return { isObservationTrue: true, logItems: this.logItems };
+  }
+
+  setLogItems(logItems: IObservationLogItem[]): void {
+    this.logItems = logItems;
+  }
+
+  /**
+   * Create an ObservationMakerViewer from observation results
+   */
+  static fromObservationResults(
+    observationMakerResult: any,
+  ): ObservationMakerViewer {
+    const viewer = new ObservationMakerViewer();
+
+    console.log('ObservationMakerViewer.fromObservationResults called with:', {
+      hasResult: !!observationMakerResult,
+      hasResponse: !!(
+        observationMakerResult && observationMakerResult.response
+      ),
+      resultType: typeof observationMakerResult,
+      responseType: observationMakerResult?.response
+        ? typeof observationMakerResult.response
+        : 'undefined',
+    });
+
+    // Extract log items from the observation result
+    if (observationMakerResult && observationMakerResult.response) {
+      const logItems = viewer.extractLogItems(observationMakerResult.response);
+      viewer.setLogItems(logItems);
+
+      console.log('Extracted log items:', {
+        count: logItems.length,
+        logItems: JSON.stringify(logItems.slice(0, 2), null, 2), // Show first 2 for debugging
+      });
+    } else {
+      console.log('No valid observation maker result found');
+    }
+
+    return viewer;
+  }
+
+  private extractLogItems(response: any): any[] {
+    const logItems = [];
+
+    console.log('extractLogItems called with:', {
+      responseType: typeof response,
+      isArray: Array.isArray(response),
+      hasLogItems: !!(response && response.logItems),
+      hasObservations: !!(response && response.observations),
+      hasData: !!(response && response.data),
+      responseKeys:
+        response && typeof response === 'object' ? Object.keys(response) : [],
+    });
+
+    // Handle different response structures
+    if (response && response.logItems && Array.isArray(response.logItems)) {
+      console.log(
+        'Extracting from response.logItems, length:',
+        response.logItems.length,
+      );
+      logItems.push(...response.logItems);
+    } else if (Array.isArray(response)) {
+      console.log('Extracting from array response, length:', response.length);
+      logItems.push(...response);
+    } else if (
+      response &&
+      response.observations &&
+      Array.isArray(response.observations)
+    ) {
+      console.log(
+        'Extracting from response.observations, length:',
+        response.observations.length,
+      );
+      logItems.push(...response.observations);
+    } else if (response && response.data && Array.isArray(response.data)) {
+      console.log(
+        'Extracting from response.data, length:',
+        response.data.length,
+      );
+      logItems.push(...response.data);
+    } else if (typeof response === 'object') {
+      console.log('Extracting single observation object');
+      logItems.push(response);
+    } else {
+      console.log('No valid observation structure found');
+    }
+
+    console.log('Final log items count:', logItems.length);
+    return logItems;
+  }
+
+  /**
+   * Get only warning and error log items
+   */
+  getWarningsAndErrors(): any[] {
+    return this.logItems.filter(
+      (item) => item.logLevel === 'warn' || item.logLevel === 'error',
+    );
+  }
+
+  /**
+   * Get log items by level
+   */
+  getLogItemsByLevel(level: string): any[] {
+    return this.logItems.filter((item) => item.logLevel === level);
+  }
+
+  /**
+   * Get all log items
+   */
+  getAllLogItems(): any[] {
+    return this.logItems;
+  }
+
+  /**
+   * Get the observation class name
+   */
+  getObservationClassName(): string {
+    return this.observationClass;
+  }
+
+  /**
+   * Format log items for Slack display
+   */
+  formatForSlack(): string {
+    const warningsAndErrors = this.getWarningsAndErrors();
+
+    if (warningsAndErrors.length === 0) {
+      return '✅ *No issues found* - All validations passed successfully!';
+    }
+
+    let formatted = `⚠️ *Found ${warningsAndErrors.length} issue(s):*\n\n`;
+
+    warningsAndErrors.forEach((item, index) => {
+      const emoji = item.logLevel === 'error' ? '❌' : '⚠️';
+      const level = item.logLevel === 'error' ? 'ERROR' : 'WARNING';
+
+      formatted += `${emoji} *${level}* (${index + 1}/${warningsAndErrors.length})\n`;
+
+      // Use messageSecondary as the primary message (capped at 150 characters)
+      if (item.messageSecondary) {
+        const truncatedMessage = this.truncateMessage(item.messageSecondary);
+        formatted += `• *Message:* ${truncatedMessage}\n`;
+      }
+
+      if (item.subjectId) {
+        formatted += `• *Subject ID:* \`${item.subjectId}\`\n`;
+      }
+
+      // Skip additional details as they're not helpful for Slack display
+      // if (item.additionalDetails) {
+      //   formatted += `• *Additional Details:* ${JSON.stringify(item.additionalDetails)}\n`;
+      // }
+
+      formatted += '\n';
+    });
+
+    return formatted;
+  }
+
+  /**
+   * Format all log items for Slack display (including info and debug)
+   */
+  formatAllForSlack(): string {
+    if (this.logItems.length === 0) {
+      return '📝 *No log items found*';
+    }
+
+    let formatted = `📊 *All Log Items (${this.logItems.length} total):*\n\n`;
+
+    this.logItems.forEach((item, index) => {
+      const emoji = this.getEmojiForLevel(item.logLevel);
+      const level = item.logLevel.toUpperCase();
+
+      formatted += `${emoji} *${level}* (${index + 1}/${this.logItems.length})\n`;
+
+      // Use messageSecondary as the primary message (capped at 150 characters)
+      if (item.messageSecondary) {
+        const truncatedMessage = this.truncateMessage(item.messageSecondary);
+        formatted += `• *Message:* ${truncatedMessage}\n`;
+      }
+
+      if (item.subjectId) {
+        formatted += `• *Subject ID:* \`${item.subjectId}\`\n`;
+      }
+
+      // Skip additional details as they're not helpful for Slack display
+      // if (item.additionalDetails) {
+      //   formatted += `• *Additional Details:* ${JSON.stringify(item.additionalDetails)}\n`;
+      // }
+
+      formatted += '\n';
+    });
+
+    return formatted;
+  }
+
+  /**
+   * Get emoji for log level
+   */
+  private getEmojiForLevel(level: string): string {
+    switch (level) {
+      case 'error':
+        return '❌';
+      case 'warn':
+        return '⚠️';
+      case 'info':
+        return 'ℹ️';
+      case 'debug':
+        return '🔍';
+      default:
+        return '📝';
+    }
+  }
+
+  /**
+   * Truncate message to specified length with ellipsis
+   */
+  private truncateMessage(message: string, maxLength: number = 150): string {
+    if (message.length <= maxLength) {
+      return message;
+    }
+    return message.substring(0, maxLength - 3) + '...';
+  }
+
+  /**
+   * Get summary statistics
+   */
+  getSummary(): string {
+    const total = this.logItems.length;
+    const errors = this.logItems.filter(
+      (item) => item.logLevel === 'error',
+    ).length;
+    const warnings = this.logItems.filter(
+      (item) => item.logLevel === 'warn',
+    ).length;
+    const info = this.logItems.filter(
+      (item) => item.logLevel === 'info',
+    ).length;
+    const debug = this.logItems.filter(
+      (item) => item.logLevel === 'debug',
+    ).length;
+
+    return (
+      `📊 *Summary:* ${total} total log items\n` +
+      `• ❌ ${errors} errors\n` +
+      `• ⚠️ ${warnings} warnings\n` +
+      `• ℹ️ ${info} info\n` +
+      `• 🔍 ${debug} debug`
+    );
+  }
+}
+
+/**
+ * Slacky Tool Result Formatter
+ * Formats tool results for better Slack display
+ */
+function slackyToolResultFormatter(functionName: string, result: any): string {
+  try {
+    // Handle different function types
+    switch (functionName) {
+      case 'fsRestrictedApiFormCalculationValidation':
+      case 'fsRestrictedApiFormLogicValidation':
+        return formatValidationResult(functionName, result);
+
+      case 'fsRestrictedApiFormAndRelatedEntityOverview':
+        return formatFormOverviewResult(result);
+
+      case 'sumoLogicQuery':
+        return formatSumoQueryResult(result);
+
+      case 'ssoAutoFillAssistance':
+        return formatSsoResult(result);
+
+      default:
+        return formatGenericResult(functionName, result);
+    }
+  } catch (error) {
+    return `❌ *Error formatting result:* ${error instanceof Error ? error.message : 'Unknown error'}\n\n*Raw result:*\n\`\`\`${JSON.stringify(result, null, 2)}\`\`\``;
+  }
+}
+
+function formatValidationResult(functionName: string, result: any): string {
+  const viewer = ObservationMakerViewer.fromObservationResults(result);
+  const summary = viewer.getSummary();
+  const formatted = viewer.formatForSlack();
+
+  const functionDisplayName =
+    functionName === 'fsRestrictedApiFormCalculationValidation'
+      ? 'Calculation Validation'
+      : 'Logic Validation';
+
+  const observationClass = viewer.getObservationClassName();
+  const contextInfo =
+    observationClass !== 'ObservationMakerViewer'
+      ? `\n*Observation Type:* ${observationClass}`
+      : '';
+
+  return `🔍 *${functionDisplayName} Results*${contextInfo}\n\n${summary}\n\n${formatted}`;
+}
+
+function formatFormOverviewResult(result: any): string {
+  if (!result || !result.response) {
+    return `❌ *Form Overview Error:* No data received`;
+  }
+
+  const data = result.response;
+  let formatted = `📋 *Form Overview*\n\n`;
+
+  // Basic form information
+  if (data.formId) {
+    formatted += `• *Form ID:* \`${data.formId}\`\n`;
+  }
+  if (data.url) {
+    formatted += `• *URL:* ${data.url}\n`;
+  }
+  if (data.version) {
+    formatted += `• *Version:* ${data.version}\n`;
+  }
+  if (data.submissions !== undefined) {
+    formatted += `• *Total Submissions:* ${data.submissions.toLocaleString()}\n`;
+  }
+  if (data.submissionsToday !== undefined) {
+    formatted += `• *Submissions Today:* ${data.submissionsToday.toLocaleString()}\n`;
+  }
+  if (data.fieldCount) {
+    formatted += `• *Field Count:* ${data.fieldCount}\n`;
+  }
+  if (data.isActive !== undefined) {
+    formatted += `• *Status:* ${data.isActive ? '✅ Active' : '❌ Inactive'}\n`;
+  }
+  if (data.encrypted !== undefined) {
+    formatted += `• *Encrypted:* ${data.encrypted ? 'Yes' : 'No'}\n`;
+  }
+  if (data.timezone) {
+    formatted += `• *Timezone:* ${data.timezone}\n`;
+  }
+  if (data.isOneQuestionAtATime !== undefined) {
+    formatted += `• *One Question at a Time:* ${data.isOneQuestionAtATime ? 'Yes' : 'No'}\n`;
+  }
+  if (data.hasApprovers !== undefined) {
+    formatted += `• *Has Approvers:* ${data.hasApprovers ? 'Yes' : 'No'}\n`;
+  }
+  if (data.isWorkflowForm !== undefined) {
+    formatted += `• *Workflow Form:* ${data.isWorkflowForm ? 'Yes' : 'No'}\n`;
+  }
+
+  // Submit Actions
+  if (data.submitActions && data.submitActions.length > 0) {
+    formatted += `\n*Submit Actions (${data.submitActions.length}):*\n`;
+    data.submitActions.forEach((action: any) => {
+      formatted += `• ${action.name || 'Unnamed Action'} (ID: \`${action.id}\`)\n`;
+    });
+  } else {
+    formatted += `\n*Submit Actions:* None configured\n`;
+  }
+
+  // Notification Emails
+  if (data.notificationEmails && data.notificationEmails.length > 0) {
+    formatted += `\n*Notification Emails (${data.notificationEmails.length}):*\n`;
+    data.notificationEmails.forEach((email: any) => {
+      const emailDisplay = email.name
+        ? `${email.name} (ID: \`${email.id}\`)`
+        : email.id
+          ? `ID: \`${email.id}\``
+          : email.email
+            ? email.email
+            : JSON.stringify(email);
+      formatted += `• ${emailDisplay}\n`;
+    });
+  } else {
+    formatted += `\n*Notification Emails:* None configured\n`;
+  }
+
+  // Confirmation Emails
+  if (data.confirmationEmails && data.confirmationEmails.length > 0) {
+    formatted += `\n*Confirmation Emails (${data.confirmationEmails.length}):*\n`;
+    data.confirmationEmails.forEach((email: any) => {
+      const emailDisplay = email.name
+        ? `${email.name} (ID: \`${email.id}\`)`
+        : email.id
+          ? `ID: \`${email.id}\``
+          : email.email
+            ? email.email
+            : JSON.stringify(email);
+      formatted += `• ${emailDisplay}\n`;
+    });
+  } else {
+    formatted += `\n*Confirmation Emails:* None configured\n`;
+  }
+
+  return formatted;
+}
+
+function formatSumoQueryResult(result: any): string {
+  if (!result || typeof result !== 'string') {
+    return `❌ *Sumo Logic Error:* Invalid result format`;
+  }
+
+  return `📊 *Sumo Logic Query Results*\n\n\`\`\`${result}\`\`\``;
+}
+
+function formatSsoResult(result: any): string {
+  if (!result || typeof result !== 'string') {
+    return `❌ *SSO Auto-fill Error:* Invalid result format`;
+  }
+
+  return `🔐 *SSO Auto-fill Analysis*\n\n${result}`;
+}
+
+function formatGenericResult(functionName: string, result: any): string {
+  const resultString =
+    typeof result === 'object'
+      ? JSON.stringify(result, null, 2)
+      : String(result);
+
+  return `🔧 *${functionName} Results*\n\n\`\`\`${resultString}\`\`\``;
+}
+
 /**
  * Slack-specific OpenAI Chat Robot implementation
  * Specialized for Slack integration with comprehensive tool support using OpenAI
@@ -226,6 +680,7 @@ Need help? Just ask!`;
   private async executeToolCall(
     toolName: string,
     toolArgs: any,
+    onFullMessageReceived?: (content: string, contentType?: string) => void,
   ): Promise<string> {
     this.logger.debug(`Executing tool: ${toolName}`, { toolArgs });
 
@@ -239,6 +694,17 @@ Need help? Just ask!`;
 
       // Update status to completed
       this.updateToolStatus(toolName, 'completed');
+
+      // Log the tool execution for debugging
+      this.logger.debug('Tool execution completed', {
+        toolName,
+        resultType: typeof finalResult,
+        isMarvTool: [
+          FsRestrictedApiRoutesEnum.FormLogicValidation,
+          FsRestrictedApiRoutesEnum.FormCalculationValidation,
+          FsRestrictedApiRoutesEnum.FormAndRelatedEntityOverview,
+        ].includes(toolName as FsRestrictedApiRoutesEnum),
+      });
 
       return finalResult;
     } catch (error) {
@@ -344,11 +810,136 @@ Need help? Just ask!`;
       });
 
       let accumulatedContent = '';
+      let currentFunctionCall: any = null;
+
       for await (const chunk of stream) {
-        const content = chunk.choices[0]?.delta?.content;
+        const delta = chunk.choices[0]?.delta;
+
+        // Handle function calls
+        if (delta?.tool_calls) {
+          for (const toolCall of delta.tool_calls) {
+            // Initialize function call
+            if (
+              !currentFunctionCall ||
+              currentFunctionCall.index !== toolCall.index
+            ) {
+              currentFunctionCall = {
+                index: toolCall.index,
+                id: toolCall.id || '',
+                type: toolCall.type || 'function',
+                function: {
+                  name: toolCall.function?.name || '',
+                  arguments: toolCall.function?.arguments || '',
+                },
+              };
+            }
+
+            // Accumulate function call data
+            if (currentFunctionCall && toolCall.function?.name) {
+              currentFunctionCall.function.name = toolCall.function.name;
+            }
+            if (currentFunctionCall && toolCall.function?.arguments) {
+              currentFunctionCall.function.arguments +=
+                toolCall.function.arguments;
+            }
+          }
+        }
+
+        // Handle content (text)
+        const content = delta?.content;
         if (content) {
           accumulatedContent += content;
           callbacks.onStreamChunkReceived(content);
+        }
+
+        // Handle function call completion
+        if (
+          chunk.choices[0]?.finish_reason === 'tool_calls' &&
+          currentFunctionCall
+        ) {
+          this.logger.debug('Tool call completion detected', {
+            functionName: currentFunctionCall.function.name,
+            finishReason: chunk.choices[0]?.finish_reason,
+            functionArgs: currentFunctionCall.function.arguments,
+          });
+          try {
+            // Execute the function call
+            const functionName = currentFunctionCall.function.name;
+            const functionArgs = JSON.parse(
+              currentFunctionCall.function.arguments,
+            );
+
+            this.logger.debug('Executing function call', {
+              functionName,
+              functionArgs,
+            });
+
+            // Call onFullMessageReceived to indicate tool execution is starting
+            this.logger.debug('Checking onFullMessageReceived callback', {
+              hasCallback: !!callbacks.onFullMessageReceived,
+              callbackType: typeof callbacks.onFullMessageReceived,
+            });
+
+            if (callbacks.onFullMessageReceived) {
+              const startMessage = `Starting execution of ${functionName}...`;
+              this.logger.debug(
+                'Calling onFullMessageReceived for tool start',
+                {
+                  functionName,
+                  message: startMessage,
+                },
+              );
+              callbacks.onFullMessageReceived(startMessage, 'text/plain');
+            } else {
+              this.logger.debug(
+                'onFullMessageReceived callback is not available',
+              );
+            }
+
+            const toolResult = await this.executeToolCall(
+              functionName,
+              functionArgs,
+              callbacks.onFullMessageReceived,
+            );
+
+            // Format the tool result for Slack display
+            const formattedResult = slackyToolResultFormatter(
+              functionName,
+              toolResult,
+            );
+            const functionResult = `\n${formattedResult}\n`;
+            accumulatedContent += functionResult;
+            callbacks.onStreamChunkReceived(functionResult);
+
+            // Call onFullMessageReceived again to indicate tool execution is complete
+            if (callbacks.onFullMessageReceived) {
+              const completeMessage = `Finished running ${functionName}. Analysis complete.`;
+              this.logger.debug(
+                'Calling onFullMessageReceived for tool completion',
+                {
+                  functionName,
+                  message: completeMessage,
+                },
+              );
+              callbacks.onFullMessageReceived(completeMessage, 'text/plain');
+            } else {
+              this.logger.debug(
+                'onFullMessageReceived callback is not available for completion',
+              );
+            }
+          } catch (error) {
+            const errorMessage = `Error executing tool call: ${error instanceof Error ? error.message : 'Unknown error'}`;
+            accumulatedContent += errorMessage;
+            callbacks.onStreamChunkReceived(errorMessage);
+          }
+          currentFunctionCall = null;
+        }
+
+        // Handle stream completion
+        if (chunk.choices[0]?.finish_reason === 'stop') {
+          this.logger.debug('Stream completed with stop reason', {
+            accumulatedContentLength: accumulatedContent.length,
+          });
         }
       }
 
@@ -1125,6 +1716,12 @@ Need help? Just ask!`;
           // Handle stream start if needed
         },
         onStreamFinished: (content: string, authorRole: string) => {
+          this.logger.debug('onStreamFinished called', {
+            contentLength: content.length,
+            authorRole,
+            contentPreview: content.substring(0, 100) + '...',
+          });
+
           // Create a minimal message envelope for the callback
           const finishedMessage: TConversationTextMessageEnvelope = {
             messageId: '', // Will be set by conversation manager
@@ -1145,11 +1742,55 @@ Need help? Just ask!`;
             delayedMessageCallback &&
             typeof delayedMessageCallback === 'function'
           ) {
+            this.logger.debug(
+              'Calling delayedMessageCallback with finished message',
+            );
             delayedMessageCallback(finishedMessage);
           }
         },
-        onFullMessageReceived: (content: string) => {
-          // Handle full message if needed
+        onFullMessageReceived: (
+          content: string,
+          contentType: string = 'text/plain',
+        ) => {
+          // Handle full message with content type
+          this.logger.debug(
+            'onFullMessageReceived called in multi-part response',
+            {
+              contentLength: content.length,
+              contentType,
+            },
+          );
+
+          // Create a message envelope for the intermediate message
+          const intermediateMessage: TConversationTextMessageEnvelope = {
+            messageId: '', // Will be set by conversation manager
+            requestOrResponse: 'response',
+            envelopePayload: {
+              messageId: '', // Will be set by conversation manager
+              author_role: 'assistant',
+              content: {
+                type: contentType as any,
+                payload: content,
+              },
+              created_at: new Date().toISOString(),
+              estimated_token_count: this.estimateTokens(content),
+            },
+          };
+
+          // Send the intermediate message through the delayed message callback
+          if (
+            delayedMessageCallback &&
+            typeof delayedMessageCallback === 'function'
+          ) {
+            this.logger.debug(
+              'Sending intermediate message via delayedMessageCallback',
+              {
+                content: content.substring(0, 100) + '...',
+                contentType,
+              },
+            );
+            delayedMessageCallback(intermediateMessage);
+          }
         },
         onError: (error) => {
           // Handle error in delayed message

@@ -386,8 +386,7 @@ export class ChatManagerService {
       content: message.content,
       created_at: message.createdAt.toISOString(),
       estimated_token_count: Math.ceil(
-        (message.content as TConversationMessageContentString).payload.length /
-          4,
+        (this.getContentPayload(message.content) || '').length / 4,
       ), // Rough token estimate
       messageType: message.messageType, // Preserve messageType
       toRole: message.toRole, // Preserve toRole
@@ -399,6 +398,30 @@ export class ChatManagerService {
         message.fromRole === UserRole.CUSTOMER ? 'request' : 'response',
       envelopePayload: conversationMessage,
     };
+  }
+
+  /**
+   * Safely extract payload from message content
+   */
+  private getContentPayload(content: any): string | null {
+    if (!content) return null;
+
+    // Handle direct string content first
+    if (typeof content === 'string') {
+      return content;
+    }
+
+    // Handle TConversationMessageContentString structure
+    if (content.payload && typeof content.payload === 'string') {
+      return content.payload;
+    }
+
+    // Handle other content types
+    if (content.payload) {
+      return String(content.payload);
+    }
+
+    return null;
   }
 
   /**

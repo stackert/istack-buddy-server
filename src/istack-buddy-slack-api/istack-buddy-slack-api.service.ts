@@ -227,8 +227,14 @@ export class IstackBuddySlackApiService implements OnModuleDestroy {
             last_name: 'Marv',
           });
 
-          // Generate the session URL using the internal conversation ID
-          const sessionUrl = `http://localhost:3500/public/form-marv/${conversationRecord.internalConversationId}/5375703?jwtToken=${jwtToken}`;
+          // Extract form ID from conversation history
+          const formId = await this.extractFormIdFromConversation(
+            conversationRecord.internalConversationId,
+          );
+
+          // Generate the session URL using the internal conversation ID and extracted form ID
+          const baseUrl = this.getBaseUrl();
+          const sessionUrl = `${baseUrl}/public/form-marv/${conversationRecord.internalConversationId}/${formId}?jwtToken=${jwtToken}`;
 
           // Send immediate response to Slack with the session link
           await this.sendSlackMessage(
@@ -673,6 +679,83 @@ export class IstackBuddySlackApiService implements OnModuleDestroy {
     });
 
     this.logger.log(`Garbage collection completed. Cleaned up old events.`);
+  }
+
+  /**
+   * Get the base URL for generating links with proper fallbacks
+   */
+  private getBaseUrl(): string {
+    // Priority 1: NGROK_URL environment variable
+    if (process.env.NGROK_URL) {
+      return process.env.NGROK_URL.replace(/\/$/, ''); // Remove trailing slash if present
+    }
+
+    // Priority 2: ISTACK_BUDDY_FRONT_END_HOST environment variable
+    if (process.env.ISTACK_BUDDY_FRONT_END_HOST) {
+      return process.env.ISTACK_BUDDY_FRONT_END_HOST.replace(/\/$/, ''); // Remove trailing slash if present
+    }
+
+    // Priority 3: Fallback to relative path
+    return '';
+  }
+
+  /**
+   * Extract form ID from conversation history by looking for form ID patterns
+   */
+  private async extractFormIdFromConversation(
+    conversationId: string,
+  ): Promise<string> {
+    try {
+      // Get recent messages from the conversation
+      const messages = await this.chatManagerService.getMessages(
+        conversationId,
+        {
+          limit: 20, // Look at last 20 messages
+          offset: 0,
+        },
+      );
+
+      // Look for form ID patterns in the conversation
+      for (const message of messages) {
+        const content = message.content?.payload || message.content || '';
+        const contentStr =
+          typeof content === 'string' ? content : String(content);
+
+        // Look for patterns like "form 6201623", "form ID 6201623", etc.
+        const formIdMatch = contentStr.match(/form\s+(?:id\s+)?(\d{6,7})/i);
+        if (formIdMatch) {
+          this.logger.log(
+            `Extracted form ID ${formIdMatch[1]} from conversation message`,
+          );
+          return formIdMatch[1];
+        }
+
+        // Also look for just 6-7 digit numbers that might be form IDs
+        const numberMatch = contentStr.match(/(\d{6,7})/);
+        if (numberMatch) {
+          // Additional validation: check if it's likely a form ID (not a timestamp, etc.)
+          const num = parseInt(numberMatch[1]);
+          if (num > 100000 && num < 9999999) {
+            this.logger.log(
+              `Extracted potential form ID ${numberMatch[1]} from conversation message`,
+            );
+            return numberMatch[1];
+          }
+        }
+      }
+
+      // If no form ID found, return a default
+      this.logger.warn(
+        `No form ID found in conversation ${conversationId}, using default`,
+      );
+      return '5375703'; // Default fallback
+    } catch (error) {
+      this.logger.error(
+        `Error extracting form ID from conversation ${conversationId}:`,
+        error,
+      );
+      return '5375703'; // Default fallback
+    }
   }
 
   /**
