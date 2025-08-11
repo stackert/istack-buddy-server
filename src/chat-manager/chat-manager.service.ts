@@ -31,6 +31,7 @@ export class ChatManagerService {
   // In-memory storage for conversation metadata and participants
   private conversationMetadata: Record<string, Conversation> = {};
   private participants: Map<string, Participant[]> = new Map();
+  private conversationFormIds: Map<string, string> = new Map(); // Store formId associations
   private gateway: any; // Will be set by the gateway
 
   constructor(
@@ -371,6 +372,33 @@ export class ChatManagerService {
   // Method to get the gateway reference
   getGateway(): any {
     return this.gateway;
+  }
+
+  /**
+   * Set formId association for a conversation
+   */
+  setConversationFormId(conversationId: string, formId: string): void {
+    this.conversationFormIds.set(conversationId, formId);
+  }
+
+  /**
+   * Get formId association for a conversation
+   */
+  getConversationFormId(conversationId: string): string | undefined {
+    return this.conversationFormIds.get(conversationId);
+  }
+
+  /**
+   * Validate that a conversation exists and has the correct formId
+   */
+  validateConversationFormId(conversationId: string, formId: string): boolean {
+    const conversation = this.conversationMetadata[conversationId];
+    if (!conversation) {
+      return false; // Conversation doesn't exist
+    }
+
+    const storedFormId = this.conversationFormIds.get(conversationId);
+    return storedFormId === formId;
   }
 
   /**

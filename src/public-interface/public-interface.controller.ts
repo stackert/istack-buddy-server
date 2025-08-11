@@ -123,6 +123,12 @@ export class PublicInterfaceController {
         initialParticipants: [userId],
       });
 
+      // Store the formId with the conversation
+      this.chatManagerService.setConversationFormId(
+        conversation.id,
+        formId || '5375703',
+      );
+
       // Add debug messages to conversation
       try {
         await this.chatManagerService.addMessage({
@@ -195,6 +201,42 @@ export class PublicInterfaceController {
     }
   }
 
+  @Get('/form-marv/test-chat-session')
+  async serveTestChatSessionPage(@Res() res: Response): Promise<void> {
+    const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Chat Session</title>
+</head>
+<body>
+    <h1>Test Chat Session</h1>
+    <p>Click the button below to create a new Form Marv session:</p>
+    <button onclick="createSession()">Create Form Marv Session</button>
+    <div id="result"></div>
+
+    <script>
+        function createSession() {
+            fetch('/public/form-marv/debug-create?formId=5375703')
+                .then(response => response.text())
+                .then(html => {
+                    document.getElementById('result').innerHTML = html;
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    document.getElementById('result').innerHTML = 'Error creating session';
+                });
+        }
+    </script>
+</body>
+</html>`;
+
+    res.setHeader('Content-Type', 'text/html');
+    res.send(html);
+  }
+
   @Get('/form-marv/:conversationId')
   async serveFormMarvContent(
     @Param('conversationId') conversationId: string,
@@ -206,8 +248,6 @@ export class PublicInterfaceController {
   }
 
   @Get('/form-marv/:conversationId/:formId')
-  @UseGuards(AuthPermissionGuard)
-  @RequirePermissions('cx-agent:form-marv:read')
   async serveFormMarvContentWithFormId(
     @Param('conversationId') conversationId: string,
     @Param('formId') formId: string,
@@ -218,329 +258,74 @@ export class PublicInterfaceController {
     try {
       // If JWT token is provided in query, authenticate and set it as a cookie
       if (jwtToken) {
-        // Authenticate the user using the authentication service
-        const authResult = await this.authService.authenticateUser(
-          conversationId,
-          jwtToken,
-        );
+        try {
+          // Decode JWT to get userId
+          const decoded = jwt.verify(
+            jwtToken,
+            'istack-buddy-secret-key-2024',
+          ) as any;
+          const userId = decoded.userId;
 
-        if (!authResult.success) {
+          // Authenticate the user using the authentication service
+          const authResult = await this.authService.authenticateUser(
+            userId,
+            jwtToken,
+          );
+
+          if (!authResult.success) {
+            res.status(401).send('Invalid JWT token');
+            return;
+          }
+
+          // Set JWT token as cookie
+          res.cookie('jwtToken', jwtToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            maxAge: 24 * 60 * 60 * 1000, // 24 hours
+          });
+
+          // Redirect to the same URL without the jwtToken parameter
+          res.redirect(`/public/form-marv/${conversationId}/${formId}`);
+          return;
+        } catch (error) {
+          console.error('JWT authentication error:', error);
           res.status(401).send('Invalid JWT token');
           return;
         }
+      }
 
-        // Set JWT token as cookie
-        res.cookie('jwtToken', jwtToken, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict',
-          maxAge: 24 * 60 * 60 * 1000, // 24 hours
-        });
-
-        // Redirect to the same URL without the jwtToken query parameter
-        res.redirect(`/public/form-marv/${conversationId}/${formId}`);
+      // Validate that the conversation exists and has the correct formId
+      if (
+        !this.chatManagerService.validateConversationFormId(
+          conversationId,
+          formId,
+        )
+      ) {
+        res.status(400).json({ message: 'Session and formId mismatch' });
         return;
       }
 
-      // For subsequent requests, the JWT token should be in the cookie
-      // The AuthPermissionGuard will handle authentication using the cookie
-      const html = `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Welcome to Forms Marv</title>
-    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        .container { max-width: 1200px; margin: 0 auto; }
-        .header { background: #f0f0f0; padding: 20px; border-radius: 5px; margin-bottom: 20px; }
-        .chat-container { display: flex; gap: 20px; }
-        .chat-area { flex: 2; }
-        .toolbox { flex: 1; background: #f9f9f9; padding: 15px; border-radius: 5px; }
-        .toolbox h3 { margin-top: 0; color: #333; }
-        .toolbox-section { margin-bottom: 20px; }
-        .toolbox-section h4 { margin-bottom: 10px; color: #666; }
-        .tool-button { 
-            display: block; 
-            width: 100%; 
-            padding: 8px 12px; 
-            margin: 5px 0; 
-            border: 1px solid #ddd; 
-            border-radius: 4px; 
-            background: white; 
-            cursor: pointer; 
-            text-align: left;
-            font-size: 12px;
-        }
-        .tool-button:hover { background: #e9e9e9; }
-        .direct-action { border-left: 4px solid #4CAF50; }
-        .template-text { border-left: 4px solid #2196F3; }
-        .messages { height: 400px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; margin-bottom: 10px; background: white; }
-        .message { margin-bottom: 10px; padding: 8px; border-radius: 4px; }
-        .user-message { background: #e3f2fd; margin-left: 20px; }
-        .robot-message { background: #f1f8e9; margin-right: 20px; }
-        .system-message { background: #fff3e0; font-style: italic; }
-        .input-area { display: flex; gap: 10px; }
-        .message-input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 4px; }
-        .send-button { padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; }
-        .send-button:hover { background: #45a049; }
-        .send-button:disabled { background: #cccccc; cursor: not-allowed; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>Welcome to Forms Marv!</h1>
-            <p>Your session is active and ready for formId: ${formId}</p>
-            <p><strong>Conversation ID:</strong> ${conversationId}</p>
-        </div>
-        
-        <div class="chat-container">
-            <div class="chat-area">
-                <div class="messages" id="messages">
-                    <!-- Messages will be loaded here -->
-                </div>
-                <div class="input-area">
-                    <input type="text" class="message-input" id="messageInput" placeholder="Type your message..." />
-                    <button class="send-button" id="sendButton" onclick="sendMessage()">Send</button>
-                </div>
-            </div>
-            
-            <div class="toolbox">
-                <h3>Marv Toolbox</h3>
-                
-                <div class="toolbox-section">
-                    <h4>Direct Actions (No Input Required)</h4>
-                    <button class="tool-button direct-action" onclick="executeDirectAction('formAndRelatedEntityOverview', {formId: '${formId}'})">
-                        📊 Get Form Overview
-                    </button>
-                    <button class="tool-button direct-action" onclick="executeDirectAction('formLogicValidation', {formId: '${formId}'})">
-                        🔍 Validate Form Logic
-                    </button>
-                    <button class="tool-button direct-action" onclick="executeDirectAction('formCalculationValidation', {formId: '${formId}'})">
-                        🧮 Validate Calculations
-                    </button>
-                    <button class="tool-button direct-action" onclick="executeDirectAction('fieldLogicRemove', {formId: '${formId}'})">
-                        🗑️ Remove All Logic
-                    </button>
-                    <button class="tool-button direct-action" onclick="executeDirectAction('fieldLabelUniqueSlugAdd', {formId: '${formId}'})">
-                        🏷️ Add Unique Slugs
-                    </button>
-                    <button class="tool-button direct-action" onclick="executeDirectAction('fieldLabelUniqueSlugRemove', {formId: '${formId}'})">
-                        🏷️ Remove Unique Slugs
-                    </button>
-                </div>
-                
-                <div class="toolbox-section">
-                    <h4>Template Text (Add to Input)</h4>
-                    <button class="tool-button template-text" onclick="addTemplateToInput('Create a new form with the following fields:')">
-                        📝 Create New Form
-                    </button>
-                    <button class="tool-button template-text" onclick="addTemplateToInput('Add a text field to the form')">
-                        ➕ Add Text Field
-                    </button>
-                    <button class="tool-button template-text" onclick="addTemplateToInput('Add a number field to the form')">
-                        ➕ Add Number Field
-                    </button>
-                    <button class="tool-button template-text" onclick="addTemplateToInput('Add an email field to the form')">
-                        ➕ Add Email Field
-                    </button>
-                    <button class="tool-button template-text" onclick="addTemplateToInput('Create a developer copy of this form')">
-                        📋 Create Developer Copy
-                    </button>
-                    <button class="tool-button template-text" onclick="addTemplateToInput('Create a logic stash for this form')">
-                        💾 Create Logic Stash
-                    </button>
-                    <button class="tool-button template-text" onclick="addTemplateToInput('Apply the logic stash to this form')">
-                        🔄 Apply Logic Stash
-                    </button>
-                    <button class="tool-button template-text" onclick="addTemplateToInput('Remove field with ID:')">
-                        🗑️ Remove Field
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
+      // Serve the static Next.js app
+      const fs = require('fs');
+      const path = require('path');
 
-    <script>
-        const conversationId = '${conversationId}';
-        const formId = '${formId}';
-        
-        // WebSocket connection
-        let socket;
-        let robotMessageDiv = null;
-        
-        // Initialize WebSocket connection
-        function initializeWebSocket() {
-            // Connect to the existing WebSocket gateway
-            socket = io('ws://localhost:3500');
-            
-            // Join the conversation room
-            socket.emit('join_room', {
-                conversationId: conversationId,
-                joinData: {
-                    userId: 'form-marv-user',
-                    userRole: 'CUSTOMER'
-                }
-            });
-            
-            // Listen for new messages
-            socket.on('new_message', (data) => {
-                addMessageToUI(data.message.fromUserId, data.message.content);
-            });
-            
-            // Listen for robot streaming chunks
-            socket.on('robot_chunk', (data) => {
-                if (robotMessageDiv) {
-                    robotMessageDiv.textContent += data.chunk;
-                    robotMessageDiv.scrollIntoView({ behavior: 'smooth' });
-                }
-            });
-            
-            // Listen for robot completion
-            socket.on('robot_complete', (data) => {
-                robotMessageDiv = null;
-                console.log('Robot response complete');
-            });
-            
-            // Listen for user joined/left events
-            socket.on('user_joined', (data) => {
-                console.log('User joined:', data.participant);
-            });
-            
-            socket.on('user_left', (data) => {
-                console.log('User left:', data.userId);
-            });
-            
-            // Handle connection events
-            socket.on('connect', () => {
-                console.log('Connected to WebSocket');
-            });
-            
-            socket.on('disconnect', () => {
-                console.log('Disconnected from WebSocket');
-            });
-            
-            socket.on('connect_error', (error) => {
-                console.error('WebSocket connection error:', error);
-            });
-        }
-        
-        // Initialize WebSocket on page load
-        initializeWebSocket();
-        
-        // Load initial messages
-        loadMessages();
-        
-        function loadMessages() {
-            fetch(\`/public/form-marv/\${conversationId}/\${formId}/chat-messages\`, {
-                credentials: 'include'
-            })
-            .then(response => response.json())
-            .then(messages => {
-                const messagesDiv = document.getElementById('messages');
-                messagesDiv.innerHTML = '';
-                
-                messages.forEach(message => {
-                    addMessageToUI(message.fromUserId, message.content);
-                });
-                
-                // Scroll to bottom
-                messagesDiv.scrollTop = messagesDiv.scrollHeight;
-            })
-            .catch(error => console.error('Error loading messages:', error));
-        }
-        
-        function addMessageToUI(fromUserId, content) {
-            const messagesDiv = document.getElementById('messages');
-            const messageDiv = document.createElement('div');
-            
-            let className = 'message user-message';
-            if (fromUserId === 'anthropic-marv-robot') {
-                className = 'message robot-message';
-                robotMessageDiv = messageDiv; // Track robot message for streaming
-            } else if (fromUserId === 'form-marv-system') {
-                className = 'message system-message';
-            }
-            
-            messageDiv.className = className;
-            messageDiv.textContent = content;
-            messagesDiv.appendChild(messageDiv);
-            
-            // Scroll to bottom
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
-            
-            return messageDiv;
-        }
-        
-        function sendMessage() {
-            const input = document.getElementById('messageInput');
-            const message = input.value.trim();
-            
-            if (!message) return;
-            
-            const sendButton = document.getElementById('sendButton');
-            sendButton.disabled = true;
-            sendButton.textContent = 'Sending...';
-            
-            // Add user message to UI immediately
-            addMessageToUI('form-marv-user', message);
-            input.value = '';
-            
-            // Create robot message placeholder for streaming
-            robotMessageDiv = addMessageToUI('anthropic-marv-robot', '');
-            
-            // Send message via HTTP (WebSocket will receive the response)
-            fetch(\`/public/form-marv/\${conversationId}/\${formId}/chat-messages\`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                credentials: 'include',
-                body: JSON.stringify({ content: message })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (!data.success) {
-                    alert('Failed to send message');
-                }
-            })
-            .catch(error => {
-                console.error('Error sending message:', error);
-                alert('Error sending message');
-            })
-            .finally(() => {
-                sendButton.disabled = false;
-                sendButton.textContent = 'Send';
-            });
-        }
-        
-        function executeDirectAction(toolName, params) {
-            const message = \`Execute \${toolName} with parameters: \${JSON.stringify(params)}\`;
-            document.getElementById('messageInput').value = message;
-            sendMessage();
-        }
-        
-        function addTemplateToInput(templateText) {
-            const input = document.getElementById('messageInput');
-            input.value = templateText;
-            input.focus();
-        }
-        
-        // Allow Enter key to send message
-        document.getElementById('messageInput').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                sendMessage();
-            }
-        });
-    </script>
-  </body>
-</html>`;
+      try {
+        const staticFilePath = path.join(
+          __dirname,
+          '../../../public-content/form-marv/public/form-marv/[session-token]/[formId]/index.html',
+        );
+        const staticContent = fs.readFileSync(staticFilePath, 'utf8');
 
-      res.setHeader('Content-Type', 'text/html');
-      res.send(html);
+        res.setHeader('Content-Type', 'text/html');
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+        res.send(staticContent);
+      } catch (error) {
+        console.error('Error serving static app:', error);
+        res.status(500).send('Error loading application');
+      }
     } catch (error) {
       res.status(500).send('Internal Server Error');
     }
@@ -556,6 +341,16 @@ export class PublicInterfaceController {
     @Query('dtSinceMs') dtSinceMs?: string,
   ): Promise<any[]> {
     try {
+      // Validate that the conversation exists and has the correct formId
+      if (
+        !this.chatManagerService.validateConversationFormId(
+          conversationId,
+          formId,
+        )
+      ) {
+        throw new Error('Session not found or form ID does not match');
+      }
+
       // Get messages from the conversation (conversationId is the conversation ID)
       const messages = await this.chatManagerService.getMessages(
         conversationId,
@@ -582,6 +377,16 @@ export class PublicInterfaceController {
     @Req() req: any,
   ): Promise<{ success: boolean; messageId?: string }> {
     try {
+      // Validate that the conversation exists and has the correct formId
+      if (
+        !this.chatManagerService.validateConversationFormId(
+          conversationId,
+          formId,
+        )
+      ) {
+        return { success: false };
+      }
+
       // A) Add message to conversation
       const userMessage = await this.chatManagerService.addMessage({
         conversationId: conversationId,

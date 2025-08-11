@@ -48,6 +48,11 @@ export async function bootstrap() {
   // Enable cookie parsing
   app.use(cookieParser());
 
+  // Serve test data files statically
+  app.use('/test-data', require('express').static('test-data'));
+  app.use("/public/form-marv/_next", require("express").static("public-content/form-marv/_next"));
+  app.use("/public/form-marv/favicon.ico", require("express").static("public-content/form-marv/favicon.ico"));
+
   // Swagger/OpenAPI configuration
   const config = new DocumentBuilder()
     .setTitle('iStack Buddy Server API')
