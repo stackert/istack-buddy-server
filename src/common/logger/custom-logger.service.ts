@@ -1,4 +1,6 @@
-import { Injectable, Logger, LoggerService } from '@nestjs/common';
+import { Injectable, LoggerService } from '@nestjs/common';
+import * as winston from 'winston';
+import * as path from 'path';
 
 export interface LogContext {
   userId?: string;
@@ -26,7 +28,8 @@ export interface StructuredLogEntry {
 }
 
 @Injectable()
-export class CustomLoggerService extends Logger implements LoggerService {
+export class CustomLoggerService implements LoggerService {
+  private logger: winston.Logger;
   private sensitiveFields = [
     'password',
     'passwordHash',
@@ -37,6 +40,84 @@ export class CustomLoggerService extends Logger implements LoggerService {
     'key',
     'authorization',
   ];
+
+  constructor() {
+    this.initializeLogger();
+  }
+
+  private context?: string;
+
+  // Method to set context after instantiation
+  setContext(context: string): void {
+    this.context = context;
+  }
+
+  private initializeLogger(): void {
+    const logLevel = process.env.LOG_LEVEL || 'info';
+    const isDevelopment = process.env.NODE_ENV === 'development';
+    const isTest = process.env.NODE_ENV === 'test';
+
+    // Create logs directory if it doesn't exist
+    const logsDir = path.join(process.cwd(), 'logs');
+
+    // Define Winston transports
+    const transports: winston.transport[] = [];
+
+    // Console transport with colors for development
+    if (isDevelopment && !isTest) {
+      transports.push(
+        new winston.transports.Console({
+          format: winston.format.combine(
+            winston.format.colorize(),
+            winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+            winston.format.printf(
+              ({ timestamp, level, message, context, ...meta }) => {
+                const contextStr = context ? `[${context}]` : '';
+                const metaStr = Object.keys(meta).length
+                  ? ` ${JSON.stringify(meta)}`
+                  : '';
+                return `${timestamp} ${level} ${contextStr} ${message}${metaStr}`;
+              },
+            ),
+          ),
+        }),
+      );
+    }
+
+    // File transport for clean logs (no color codes) - overwrite on each run
+    transports.push(
+      new winston.transports.File({
+        filename: path.join(logsDir, 'server.json'),
+        format: winston.format.combine(
+          winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+          winston.format.errors({ stack: true }),
+          winston.format.json(),
+        ),
+        options: { flags: 'w' }, // Overwrite file on each run
+      }),
+    );
+
+    // Error file transport for errors only - overwrite on each run
+    transports.push(
+      new winston.transports.File({
+        filename: path.join(logsDir, 'error.json'),
+        level: 'error',
+        format: winston.format.combine(
+          winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+          winston.format.errors({ stack: true }),
+          winston.format.json(),
+        ),
+        options: { flags: 'w' }, // Overwrite file on each run
+      }),
+    );
+
+    // Create the Winston logger
+    this.logger = winston.createLogger({
+      level: logLevel,
+      transports,
+      exitOnError: false,
+    });
+  }
 
   private sanitizeData(data: any): any {
     if (!data || typeof data !== 'object') {
@@ -91,12 +172,116 @@ export class CustomLoggerService extends Logger implements LoggerService {
     };
   }
 
+  // Winston logger methods - handle NestJS Logger interface
+  log(message: any, context?: string | Record<string, any>, data?: any): void {
+    let logContext = this.context || this.constructor.name;
+    let logData = data;
+
+    // Handle old NestJS Logger pattern: log(message, data)
+    if (context && typeof context !== 'string') {
+      logData = context;
+    } else if (typeof context === 'string') {
+      logContext = context;
+    }
+
+    const meta: any = { context: logContext };
+    if (logData) {
+      meta.data = this.sanitizeData(logData);
+    }
+
+    this.logger.info(message, meta);
+  }
+
+  error(context: string, message: string, error?: Error, data?: any): void {
+    const logContext = context || this.context || this.constructor.name;
+    const meta: any = { context: logContext };
+
+    if (error) {
+      meta.error = {
+        name: error.name,
+        message: error.message,
+        stack: error.stack,
+      };
+    }
+
+    if (data) {
+      meta.data = this.sanitizeData(data);
+    }
+
+    this.logger.error(message, meta);
+  }
+
+  warn(message: any, context?: string | Record<string, any>, data?: any): void {
+    let logContext = this.context || this.constructor.name;
+    let logData = data;
+
+    // Handle old NestJS Logger pattern: warn(message, data)
+    if (context && typeof context !== 'string') {
+      logData = context;
+    } else if (typeof context === 'string') {
+      logContext = context;
+    }
+
+    const meta: any = { context: logContext };
+    if (logData) {
+      meta.data = this.sanitizeData(logData);
+    }
+
+    this.logger.warn(message, meta);
+  }
+
+  debug(
+    message: any,
+    context?: string | Record<string, any>,
+    data?: any,
+  ): void {
+    let logContext = this.context || this.constructor.name;
+    let logData = data;
+
+    // Handle old NestJS Logger pattern: debug(message, data)
+    if (context && typeof context !== 'string') {
+      logData = context;
+    } else if (typeof context === 'string') {
+      logContext = context;
+    }
+
+    const meta: any = { context: logContext };
+    if (logData) {
+      meta.data = this.sanitizeData(logData);
+    }
+
+    this.logger.debug(message, meta);
+  }
+
+  verbose(
+    message: any,
+    context?: string | Record<string, any>,
+    data?: any,
+  ): void {
+    let logContext = this.context || this.constructor.name;
+    let logData = data;
+
+    // Handle old NestJS Logger pattern: verbose(message, data)
+    if (context && typeof context !== 'string') {
+      logData = context;
+    } else if (typeof context === 'string') {
+      logContext = context;
+    }
+
+    const meta: any = { context: logContext };
+    if (logData) {
+      meta.data = this.sanitizeData(logData);
+    }
+
+    this.logger.verbose(message, meta);
+  }
+
   /**
    * Logs a message with structured context and data sanitization.
    *
    * This method provides context-aware logging with automatic data sanitization
-   * to prevent sensitive information from being logged. In production, it outputs
-   * structured JSON logs, while in development it uses NestJS's formatted output.
+   * to prevent sensitive information from being logged. It outputs structured
+   * logs to both console (with colors) and file (clean format).
    *
    * @param level - The log level (log, error, warn, debug, verbose)
    * @param message - The main log message
@@ -130,23 +315,35 @@ export class CustomLoggerService extends Logger implements LoggerService {
       data,
     );
 
-    // In production, you might want to send this to an external logging service
-    if (process.env.NODE_ENV === 'production') {
-      console.log(JSON.stringify(structuredLog));
-    } else {
-      // Development: use NestJS's built-in logger for nice formatting
-      const logMessage = logContext?.correlationId
-        ? `[${logContext.correlationId}] ${message}`
-        : message;
+    const logMessage = logContext?.correlationId
+      ? `[${logContext.correlationId}] ${message}`
+      : message;
 
-      super[level](logMessage, context);
+    const meta = {
+      context,
+      correlationId: logContext?.correlationId,
+      userId: logContext?.userId,
+      requestPath: logContext?.requestPath,
+      method: logContext?.method,
+      data: data ? this.sanitizeData(data) : undefined,
+    };
 
-      if (data) {
-        super[level](
-          `Data: ${JSON.stringify(this.sanitizeData(data), null, 2)}`,
-          context,
-        );
-      }
+    switch (level) {
+      case 'log':
+        this.logger.info(logMessage, meta);
+        break;
+      case 'error':
+        this.logger.error(logMessage, meta);
+        break;
+      case 'warn':
+        this.logger.warn(logMessage, meta);
+        break;
+      case 'debug':
+        this.logger.debug(logMessage, meta);
+        break;
+      case 'verbose':
+        this.logger.verbose(logMessage, meta);
+        break;
     }
   }
 
@@ -155,7 +352,7 @@ export class CustomLoggerService extends Logger implements LoggerService {
    *
    * This method specifically handles error logging with stack traces and
    * associated context data. It automatically sanitizes any provided data
-   * and formats the error appropriately for both development and production.
+   * and formats the error appropriately for both console and file output.
    *
    * @param message - Descriptive message about the error context
    * @param error - The Error object to log with stack trace
@@ -190,22 +387,25 @@ export class CustomLoggerService extends Logger implements LoggerService {
       error,
     );
 
-    if (process.env.NODE_ENV === 'production') {
-      console.error(JSON.stringify(structuredLog));
-    } else {
-      const logMessage = logContext?.correlationId
-        ? `[${logContext.correlationId}] ${message}`
-        : message;
+    const logMessage = logContext?.correlationId
+      ? `[${logContext.correlationId}] ${message}`
+      : message;
 
-      super.error(logMessage, error.stack, context);
+    const meta = {
+      context,
+      correlationId: logContext?.correlationId,
+      userId: logContext?.userId,
+      requestPath: logContext?.requestPath,
+      method: logContext?.method,
+      data: data ? this.sanitizeData(data) : undefined,
+      error: {
+        name: error.name,
+        message: error.message,
+        stack: error.stack,
+      },
+    };
 
-      if (data) {
-        super.error(
-          `Data: ${JSON.stringify(this.sanitizeData(data), null, 2)}`,
-          context,
-        );
-      }
-    }
+    this.logger.error(logMessage, meta);
   }
 
   /**

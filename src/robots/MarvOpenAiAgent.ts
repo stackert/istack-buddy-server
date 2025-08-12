@@ -31,7 +31,7 @@ const createMessageEnvelopeWithContent = (
  * Focused on Formstack form management and field operations using OpenAI
  */
 export class MarvOpenAiAgent extends AbstractRobotChat {
-  private readonly logger = new CustomLoggerService('MarvOpenAiAgent');
+  private readonly logger = new CustomLoggerService();
 
   // Required properties from AbstractRobot
   public readonly contextWindowSizeInTokens: number = 128000; // GPT-4 context window

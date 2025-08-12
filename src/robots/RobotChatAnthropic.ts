@@ -32,7 +32,7 @@ const createMessageEnvelopeWithContent = (
  * Connects to Anthropic's API for real chat functionality with tool support
  */
 export class RobotChatAnthropic extends AbstractRobotChat {
-  private readonly logger = new CustomLoggerService('RobotChatAnthropic');
+  private readonly logger = new CustomLoggerService();
 
   // Required properties from AbstractRobot
   public readonly contextWindowSizeInTokens: number = 200000;
@@ -336,7 +336,11 @@ Please provide helpful, accurate, and detailed responses to user questions. If y
           responseText += `\n\n${toolResult}`;
         } catch (error) {
           const errorMsg = `Error executing tool ${toolUse.name}: ${error instanceof Error ? error.message : 'Unknown error'}`;
-          this.logger.error(`Tool execution error: ${errorMsg}`);
+          this.logger.error(
+            'RobotChatAnthropic',
+            `Tool execution error: ${errorMsg}`,
+            error,
+          );
           responseText += `\n\n${errorMsg}`;
         }
         this.logger.debug(`=== END TOOL CALL ${toolUse.name} ===`);

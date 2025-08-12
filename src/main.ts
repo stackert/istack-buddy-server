@@ -10,8 +10,10 @@ import { CustomLoggerService } from './common/logger/custom-logger.service';
 dotenv.config({ path: '.env.live' });
 
 export async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
-  const logger = new CustomLoggerService('Bootstrap');
+  const app = await NestFactory.create(AppModule, {
+    logger: new CustomLoggerService(),
+  });
+  const logger = app.get(CustomLoggerService);
 
   // Configure raw body parsing for Slack webhooks
   app.use(
@@ -49,9 +51,39 @@ export async function bootstrap() {
   app.use(cookieParser());
 
   // Serve test data files statically
-  app.use('/test-data', require('express').static('test-data'));
-  app.use("/public/form-marv/_next", require("express").static("public-content/form-marv/_next"));
-  app.use("/public/form-marv/favicon.ico", require("express").static("public-content/form-marv/favicon.ico"));
+  app.use(
+    '/test-data',
+    require('express').static('test-data', {
+      etag: false, // Disable ETag for development
+      lastModified: false, // Disable Last-Modified for development
+      maxAge: 0, // No caching for development
+    }),
+  );
+
+  // Serve form-marv static app (this should come before the controller routes)
+  app.use(
+    '/public/form-marv',
+    require('express').static('public-content/form-marv', {
+      index: ['index.html'], // Serve index.html automatically for directory requests
+      fallthrough: true, // Continue to next middleware if file not found (allows API routes to work)
+      etag: false, // Disable ETag for development
+      lastModified: false, // Disable Last-Modified for development
+      maxAge: 0, // No caching for development
+    }),
+  );
+
+  app.use(
+    '/public/form-marv/_next',
+    require('express').static('public-content/form-marv/_next', {
+      etag: false, // Disable ETag for development
+      lastModified: false, // Disable Last-Modified for development
+      maxAge: 0, // No caching for development
+    }),
+  );
+  app.use(
+    '/public/form-marv/favicon.ico',
+    require('express').static('public-content/form-marv/favicon.ico'),
+  );
 
   // Swagger/OpenAPI configuration
   const config = new DocumentBuilder()

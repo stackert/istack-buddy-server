@@ -29,7 +29,7 @@ export class ChatManagerGateway
   @WebSocketServer()
   server: Server;
 
-  private readonly logger = new CustomLoggerService('ChatManagerGateway');
+  private readonly logger = new CustomLoggerService();
 
   constructor(private readonly chatManagerService: ChatManagerService) {
     // Set the gateway reference in the service so it can broadcast messages

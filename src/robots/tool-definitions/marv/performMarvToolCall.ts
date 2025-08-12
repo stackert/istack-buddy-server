@@ -94,7 +94,7 @@ const performMarvToolCall = async (
 
 // Helper functions
 const helpers = {
-  logger: new CustomLoggerService('MarvToolCall'),
+  logger: new CustomLoggerService(),
 
   isSuccessfulResponse: (apiResponse: IMarvApiUniversalResponse<any>) =>
     apiResponse.isSuccess && apiResponse.response !== null,

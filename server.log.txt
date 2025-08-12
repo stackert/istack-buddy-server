@@ -2,110 +2,1231 @@
 > istack-buddy-server-take1@0.0.1 start:dev
 > nest start --watch
 
-[2J[3J[H[[90m9:29:28 AM[0m] Starting compilation in watch mode...
+[2J[3J[H[[90m12:05:47 PM[0m] Starting compilation in watch mode...
 
-[[90m9:29:30 AM[0m] Found 0 errors. Watching for file changes.
+[[90m12:05:49 PM[0m] Found 0 errors. Watching for file changes.
 
-[32m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
-[32m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mRobotModule dependencies initialized[39m[38;5;3m +8ms[39m
-[32m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConversationListServiceModule dependencies initialized[39m[38;5;3m +0ms[39m
-[32m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mLoggerModule dependencies initialized[39m[38;5;3m +1ms[39m
-[95m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [95m  DEBUG[39m [38;5;3m[AuthorizationPermissionsService.constructor] [39m[95mFile-based permissions loaded successfully[39m
-[95m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [95m  DEBUG[39m [38;5;3m[AuthorizationPermissionsService.constructor] [39m[95mData: {
+[32m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+[32m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mRobotModule dependencies initialized[39m[38;5;3m +15ms[39m
+[32m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConversationListServiceModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mLoggerModule dependencies initialized[39m[38;5;3m +1ms[39m
+[95m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [95m  DEBUG[39m [38;5;3m[AuthorizationPermissionsService.constructor] [39m[95mFile-based permissions loaded successfully[39m
+[95m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [95m  DEBUG[39m [38;5;3m[AuthorizationPermissionsService.constructor] [39m[95mData: {
   "userPermissionsCount": 0,
   "groupPermissionsCount": 0,
   "userGroupMembershipsCount": 0
 }[39m
-[32m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAuthorizationPermissionsModule dependencies initialized[39m[38;5;3m +0ms[39m
-[32m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +0ms[39m
-[95m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [95m  DEBUG[39m [38;5;3m[AuthenticationService.constructor] [39m[95mAuthentication service initialized with configuration[39m
-[95m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [95m  DEBUG[39m [38;5;3m[AuthenticationService.constructor] [39m[95mData: {
+[32m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAuthorizationPermissionsModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +0ms[39m
+[95m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [95m  DEBUG[39m [38;5;3m[AuthenticationService.constructor] [39m[95mAuthentication service initialized with configuration[39m
+[95m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [95m  DEBUG[39m [38;5;3m[AuthenticationService.constructor] [39m[95mData: {
   "sessionTimeoutSeconds": 28800
 }[39m
-[32m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAuthenticationModule dependencies initialized[39m[38;5;3m +0ms[39m
-[32m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mGuardsModule dependencies initialized[39m[38;5;3m +0ms[39m
-[32m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mIstackBuddySlackApiModule dependencies initialized[39m[38;5;3m +2ms[39m
-[32m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mDevDebugModule dependencies initialized[39m[38;5;3m +0ms[39m
-[32m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mPublicInterfaceModule dependencies initialized[39m[38;5;3m +0ms[39m
-[32m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mChatManagerModule dependencies initialized[39m[38;5;3m +0ms[39m
-[32m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mUserProfileModule dependencies initialized[39m[38;5;3m +0ms[39m
-[32m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [32m    LOG[39m [38;5;3m[WebSocketsController] [39m[32mChatManagerGateway subscribed to the "join_room" message[39m[38;5;3m +14ms[39m
-[32m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [32m    LOG[39m [38;5;3m[WebSocketsController] [39m[32mChatManagerGateway subscribed to the "leave_room" message[39m[38;5;3m +0ms[39m
-[32m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [32m    LOG[39m [38;5;3m[WebSocketsController] [39m[32mChatManagerGateway subscribed to the "send_message" message[39m[38;5;3m +0ms[39m
-[32m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [32m    LOG[39m [38;5;3m[WebSocketsController] [39m[32mChatManagerGateway subscribed to the "typing_start" message[39m[38;5;3m +0ms[39m
-[32m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [32m    LOG[39m [38;5;3m[WebSocketsController] [39m[32mChatManagerGateway subscribed to the "typing_stop" message[39m[38;5;3m +0ms[39m
-[32m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [32m    LOG[39m [38;5;3m[WebSocketsController] [39m[32mChatManagerGateway subscribed to the "get_messages" message[39m[38;5;3m +0ms[39m
-[32m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [32m    LOG[39m [38;5;3m[WebSocketsController] [39m[32mChatManagerGateway subscribed to the "share_robot_message" message[39m[38;5;3m +0ms[39m
-[32m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [32m    LOG[39m [38;5;3m[WebSocketsController] [39m[32mChatManagerGateway subscribed to the "join_dashboard" message[39m[38;5;3m +0ms[39m
-[32m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [32m    LOG[39m [38;5;3m[WebSocketsController] [39m[32mChatManagerGateway subscribed to the "leave_dashboard" message[39m[38;5;3m +0ms[39m
-[32m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAppController {/}:[39m[38;5;3m +1ms[39m
-[32m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/, GET} route[39m[38;5;3m +1ms[39m
-[32m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAuthenticationController {/auth}:[39m[38;5;3m +0ms[39m
-[32m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/user, POST} route[39m[38;5;3m +0ms[39m
-[32m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/profile/me, GET} route[39m[38;5;3m +0ms[39m
-[32m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mUserProfileController {/user-profiles}:[39m[38;5;3m +0ms[39m
-[32m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/user-profiles/me, GET} route[39m[38;5;3m +0ms[39m
-[32m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mDevDebugController {/dev-debug}:[39m[38;5;3m +0ms[39m
-[32m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/dev-debug/auth, POST} route[39m[38;5;3m +1ms[39m
-[32m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/dev-debug/user-details/:userId, GET} route[39m[38;5;3m +0ms[39m
-[32m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/dev-debug/users, GET} route[39m[38;5;3m +0ms[39m
-[32m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/dev-debug/auth-status/:userId, GET} route[39m[38;5;3m +0ms[39m
-[32m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mChatManagerController {/chat}:[39m[38;5;3m +0ms[39m
-[32m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/chat/messages, POST} route[39m[38;5;3m +0ms[39m
-[32m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/chat/conversations, GET} route[39m[38;5;3m +0ms[39m
-[32m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/chat/conversations/:conversationId/messages, GET} route[39m[38;5;3m +0ms[39m
-[32m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/chat/conversations/:conversationId/messages/last/:count, GET} route[39m[38;5;3m +1ms[39m
-[32m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/chat/conversations/:conversationId/join, POST} route[39m[38;5;3m +0ms[39m
-[32m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/chat/conversations/:conversationId/participants, GET} route[39m[38;5;3m +0ms[39m
-[32m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/chat/dashboard/stats, GET} route[39m[38;5;3m +0ms[39m
-[32m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/chat/conversations/start, POST} route[39m[38;5;3m +0ms[39m
-[32m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/chat/conversations/:conversationId/leave, POST} route[39m[38;5;3m +0ms[39m
-[32m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mIstackBuddySlackApiController {/}:[39m[38;5;3m +0ms[39m
-[32m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/istack-buddy/slack-integration/health, GET} route[39m[38;5;3m +0ms[39m
-[32m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/istack-buddy/slack-integration/debug, GET} route[39m[38;5;3m +0ms[39m
-[32m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/istack-buddy/slack-integration/slack/events, POST} route[39m[38;5;3m +0ms[39m
-[32m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mPublicInterfaceController {/public}:[39m[38;5;3m +0ms[39m
-[32m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/public, GET} route[39m[38;5;3m +0ms[39m
-[32m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/public/form-marv, GET} route[39m[38;5;3m +0ms[39m
-[32m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/public/form-marv/debug-create, GET} route[39m[38;5;3m +0ms[39m
-[32m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/public/form-marv/test-chat-session, GET} route[39m[38;5;3m +0ms[39m
-[32m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/public/form-marv/:conversationId, GET} route[39m[38;5;3m +0ms[39m
-[32m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/public/form-marv/:conversationId/:formId, GET} route[39m[38;5;3m +0ms[39m
-[32m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/public/form-marv/:conversationId/:formId/chat-messages, GET} route[39m[38;5;3m +0ms[39m
-[32m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/public/form-marv/:conversationId/:formId/chat-messages, POST} route[39m[38;5;3m +0ms[39m
-[32m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [32m    LOG[39m [38;5;3m[SlackyAnthropicAgent] [39m[32mSlackyAnthropicAgent constructor called - class loaded[39m
-[32m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [32m    LOG[39m [38;5;3m[SlackyOpenAiAgent] [39m[32mSlackyOpenAiAgent constructor called - class loaded[39m
-[95m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [95m  DEBUG[39m [38;5;3m[RobotService] [39m[95mRegistered robot: ChatRobotParrot v1.0.0[39m
-[95m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [95m  DEBUG[39m [38;5;3m[RobotService] [39m[95mRegistered robot: AgentRobotParrot v1.0.0[39m
-[95m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [95m  DEBUG[39m [38;5;3m[RobotService] [39m[95mRegistered robot: RobotChatOpenAI v1.0.0-test-dev[39m
-[95m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [95m  DEBUG[39m [38;5;3m[RobotService] [39m[95mRegistered robot: RobotChatAnthropic v1.0.0[39m
-[95m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [95m  DEBUG[39m [38;5;3m[RobotService] [39m[95mRegistered robot: SlackyAnthropicAgent v1.0.0[39m
-[95m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [95m  DEBUG[39m [38;5;3m[RobotService] [39m[95mRegistered robot: MarvOpenAiAgent v1.0.0[39m
-[95m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [95m  DEBUG[39m [38;5;3m[RobotService] [39m[95mRegistered robot: SlackyOpenAiAgent v1.0.0[39m
-[95m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [95m  DEBUG[39m [38;5;3m[RobotService] [39m[95mRegistered robot: AnthropicMarv v1.0.0[39m
-[95m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [95m  DEBUG[39m [38;5;3m[RobotService] [39m[95mRegistered robot: SlackAgentCoreFormsParrot v1.0.0[39m
-[95m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [95m  DEBUG[39m [38;5;3m[RobotService] [39m[95mRegistered robot: SlackAgentCoreFormsSsoAutofillParrot v1.0.0[39m
-[32m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [32m    LOG[39m [38;5;3m[RobotService] [39m[32mInitialized 10 robots[39m
-[32m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +1ms[39m
-[31m[Nest] 2486958  - [39m08/11/2025, 9:29:30 AM [31m  ERROR[39m [38;5;3m[NestApplication] [39m[31mError: listen EADDRINUSE: address already in use :::3500[39m[38;5;3m +1ms[39m
-node:net:1940
-    const ex = new UVExceptionWithHostPort(err, 'listen', address, port);
-               ^
-
-Error: listen EADDRINUSE: address already in use :::3500
-    at Server.setupListenHandle [as _listen2] (node:net:1940:16)
-    at listenInCluster (node:net:1997:12)
-    at Server.listen (node:net:2102:7)
-    at ExpressAdapter.listen (/mypart/tmc/projects/istack-buddy-server-take1/node_modules/@nestjs/platform-express/adapters/express-adapter.js:95:32)
-    at /mypart/tmc/projects/istack-buddy-server-take1/node_modules/@nestjs/core/nest-application.js:183:30
-    at new Promise (<anonymous>)
-    at NestApplication.listen (/mypart/tmc/projects/istack-buddy-server-take1/node_modules/@nestjs/core/nest-application.js:173:16)
-    at async bootstrap (/mypart/tmc/projects/istack-buddy-server-take1/src/main.ts:79:3) {
-  code: 'EADDRINUSE',
-  errno: -98,
-  syscall: 'listen',
-  address: '::',
-  port: 3500
+[32m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAuthenticationModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mGuardsModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mIstackBuddySlackApiModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mDevDebugModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mPublicInterfaceModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mChatManagerModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mUserProfileModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [32m    LOG[39m [38;5;3m[WebSocketsController] [39m[32mChatManagerGateway subscribed to the "join_room" message[39m[38;5;3m +19ms[39m
+[32m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [32m    LOG[39m [38;5;3m[WebSocketsController] [39m[32mChatManagerGateway subscribed to the "leave_room" message[39m[38;5;3m +1ms[39m
+[32m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [32m    LOG[39m [38;5;3m[WebSocketsController] [39m[32mChatManagerGateway subscribed to the "send_message" message[39m[38;5;3m +0ms[39m
+[32m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [32m    LOG[39m [38;5;3m[WebSocketsController] [39m[32mChatManagerGateway subscribed to the "typing_start" message[39m[38;5;3m +0ms[39m
+[32m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [32m    LOG[39m [38;5;3m[WebSocketsController] [39m[32mChatManagerGateway subscribed to the "typing_stop" message[39m[38;5;3m +0ms[39m
+[32m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [32m    LOG[39m [38;5;3m[WebSocketsController] [39m[32mChatManagerGateway subscribed to the "get_messages" message[39m[38;5;3m +0ms[39m
+[32m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [32m    LOG[39m [38;5;3m[WebSocketsController] [39m[32mChatManagerGateway subscribed to the "share_robot_message" message[39m[38;5;3m +0ms[39m
+[32m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [32m    LOG[39m [38;5;3m[WebSocketsController] [39m[32mChatManagerGateway subscribed to the "join_dashboard" message[39m[38;5;3m +0ms[39m
+[32m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [32m    LOG[39m [38;5;3m[WebSocketsController] [39m[32mChatManagerGateway subscribed to the "leave_dashboard" message[39m[38;5;3m +0ms[39m
+[32m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAppController {/}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAuthenticationController {/auth}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/user, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/profile/me, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mUserProfileController {/user-profiles}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/user-profiles/me, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mDevDebugController {/dev-debug}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/dev-debug/auth, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/dev-debug/user-details/:userId, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/dev-debug/users, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/dev-debug/auth-status/:userId, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mChatManagerController {/chat}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/chat/messages, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/chat/conversations, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/chat/conversations/:conversationId/messages, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/chat/conversations/:conversationId/messages/last/:count, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/chat/conversations/:conversationId/join, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/chat/conversations/:conversationId/participants, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/chat/dashboard/stats, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/chat/conversations/start, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/chat/conversations/:conversationId/leave, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mIstackBuddySlackApiController {/}:[39m[38;5;3m +1ms[39m
+[32m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/istack-buddy/slack-integration/health, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/istack-buddy/slack-integration/debug, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/istack-buddy/slack-integration/slack/events, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mPublicInterfaceController {/public}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/public, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/public/form-marv, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/public/form-marv/debug-create, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/public/form-marv/test-chat-session, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/public/form-marv/:conversationId, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/public/form-marv/:conversationId/:formId, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/public/form-marv/:conversationId/:formId/chat-messages, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/public/form-marv/:conversationId/:formId/chat-messages, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [32m    LOG[39m [38;5;3m[SlackyAnthropicAgent] [39m[32mSlackyAnthropicAgent constructor called - class loaded[39m
+[32m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [32m    LOG[39m [38;5;3m[SlackyOpenAiAgent] [39m[32mSlackyOpenAiAgent constructor called - class loaded[39m
+[95m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [95m  DEBUG[39m [38;5;3m[RobotService] [39m[95mRegistered robot: ChatRobotParrot v1.0.0[39m
+[95m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [95m  DEBUG[39m [38;5;3m[RobotService] [39m[95mRegistered robot: AgentRobotParrot v1.0.0[39m
+[95m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [95m  DEBUG[39m [38;5;3m[RobotService] [39m[95mRegistered robot: RobotChatOpenAI v1.0.0-test-dev[39m
+[95m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [95m  DEBUG[39m [38;5;3m[RobotService] [39m[95mRegistered robot: RobotChatAnthropic v1.0.0[39m
+[95m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [95m  DEBUG[39m [38;5;3m[RobotService] [39m[95mRegistered robot: SlackyAnthropicAgent v1.0.0[39m
+[95m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [95m  DEBUG[39m [38;5;3m[RobotService] [39m[95mRegistered robot: MarvOpenAiAgent v1.0.0[39m
+[95m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [95m  DEBUG[39m [38;5;3m[RobotService] [39m[95mRegistered robot: SlackyOpenAiAgent v1.0.0[39m
+[95m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [95m  DEBUG[39m [38;5;3m[RobotService] [39m[95mRegistered robot: AnthropicMarv v1.0.0[39m
+[95m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [95m  DEBUG[39m [38;5;3m[RobotService] [39m[95mRegistered robot: SlackAgentCoreFormsParrot v1.0.0[39m
+[95m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [95m  DEBUG[39m [38;5;3m[RobotService] [39m[95mRegistered robot: SlackAgentCoreFormsSsoAutofillParrot v1.0.0[39m
+[32m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [32m    LOG[39m [38;5;3m[RobotService] [39m[32mInitialized 10 robots[39m
+[32m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +1ms[39m
+[32m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [32m    LOG[39m [38;5;3m[Bootstrap] [39m[32miStack Buddy Server running on: http://localhost:3500[39m
+[32m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [32m    LOG[39m [38;5;3m[Bootstrap] [39m[32mAPI Documentation available at: http://localhost:3500/api[39m
+[33m[Nest] 2509088  - [39m08/11/2025, 12:05:50 PM [33m   WARN[39m [38;5;3m[Bootstrap] [39m[33mCORS enabled for ALL origins (temporary)[39m
+[32m[Nest] 2509088  - [39m08/11/2025, 12:05:54 PM [32m    LOG[39m [38;5;3m[HttpRequest] [39m[32m[7309ef52-3a22-4bc8-a1aa-a85631496073] Incoming GET /public/form-marv/debug-create?formId=5375703[39m
+[32m[Nest] 2509088  - [39m08/11/2025, 12:05:54 PM [32m    LOG[39m [38;5;3m[HttpRequest] [39m[32mData: {
+  "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36",
+  "ip": "::1",
+  "params": {},
+  "query": {
+    "formId": "5375703"
+  }
+}[39m
+[32m[Nest] 2509088  - [39m08/11/2025, 12:05:54 PM [32m    LOG[39m [38;5;3m[UserProfileService.addTemporaryUser] [39m[32mTemporary user profile added[39m
+[32m[Nest] 2509088  - [39m08/11/2025, 12:05:54 PM [32m    LOG[39m [38;5;3m[UserProfileService.addTemporaryUser] [39m[32mData: {
+  "userId": "form-marv-temp-1754931954623"
+}[39m
+[95m[Nest] 2509088  - [39m08/11/2025, 12:05:54 PM [95m  DEBUG[39m [38;5;3m[AuthorizationPermissionsService.addUser] [39m[95mUser added successfully[39m
+[95m[Nest] 2509088  - [39m08/11/2025, 12:05:54 PM [95m  DEBUG[39m [38;5;3m[AuthorizationPermissionsService.addUser] [39m[95mData: {
+  "userId": "form-marv-temp-1754931954623",
+  "ownPermissionsCount": 2,
+  "groupMembershipsCount": 0
+}[39m
+[95m[Nest] 2509088  - [39m08/11/2025, 12:05:54 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mBroadcasting dashboard event: conversation_created[39m
+{
+  allConversationMessages: [
+    {
+      id: '28af30bd-997e-4f6d-ae98-8c93c8dda4d5',
+      content: [Object],
+      conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+      fromUserId: 'form-marv-temp-1754931954623',
+      fromRole: 'cx-customer',
+      toRole: 'robot',
+      messageType: 'text',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-11T17:05:54.626Z,
+      updatedAt: 2025-08-11T17:05:54.626Z
+    }
+  ]
 }
-
-Node.js v22.17.0
+[95m[Nest] 2509088  - [39m08/11/2025, 12:05:54 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mBroadcasting dashboard event: conversation_updated[39m
+Gateway: Broadcasting new_message to conversation f09be4b9-f785-4f72-9995-8c1fe0146449: {
+  message: {
+    id: '28af30bd-997e-4f6d-ae98-8c93c8dda4d5',
+    content: { type: 'text/plain', payload: 'DEBUG - User Message II' },
+    conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+    fromUserId: 'form-marv-temp-1754931954623',
+    fromRole: 'cx-customer',
+    toRole: 'robot',
+    messageType: 'text',
+    threadId: undefined,
+    originalMessageId: undefined,
+    createdAt: 2025-08-11T17:05:54.626Z,
+    updatedAt: 2025-08-11T17:05:54.626Z
+  },
+  timestamp: '2025-08-11T17:05:54.626Z'
+}
+Gateway: Broadcast completed
+{
+  allConversationMessages: [
+    {
+      id: '28af30bd-997e-4f6d-ae98-8c93c8dda4d5',
+      content: [Object],
+      conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+      fromUserId: 'form-marv-temp-1754931954623',
+      fromRole: 'cx-customer',
+      toRole: 'robot',
+      messageType: 'text',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-11T17:05:54.626Z,
+      updatedAt: 2025-08-11T17:05:54.626Z
+    },
+    {
+      id: '8bf0605a-ac15-4924-877f-b60f7004c301',
+      content: [Object],
+      conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+      fromUserId: 'AnthropicMarv',
+      fromRole: 'robot',
+      toRole: 'cx-customer',
+      messageType: 'text',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-11T17:05:54.627Z,
+      updatedAt: 2025-08-11T17:05:54.627Z
+    }
+  ]
+}
+[95m[Nest] 2509088  - [39m08/11/2025, 12:05:54 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mBroadcasting dashboard event: conversation_updated[39m
+Gateway: Broadcasting new_message to conversation f09be4b9-f785-4f72-9995-8c1fe0146449: {
+  message: {
+    id: '8bf0605a-ac15-4924-877f-b60f7004c301',
+    content: { type: 'text/plain', payload: 'DEBUG - Conversation Message' },
+    conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+    fromUserId: 'AnthropicMarv',
+    fromRole: 'robot',
+    toRole: 'cx-customer',
+    messageType: 'text',
+    threadId: undefined,
+    originalMessageId: undefined,
+    createdAt: 2025-08-11T17:05:54.627Z,
+    updatedAt: 2025-08-11T17:05:54.627Z
+  },
+  timestamp: '2025-08-11T17:05:54.627Z'
+}
+Gateway: Broadcast completed
+{
+  allConversationMessages: [
+    {
+      id: '28af30bd-997e-4f6d-ae98-8c93c8dda4d5',
+      content: [Object],
+      conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+      fromUserId: 'form-marv-temp-1754931954623',
+      fromRole: 'cx-customer',
+      toRole: 'robot',
+      messageType: 'text',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-11T17:05:54.626Z,
+      updatedAt: 2025-08-11T17:05:54.626Z
+    },
+    {
+      id: '8bf0605a-ac15-4924-877f-b60f7004c301',
+      content: [Object],
+      conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+      fromUserId: 'AnthropicMarv',
+      fromRole: 'robot',
+      toRole: 'cx-customer',
+      messageType: 'text',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-11T17:05:54.627Z,
+      updatedAt: 2025-08-11T17:05:54.627Z
+    },
+    {
+      id: '3898c6d7-cfe5-42bd-beac-3aa6094b314c',
+      content: [Object],
+      conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+      fromUserId: 'AnthropicMarv',
+      fromRole: 'robot',
+      toRole: 'cx-customer',
+      messageType: 'text',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-11T17:05:54.627Z,
+      updatedAt: 2025-08-11T17:05:54.627Z
+    }
+  ]
+}
+[95m[Nest] 2509088  - [39m08/11/2025, 12:05:54 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mBroadcasting dashboard event: conversation_updated[39m
+Gateway: Broadcasting new_message to conversation f09be4b9-f785-4f72-9995-8c1fe0146449: {
+  message: {
+    id: '3898c6d7-cfe5-42bd-beac-3aa6094b314c',
+    content: { type: 'text/plain', payload: 'DEBUG - Conversation Message II' },
+    conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+    fromUserId: 'AnthropicMarv',
+    fromRole: 'robot',
+    toRole: 'cx-customer',
+    messageType: 'text',
+    threadId: undefined,
+    originalMessageId: undefined,
+    createdAt: 2025-08-11T17:05:54.627Z,
+    updatedAt: 2025-08-11T17:05:54.627Z
+  },
+  timestamp: '2025-08-11T17:05:54.627Z'
+}
+Gateway: Broadcast completed
+{
+  allConversationMessages: [
+    {
+      id: '28af30bd-997e-4f6d-ae98-8c93c8dda4d5',
+      content: [Object],
+      conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+      fromUserId: 'form-marv-temp-1754931954623',
+      fromRole: 'cx-customer',
+      toRole: 'robot',
+      messageType: 'text',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-11T17:05:54.626Z,
+      updatedAt: 2025-08-11T17:05:54.626Z
+    },
+    {
+      id: '8bf0605a-ac15-4924-877f-b60f7004c301',
+      content: [Object],
+      conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+      fromUserId: 'AnthropicMarv',
+      fromRole: 'robot',
+      toRole: 'cx-customer',
+      messageType: 'text',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-11T17:05:54.627Z,
+      updatedAt: 2025-08-11T17:05:54.627Z
+    },
+    {
+      id: '3898c6d7-cfe5-42bd-beac-3aa6094b314c',
+      content: [Object],
+      conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+      fromUserId: 'AnthropicMarv',
+      fromRole: 'robot',
+      toRole: 'cx-customer',
+      messageType: 'text',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-11T17:05:54.627Z,
+      updatedAt: 2025-08-11T17:05:54.627Z
+    },
+    {
+      id: '11cedc4b-7e18-4a19-bcfa-1c64180b6e08',
+      content: [Object],
+      conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+      fromUserId: 'AnthropicMarv',
+      fromRole: 'robot',
+      toRole: 'cx-customer',
+      messageType: 'text',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-11T17:05:54.628Z,
+      updatedAt: 2025-08-11T17:05:54.628Z
+    }
+  ]
+}
+[95m[Nest] 2509088  - [39m08/11/2025, 12:05:54 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mBroadcasting dashboard event: conversation_updated[39m
+Gateway: Broadcasting new_message to conversation f09be4b9-f785-4f72-9995-8c1fe0146449: {
+  message: {
+    id: '11cedc4b-7e18-4a19-bcfa-1c64180b6e08',
+    content: { type: 'text/plain', payload: 'DEBUG onStreamStart' },
+    conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+    fromUserId: 'AnthropicMarv',
+    fromRole: 'robot',
+    toRole: 'cx-customer',
+    messageType: 'text',
+    threadId: undefined,
+    originalMessageId: undefined,
+    createdAt: 2025-08-11T17:05:54.628Z,
+    updatedAt: 2025-08-11T17:05:54.628Z
+  },
+  timestamp: '2025-08-11T17:05:54.628Z'
+}
+Gateway: Broadcast completed
+Stream started
+{
+  allConversationMessages: [
+    {
+      id: '28af30bd-997e-4f6d-ae98-8c93c8dda4d5',
+      content: [Object],
+      conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+      fromUserId: 'form-marv-temp-1754931954623',
+      fromRole: 'cx-customer',
+      toRole: 'robot',
+      messageType: 'text',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-11T17:05:54.626Z,
+      updatedAt: 2025-08-11T17:05:54.626Z
+    },
+    {
+      id: '8bf0605a-ac15-4924-877f-b60f7004c301',
+      content: [Object],
+      conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+      fromUserId: 'AnthropicMarv',
+      fromRole: 'robot',
+      toRole: 'cx-customer',
+      messageType: 'text',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-11T17:05:54.627Z,
+      updatedAt: 2025-08-11T17:05:54.627Z
+    },
+    {
+      id: '3898c6d7-cfe5-42bd-beac-3aa6094b314c',
+      content: [Object],
+      conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+      fromUserId: 'AnthropicMarv',
+      fromRole: 'robot',
+      toRole: 'cx-customer',
+      messageType: 'text',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-11T17:05:54.627Z,
+      updatedAt: 2025-08-11T17:05:54.627Z
+    },
+    {
+      id: '11cedc4b-7e18-4a19-bcfa-1c64180b6e08',
+      content: [Object],
+      conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+      fromUserId: 'AnthropicMarv',
+      fromRole: 'robot',
+      toRole: 'cx-customer',
+      messageType: 'text',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-11T17:05:54.628Z,
+      updatedAt: 2025-08-11T17:05:54.628Z
+    },
+    {
+      id: 'edd8f531-42b6-4ec1-9c7d-60516366af8a',
+      content: [Object],
+      conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+      fromUserId: 'AnthropicMarv',
+      fromRole: 'robot',
+      toRole: 'cx-customer',
+      messageType: 'text',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-11T17:05:54.628Z,
+      updatedAt: 2025-08-11T17:05:54.628Z
+    }
+  ]
+}
+[95m[Nest] 2509088  - [39m08/11/2025, 12:05:54 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mBroadcasting dashboard event: conversation_updated[39m
+Gateway: Broadcasting new_message to conversation f09be4b9-f785-4f72-9995-8c1fe0146449: {
+  message: {
+    id: 'edd8f531-42b6-4ec1-9c7d-60516366af8a',
+    content: { type: 'text/plain', payload: 'DEBUG onStreamChunkReceived' },
+    conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+    fromUserId: 'AnthropicMarv',
+    fromRole: 'robot',
+    toRole: 'cx-customer',
+    messageType: 'text',
+    threadId: undefined,
+    originalMessageId: undefined,
+    createdAt: 2025-08-11T17:05:54.628Z,
+    updatedAt: 2025-08-11T17:05:54.628Z
+  },
+  timestamp: '2025-08-11T17:05:54.628Z'
+}
+Gateway: Broadcast completed
+Gateway: Broadcasting robot_chunk to conversation f09be4b9-f785-4f72-9995-8c1fe0146449: { chunk: 'test chunk' }
+Gateway: Broadcast completed
+{
+  allConversationMessages: [
+    {
+      id: '28af30bd-997e-4f6d-ae98-8c93c8dda4d5',
+      content: [Object],
+      conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+      fromUserId: 'form-marv-temp-1754931954623',
+      fromRole: 'cx-customer',
+      toRole: 'robot',
+      messageType: 'text',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-11T17:05:54.626Z,
+      updatedAt: 2025-08-11T17:05:54.626Z
+    },
+    {
+      id: '8bf0605a-ac15-4924-877f-b60f7004c301',
+      content: [Object],
+      conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+      fromUserId: 'AnthropicMarv',
+      fromRole: 'robot',
+      toRole: 'cx-customer',
+      messageType: 'text',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-11T17:05:54.627Z,
+      updatedAt: 2025-08-11T17:05:54.627Z
+    },
+    {
+      id: '3898c6d7-cfe5-42bd-beac-3aa6094b314c',
+      content: [Object],
+      conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+      fromUserId: 'AnthropicMarv',
+      fromRole: 'robot',
+      toRole: 'cx-customer',
+      messageType: 'text',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-11T17:05:54.627Z,
+      updatedAt: 2025-08-11T17:05:54.627Z
+    },
+    {
+      id: '11cedc4b-7e18-4a19-bcfa-1c64180b6e08',
+      content: [Object],
+      conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+      fromUserId: 'AnthropicMarv',
+      fromRole: 'robot',
+      toRole: 'cx-customer',
+      messageType: 'text',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-11T17:05:54.628Z,
+      updatedAt: 2025-08-11T17:05:54.628Z
+    },
+    {
+      id: 'edd8f531-42b6-4ec1-9c7d-60516366af8a',
+      content: [Object],
+      conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+      fromUserId: 'AnthropicMarv',
+      fromRole: 'robot',
+      toRole: 'cx-customer',
+      messageType: 'text',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-11T17:05:54.628Z,
+      updatedAt: 2025-08-11T17:05:54.628Z
+    },
+    {
+      id: 'f0d633ff-b04a-401a-a311-ee7ba4e798c0',
+      content: [Object],
+      conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+      fromUserId: 'AnthropicMarv',
+      fromRole: 'robot',
+      toRole: 'cx-customer',
+      messageType: 'text',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-11T17:05:54.628Z,
+      updatedAt: 2025-08-11T17:05:54.628Z
+    }
+  ]
+}
+[95m[Nest] 2509088  - [39m08/11/2025, 12:05:54 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mBroadcasting dashboard event: conversation_updated[39m
+Gateway: Broadcasting new_message to conversation f09be4b9-f785-4f72-9995-8c1fe0146449: {
+  message: {
+    id: 'f0d633ff-b04a-401a-a311-ee7ba4e798c0',
+    content: {
+      type: 'text/plain',
+      payload: 'DEBUG onStreamFinished - Accumulated: test chunk'
+    },
+    conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+    fromUserId: 'AnthropicMarv',
+    fromRole: 'robot',
+    toRole: 'cx-customer',
+    messageType: 'text',
+    threadId: undefined,
+    originalMessageId: undefined,
+    createdAt: 2025-08-11T17:05:54.628Z,
+    updatedAt: 2025-08-11T17:05:54.628Z
+  },
+  timestamp: '2025-08-11T17:05:54.628Z'
+}
+Gateway: Broadcast completed
+Stream finished
+{
+  allConversationMessages: [
+    {
+      id: '28af30bd-997e-4f6d-ae98-8c93c8dda4d5',
+      content: [Object],
+      conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+      fromUserId: 'form-marv-temp-1754931954623',
+      fromRole: 'cx-customer',
+      toRole: 'robot',
+      messageType: 'text',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-11T17:05:54.626Z,
+      updatedAt: 2025-08-11T17:05:54.626Z
+    },
+    {
+      id: '8bf0605a-ac15-4924-877f-b60f7004c301',
+      content: [Object],
+      conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+      fromUserId: 'AnthropicMarv',
+      fromRole: 'robot',
+      toRole: 'cx-customer',
+      messageType: 'text',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-11T17:05:54.627Z,
+      updatedAt: 2025-08-11T17:05:54.627Z
+    },
+    {
+      id: '3898c6d7-cfe5-42bd-beac-3aa6094b314c',
+      content: [Object],
+      conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+      fromUserId: 'AnthropicMarv',
+      fromRole: 'robot',
+      toRole: 'cx-customer',
+      messageType: 'text',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-11T17:05:54.627Z,
+      updatedAt: 2025-08-11T17:05:54.627Z
+    },
+    {
+      id: '11cedc4b-7e18-4a19-bcfa-1c64180b6e08',
+      content: [Object],
+      conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+      fromUserId: 'AnthropicMarv',
+      fromRole: 'robot',
+      toRole: 'cx-customer',
+      messageType: 'text',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-11T17:05:54.628Z,
+      updatedAt: 2025-08-11T17:05:54.628Z
+    },
+    {
+      id: 'edd8f531-42b6-4ec1-9c7d-60516366af8a',
+      content: [Object],
+      conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+      fromUserId: 'AnthropicMarv',
+      fromRole: 'robot',
+      toRole: 'cx-customer',
+      messageType: 'text',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-11T17:05:54.628Z,
+      updatedAt: 2025-08-11T17:05:54.628Z
+    },
+    {
+      id: 'f0d633ff-b04a-401a-a311-ee7ba4e798c0',
+      content: [Object],
+      conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+      fromUserId: 'AnthropicMarv',
+      fromRole: 'robot',
+      toRole: 'cx-customer',
+      messageType: 'text',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-11T17:05:54.628Z,
+      updatedAt: 2025-08-11T17:05:54.628Z
+    },
+    {
+      id: '3ab39b39-c03c-4283-9e95-915a988199a5',
+      content: [Object],
+      conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+      fromUserId: 'anthropic-marv-robot',
+      fromRole: 'robot',
+      toRole: 'cx-agent',
+      messageType: 'robot',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-11T17:05:54.629Z,
+      updatedAt: 2025-08-11T17:05:54.629Z
+    }
+  ]
+}
+[95m[Nest] 2509088  - [39m08/11/2025, 12:05:54 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mBroadcasting dashboard event: conversation_updated[39m
+Gateway: Broadcasting new_message to conversation f09be4b9-f785-4f72-9995-8c1fe0146449: {
+  message: {
+    id: '3ab39b39-c03c-4283-9e95-915a988199a5',
+    content: { type: 'text/plain', payload: 'test chunk' },
+    conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+    fromUserId: 'anthropic-marv-robot',
+    fromRole: 'robot',
+    toRole: 'cx-agent',
+    messageType: 'robot',
+    threadId: undefined,
+    originalMessageId: undefined,
+    createdAt: 2025-08-11T17:05:54.629Z,
+    updatedAt: 2025-08-11T17:05:54.629Z
+  },
+  timestamp: '2025-08-11T17:05:54.629Z'
+}
+Gateway: Broadcast completed
+Gateway: Broadcasting robot_complete to conversation f09be4b9-f785-4f72-9995-8c1fe0146449: { messageId: '3ab39b39-c03c-4283-9e95-915a988199a5' }
+Gateway: Broadcast completed
+onFullMessageReceived called with content: test full message...
+{
+  allConversationMessages: [
+    {
+      id: '28af30bd-997e-4f6d-ae98-8c93c8dda4d5',
+      content: [Object],
+      conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+      fromUserId: 'form-marv-temp-1754931954623',
+      fromRole: 'cx-customer',
+      toRole: 'robot',
+      messageType: 'text',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-11T17:05:54.626Z,
+      updatedAt: 2025-08-11T17:05:54.626Z
+    },
+    {
+      id: '8bf0605a-ac15-4924-877f-b60f7004c301',
+      content: [Object],
+      conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+      fromUserId: 'AnthropicMarv',
+      fromRole: 'robot',
+      toRole: 'cx-customer',
+      messageType: 'text',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-11T17:05:54.627Z,
+      updatedAt: 2025-08-11T17:05:54.627Z
+    },
+    {
+      id: '3898c6d7-cfe5-42bd-beac-3aa6094b314c',
+      content: [Object],
+      conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+      fromUserId: 'AnthropicMarv',
+      fromRole: 'robot',
+      toRole: 'cx-customer',
+      messageType: 'text',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-11T17:05:54.627Z,
+      updatedAt: 2025-08-11T17:05:54.627Z
+    },
+    {
+      id: '11cedc4b-7e18-4a19-bcfa-1c64180b6e08',
+      content: [Object],
+      conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+      fromUserId: 'AnthropicMarv',
+      fromRole: 'robot',
+      toRole: 'cx-customer',
+      messageType: 'text',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-11T17:05:54.628Z,
+      updatedAt: 2025-08-11T17:05:54.628Z
+    },
+    {
+      id: 'edd8f531-42b6-4ec1-9c7d-60516366af8a',
+      content: [Object],
+      conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+      fromUserId: 'AnthropicMarv',
+      fromRole: 'robot',
+      toRole: 'cx-customer',
+      messageType: 'text',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-11T17:05:54.628Z,
+      updatedAt: 2025-08-11T17:05:54.628Z
+    },
+    {
+      id: 'f0d633ff-b04a-401a-a311-ee7ba4e798c0',
+      content: [Object],
+      conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+      fromUserId: 'AnthropicMarv',
+      fromRole: 'robot',
+      toRole: 'cx-customer',
+      messageType: 'text',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-11T17:05:54.628Z,
+      updatedAt: 2025-08-11T17:05:54.628Z
+    },
+    {
+      id: '3ab39b39-c03c-4283-9e95-915a988199a5',
+      content: [Object],
+      conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+      fromUserId: 'anthropic-marv-robot',
+      fromRole: 'robot',
+      toRole: 'cx-agent',
+      messageType: 'robot',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-11T17:05:54.629Z,
+      updatedAt: 2025-08-11T17:05:54.629Z
+    },
+    {
+      id: 'df11cc4f-2aa3-4f0e-a9ce-f427d7927e43',
+      content: [Object],
+      conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+      fromUserId: 'anthropic-marv-robot',
+      fromRole: 'robot',
+      toRole: 'cx-customer',
+      messageType: 'text',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-11T17:05:54.629Z,
+      updatedAt: 2025-08-11T17:05:54.629Z
+    }
+  ]
+}
+[95m[Nest] 2509088  - [39m08/11/2025, 12:05:54 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mBroadcasting dashboard event: conversation_updated[39m
+Gateway: Broadcasting new_message to conversation f09be4b9-f785-4f72-9995-8c1fe0146449: {
+  message: {
+    id: 'df11cc4f-2aa3-4f0e-a9ce-f427d7927e43',
+    content: { type: 'text/plain', payload: 'test full message' },
+    conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+    fromUserId: 'anthropic-marv-robot',
+    fromRole: 'robot',
+    toRole: 'cx-customer',
+    messageType: 'text',
+    threadId: undefined,
+    originalMessageId: undefined,
+    createdAt: 2025-08-11T17:05:54.629Z,
+    updatedAt: 2025-08-11T17:05:54.629Z
+  },
+  timestamp: '2025-08-11T17:05:54.629Z'
+}
+Gateway: Broadcast completed
+{
+  allConversationMessages: [
+    {
+      id: '28af30bd-997e-4f6d-ae98-8c93c8dda4d5',
+      content: [Object],
+      conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+      fromUserId: 'form-marv-temp-1754931954623',
+      fromRole: 'cx-customer',
+      toRole: 'robot',
+      messageType: 'text',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-11T17:05:54.626Z,
+      updatedAt: 2025-08-11T17:05:54.626Z
+    },
+    {
+      id: '8bf0605a-ac15-4924-877f-b60f7004c301',
+      content: [Object],
+      conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+      fromUserId: 'AnthropicMarv',
+      fromRole: 'robot',
+      toRole: 'cx-customer',
+      messageType: 'text',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-11T17:05:54.627Z,
+      updatedAt: 2025-08-11T17:05:54.627Z
+    },
+    {
+      id: '3898c6d7-cfe5-42bd-beac-3aa6094b314c',
+      content: [Object],
+      conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+      fromUserId: 'AnthropicMarv',
+      fromRole: 'robot',
+      toRole: 'cx-customer',
+      messageType: 'text',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-11T17:05:54.627Z,
+      updatedAt: 2025-08-11T17:05:54.627Z
+    },
+    {
+      id: '11cedc4b-7e18-4a19-bcfa-1c64180b6e08',
+      content: [Object],
+      conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+      fromUserId: 'AnthropicMarv',
+      fromRole: 'robot',
+      toRole: 'cx-customer',
+      messageType: 'text',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-11T17:05:54.628Z,
+      updatedAt: 2025-08-11T17:05:54.628Z
+    },
+    {
+      id: 'edd8f531-42b6-4ec1-9c7d-60516366af8a',
+      content: [Object],
+      conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+      fromUserId: 'AnthropicMarv',
+      fromRole: 'robot',
+      toRole: 'cx-customer',
+      messageType: 'text',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-11T17:05:54.628Z,
+      updatedAt: 2025-08-11T17:05:54.628Z
+    },
+    {
+      id: 'f0d633ff-b04a-401a-a311-ee7ba4e798c0',
+      content: [Object],
+      conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+      fromUserId: 'AnthropicMarv',
+      fromRole: 'robot',
+      toRole: 'cx-customer',
+      messageType: 'text',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-11T17:05:54.628Z,
+      updatedAt: 2025-08-11T17:05:54.628Z
+    },
+    {
+      id: '3ab39b39-c03c-4283-9e95-915a988199a5',
+      content: [Object],
+      conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+      fromUserId: 'anthropic-marv-robot',
+      fromRole: 'robot',
+      toRole: 'cx-agent',
+      messageType: 'robot',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-11T17:05:54.629Z,
+      updatedAt: 2025-08-11T17:05:54.629Z
+    },
+    {
+      id: 'df11cc4f-2aa3-4f0e-a9ce-f427d7927e43',
+      content: [Object],
+      conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+      fromUserId: 'anthropic-marv-robot',
+      fromRole: 'robot',
+      toRole: 'cx-customer',
+      messageType: 'text',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-11T17:05:54.629Z,
+      updatedAt: 2025-08-11T17:05:54.629Z
+    },
+    {
+      id: 'ce25f20b-d27f-4cba-aed5-cf04b82c8c0f',
+      content: [Object],
+      conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+      fromUserId: 'anthropic-marv-robot',
+      fromRole: 'robot',
+      toRole: 'cx-customer',
+      messageType: 'text',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-11T17:05:54.629Z,
+      updatedAt: 2025-08-11T17:05:54.629Z
+    }
+  ]
+}
+[95m[Nest] 2509088  - [39m08/11/2025, 12:05:54 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mBroadcasting dashboard event: conversation_updated[39m
+Gateway: Broadcasting new_message to conversation f09be4b9-f785-4f72-9995-8c1fe0146449: {
+  message: {
+    id: 'ce25f20b-d27f-4cba-aed5-cf04b82c8c0f',
+    content: { type: 'text/plain', payload: 'test full message' },
+    conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+    fromUserId: 'anthropic-marv-robot',
+    fromRole: 'robot',
+    toRole: 'cx-customer',
+    messageType: 'text',
+    threadId: undefined,
+    originalMessageId: undefined,
+    createdAt: 2025-08-11T17:05:54.629Z,
+    updatedAt: 2025-08-11T17:05:54.629Z
+  },
+  timestamp: '2025-08-11T17:05:54.629Z'
+}
+Gateway: Broadcast completed
+Gateway: Broadcasting robot_complete to conversation f09be4b9-f785-4f72-9995-8c1fe0146449: { messageId: 'ce25f20b-d27f-4cba-aed5-cf04b82c8c0f' }
+Gateway: Broadcast completed
+Tool response added to conversation
+{
+  allConversationMessages: [
+    {
+      id: '28af30bd-997e-4f6d-ae98-8c93c8dda4d5',
+      content: [Object],
+      conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+      fromUserId: 'form-marv-temp-1754931954623',
+      fromRole: 'cx-customer',
+      toRole: 'robot',
+      messageType: 'text',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-11T17:05:54.626Z,
+      updatedAt: 2025-08-11T17:05:54.626Z
+    },
+    {
+      id: '8bf0605a-ac15-4924-877f-b60f7004c301',
+      content: [Object],
+      conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+      fromUserId: 'AnthropicMarv',
+      fromRole: 'robot',
+      toRole: 'cx-customer',
+      messageType: 'text',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-11T17:05:54.627Z,
+      updatedAt: 2025-08-11T17:05:54.627Z
+    },
+    {
+      id: '3898c6d7-cfe5-42bd-beac-3aa6094b314c',
+      content: [Object],
+      conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+      fromUserId: 'AnthropicMarv',
+      fromRole: 'robot',
+      toRole: 'cx-customer',
+      messageType: 'text',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-11T17:05:54.627Z,
+      updatedAt: 2025-08-11T17:05:54.627Z
+    },
+    {
+      id: '11cedc4b-7e18-4a19-bcfa-1c64180b6e08',
+      content: [Object],
+      conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+      fromUserId: 'AnthropicMarv',
+      fromRole: 'robot',
+      toRole: 'cx-customer',
+      messageType: 'text',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-11T17:05:54.628Z,
+      updatedAt: 2025-08-11T17:05:54.628Z
+    },
+    {
+      id: 'edd8f531-42b6-4ec1-9c7d-60516366af8a',
+      content: [Object],
+      conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+      fromUserId: 'AnthropicMarv',
+      fromRole: 'robot',
+      toRole: 'cx-customer',
+      messageType: 'text',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-11T17:05:54.628Z,
+      updatedAt: 2025-08-11T17:05:54.628Z
+    },
+    {
+      id: 'f0d633ff-b04a-401a-a311-ee7ba4e798c0',
+      content: [Object],
+      conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+      fromUserId: 'AnthropicMarv',
+      fromRole: 'robot',
+      toRole: 'cx-customer',
+      messageType: 'text',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-11T17:05:54.628Z,
+      updatedAt: 2025-08-11T17:05:54.628Z
+    },
+    {
+      id: '3ab39b39-c03c-4283-9e95-915a988199a5',
+      content: [Object],
+      conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+      fromUserId: 'anthropic-marv-robot',
+      fromRole: 'robot',
+      toRole: 'cx-agent',
+      messageType: 'robot',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-11T17:05:54.629Z,
+      updatedAt: 2025-08-11T17:05:54.629Z
+    },
+    {
+      id: 'df11cc4f-2aa3-4f0e-a9ce-f427d7927e43',
+      content: [Object],
+      conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+      fromUserId: 'anthropic-marv-robot',
+      fromRole: 'robot',
+      toRole: 'cx-customer',
+      messageType: 'text',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-11T17:05:54.629Z,
+      updatedAt: 2025-08-11T17:05:54.629Z
+    },
+    {
+      id: 'ce25f20b-d27f-4cba-aed5-cf04b82c8c0f',
+      content: [Object],
+      conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+      fromUserId: 'anthropic-marv-robot',
+      fromRole: 'robot',
+      toRole: 'cx-customer',
+      messageType: 'text',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-11T17:05:54.629Z,
+      updatedAt: 2025-08-11T17:05:54.629Z
+    },
+    {
+      id: 'dfac2f2e-7617-426f-9c80-8e7dcd1f3ef2',
+      content: [Object],
+      conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+      fromUserId: 'AnthropicMarv',
+      fromRole: 'robot',
+      toRole: 'cx-customer',
+      messageType: 'text',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-11T17:05:54.630Z,
+      updatedAt: 2025-08-11T17:05:54.630Z
+    }
+  ]
+}
+[95m[Nest] 2509088  - [39m08/11/2025, 12:05:54 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mBroadcasting dashboard event: conversation_updated[39m
+Gateway: Broadcasting new_message to conversation f09be4b9-f785-4f72-9995-8c1fe0146449: {
+  message: {
+    id: 'dfac2f2e-7617-426f-9c80-8e7dcd1f3ef2',
+    content: { type: 'text/plain', payload: 'DEBUG onError' },
+    conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+    fromUserId: 'AnthropicMarv',
+    fromRole: 'robot',
+    toRole: 'cx-customer',
+    messageType: 'text',
+    threadId: undefined,
+    originalMessageId: undefined,
+    createdAt: 2025-08-11T17:05:54.630Z,
+    updatedAt: 2025-08-11T17:05:54.630Z
+  },
+  timestamp: '2025-08-11T17:05:54.630Z'
+}
+Gateway: Broadcast completed
+{
+  allConversationMessages: [
+    {
+      id: '28af30bd-997e-4f6d-ae98-8c93c8dda4d5',
+      content: [Object],
+      conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+      fromUserId: 'form-marv-temp-1754931954623',
+      fromRole: 'cx-customer',
+      toRole: 'robot',
+      messageType: 'text',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-11T17:05:54.626Z,
+      updatedAt: 2025-08-11T17:05:54.626Z
+    },
+    {
+      id: '8bf0605a-ac15-4924-877f-b60f7004c301',
+      content: [Object],
+      conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+      fromUserId: 'AnthropicMarv',
+      fromRole: 'robot',
+      toRole: 'cx-customer',
+      messageType: 'text',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-11T17:05:54.627Z,
+      updatedAt: 2025-08-11T17:05:54.627Z
+    },
+    {
+      id: '3898c6d7-cfe5-42bd-beac-3aa6094b314c',
+      content: [Object],
+      conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+      fromUserId: 'AnthropicMarv',
+      fromRole: 'robot',
+      toRole: 'cx-customer',
+      messageType: 'text',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-11T17:05:54.627Z,
+      updatedAt: 2025-08-11T17:05:54.627Z
+    },
+    {
+      id: '11cedc4b-7e18-4a19-bcfa-1c64180b6e08',
+      content: [Object],
+      conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+      fromUserId: 'AnthropicMarv',
+      fromRole: 'robot',
+      toRole: 'cx-customer',
+      messageType: 'text',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-11T17:05:54.628Z,
+      updatedAt: 2025-08-11T17:05:54.628Z
+    },
+    {
+      id: 'edd8f531-42b6-4ec1-9c7d-60516366af8a',
+      content: [Object],
+      conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+      fromUserId: 'AnthropicMarv',
+      fromRole: 'robot',
+      toRole: 'cx-customer',
+      messageType: 'text',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-11T17:05:54.628Z,
+      updatedAt: 2025-08-11T17:05:54.628Z
+    },
+    {
+      id: 'f0d633ff-b04a-401a-a311-ee7ba4e798c0',
+      content: [Object],
+      conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+      fromUserId: 'AnthropicMarv',
+      fromRole: 'robot',
+      toRole: 'cx-customer',
+      messageType: 'text',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-11T17:05:54.628Z,
+      updatedAt: 2025-08-11T17:05:54.628Z
+    },
+    {
+      id: '3ab39b39-c03c-4283-9e95-915a988199a5',
+      content: [Object],
+      conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+      fromUserId: 'anthropic-marv-robot',
+      fromRole: 'robot',
+      toRole: 'cx-agent',
+      messageType: 'robot',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-11T17:05:54.629Z,
+      updatedAt: 2025-08-11T17:05:54.629Z
+    },
+    {
+      id: 'df11cc4f-2aa3-4f0e-a9ce-f427d7927e43',
+      content: [Object],
+      conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+      fromUserId: 'anthropic-marv-robot',
+      fromRole: 'robot',
+      toRole: 'cx-customer',
+      messageType: 'text',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-11T17:05:54.629Z,
+      updatedAt: 2025-08-11T17:05:54.629Z
+    },
+    {
+      id: 'ce25f20b-d27f-4cba-aed5-cf04b82c8c0f',
+      content: [Object],
+      conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+      fromUserId: 'anthropic-marv-robot',
+      fromRole: 'robot',
+      toRole: 'cx-customer',
+      messageType: 'text',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-11T17:05:54.629Z,
+      updatedAt: 2025-08-11T17:05:54.629Z
+    },
+    {
+      id: 'dfac2f2e-7617-426f-9c80-8e7dcd1f3ef2',
+      content: [Object],
+      conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+      fromUserId: 'AnthropicMarv',
+      fromRole: 'robot',
+      toRole: 'cx-customer',
+      messageType: 'text',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-11T17:05:54.630Z,
+      updatedAt: 2025-08-11T17:05:54.630Z
+    },
+    {
+      id: '7abbd97f-b08d-462e-9c65-b8016963ee4f',
+      content: [Object],
+      conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+      fromUserId: 'anthropic-marv-robot',
+      fromRole: 'cx-agent',
+      toRole: 'cx-customer',
+      messageType: 'text',
+      threadId: undefined,
+      originalMessageId: undefined,
+      createdAt: 2025-08-11T17:05:54.630Z,
+      updatedAt: 2025-08-11T17:05:54.630Z
+    }
+  ]
+}
+[95m[Nest] 2509088  - [39m08/11/2025, 12:05:54 PM [95m  DEBUG[39m [38;5;3m[ChatManagerGateway] [39m[95mBroadcasting dashboard event: conversation_updated[39m
+Gateway: Broadcasting new_message to conversation f09be4b9-f785-4f72-9995-8c1fe0146449: {
+  message: {
+    id: '7abbd97f-b08d-462e-9c65-b8016963ee4f',
+    content: { type: 'text/plain', payload: 'Error: test error' },
+    conversationId: 'f09be4b9-f785-4f72-9995-8c1fe0146449',
+    fromUserId: 'anthropic-marv-robot',
+    fromRole: 'cx-agent',
+    toRole: 'cx-customer',
+    messageType: 'text',
+    threadId: undefined,
+    originalMessageId: undefined,
+    createdAt: 2025-08-11T17:05:54.630Z,
+    updatedAt: 2025-08-11T17:05:54.630Z
+  },
+  timestamp: '2025-08-11T17:05:54.630Z'
+}
+Gateway: Broadcast completed
+Gateway: Broadcasting robot_complete to conversation f09be4b9-f785-4f72-9995-8c1fe0146449: { messageId: '7abbd97f-b08d-462e-9c65-b8016963ee4f' }
+Gateway: Broadcast completed
+[32m[Nest] 2509088  - [39m08/11/2025, 12:05:54 PM [32m    LOG[39m [38;5;3m[HttpResponse] [39m[32m[7309ef52-3a22-4bc8-a1aa-a85631496073] Response GET /public/form-marv/debug-create?formId=5375703 200 - 10ms[39m
+[32m[Nest] 2509088  - [39m08/11/2025, 12:05:54 PM [32m    LOG[39m [38;5;3m[HttpResponse] [39m[32mData: {
+  "statusCode": 200,
+  "elapsed": "10ms"
+}[39m

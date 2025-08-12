@@ -38,7 +38,7 @@ const createMessageEnvelopeWithContent = (
  * Specialized for Slack integration with comprehensive tool support
  */
 export class SlackyAnthropicAgent extends AbstractRobotChat {
-  private readonly logger = new CustomLoggerService('SlackyAnthropicAgent');
+  private readonly logger = new CustomLoggerService();
 
   constructor() {
     super();

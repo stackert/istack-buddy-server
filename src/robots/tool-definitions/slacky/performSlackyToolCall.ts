@@ -139,7 +139,7 @@ Your rating helps me learn and improve! Is there anything specific I can do bett
  * Log feedback/rating data to file
  */
 const logFeedback = (data: any): void => {
-  const logger = new CustomLoggerService('SlackyToolCall');
+  const logger = new CustomLoggerService();
   try {
     // Ensure feedback directory exists
     const feedbackDir = path.join(

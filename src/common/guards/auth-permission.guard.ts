@@ -179,13 +179,17 @@ export class AuthPermissionGuard implements CanActivate {
         throw error;
       }
 
-      this.logger.error('Error checking user permissions', {
-        userId: payload.userId,
-        error: error.message,
-        endpoint: request.url,
-        method: request.method,
-        correlationId: request.headers['x-correlation-id'] || 'unknown',
-      });
+      this.logger.error(
+        'AuthPermissionGuard',
+        'Error checking user permissions',
+        error,
+        {
+          userId: payload.userId,
+          endpoint: request.url,
+          method: request.method,
+          correlationId: request.headers['x-correlation-id'] || 'unknown',
+        },
+      );
       throw new ForbiddenException('Error checking permissions');
     }
   }

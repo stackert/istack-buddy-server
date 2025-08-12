@@ -492,7 +492,7 @@ function formatGenericResult(functionName: string, result: any): string {
  * Specialized for Slack integration with comprehensive tool support using OpenAI
  */
 export class SlackyOpenAiAgent extends AbstractRobotChat {
-  private readonly logger = new CustomLoggerService('SlackyOpenAiAgent');
+  private readonly logger = new CustomLoggerService();
 
   constructor() {
     super();

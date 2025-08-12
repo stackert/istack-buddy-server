@@ -80,6 +80,18 @@ export class PublicInterfaceController {
     @Query('formId') formId?: string,
   ): Promise<void> {
     try {
+      // Validate formId parameter - must be present and numeric
+      if (!formId) {
+        res.status(400).send('formId parameter is required');
+        return;
+      }
+
+      // Check if formId is numeric
+      if (!/^\d+$/.test(formId)) {
+        res.status(400).send('formId must be numeric');
+        return;
+      }
+
       // Generate a unique user ID for this session
       const userId = `form-marv-temp-${Date.now()}`;
 
@@ -201,42 +213,6 @@ export class PublicInterfaceController {
     }
   }
 
-  @Get('/form-marv/test-chat-session')
-  async serveTestChatSessionPage(@Res() res: Response): Promise<void> {
-    const html = `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Test Chat Session</title>
-</head>
-<body>
-    <h1>Test Chat Session</h1>
-    <p>Click the button below to create a new Form Marv session:</p>
-    <button onclick="createSession()">Create Form Marv Session</button>
-    <div id="result"></div>
-
-    <script>
-        function createSession() {
-            fetch('/public/form-marv/debug-create?formId=5375703')
-                .then(response => response.text())
-                .then(html => {
-                    document.getElementById('result').innerHTML = html;
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    document.getElementById('result').innerHTML = 'Error creating session';
-                });
-        }
-    </script>
-</body>
-</html>`;
-
-    res.setHeader('Content-Type', 'text/html');
-    res.send(html);
-  }
-
   @Get('/form-marv/:conversationId')
   async serveFormMarvContent(
     @Param('conversationId') conversationId: string,
@@ -295,7 +271,49 @@ export class PublicInterfaceController {
         }
       }
 
-      // Validate that the conversation exists and has the correct formId
+      // Check if JWT token exists in cookie (required for authenticated access)
+      const cookieJwtToken = req.cookies?.jwtToken;
+      if (!cookieJwtToken) {
+        res
+          .status(401)
+          .send('Authentication required - JWT token not found in cookie');
+        return;
+      }
+
+      try {
+        // Verify JWT token from cookie
+        const decoded = jwt.verify(
+          cookieJwtToken,
+          'istack-buddy-secret-key-2024',
+        ) as any;
+        const userId = decoded.userId;
+
+        // Authenticate the user using the authentication service
+        const authResult = await this.authService.authenticateUser(
+          userId,
+          cookieJwtToken,
+        );
+        if (!authResult.success) {
+          res.status(401).send('Invalid JWT token in cookie');
+          return;
+        }
+      } catch (error) {
+        console.error('JWT authentication error:', error);
+        res.status(401).send('Invalid JWT token in cookie');
+        return;
+      }
+
+      // Validate that the conversation exists (sessionId = conversationId)
+      const conversations = await this.chatManagerService.getConversations();
+      const conversation = conversations.find(
+        (conv) => conv.id === conversationId,
+      );
+      if (!conversation) {
+        res.status(404).send('Session not found');
+        return;
+      }
+
+      // Validate that the conversation has the correct formId
       if (
         !this.chatManagerService.validateConversationFormId(
           conversationId,
