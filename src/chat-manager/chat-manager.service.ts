@@ -53,17 +53,6 @@ export class ChatManagerService {
         contentType: string = 'text/plain',
       ) => {
         accumulatedContent += chunk;
-        await this.addMessage(
-          {
-            conversationId: conversationId,
-            fromUserId: 'AnthropicMarv',
-            content: 'DEBUG onStreamChunkReceived',
-            messageType: MessageType.TEXT,
-            fromRole: UserRole.ROBOT,
-            toRole: UserRole.CUSTOMER,
-          },
-          contentType,
-        );
 
         // Only broadcast non-empty chunks through gateway
         if (chunk && chunk.trim()) {
@@ -80,15 +69,6 @@ export class ChatManagerService {
       },
       onStreamStart: async (message) => {
         accumulatedContent = '';
-        await this.addMessage({
-          conversationId: conversationId,
-          fromUserId: 'AnthropicMarv',
-          content: 'DEBUG onStreamStart',
-          messageType: MessageType.TEXT,
-          fromRole: UserRole.ROBOT,
-          toRole: UserRole.CUSTOMER,
-        });
-
         console.log('Stream started');
       },
       onStreamFinished: async (
@@ -96,18 +76,6 @@ export class ChatManagerService {
         authorRole: string,
         contentType: string = 'text/plain',
       ) => {
-        await this.addMessage(
-          {
-            conversationId: conversationId,
-            fromUserId: 'AnthropicMarv',
-            content: `DEBUG onStreamFinished - Accumulated: ${accumulatedContent}`,
-            messageType: MessageType.TEXT,
-            fromRole: UserRole.ROBOT,
-            toRole: UserRole.CUSTOMER,
-          },
-          contentType,
-        );
-
         console.log('Stream finished');
 
         // Create final robot message and broadcast through gateway

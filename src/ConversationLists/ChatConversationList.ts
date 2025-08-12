@@ -19,7 +19,15 @@ export class ChatConversationList {
   addChatMessage(message: IConversationMessage): string {
     this.messages.push(message);
 
-    console.log({ allConversationMessages: this.messages });
+    console.log({
+      allConversationMessages: this.messages.map((msg) => ({
+        ...msg,
+        content:
+          typeof msg.content === 'object'
+            ? JSON.stringify(msg.content)
+            : msg.content,
+      })),
+    });
     return message.id;
   }
 
