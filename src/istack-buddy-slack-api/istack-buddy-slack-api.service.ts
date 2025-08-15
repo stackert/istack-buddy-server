@@ -261,78 +261,102 @@ export class IstackBuddySlackApiService implements OnModuleDestroy {
         return;
       }
 
-      // Check for /kb commands (with or without bot mention)
-      const kbMatch = trimmedText?.match(/\/kb(?::slack:(.+))?/i);
+      // /kb command handler
+      const kbMatch = trimmedText?.match(/\/kb(?::slack:(.+?))?\s+(.*)/i);
       if (kbMatch) {
-        this.logger.log('Received /kb command via app mention');
-
-        // IMMEDIATE ACKNOWLEDGMENT - Add thinking emoji reaction
+        let specifiedChannel = kbMatch[1];
+        const searchQuery = kbMatch[2]?.trim() || '';
+        
+        // Handle Slack's <#CHANNELID|alias> format
+        if (specifiedChannel?.includes('<#') && specifiedChannel.includes('|')) {
+          const channelMatch = specifiedChannel.match(/<#([^|]+)\|([^>]*)>/);
+          if (channelMatch) {
+            const channelId = channelMatch[1];
+            const alias = channelMatch[2];
+            
+            specifiedChannel = channelMatch[1]; // Just use the channel ID: C3LQ7KNFN
+          }
+        }
+        
+        this.logger.log(`Parsed channel: "${specifiedChannel}", query: "${searchQuery}"`);
+        
         await this.addSlackReaction('thinking_face', event.channel, event.ts);
 
+        if (!searchQuery) {
+          await this.sendSlackMessage(
+            `📚 **Knowledge Base Help**\n• \`/kb query\` - Search all channels\n• \`/kb:slack:channel-alias query\` - Search specific channel\n• \`/kb:slack:all query\` - Search all channels`,
+            event.channel, event.ts
+          );
+          return;
+        }
+
         try {
-          const targetChannel = kbMatch[1] || event.channel; // Default to current channel if not specified
-          const isAllChannels = targetChannel === 'all';
-
-          let responseMessage = '';
-
-          if (isAllChannels) {
-            responseMessage = `📚 **Knowledge Base - All Channels**
-
-**Available Knowledge Bases:**
-• **#cx-formstack** - Core Forms troubleshooting and configuration
-• **#forms-sso-autofill** - SSO and auto-fill specific issues
-• **#cx-f4sf** - F4SF related knowledge
-
-**Usage:**
-• \`/kb\` - Show KB for current channel
-• \`/kb:slack:#channel-name\` - Show KB for specific channel
-• \`/kb:slack:all\` - Show all available KBs (this message)
-
-**Channel-Specific Knowledge:**
-Each channel has specialized knowledge base content tailored to its focus area.`;
+          let channels: string[] | string;
+          if (specifiedChannel === 'all') {
+            channels = 'all';
+          } else if (specifiedChannel) {
+            channels = [specifiedChannel]; // Send channel ID directly
           } else {
-            // Use the KnowledgeBaseService to get search results
-            const kbValue = `slack:${targetChannel.replace(/^#/, '')}`;
-            const searchResults =
-              await this.knowledgeBaseService.getSearchResults({
-                kb: kbValue,
-              });
+            channels = 'all';
+          }
 
-            if (searchResults.length > 0) {
-              const resultsText = searchResults
-                .map((result, index) => {
-                  const date = result.original_post_date
-                    ? new Date(result.original_post_date).toLocaleDateString()
-                    : 'Unknown date';
-                  return `${index + 1}. **<${result.message_link}|View Message>** (${date})
-   ${result.excerpt_text}
-   *Relevance: ${Math.round(result.relevance_score * 100)}%*`;
-                })
-                .join('\n\n');
+          const searchResults = await this.knowledgeBaseService.getSearchResults({
+            q: searchQuery,
+            channels: channels,
+          });
 
-              responseMessage = `📚 **Knowledge Base Results - ${targetChannel}**
+          if (searchResults.length > 0) {
+            const resultsText = searchResults
+              .map((result, index) => {
+                const date = result.original_post_date
+                  ? new Date(result.original_post_date).toLocaleDateString()
+                  : 'Unknown date';
+                
+                // Clean up the excerpt - remove timestamps and user IDs, keep only the actual content
+                let cleanExcerpt = result.excerpt_text || '';
+                // Remove timestamp patterns like [2025-01-31T03:11:42.424Z] 
+                cleanExcerpt = cleanExcerpt.replace(/\[[\d\-T:.Z]+\]\s*/g, '');
+                // Remove user ID patterns like U07RCTLM69Z:
+                cleanExcerpt = cleanExcerpt.replace(/[A-Z0-9]{11}:\s*/g, '');
+                // Remove multiple --- separators and replace with simple breaks
+                cleanExcerpt = cleanExcerpt.replace(/\s*---\s*/g, '\n• ');
+                // Limit length to first ~200 characters for readability
+                if (cleanExcerpt.length > 200) {
+                  cleanExcerpt = cleanExcerpt.substring(0, 200) + '...';
+                }
+                
+                return `${index + 1}. **<${result.message_link}|View Message>** (${date}) - *${Math.round(result.relevance_score * 100)}% relevance*
+   ${cleanExcerpt}`;
+              })
+              .join('\n\n');
+
+            const responseMessage = `📚 **Knowledge Base Results**
+
+**Query:** "${searchQuery}"
 
 ${resultsText}
 
 *Found ${searchResults.length} relevant results*`;
-            } else {
-              responseMessage = `📚 **Knowledge Base - ${targetChannel}**
 
-No relevant results found for this channel. Try using \`/kb:slack:all\` to see all available knowledge bases.`;
-            }
+            await this.sendSlackMessage(responseMessage, event.channel, event.ts);
+          } else {
+            const responseMessage = `📚 **Knowledge Base**
+
+**Query:** "${searchQuery}"
+
+No relevant results found. Try:
+• Using different keywords
+• \`@iStackBuddy /kb:slack:all ${searchQuery}\` to search all channels
+• Check spelling and try broader terms`;
+
+            await this.sendSlackMessage(responseMessage, event.channel, event.ts);
           }
-
-          await this.sendSlackMessage(
-            responseMessage,
-            event.channel,
-            event.thread_ts || event.ts,
-          );
-        } catch (error) {
+                } catch (error) {
           this.logger.error('Error retrieving knowledge base:', error);
           await this.sendSlackMessage(
-            'Error retrieving knowledge base. Please try again.',
+            'Knowledge-buddy is offline',
             event.channel,
-            event.thread_ts || event.ts,
+            event.ts,
           );
         }
 
@@ -648,78 +672,122 @@ No relevant results found for this channel. Try using \`/kb:slack:all\` to see a
       }
 
       // Check for /kb commands in thread messages
-      const kbMatch = event.text?.match(/\/kb(?::slack:(.+))?/i);
+      const kbMatch = event.text?.match(/\/kb(?::slack:(.+?))?\s+(.*)/i);
       if (kbMatch) {
-        this.logger.log('Received /kb command in thread');
+        let specifiedChannel = kbMatch[1]; // e.g., "all" or "channel-name" 
+        const searchQuery = kbMatch[2]?.trim() || ''; // The search query after /kb
+        
+        // Handle Slack's <#CHANNELID|alias> format
+        if (specifiedChannel?.includes('<#') && specifiedChannel.includes('|')) {
+          const channelMatch = specifiedChannel.match(/<#([^|]+)\|([^>]*)>/);
+          if (channelMatch) {
+            const channelId = channelMatch[1];
+            const alias = channelMatch[2];
+            
+            specifiedChannel = channelMatch[1]; // Just use the channel ID: C3LQ7KNFN
+          }
+        }
+        
+        this.logger.log(`Thread - Parsed channel: "${specifiedChannel}", query: "${searchQuery}"`);
 
         // IMMEDIATE ACKNOWLEDGMENT - Add thinking emoji reaction
         await this.addSlackReaction('thinking_face', event.channel, event.ts);
 
         try {
-          const targetChannel = kbMatch[1] || event.channel; // Default to current channel if not specified
-          const isAllChannels = targetChannel === 'all';
-
-          let responseMessage = '';
-
-          if (isAllChannels) {
-            responseMessage = `📚 **Knowledge Base - All Channels**
-
-**Available Knowledge Bases:**
-• **#cx-formstack** - Core Forms troubleshooting and configuration
-• **#forms-sso-autofill** - SSO and auto-fill specific issues
-• **#cx-f4sf** - F4SF related knowledge
-
-**Usage:**
-• \`/kb\` - Show KB for current channel
-• \`/kb:slack:#channel-name\` - Show KB for specific channel
-• \`/kb:slack:all\` - Show all available KBs (this message)
-
-**Channel-Specific Knowledge:**
-Each channel has specialized knowledge base content tailored to its focus area.`;
+          let channels: string[] | string;
+          if (specifiedChannel === 'all') {
+            channels = 'all';
+          } else if (specifiedChannel) {
+            channels = [specifiedChannel]; // Send channel ID directly
           } else {
-            // Use the KnowledgeBaseService to get search results
-            const kbValue = `slack:${targetChannel.replace(/^#/, '')}`;
-            const searchResults =
-              await this.knowledgeBaseService.getSearchResults({
-                kb: kbValue,
-              });
+            channels = 'all';
+          }
 
-            if (searchResults.length > 0) {
-              const resultsText = searchResults
-                .map((result, index) => {
-                  const date = result.original_post_date
-                    ? new Date(result.original_post_date).toLocaleDateString()
-                    : 'Unknown date';
-                  return `${index + 1}. **<${result.message_link}|View Message>** (${date})
-   ${result.excerpt_text}
-   *Relevance: ${Math.round(result.relevance_score * 100)}%*`;
-                })
-                .join('\n\n');
+          if (!searchQuery) {
+            await this.sendSlackMessage(
+              `📚 **Knowledge Base Help**\n• \`/kb query\` - Search all channels\n• \`/kb:slack:channel-alias query\` - Search specific channel\n• \`/kb:slack:all query\` - Search all channels`,
+              event.channel, event.thread_ts
+            );
+            return;
+          }
 
-              responseMessage = `📚 **Knowledge Base Results - ${targetChannel}**
+          const searchResults = await this.knowledgeBaseService.getSearchResults({
+            q: searchQuery,
+            channels: channels,
+          });
+          this.logger.log(`KB search returned ${searchResults.length} results`);
+
+          if (searchResults.length > 0) {
+            const resultsText = searchResults
+              .map((result, index) => {
+                const date = result.original_post_date
+                  ? new Date(result.original_post_date).toLocaleDateString()
+                  : 'Unknown date';
+                
+                // Clean up the excerpt - remove timestamps and user IDs, keep only the actual content
+                let cleanExcerpt = result.excerpt_text || '';
+                // Remove timestamp patterns like [2025-01-31T03:11:42.424Z] 
+                cleanExcerpt = cleanExcerpt.replace(/\[[\d\-T:.Z]+\]\s*/g, '');
+                // Remove user ID patterns like U07RCTLM69Z:
+                cleanExcerpt = cleanExcerpt.replace(/[A-Z0-9]{11}:\s*/g, '');
+                // Remove multiple --- separators and replace with simple breaks
+                cleanExcerpt = cleanExcerpt.replace(/\s*---\s*/g, '\n• ');
+                // Limit length to first ~200 characters for readability
+                if (cleanExcerpt.length > 200) {
+                  cleanExcerpt = cleanExcerpt.substring(0, 200) + '...';
+                }
+                
+                return `${index + 1}. **<${result.message_link}|View Message>** (${date}) - *${Math.round(result.relevance_score * 100)}% relevance*
+   ${cleanExcerpt}`;
+              })
+              .join('\n\n');
+
+            const responseMessage = `📚 **Knowledge Base Results**
+
+**Query:** "${searchQuery}"
 
 ${resultsText}
 
 *Found ${searchResults.length} relevant results*`;
-            } else {
-              responseMessage = `📚 **Knowledge Base - ${targetChannel}**
 
-No relevant results found for this channel. Try using \`/kb:slack:all\` to see all available knowledge bases.`;
-            }
+            await this.sendSlackMessage(
+              responseMessage,
+              event.channel,
+              event.thread_ts,
+            );
+          } else {
+            const responseMessage = `📚 **Knowledge Base**
+
+**Query:** "${searchQuery}"
+
+No relevant results found. Try:
+• Using different keywords
+• \`/kb:slack:all ${searchQuery}\` to search all channels
+• Check spelling and try broader terms`;
+
+            await this.sendSlackMessage(
+              responseMessage,
+              event.channel,
+              event.thread_ts,
+            );
           }
-
-          await this.sendSlackMessage(
-            responseMessage,
-            event.channel,
-            event.thread_ts,
-          );
         } catch (error) {
           this.logger.error('Error retrieving knowledge base:', error);
-          await this.sendSlackMessage(
-            'Error retrieving knowledge base. Please try again.',
-            event.channel,
-            event.thread_ts,
-          );
+          
+          // Check if this is a knowledge buddy offline error
+          if (error.message === 'KNOWLEDGE_BUDDY_OFFLINE') {
+            await this.sendSlackMessage(
+              '⚠️ **Knowledge Buddy Offline**\n\nThe knowledge-buddy is currently offline. Please try again later or contact support.',
+              event.channel,
+              event.thread_ts,
+            );
+          } else {
+            await this.sendSlackMessage(
+              'Error retrieving knowledge base. Please try again.',
+              event.channel,
+              event.thread_ts,
+            );
+          }
         }
 
         return;

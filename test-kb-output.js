@@ -25,6 +25,7 @@ async function testKBOutput() {
       console.log(`Link: ${result.message_link}`);
       console.log(`Excerpt: ${result.excerpt_text}`);
       console.log(`Relevance: ${Math.round(result.relevance_score * 100)}%`);
+      console.log(`Channel ID: ${result.channelId}`);
       console.log(`Date: ${result.original_post_date}`);
       console.log(`Author: ${result.author}`);
     });

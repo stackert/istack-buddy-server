@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { HttpModule } from '@nestjs/axios';
 import { IstackBuddySlackApiService } from './istack-buddy-slack-api.service';
 import { IstackBuddySlackApiController } from './istack-buddy-slack-api.controller';
 import { KnowledgeBaseService } from './knowledge-base.service';
@@ -10,6 +11,7 @@ import { UserProfileModule } from '../user-profile/user-profile.module';
 
 @Module({
   imports: [
+    HttpModule,
     ChatManagerModule,
     AuthenticationModule,
     LoggerModule,

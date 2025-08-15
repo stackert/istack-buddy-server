@@ -1,15 +1,29 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { HttpService } from '@nestjs/axios';
 import { KnowledgeBaseService } from './knowledge-base.service';
+import { of } from 'rxjs';
 
 describe('KnowledgeBaseService', () => {
   let service: KnowledgeBaseService;
+  let httpService: HttpService;
+
+  const mockHttpService = {
+    post: jest.fn(),
+  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [KnowledgeBaseService],
+      providers: [
+        KnowledgeBaseService,
+        {
+          provide: HttpService,
+          useValue: mockHttpService,
+        },
+      ],
     }).compile();
 
     service = module.get<KnowledgeBaseService>(KnowledgeBaseService);
+    httpService = module.get<HttpService>(HttpService);
   });
 
   it('should be defined', () => {
@@ -17,91 +31,119 @@ describe('KnowledgeBaseService', () => {
   });
 
   describe('getSearchResults', () => {
-    it('should return fake search results for slack:cx-formstack', async () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+
+    it('should call external API and return formatted results', async () => {
+      const mockApiResponse = [
+        {
+          message_link: 'https://slack.com/app_redirect?channel=C1234567890&message_ts=1234567890.123456',
+          excerpt_text: 'API result text',
+          relevance_score: 0.95,
+          channelId: 'C1234567890',
+          original_post_date: '2024-01-15T10:30:00Z',
+          author: 'U1234567890',
+        },
+      ];
+
+      mockHttpService.post.mockReturnValue(of({ data: mockApiResponse }));
+
       const results = await service.getSearchResults({
-        kb: 'slack:cx-formstack',
+        q: 'form prefill issues',
+        channel: '#cx-formstack',
       });
+
+      expect(mockHttpService.post).toHaveBeenCalledWith(
+        'http://localhost:3502/istack-buddy/search/slack',
+        { q: 'form prefill issues' }
+      );
 
       expect(results).toBeDefined();
       expect(Array.isArray(results)).toBe(true);
-      expect(results.length).toBe(3);
+      expect(results.length).toBe(1);
 
       // Check structure of first result
       const firstResult = results[0];
       expect(firstResult).toHaveProperty('message_link');
       expect(firstResult).toHaveProperty('excerpt_text');
       expect(firstResult).toHaveProperty('relevance_score');
+      expect(firstResult).toHaveProperty('channelId');
       expect(firstResult).toHaveProperty('original_post_date');
       expect(firstResult).toHaveProperty('author');
 
       // Check that relevance score is between 0 and 1
       expect(firstResult.relevance_score).toBeGreaterThanOrEqual(0);
       expect(firstResult.relevance_score).toBeLessThanOrEqual(1);
-
-      // Check that excerpt text contains "Forms Core" for cx-formstack
-      expect(firstResult.excerpt_text).toContain('Forms Core');
-      // Check that excerpt text contains the search parameters
-      expect(firstResult.excerpt_text).toContain('{kb: slack:cx-formstack}');
     });
 
-    it('should return fake search results for slack:forms-sso-autofill', async () => {
-      const results = await service.getSearchResults({
-        kb: 'slack:forms-sso-autofill',
-      });
+    it('should throw KNOWLEDGE_BUDDY_OFFLINE error when API call fails', async () => {
+      mockHttpService.post.mockReturnValue(
+        new Promise((_, reject) => reject(new Error('Network error')))
+      );
 
-      expect(results).toBeDefined();
-      expect(Array.isArray(results)).toBe(true);
-      expect(results.length).toBe(3);
+      await expect(
+        service.getSearchResults({ q: 'test query', channel: '#test' })
+      ).rejects.toThrow('KNOWLEDGE_BUDDY_OFFLINE');
 
-      // Check that excerpt text contains "SSO" for forms-sso-autofill
-      const firstResult = results[0];
-      expect(firstResult.excerpt_text).toContain('SSO');
-      // Check that excerpt text contains the search parameters
-      expect(firstResult.excerpt_text).toContain(
-        '{kb: slack:forms-sso-autofill}',
+      expect(mockHttpService.post).toHaveBeenCalledWith(
+        'http://localhost:3502/istack-buddy/search/slack',
+        { q: 'test query' }
       );
     });
 
-    it('should return fake search results for slack:cx-f4sf', async () => {
-      const results = await service.getSearchResults({ kb: 'slack:cx-f4sf' });
+    it('should handle empty API response', async () => {
+      mockHttpService.post.mockReturnValue(of({ data: [] }));
 
-      expect(results).toBeDefined();
-      expect(Array.isArray(results)).toBe(true);
-      expect(results.length).toBe(3);
-
-      // Check that excerpt text contains "F4SF" for cx-f4sf
-      const firstResult = results[0];
-      expect(firstResult.excerpt_text).toContain('F4SF');
-      // Check that excerpt text contains the search parameters
-      expect(firstResult.excerpt_text).toContain('{kb: slack:cx-f4sf}');
-    });
-
-    it('should return fake search results for slack:all', async () => {
-      const results = await service.getSearchResults({ kb: 'slack:all' });
-
-      expect(results).toBeDefined();
-      expect(Array.isArray(results)).toBe(true);
-      expect(results.length).toBe(3);
-
-      // Check that excerpt text contains original content for slack:all
-      const firstResult = results[0];
-      expect(firstResult.excerpt_text).toContain('form configuration');
-      // Check that excerpt text contains the search parameters
-      expect(firstResult.excerpt_text).toContain('{kb: slack:all}');
-    });
-
-    it('should return fake search results for unknown channel', async () => {
       const results = await service.getSearchResults({
-        kb: 'slack:unknown-channel',
+        q: 'no results query',
+        channel: '#empty',
       });
 
       expect(results).toBeDefined();
       expect(Array.isArray(results)).toBe(true);
-      expect(results.length).toBe(3);
+      expect(results.length).toBe(0);
+    });
 
-      // Check that excerpt text contains the search parameters
-      const firstResult = results[0];
-      expect(firstResult.excerpt_text).toContain('{kb: slack:unknown-channel}');
+    it('should handle malformed API response', async () => {
+      mockHttpService.post.mockReturnValue(of({ data: 'invalid response' }));
+
+      const results = await service.getSearchResults({
+        q: 'test query',
+        channel: '#invalid',
+      });
+
+      expect(results).toBeDefined();
+      expect(Array.isArray(results)).toBe(true);
+      expect(results.length).toBe(0);
+    });
+
+    it('should handle API response with missing fields', async () => {
+      const mockApiResponse = [
+        {
+          message_link: 'https://slack.com/test',
+          // Missing other required fields
+        },
+        {
+          excerpt_text: 'Some text',
+          relevance_score: 'invalid_score', // Invalid type
+        },
+      ];
+
+      mockHttpService.post.mockReturnValue(of({ data: mockApiResponse }));
+
+      const results = await service.getSearchResults({
+        q: 'partial data query',
+        channel: '#partial',
+      });
+
+      expect(results).toBeDefined();
+      expect(Array.isArray(results)).toBe(true);
+      expect(results.length).toBe(2);
+
+      // Check that missing fields are filled with defaults
+      expect(results[0].excerpt_text).toBe('');
+      expect(results[1].relevance_score).toBe(0);
     });
   });
 });
