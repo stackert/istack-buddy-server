@@ -2,6 +2,7 @@ import { AbstractSlackRobotAgent } from './AbstractSlackRobotAgent';
 import {
   TConversationTextMessageEnvelope,
   TConversationTextMessage,
+  TRobotResponseEnvelope,
 } from '../types';
 import type { IConversationMessage } from '../../chat-manager/interfaces/message.interface';
 import { TKnowledgeBase, TSlackAgentFunctionDescription } from './types';
@@ -69,18 +70,23 @@ class SlackAgentCoreFormsParrot extends AbstractSlackRobotAgent {
 
   public acceptMessageImmediateResponse(
     messageEnvelope: TConversationTextMessageEnvelope,
-  ): Promise<TConversationTextMessageEnvelope> {
-    const recvMessage: TConversationTextMessage =
-      messageEnvelope.envelopePayload;
-    const respMessage: TConversationTextMessage = { ...recvMessage };
+  ): Promise<TRobotResponseEnvelope> {
+    const recvMessage = messageEnvelope.envelopePayload;
     const randomNumber = Math.floor(Math.random() * 10000);
 
-    respMessage.content.payload = `(${randomNumber}) ${recvMessage.content.payload}`;
-
-    const responseEnvelope: TConversationTextMessageEnvelope = {
-      messageId: `response-${Date.now()}`,
+    const responseEnvelope: TRobotResponseEnvelope = {
       requestOrResponse: 'response',
-      envelopePayload: respMessage,
+      envelopePayload: {
+        author_role: 'assistant',
+        content: {
+          type: 'text/plain',
+          payload: `(${randomNumber}) ${recvMessage.content.payload}`,
+        },
+        created_at: new Date().toISOString(),
+        estimated_token_count: Math.ceil(
+          recvMessage.content.payload.length / 4,
+        ),
+      },
     };
 
     return Promise.resolve(responseEnvelope);

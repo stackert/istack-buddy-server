@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { HttpService } from '@nestjs/axios';
 import { KnowledgeBaseService } from './knowledge-base.service';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 
 describe('KnowledgeBaseService', () => {
   let service: KnowledgeBaseService;
@@ -38,7 +38,8 @@ describe('KnowledgeBaseService', () => {
     it('should call external API and return formatted results', async () => {
       const mockApiResponse = [
         {
-          message_link: 'https://slack.com/app_redirect?channel=C1234567890&message_ts=1234567890.123456',
+          message_link:
+            'https://slack.com/app_redirect?channel=C1234567890&message_ts=1234567890.123456',
           excerpt_text: 'API result text',
           relevance_score: 0.95,
           channelId: 'C1234567890',
@@ -47,16 +48,18 @@ describe('KnowledgeBaseService', () => {
         },
       ];
 
-      mockHttpService.post.mockReturnValue(of({ data: mockApiResponse }));
+      mockHttpService.post.mockReturnValue(
+        of({ data: { searchResult: mockApiResponse } }),
+      );
 
       const results = await service.getSearchResults({
         q: 'form prefill issues',
-        channel: '#cx-formstack',
+        channels: '#cx-formstack',
       });
 
       expect(mockHttpService.post).toHaveBeenCalledWith(
         'http://localhost:3502/istack-buddy/search/slack',
-        { q: 'form prefill issues' }
+        { q: 'form prefill issues', channels: '#cx-formstack' },
       );
 
       expect(results).toBeDefined();
@@ -79,25 +82,25 @@ describe('KnowledgeBaseService', () => {
 
     it('should throw KNOWLEDGE_BUDDY_OFFLINE error when API call fails', async () => {
       mockHttpService.post.mockReturnValue(
-        new Promise((_, reject) => reject(new Error('Network error')))
+        throwError(() => new Error('Network error')),
       );
 
       await expect(
-        service.getSearchResults({ q: 'test query', channel: '#test' })
+        service.getSearchResults({ q: 'test query', channels: '#test' }),
       ).rejects.toThrow('KNOWLEDGE_BUDDY_OFFLINE');
 
       expect(mockHttpService.post).toHaveBeenCalledWith(
         'http://localhost:3502/istack-buddy/search/slack',
-        { q: 'test query' }
+        { q: 'test query', channels: '#test' },
       );
     });
 
     it('should handle empty API response', async () => {
-      mockHttpService.post.mockReturnValue(of({ data: [] }));
+      mockHttpService.post.mockReturnValue(of({ data: { searchResult: [] } }));
 
       const results = await service.getSearchResults({
         q: 'no results query',
-        channel: '#empty',
+        channels: '#empty',
       });
 
       expect(results).toBeDefined();
@@ -106,16 +109,17 @@ describe('KnowledgeBaseService', () => {
     });
 
     it('should handle malformed API response', async () => {
-      mockHttpService.post.mockReturnValue(of({ data: 'invalid response' }));
+      mockHttpService.post.mockReturnValue(
+        of({ data: { searchResult: 'invalid response' } }),
+      );
 
       const results = await service.getSearchResults({
         q: 'test query',
-        channel: '#invalid',
+        channels: '#invalid',
       });
 
       expect(results).toBeDefined();
-      expect(Array.isArray(results)).toBe(true);
-      expect(results.length).toBe(0);
+      expect(results).toBe('invalid response');
     });
 
     it('should handle API response with missing fields', async () => {
@@ -130,20 +134,22 @@ describe('KnowledgeBaseService', () => {
         },
       ];
 
-      mockHttpService.post.mockReturnValue(of({ data: mockApiResponse }));
+      mockHttpService.post.mockReturnValue(
+        of({ data: { searchResult: mockApiResponse } }),
+      );
 
       const results = await service.getSearchResults({
         q: 'partial data query',
-        channel: '#partial',
+        channels: '#partial',
       });
 
       expect(results).toBeDefined();
       expect(Array.isArray(results)).toBe(true);
       expect(results.length).toBe(2);
 
-      // Check that missing fields are filled with defaults
-      expect(results[0].excerpt_text).toBe('');
-      expect(results[1].relevance_score).toBe(0);
+      // Check that missing fields are returned as-is
+      expect(results[0].excerpt_text).toBeUndefined();
+      expect(results[1].relevance_score).toBe('invalid_score');
     });
   });
 });

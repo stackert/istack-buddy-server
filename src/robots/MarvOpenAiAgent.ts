@@ -1,9 +1,10 @@
 import { AbstractRobotChat } from './AbstractRobotChat';
 import type {
   TConversationTextMessageEnvelope,
+  TRobotResponseEnvelope,
   IStreamingCallbacks,
 } from './types';
-import { IConversationMessage } from '../chat-manager/interfaces/message.interface';
+import type { IConversationMessage } from '../chat-manager/interfaces/message.interface';
 import { OpenAI } from 'openai';
 import { marvToolSet } from './tool-definitions/marv';
 import { CustomLoggerService } from '../common/logger/custom-logger.service';
@@ -243,7 +244,7 @@ IMPORTANT: Never use emojis, emoticons, or any graphical symbols in your respons
    */
   public async acceptMessageImmediateResponse(
     messageEnvelope: TConversationTextMessageEnvelope,
-  ): Promise<TConversationTextMessageEnvelope> {
+  ): Promise<TRobotResponseEnvelope> {
     try {
       const client = this.getClient();
       const request = this.createOpenAIMessageRequest(messageEnvelope);
@@ -273,12 +274,10 @@ IMPORTANT: Never use emojis, emoticons, or any graphical symbols in your respons
         }
       }
 
-      // Create response envelope
-      const responseEnvelope: TConversationTextMessageEnvelope = {
-        messageId: '', // Will be set by conversation manager
+      // Create response envelope without messageId
+      const responseEnvelope: TRobotResponseEnvelope = {
         requestOrResponse: 'response',
         envelopePayload: {
-          messageId: '', // Will be set by conversation manager
           author_role: 'assistant',
           content: {
             type: 'text/plain',
@@ -294,12 +293,10 @@ IMPORTANT: Never use emojis, emoticons, or any graphical symbols in your respons
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error occurred';
 
-      // Return error response envelope
-      const errorResponse: TConversationTextMessageEnvelope = {
-        messageId: '', // Will be set by conversation manager
+      // Return error response envelope without messageId
+      const errorResponse: TRobotResponseEnvelope = {
         requestOrResponse: 'response',
         envelopePayload: {
-          messageId: '', // Will be set by conversation manager
           author_role: 'assistant',
           content: {
             type: 'text/plain',
@@ -395,6 +392,20 @@ IMPORTANT: Never use emojis, emoticons, or any graphical symbols in your respons
       }
     }, 2000);
 
-    return immediateResponse;
+    // Convert TRobotResponseEnvelope to TConversationTextMessageEnvelope for return
+    const immediateResponseWithIds: TConversationTextMessageEnvelope = {
+      messageId: '', // Will be set by conversation manager
+      requestOrResponse: immediateResponse.requestOrResponse,
+      envelopePayload: {
+        messageId: '', // Will be set by conversation manager
+        author_role: immediateResponse.envelopePayload.author_role,
+        content: immediateResponse.envelopePayload.content,
+        created_at: immediateResponse.envelopePayload.created_at,
+        estimated_token_count:
+          immediateResponse.envelopePayload.estimated_token_count,
+      },
+    };
+
+    return immediateResponseWithIds;
   }
 }

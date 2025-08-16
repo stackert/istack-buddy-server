@@ -1,6 +1,7 @@
 import { AbstractRobotChat } from './AbstractRobotChat';
 import type {
   TConversationTextMessageEnvelope,
+  TRobotResponseEnvelope,
   IStreamingCallbacks,
 } from './types';
 import { IConversationMessage } from '../chat-manager/interfaces/message.interface';
@@ -1565,7 +1566,7 @@ Need help? Just ask!`;
   public async acceptMessageImmediateResponse(
     messageEnvelope: TConversationTextMessageEnvelope,
     getHistory?: () => IConversationMessage[],
-  ): Promise<TConversationTextMessageEnvelope> {
+  ): Promise<TRobotResponseEnvelope> {
     try {
       const userMessage = messageEnvelope.envelopePayload.content.payload;
 
@@ -1573,12 +1574,9 @@ Need help? Just ask!`;
       const feedbackResponse =
         await this.handleDirectFeedbackCommands(userMessage);
       if (feedbackResponse) {
-        // we need to verify where/who/how messageId are generated.  Is it the responsibility of the robot? or conversation manager.
         return {
-          messageId: `feedback-${Date.now()}`,
           requestOrResponse: 'response',
           envelopePayload: {
-            messageId: `feedback-msg-${Date.now()}`,
             author_role: 'assistant',
             content: {
               type: 'text/plain',
@@ -1591,7 +1589,7 @@ Need help? Just ask!`;
       }
 
       // Use the streaming pattern to get the complete response
-      let finalResponse: TConversationTextMessageEnvelope | null = null;
+      let finalResponse: TRobotResponseEnvelope | null = null;
       let accumulatedContent = '';
 
       await this.acceptMessageStreamResponse(
@@ -1609,10 +1607,8 @@ Need help? Just ask!`;
           onStreamFinished: (content: string, authorRole: string) => {
             // Create a minimal message envelope for the callback
             finalResponse = {
-              messageId: '', // Will be set by conversation manager
               requestOrResponse: 'response',
               envelopePayload: {
-                messageId: '', // Will be set by conversation manager
                 author_role: authorRole as any,
                 content: {
                   type: 'text/plain',
@@ -1630,10 +1626,8 @@ Need help? Just ask!`;
             // This callback is now directly used in acceptMessageStreamResponse
             // to handle streaming errors.
             finalResponse = {
-              messageId: `error-${Date.now()}`,
               requestOrResponse: 'response',
               envelopePayload: {
-                messageId: `error-msg-${Date.now()}`,
                 author_role: 'assistant',
                 content: {
                   type: 'text/plain',
@@ -1654,14 +1648,12 @@ Need help? Just ask!`;
       } else {
         // Fallback if finalResponse is not set (should not happen with new logic)
         return {
-          messageId: `response-${Date.now()}`,
           requestOrResponse: 'response',
           envelopePayload: {
-            messageId: `msg-${Date.now()}`,
             author_role: 'assistant',
             content: {
               type: 'text/plain',
-              payload: accumulatedContent,
+              payload: accumulatedContent || 'No response generated',
             },
             created_at: new Date().toISOString(),
             estimated_token_count: this.estimateTokens(accumulatedContent),
@@ -1670,12 +1662,11 @@ Need help? Just ask!`;
       }
     } catch (error) {
       const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error';
-      const errorResponse: TConversationTextMessageEnvelope = {
-        messageId: `error-${Date.now()}`,
+        error instanceof Error ? error.message : 'Unknown error occurred';
+
+      return {
         requestOrResponse: 'response',
         envelopePayload: {
-          messageId: `error-msg-${Date.now()}`,
           author_role: 'assistant',
           content: {
             type: 'text/plain',
@@ -1685,8 +1676,6 @@ Need help? Just ask!`;
           estimated_token_count: this.estimateTokens(errorMessage),
         },
       };
-
-      return errorResponse;
     }
   }
 
@@ -1704,6 +1693,20 @@ Need help? Just ask!`;
     // Send immediate response first
     const immediateResponse =
       await this.acceptMessageImmediateResponse(messageEnvelope);
+
+    // Convert TRobotResponseEnvelope to TConversationTextMessageEnvelope for return
+    const immediateResponseWithIds: TConversationTextMessageEnvelope = {
+      messageId: '', // Will be set by conversation manager
+      requestOrResponse: immediateResponse.requestOrResponse,
+      envelopePayload: {
+        messageId: '', // Will be set by conversation manager
+        author_role: immediateResponse.envelopePayload.author_role,
+        content: immediateResponse.envelopePayload.content,
+        created_at: immediateResponse.envelopePayload.created_at,
+        estimated_token_count:
+          immediateResponse.envelopePayload.estimated_token_count,
+      },
+    };
 
     // Start streaming in background and promise to send delayed message when complete
     this.acceptMessageStreamResponse(
@@ -1821,7 +1824,7 @@ Need help? Just ask!`;
       }
     });
 
-    return immediateResponse;
+    return immediateResponseWithIds;
   }
 
   /**

@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ChatManagerService } from './chat-manager.service';
 import { ConversationListSlackAppService } from '../ConversationLists/ConversationListSlackAppService';
 import { ChatConversationListService } from '../ConversationLists/ChatConversationListService';
+import { RobotService } from '../robots/robot.service';
 import { UserRole, MessageType } from './dto/create-message.dto';
 import { JoinRoomDto } from './dto/join-room.dto';
 
@@ -9,11 +10,19 @@ describe('ChatManagerService', () => {
   let service: ChatManagerService;
 
   beforeEach(async () => {
+    const mockRobotService = {
+      getRobotByName: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ChatManagerService,
         ConversationListSlackAppService,
         ChatConversationListService,
+        {
+          provide: RobotService,
+          useValue: mockRobotService,
+        },
       ],
     }).compile();
 
@@ -59,7 +68,7 @@ describe('ChatManagerService', () => {
 
       expect(filteredMessages).toHaveLength(1);
       expect(filteredMessages[0].fromUserId).toBe('user1');
-      expect(filteredMessages[0].content).toBe('Message from user1');
+      expect(filteredMessages[0].content.payload).toBe('Message from user1');
     });
 
     it('should filter messages by messageType', async () => {
@@ -95,7 +104,7 @@ describe('ChatManagerService', () => {
 
       expect(robotMessages).toHaveLength(1);
       expect(robotMessages[0].messageType).toBe(MessageType.ROBOT);
-      expect(robotMessages[0].content).toBe('Robot message');
+      expect(robotMessages[0].content.payload).toBe('Robot message');
     });
 
     it('should get robot messages using getFilteredRobotMessages', async () => {
@@ -146,23 +155,29 @@ describe('ChatManagerService', () => {
 
       // Should include message with robot role
       expect(
-        robotMessages.some((msg) => msg.content === 'Robot role message'),
+        robotMessages.some(
+          (msg) => msg.content.payload === 'Robot role message',
+        ),
       ).toBe(true);
 
       // Should include message from cx-slack-robot
       expect(
-        robotMessages.some((msg) => msg.content === 'Slack robot message'),
+        robotMessages.some(
+          (msg) => msg.content.payload === 'Slack robot message',
+        ),
       ).toBe(true);
 
       // Should include message with robot type
       expect(
-        robotMessages.some((msg) => msg.content === 'Robot type message'),
+        robotMessages.some(
+          (msg) => msg.content.payload === 'Robot type message',
+        ),
       ).toBe(true);
 
       // Should not include regular user message
-      expect(robotMessages.some((msg) => msg.content === 'User message')).toBe(
-        false,
-      );
+      expect(
+        robotMessages.some((msg) => msg.content.payload === 'User message'),
+      ).toBe(false);
     });
 
     it('should return empty array for non-existent conversation', async () => {
@@ -191,7 +206,7 @@ describe('ChatManagerService', () => {
       // Empty filter should return all messages
       const allMessages = await service.getFilteredMessages(conversationId, {});
       expect(allMessages).toHaveLength(1);
-      expect(allMessages[0].content).toBe('Test message');
+      expect(allMessages[0].content.payload).toBe('Test message');
     });
   });
 
@@ -222,7 +237,7 @@ describe('ChatManagerService', () => {
       });
 
       // Should return the original message (deduplication is working)
-      expect(duplicateMessage.content).toBe('Duplicate content');
+      expect(duplicateMessage.content.payload).toBe('Duplicate content');
       // Note: The deduplication logic may not be working as expected in tests
       // but the test verifies the content is the same
     });
@@ -276,7 +291,7 @@ describe('ChatManagerService', () => {
 
       const result = await service.createMessage(createMessageDto);
 
-      expect(result.content).toBe('Test message');
+      expect(result.content.payload).toBe('Test message');
       expect(result.conversationId).toBe(conversationId);
       expect(result.fromUserId).toBe('user1');
     });
@@ -305,6 +320,7 @@ describe('ChatManagerService', () => {
       const newService = new ChatManagerService(
         service['conversationListService'],
         service['chatConversationListService'],
+        service['robotService'],
       );
 
       const conversations = await newService.getConversations();
@@ -442,7 +458,7 @@ describe('ChatManagerService', () => {
 
       expect(messages.length).toBe(3);
       // Since we added 5 messages, we should get the last 3: Message 3, Message 4, Message 5
-      const messageContents = messages.map((m) => m.content);
+      const messageContents = messages.map((m) => m.content.payload);
       expect(messageContents).toEqual(['Message 3', 'Message 4', 'Message 5']);
     });
 
@@ -515,9 +531,9 @@ describe('ChatManagerService', () => {
 
       expect(messages.length).toBe(3);
       // Should be in chronological order (oldest first)
-      expect(messages[0].content).toBe('First message');
-      expect(messages[1].content).toBe('Second message');
-      expect(messages[2].content).toBe('Third message');
+      expect(messages[0].content.payload).toBe('First message');
+      expect(messages[1].content.payload).toBe('Second message');
+      expect(messages[2].content.payload).toBe('Third message');
     });
 
     it('should handle getLastMessages with empty conversation list', async () => {
@@ -565,7 +581,7 @@ describe('ChatManagerService', () => {
       const messages = await service.getLastMessages(conversationId, 1);
 
       expect(messages).toHaveLength(1);
-      expect(messages[0].content).toBe('Test message');
+      expect(messages[0].content.payload).toBe('Test message');
     });
   });
 
@@ -1014,7 +1030,7 @@ describe('ChatManagerService', () => {
         toRole: UserRole.AGENT,
       });
 
-      expect(duplicateMessage.content).toBe('Duplicate content');
+      expect(duplicateMessage.content.payload).toBe('Duplicate content');
     });
   });
 
@@ -1127,6 +1143,7 @@ describe('ChatManagerService', () => {
       const newService = new ChatManagerService(
         service['conversationListService'],
         service['chatConversationListService'],
+        service['robotService'],
       );
 
       const stats = await newService.getDashboardStats();

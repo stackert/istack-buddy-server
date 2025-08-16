@@ -1,9 +1,10 @@
 import { AbstractRobotChat } from './AbstractRobotChat';
 import type {
   TConversationTextMessageEnvelope,
+  TRobotResponseEnvelope,
   IStreamingCallbacks,
 } from './types';
-import { IConversationMessage } from '../chat-manager/interfaces/message.interface';
+import type { IConversationMessage } from '../chat-manager/interfaces/message.interface';
 import { UserRole } from '../chat-manager/dto/create-message.dto';
 import Anthropic from '@anthropic-ai/sdk';
 import { slackyToolSet } from './tool-definitions/slacky';
@@ -631,11 +632,11 @@ Ratings must be between -5 and +5. Please provide a rating in this range.
   }
 
   /**
-   * Get immediate response from Anthropic API with proper tool result handling
+   * Handle immediate response using Anthropic's messages API
    */
   public async acceptMessageImmediateResponse(
     messageEnvelope: TConversationTextMessageEnvelope,
-  ): Promise<TConversationTextMessageEnvelope> {
+  ): Promise<TRobotResponseEnvelope> {
     const userMessage = messageEnvelope.envelopePayload.content.payload;
 
     // Check for direct feedback/rating commands FIRST (before needing API key)
@@ -643,10 +644,8 @@ Ratings must be between -5 and +5. Please provide a rating in this range.
       await this.handleDirectFeedbackCommands(userMessage);
     if (directCommandResult) {
       return {
-        messageId: `slacky-direct-${Date.now()}`,
         requestOrResponse: 'response',
         envelopePayload: {
-          messageId: `slacky-direct-msg-${Date.now()}`,
           author_role: 'assistant',
           content: {
             type: 'text/plain',
@@ -689,10 +688,8 @@ Ratings must be between -5 and +5. Please provide a rating in this range.
       // If no tools were used, return the response directly
       if (toolUses.length === 0) {
         return {
-          messageId: `slacky-response-${Date.now()}`,
           requestOrResponse: 'response',
           envelopePayload: {
-            messageId: `slacky-msg-${Date.now()}`,
             author_role: 'assistant',
             content: {
               type: 'text/plain',
@@ -733,10 +730,8 @@ Ratings must be between -5 and +5. Please provide a rating in this range.
       }
 
       return {
-        messageId: `slacky-response-${Date.now()}`,
         requestOrResponse: 'response',
         envelopePayload: {
-          messageId: `slacky-msg-${Date.now()}`,
           author_role: 'assistant',
           content: {
             type: 'text/plain',
@@ -747,16 +742,16 @@ Ratings must be between -5 and +5. Please provide a rating in this range.
         },
       };
     } catch (error) {
-      const errorMessage = `Error: ${error instanceof Error ? error.message : 'Unknown error occurred'}`;
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error occurred';
+
       return {
-        messageId: `slacky-error-${Date.now()}`,
         requestOrResponse: 'response',
         envelopePayload: {
-          messageId: `slacky-error-msg-${Date.now()}`,
           author_role: 'assistant',
           content: {
             type: 'text/plain',
-            payload: errorMessage,
+            payload: `I apologize, but I encountered an error: ${errorMessage}`,
           },
           created_at: new Date().toISOString(),
           estimated_token_count: this.estimateTokens(errorMessage),
@@ -789,11 +784,11 @@ Ratings must be between -5 and +5. Please provide a rating in this range.
     });
     if (directCommandResult) {
       this.logger.log('Returning direct command response');
-      return {
-        messageId: `slacky-direct-multipart-${Date.now()}`,
+      const responseWithIds: TConversationTextMessageEnvelope = {
+        messageId: '', // Will be set by conversation manager
         requestOrResponse: 'response',
         envelopePayload: {
-          messageId: `slacky-direct-multipart-msg-${Date.now()}`,
+          messageId: '', // Will be set by conversation manager
           author_role: 'assistant',
           content: {
             type: 'text/plain',
@@ -803,6 +798,7 @@ Ratings must be between -5 and +5. Please provide a rating in this range.
           estimated_token_count: this.estimateTokens(directCommandResult),
         },
       };
+      return responseWithIds;
     }
 
     // Only initialize client if we need Claude for normal conversation
@@ -835,11 +831,11 @@ Ratings must be between -5 and +5. Please provide a rating in this range.
 
       // If no tools were used, return the response directly
       if (toolUses.length === 0) {
-        return {
-          messageId: `slacky-multipart-${Date.now()}`,
+        const responseWithIds: TConversationTextMessageEnvelope = {
+          messageId: '', // Will be set by conversation manager
           requestOrResponse: 'response',
           envelopePayload: {
-            messageId: `slacky-multipart-msg-${Date.now()}`,
+            messageId: '', // Will be set by conversation manager
             author_role: 'assistant',
             content: {
               type: 'text/plain',
@@ -849,6 +845,7 @@ Ratings must be between -5 and +5. Please provide a rating in this range.
             estimated_token_count: this.estimateTokens(responseText),
           },
         };
+        return responseWithIds;
       }
 
       // Execute tools and send raw results immediately
@@ -884,11 +881,11 @@ Ratings must be between -5 and +5. Please provide a rating in this range.
       }
 
       // Return Claude's analysis as the main response
-      return {
-        messageId: `slacky-analysis-${Date.now()}`,
+      const responseWithIds: TConversationTextMessageEnvelope = {
+        messageId: '', // Will be set by conversation manager
         requestOrResponse: 'response',
         envelopePayload: {
-          messageId: `slacky-analysis-msg-${Date.now()}`,
+          messageId: '', // Will be set by conversation manager
           author_role: 'assistant',
           content: {
             type: 'text/plain',
@@ -898,23 +895,26 @@ Ratings must be between -5 and +5. Please provide a rating in this range.
           estimated_token_count: this.estimateTokens(finalResponseText),
         },
       };
+      return responseWithIds;
     } catch (error) {
-      const errorMessage = `Error: ${error instanceof Error ? error.message : 'Unknown error occurred'}`;
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error occurred';
 
-      return {
-        messageId: `slacky-multipart-error-${Date.now()}`,
+      const errorResponseWithIds: TConversationTextMessageEnvelope = {
+        messageId: '', // Will be set by conversation manager
         requestOrResponse: 'response',
         envelopePayload: {
-          messageId: `slacky-multipart-error-msg-${Date.now()}`,
+          messageId: '', // Will be set by conversation manager
           author_role: 'assistant',
           content: {
             type: 'text/plain',
-            payload: errorMessage,
+            payload: `I apologize, but I encountered an error: ${errorMessage}`,
           },
           created_at: new Date().toISOString(),
           estimated_token_count: this.estimateTokens(errorMessage),
         },
       };
+      return errorResponseWithIds;
     }
   }
 }

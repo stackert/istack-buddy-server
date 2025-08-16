@@ -10,9 +10,7 @@ import { CustomLoggerService } from './common/logger/custom-logger.service';
 dotenv.config({ path: '.env.live' });
 
 export async function bootstrap() {
-  const app = await NestFactory.create(AppModule, {
-    logger: new CustomLoggerService(),
-  });
+  const app = await NestFactory.create(AppModule);
   const logger = app.get(CustomLoggerService);
 
   // Configure raw body parsing for Slack webhooks

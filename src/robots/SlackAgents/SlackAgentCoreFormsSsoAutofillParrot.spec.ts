@@ -77,7 +77,7 @@ describe('SlackAgentCoreFormsSsoAutofillParrot', () => {
         await robot.acceptMessageImmediateResponse(mockMessageEnvelope);
 
       expect(result).toBeDefined();
-      expect(result.messageId).toBeDefined();
+      // messageId is not part of TRobotResponseEnvelope - it's added by conversation manager
       expect(result.envelopePayload).toBeDefined();
     });
 
@@ -94,8 +94,10 @@ describe('SlackAgentCoreFormsSsoAutofillParrot', () => {
       const result =
         await robot.acceptMessageImmediateResponse(mockMessageEnvelope);
 
-      expect(result.envelopePayload.author_role).toBe('user');
-      expect(result.envelopePayload.created_at).toBe('2024-01-01T10:00:00Z');
+      expect(result.envelopePayload.author_role).toBe('assistant');
+      expect(result.envelopePayload.created_at).toMatch(
+        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/,
+      );
       expect(result.envelopePayload.content.type).toBe('text/plain');
     });
 

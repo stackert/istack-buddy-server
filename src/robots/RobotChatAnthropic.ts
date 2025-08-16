@@ -1,9 +1,10 @@
 import { AbstractRobotChat } from './AbstractRobotChat';
 import type {
   TConversationTextMessageEnvelope,
+  TRobotResponseEnvelope,
   IStreamingCallbacks,
 } from './types';
-import { IConversationMessage } from '../chat-manager/interfaces/message.interface';
+import type { IConversationMessage } from '../chat-manager/interfaces/message.interface';
 import { UserRole } from '../chat-manager/dto/create-message.dto';
 import Anthropic from '@anthropic-ai/sdk';
 import { marvToolSet } from './tool-definitions/marv';
@@ -287,7 +288,7 @@ Please provide helpful, accurate, and detailed responses to user questions. If y
    */
   public async acceptMessageImmediateResponse(
     messageEnvelope: TConversationTextMessageEnvelope,
-  ): Promise<TConversationTextMessageEnvelope> {
+  ): Promise<TRobotResponseEnvelope> {
     try {
       const client = this.getClient();
       const request = this.createAnthropicMessageRequest(messageEnvelope);
@@ -352,12 +353,10 @@ Please provide helpful, accurate, and detailed responses to user questions. If y
           (responseText.length > 200 ? '...' : ''),
       });
 
-      // Create response envelope
-      const responseEnvelope: TConversationTextMessageEnvelope = {
-        messageId: `response-${Date.now()}`,
+      // Create response envelope without messageId
+      const responseEnvelope: TRobotResponseEnvelope = {
         requestOrResponse: 'response',
         envelopePayload: {
-          messageId: `msg-${Date.now()}`,
           author_role: 'assistant',
           content: {
             type: 'text/plain',
@@ -373,12 +372,10 @@ Please provide helpful, accurate, and detailed responses to user questions. If y
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error occurred';
 
-      // Return error response envelope
-      const errorResponse: TConversationTextMessageEnvelope = {
-        messageId: `error-${Date.now()}`,
+      // Return error response envelope without messageId
+      const errorResponse: TRobotResponseEnvelope = {
         requestOrResponse: 'response',
         envelopePayload: {
-          messageId: `error-msg-${Date.now()}`,
           author_role: 'assistant',
           content: {
             type: 'text/plain',
@@ -472,6 +469,20 @@ Please provide helpful, accurate, and detailed responses to user questions. If y
       }
     }, 2000);
 
-    return immediateResponse;
+    // Convert TRobotResponseEnvelope to TConversationTextMessageEnvelope for return
+    const immediateResponseWithIds: TConversationTextMessageEnvelope = {
+      messageId: '', // Will be set by conversation manager
+      requestOrResponse: immediateResponse.requestOrResponse,
+      envelopePayload: {
+        messageId: '', // Will be set by conversation manager
+        author_role: immediateResponse.envelopePayload.author_role,
+        content: immediateResponse.envelopePayload.content,
+        created_at: immediateResponse.envelopePayload.created_at,
+        estimated_token_count:
+          immediateResponse.envelopePayload.estimated_token_count,
+      },
+    };
+
+    return immediateResponseWithIds;
   }
 }

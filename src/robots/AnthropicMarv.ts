@@ -1,6 +1,7 @@
 import { AbstractRobotChat } from './AbstractRobotChat';
 import type {
   TConversationTextMessageEnvelope,
+  TRobotResponseEnvelope,
   IStreamingCallbacks,
 } from './types';
 import {
@@ -326,26 +327,35 @@ Your goal is to help users efficiently manage their Formstack forms through thes
   public async acceptMessageImmediateResponse(
     messageEnvelope: TConversationTextMessageEnvelope,
     getHistory?: () => IConversationMessage[],
-  ): Promise<TConversationTextMessageEnvelope> {
+  ): Promise<TRobotResponseEnvelope> {
     try {
       // Use the streaming pattern to get the complete response
-      let finalResponse: TConversationTextMessageEnvelope | null = null;
+      let finalResponse: TRobotResponseEnvelope | null = null;
       let accumulatedContent = '';
 
       await this.acceptMessageStreamResponse(
         messageEnvelope,
         {
           onStreamChunkReceived: (chunk: string) => {
-            if (chunk !== null) {
-              accumulatedContent += chunk;
-            }
+            accumulatedContent += chunk;
           },
           onStreamStart: (message) => {
             // Handle stream start if needed
           },
           onStreamFinished: (content: string, authorRole: string) => {
-            // Store the content for return
-            accumulatedContent = content;
+            // Create the final response without messageId
+            finalResponse = {
+              requestOrResponse: 'response',
+              envelopePayload: {
+                author_role: authorRole as any,
+                content: {
+                  type: 'text/plain',
+                  payload: content,
+                },
+                created_at: new Date().toISOString(),
+                estimated_token_count: this.estimateTokens(content),
+              },
+            };
           },
           onFullMessageReceived: (content: string) => {
             // Handle full message if needed
@@ -357,31 +367,29 @@ Your goal is to help users efficiently manage their Formstack forms through thes
         getHistory,
       );
 
-      // Create the final response envelope with minimal data
-      finalResponse = {
-        messageId: '', // Will be set by conversation manager
-        requestOrResponse: 'response',
-        envelopePayload: {
-          messageId: '', // Will be set by conversation manager
-          author_role: 'assistant',
-          content: {
-            type: 'text/plain',
-            payload: accumulatedContent,
+      if (!finalResponse) {
+        // Fallback to accumulated content if streaming didn't work
+        finalResponse = {
+          requestOrResponse: 'response',
+          envelopePayload: {
+            author_role: 'assistant',
+            content: {
+              type: 'text/plain',
+              payload: accumulatedContent || 'No response generated',
+            },
+            created_at: new Date().toISOString(),
+            estimated_token_count: this.estimateTokens(accumulatedContent),
           },
-          created_at: new Date().toISOString(),
-          estimated_token_count: this.estimateTokens(accumulatedContent),
-        },
-      };
+        };
+      }
 
       return finalResponse;
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
-      const errorResponse: TConversationTextMessageEnvelope = {
-        messageId: '', // Will be set by conversation manager
+      const errorResponse: TRobotResponseEnvelope = {
         requestOrResponse: 'response',
         envelopePayload: {
-          messageId: '', // Will be set by conversation manager
           author_role: 'assistant',
           content: {
             type: 'text/plain',
@@ -412,6 +420,20 @@ Your goal is to help users efficiently manage their Formstack forms through thes
       messageEnvelope,
       getHistory,
     );
+
+    // Convert TRobotResponseEnvelope to TConversationTextMessageEnvelope for return
+    const immediateResponseWithIds: TConversationTextMessageEnvelope = {
+      messageId: '', // Will be set by conversation manager
+      requestOrResponse: immediateResponse.requestOrResponse,
+      envelopePayload: {
+        messageId: '', // Will be set by conversation manager
+        author_role: immediateResponse.envelopePayload.author_role,
+        content: immediateResponse.envelopePayload.content,
+        created_at: immediateResponse.envelopePayload.created_at,
+        estimated_token_count:
+          immediateResponse.envelopePayload.estimated_token_count,
+      },
+    };
 
     // Start streaming in background and promise to send delayed message when complete
     this.acceptMessageStreamResponse(
@@ -479,6 +501,6 @@ Your goal is to help users efficiently manage their Formstack forms through thes
       }
     });
 
-    return immediateResponse;
+    return immediateResponseWithIds;
   }
 }

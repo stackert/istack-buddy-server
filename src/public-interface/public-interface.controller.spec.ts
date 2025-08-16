@@ -17,6 +17,25 @@ import { UserProfileService } from '../user-profile/user-profile.service';
 jest.mock('fs');
 jest.mock('path');
 
+// Mock fs.readFileSync to return valid HTML content
+(fs.readFileSync as jest.Mock).mockReturnValue(`
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Forms Marv</title>
+</head>
+<body>
+    <h1>Welcome to Forms Marv!</h1>
+    <p>Form ID: 123456</p>
+</body>
+</html>
+`);
+
+// Mock jsonwebtoken
+jest.mock('jsonwebtoken', () => ({
+  verify: jest.fn().mockReturnValue({ userId: 'test-user' }),
+}));
+
 describe('PublicInterfaceController', () => {
   let controller: PublicInterfaceController;
   let mockFormMarvSessionService: jest.Mocked<FormMarvSessionService>;
@@ -34,6 +53,7 @@ describe('PublicInterfaceController', () => {
 
     mockAuthService = {
       isUserAuthenticated: jest.fn(),
+      authenticateUser: jest.fn().mockResolvedValue({ success: true }),
     } as any;
 
     mockAuthPermissionsService = {
@@ -53,6 +73,21 @@ describe('PublicInterfaceController', () => {
       setGateway: jest.fn(),
       getMessages: jest.fn().mockResolvedValue([]),
       addMessage: jest.fn().mockResolvedValue({ id: 'msg_123_abc123def' }),
+      validateConversationFormId: jest.fn().mockReturnValue(true),
+      getConversations: jest
+        .fn()
+        .mockResolvedValue([{ id: 'test-secret-key', formId: '123456' }]),
+      createConversationCallbacks: jest.fn().mockReturnValue({
+        onStreamChunkReceived: jest.fn(),
+        onStreamStart: jest.fn(),
+        onStreamFinished: jest.fn(),
+        onFullMessageReceived: jest.fn(),
+        onError: jest.fn(),
+      }),
+      handleRobotStreamingResponse: jest.fn().mockResolvedValue(undefined),
+      getGateway: jest.fn().mockReturnValue({
+        broadcastToConversation: jest.fn(),
+      }),
     };
 
     const mockRobotService = {
@@ -140,7 +175,7 @@ describe('PublicInterfaceController', () => {
     mockRequest = {
       protocol: 'http',
       get: jest.fn().mockReturnValue('localhost:3000'),
-      cookies: {},
+      cookies: { jwtToken: 'valid-jwt-token' },
     };
 
     // Mock path.join

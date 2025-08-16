@@ -1,10 +1,11 @@
 import { AbstractRobotChat } from './AbstractRobotChat';
 import type {
   TConversationTextMessageEnvelope,
+  TRobotResponseEnvelope,
   TConversationTextMessage,
   IStreamingCallbacks,
 } from './types';
-import { IConversationMessage } from '../chat-manager/interfaces/message.interface';
+import type { IConversationMessage } from '../chat-manager/interfaces/message.interface';
 
 // Helper functions for the streaming pattern
 const noOp = (...args: any[]) => {};
@@ -62,28 +63,30 @@ export class ChatRobotParrot extends AbstractRobotChat {
 
   public acceptMessageImmediateResponse(
     messageEnvelope: TConversationTextMessageEnvelope,
-  ): Promise<TConversationTextMessageEnvelope> {
-    const recvMessage: TConversationTextMessage =
-      messageEnvelope.envelopePayload;
-    const respMessage: TConversationTextMessage = {
-      ...recvMessage,
-      messageId: '', // Will be set by conversation manager
-    };
+  ): Promise<TRobotResponseEnvelope> {
+    const recvMessage = messageEnvelope.envelopePayload;
     const randomNumber = Math.floor(Math.random() * 10000);
 
-    respMessage.content.payload = `(${randomNumber}) ${recvMessage.content.payload}`;
-
-    const responseEnvelope: TConversationTextMessageEnvelope = {
-      messageId: '', // Will be set by conversation manager
+    const responseEnvelope: TRobotResponseEnvelope = {
       requestOrResponse: 'response',
-      envelopePayload: respMessage,
+      envelopePayload: {
+        author_role: 'assistant',
+        content: {
+          type: 'text/plain',
+          payload: `(${randomNumber}) ${recvMessage.content.payload}`,
+        },
+        created_at: new Date().toISOString(),
+        estimated_token_count: Math.ceil(
+          recvMessage.content.payload.length / 4,
+        ),
+      },
     };
 
     return Promise.resolve(responseEnvelope);
   }
 
   // streaming response
-  public acceptMessageMultiPartResponse(
+  public async acceptMessageMultiPartResponse(
     messageEnvelope: TConversationTextMessageEnvelope,
     delayedMessageCallback: (
       response: TConversationTextMessageEnvelope,
@@ -93,7 +96,21 @@ export class ChatRobotParrot extends AbstractRobotChat {
     // For chat robots, we can implement multipart by using the immediate response
     // and then potentially sending additional responses via callback
     const immediateResponse =
-      this.acceptMessageImmediateResponse(messageEnvelope);
+      await this.acceptMessageImmediateResponse(messageEnvelope);
+
+    // Convert TRobotResponseEnvelope to TConversationTextMessageEnvelope for return
+    const immediateResponseWithIds: TConversationTextMessageEnvelope = {
+      messageId: '', // Will be set by conversation manager
+      requestOrResponse: immediateResponse.requestOrResponse,
+      envelopePayload: {
+        messageId: '', // Will be set by conversation manager
+        author_role: immediateResponse.envelopePayload.author_role,
+        content: immediateResponse.envelopePayload.content,
+        created_at: immediateResponse.envelopePayload.created_at,
+        estimated_token_count:
+          immediateResponse.envelopePayload.estimated_token_count,
+      },
+    };
 
     // Optionally send delayed additional responses
     setTimeout(() => {
@@ -122,7 +139,7 @@ export class ChatRobotParrot extends AbstractRobotChat {
       }
     }, 300);
 
-    return immediateResponse;
+    return immediateResponseWithIds;
   }
 
   public acceptMessageStreamResponse(

@@ -62,6 +62,15 @@ describe('SlackyAnthropicAgent', () => {
   let agent: SlackyAnthropicAgent;
   const originalEnv = process.env;
 
+  // Factory function for creating callback objects
+  const callbacksFactory = () => ({
+    onStreamChunkReceived: jest.fn(),
+    onStreamStart: jest.fn(),
+    onStreamFinished: jest.fn(),
+    onFullMessageReceived: jest.fn(),
+    onError: jest.fn(),
+  });
+
   const mockMessageEnvelope: TConversationTextMessageEnvelope = {
     messageId: 'test-message-id',
     requestOrResponse: 'request',
@@ -80,7 +89,10 @@ describe('SlackyAnthropicAgent', () => {
   const mockConversationHistory: IConversationMessage[] = [
     {
       id: 'msg-1',
-      content: 'Previous message',
+      content: {
+        type: 'text/plain',
+        payload: 'Previous message',
+      },
       conversationId: 'conv-1',
       fromUserId: 'user-1',
       fromRole: UserRole.CUSTOMER,
@@ -305,7 +317,7 @@ describe('SlackyAnthropicAgent', () => {
         await agent.acceptMessageImmediateResponse(mockMessageEnvelope);
 
       expect(result.envelopePayload.content.payload).toContain(
-        'Error: API connection failed',
+        'I apologize, but I encountered an error: API connection failed',
       );
       expect(result.envelopePayload.author_role).toBe('assistant');
     });
@@ -315,7 +327,7 @@ describe('SlackyAnthropicAgent', () => {
     it('should handle streaming without tools', async () => {
       const { default: Anthropic } = require('@anthropic-ai/sdk');
       const mockCreate = Anthropic().messages.create;
-      const chunkCallback = jest.fn();
+      const callbacks = callbacksFactory();
 
       mockCreate.mockResolvedValue({
         content: [
@@ -326,18 +338,17 @@ describe('SlackyAnthropicAgent', () => {
         ],
       });
 
-      await agent.acceptMessageStreamResponse(
-        mockMessageEnvelope,
-        chunkCallback,
-      );
+      await agent.acceptMessageStreamResponse(mockMessageEnvelope, callbacks);
 
-      expect(chunkCallback).toHaveBeenCalledWith('Streaming response text');
+      expect(callbacks.onStreamChunkReceived).toHaveBeenCalledWith(
+        'Streaming response text',
+      );
     });
 
     it('should handle streaming with tool execution', async () => {
       const { default: Anthropic } = require('@anthropic-ai/sdk');
       const mockCreate = Anthropic().messages.create;
-      const chunkCallback = jest.fn();
+      const callbacks = callbacksFactory();
 
       // Mock first call with tool use
       mockCreate.mockResolvedValueOnce({
@@ -379,22 +390,26 @@ describe('SlackyAnthropicAgent', () => {
 
       mockCreate.mockResolvedValueOnce(mockStream);
 
-      await agent.acceptMessageStreamResponse(
-        mockMessageEnvelope,
-        chunkCallback,
-      );
+      await agent.acceptMessageStreamResponse(mockMessageEnvelope, callbacks);
 
-      expect(chunkCallback).toHaveBeenCalledWith('I need to use a tool.');
-      expect(chunkCallback).toHaveBeenCalledWith(
+      expect(callbacks.onStreamChunkReceived).toHaveBeenCalledWith(
+        'I need to use a tool.',
+      );
+      expect(callbacks.onStreamChunkReceived).toHaveBeenCalledWith(
         expect.stringContaining('Executing test_tool'),
       );
-      expect(chunkCallback).toHaveBeenCalledWith(
+      expect(callbacks.onStreamChunkReceived).toHaveBeenCalledWith(
         expect.stringContaining('Tool execution result'),
       );
-      expect(chunkCallback).toHaveBeenCalledWith('Final response chunk');
+      expect(callbacks.onStreamChunkReceived).toHaveBeenCalledWith(
+        'Final response chunk',
+      );
     });
 
     it('should handle tool execution errors', async () => {
+      // Set up API key for the test
+      process.env.ANTHROPIC_API_KEY = 'test-api-key';
+
       const { default: Anthropic } = require('@anthropic-ai/sdk');
       const mockCreate = Anthropic().messages.create;
       const chunkCallback = jest.fn();
@@ -444,21 +459,23 @@ describe('SlackyAnthropicAgent', () => {
 
       mockCreate.mockResolvedValueOnce(mockStream);
 
+      const callbacks = callbacksFactory();
+
       await errorAgent.acceptMessageStreamResponse(
         mockMessageEnvelope,
-        chunkCallback,
+        callbacks,
       );
 
-      // Verify tool error was streamed via chunkCallback in the specific format from lines 286-297
-      expect(chunkCallback).toHaveBeenCalledWith(
+      // Verify tool error was streamed via onStreamChunkReceived in the specific format from lines 286-297
+      expect(callbacks.onStreamChunkReceived).toHaveBeenCalledWith(
         expect.stringContaining('**Tool Error: error_tool**'),
       );
-      expect(chunkCallback).toHaveBeenCalledWith(
+      expect(callbacks.onStreamChunkReceived).toHaveBeenCalledWith(
         expect.stringContaining('Tool processing failed'),
       );
 
       // Verify analysis header was streamed after error handling
-      expect(chunkCallback).toHaveBeenCalledWith(
+      expect(callbacks.onStreamChunkReceived).toHaveBeenCalledWith(
         expect.stringContaining('**Analysis:**'),
       );
     });
@@ -517,7 +534,7 @@ describe('SlackyAnthropicAgent', () => {
         delayedCallback,
       );
 
-      expect(result.messageId).toMatch(/^slacky-direct-multipart-/);
+      expect(result.messageId).toBe(''); // messageId is set by conversation manager
       expect(result.envelopePayload.content.payload).toContain(
         'Thank you for your feedback',
       );
@@ -559,7 +576,7 @@ describe('SlackyAnthropicAgent', () => {
         delayedCallback,
       );
 
-      expect(result.messageId).toMatch(/^slacky-analysis-/);
+      expect(result.messageId).toBe(''); // messageId is set by conversation manager
       expect(result.envelopePayload.content.payload).toBe(
         'Final analysis after tool execution',
       );
@@ -647,7 +664,7 @@ describe('SlackyAnthropicAgent', () => {
         delayedCallback,
       );
 
-      expect(result.messageId).toMatch(/^slacky-multipart-error-/);
+      expect(result.messageId).toBe(''); // messageId is set by conversation manager
       expect(result.envelopePayload.content.payload).toContain(
         'Anthropic API error',
       );
@@ -662,7 +679,10 @@ describe('SlackyAnthropicAgent', () => {
       agent.setConversationHistory([
         {
           id: 'msg-1',
-          content: 'Previous user message',
+          content: {
+            type: 'text/plain',
+            payload: 'Previous user message',
+          },
           conversationId: 'conv-1',
           fromUserId: 'user-1',
           fromRole: UserRole.CUSTOMER,
@@ -687,7 +707,10 @@ describe('SlackyAnthropicAgent', () => {
           messages: expect.arrayContaining([
             expect.objectContaining({
               role: 'user',
-              content: 'Previous user message',
+              content: {
+                type: 'text/plain',
+                payload: 'Previous user message',
+              },
             }),
             expect.objectContaining({
               role: 'user',
@@ -753,7 +776,7 @@ describe('SlackyAnthropicAgent', () => {
       const result =
         await agent.acceptMessageImmediateResponse(mockMessageEnvelope);
 
-      expect(result.messageId).toMatch(/^slacky-error-/);
+      // messageId is not part of TRobotResponseEnvelope - it's added by conversation manager
       expect(result.envelopePayload.content.payload).toContain(
         'Network timeout',
       );
@@ -791,9 +814,8 @@ describe('SlackyAnthropicAgent', () => {
       const result =
         await agent.acceptMessageImmediateResponse(mockMessageEnvelope);
 
-      expect(result.messageId).toMatch(/^slacky-response-/);
+      // messageId is not part of TRobotResponseEnvelope - it's added by conversation manager
       expect(result.requestOrResponse).toBe('response');
-      expect(result.envelopePayload.messageId).toMatch(/^slacky-msg-/);
       expect(result.envelopePayload.author_role).toBe('assistant');
       expect(result.envelopePayload.content.type).toBe('text/plain');
       expect(result.envelopePayload.content.payload).toBe('Normal response');
@@ -810,7 +832,10 @@ describe('SlackyAnthropicAgent', () => {
       const historyMessages = [
         {
           id: 'msg-1',
-          content: 'First user message',
+          content: {
+            type: 'text/plain' as const,
+            payload: 'First user message',
+          },
           conversationId: 'conv-1',
           fromUserId: 'user-1',
           fromRole: UserRole.CUSTOMER,
@@ -821,7 +846,10 @@ describe('SlackyAnthropicAgent', () => {
         },
         {
           id: 'msg-2',
-          content: 'First robot response',
+          content: {
+            type: 'text/plain' as const,
+            payload: 'First robot response',
+          },
           conversationId: 'conv-1',
           fromUserId: 'robot-1',
           fromRole: UserRole.ROBOT,
@@ -849,11 +877,17 @@ describe('SlackyAnthropicAgent', () => {
       expect(callArgs.messages).toHaveLength(3); // 2 from history + 1 current
       expect(callArgs.messages[0]).toEqual({
         role: 'user',
-        content: 'First user message',
+        content: {
+          type: 'text/plain',
+          payload: 'First user message',
+        },
       });
       expect(callArgs.messages[1]).toEqual({
         role: 'assistant',
-        content: 'First robot response',
+        content: {
+          type: 'text/plain',
+          payload: 'First robot response',
+        },
       });
       expect(callArgs.messages[2]).toEqual({
         role: 'user',
@@ -1033,10 +1067,7 @@ describe('SlackyAnthropicAgent', () => {
         agent.acceptMessageImmediateResponse(mockMessageEnvelope),
       ]);
 
-      expect(result1.messageId).not.toBe(result2.messageId);
-      expect(result1.envelopePayload.messageId).not.toBe(
-        result2.envelopePayload.messageId,
-      );
+      // messageId is not part of TRobotResponseEnvelope - it's added by conversation manager
 
       // Restore Date.now
       (Date.now as jest.Mock).mockRestore();
@@ -1256,31 +1287,35 @@ describe('SlackyAnthropicAgent', () => {
       // Mock second streaming call to throw error
       mockCreate.mockRejectedValueOnce(new Error('Streaming API failed'));
 
-      // This should trigger the catch block at lines 336-338
-      await expect(
-        agent.acceptMessageStreamResponse(mockMessageEnvelope, chunkCallback),
-      ).rejects.toThrow('Streaming API failed');
+      const callbacks = {
+        onStreamChunkReceived: jest.fn(),
+        onStreamStart: jest.fn(),
+        onStreamFinished: jest.fn(),
+        onFullMessageReceived: jest.fn(),
+        onError: jest.fn(),
+      };
 
-      // Verify error was sent to chunkCallback before rethrowing
-      expect(chunkCallback).toHaveBeenCalledWith('Error: Streaming API failed');
+      // This should trigger the catch block at lines 336-338
+      await agent.acceptMessageStreamResponse(mockMessageEnvelope, callbacks);
+
+      // Verify error was sent to onError callback
+      expect(callbacks.onError).toHaveBeenCalledWith(expect.any(Error));
     });
 
     it('should handle unknown error types in streaming catch block', async () => {
       const { default: Anthropic } = require('@anthropic-ai/sdk');
       const mockCreate = Anthropic().messages.create;
-      const chunkCallback = jest.fn();
+      const callbacks = callbacksFactory();
 
       // Mock to throw non-Error object on first call
       mockCreate.mockRejectedValueOnce('String error not Error object');
 
       // This should trigger the catch block with unknown error handling
-      await expect(
-        agent.acceptMessageStreamResponse(mockMessageEnvelope, chunkCallback),
-      ).rejects.toBe('String error not Error object');
+      await agent.acceptMessageStreamResponse(mockMessageEnvelope, callbacks);
 
       // Verify unknown error was handled gracefully
-      expect(chunkCallback).toHaveBeenCalledWith(
-        'Error: Unknown error occurred',
+      expect(callbacks.onError).toHaveBeenCalledWith(
+        'String error not Error object',
       );
     });
   });
@@ -1402,10 +1437,13 @@ describe('SlackyAnthropicAgent', () => {
         'Based on the tool results',
       );
       expect(result.envelopePayload.author_role).toBe('assistant');
-      expect(result.messageId).toMatch(/^slacky-response-/);
+      // messageId is not part of TRobotResponseEnvelope - it's added by conversation manager
     });
 
     it('should handle multiple tool executions in immediate response', async () => {
+      // Set up API key for the test
+      process.env.ANTHROPIC_API_KEY = 'test-api-key';
+
       const { default: Anthropic } = require('@anthropic-ai/sdk');
       const mockCreate = Anthropic().messages.create;
 

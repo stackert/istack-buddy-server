@@ -77,7 +77,7 @@ describe('ChatRobotParrot', () => {
         await robot.acceptMessageImmediateResponse(mockMessageEnvelope);
 
       expect(result).toBeDefined();
-      expect(result.messageId).toBeDefined();
+      // messageId is not part of TRobotResponseEnvelope - it's added by conversation manager
       expect(result.envelopePayload).toBeDefined();
     });
 
@@ -94,8 +94,10 @@ describe('ChatRobotParrot', () => {
       const result =
         await robot.acceptMessageImmediateResponse(mockMessageEnvelope);
 
-      expect(result.envelopePayload.author_role).toBe('user');
-      expect(result.envelopePayload.created_at).toBe('2024-01-01T10:00:00Z');
+      expect(result.envelopePayload.author_role).toBe('assistant');
+      expect(result.envelopePayload.created_at).toMatch(
+        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/,
+      );
       expect(result.envelopePayload.content.type).toBe('text/plain');
     });
 
@@ -181,18 +183,24 @@ describe('ChatRobotParrot', () => {
     });
 
     it('should return a promise', () => {
-      const result = robot.acceptMessageStreamResponse(
-        mockMessageEnvelope,
-        mockChunkCallback,
-      );
+      const result = robot.acceptMessageStreamResponse(mockMessageEnvelope, {
+        onStreamChunkReceived: mockChunkCallback,
+        onStreamStart: jest.fn(),
+        onStreamFinished: jest.fn(),
+        onFullMessageReceived: jest.fn(),
+        onError: jest.fn(),
+      });
       expect(result).toBeInstanceOf(Promise);
     });
 
     it('should break response into 5 chunks and call callback for each', async () => {
-      const promise = robot.acceptMessageStreamResponse(
-        mockMessageEnvelope,
-        mockChunkCallback,
-      );
+      const promise = robot.acceptMessageStreamResponse(mockMessageEnvelope, {
+        onStreamChunkReceived: mockChunkCallback,
+        onStreamStart: jest.fn(),
+        onStreamFinished: jest.fn(),
+        onFullMessageReceived: jest.fn(),
+        onError: jest.fn(),
+      });
 
       // Fast-forward through all the intervals
       for (let i = 0; i < 6; i++) {
@@ -201,18 +209,18 @@ describe('ChatRobotParrot', () => {
 
       await promise;
 
-      // Should be called 6 times (5 chunks + 1 null terminator)
-      expect(mockChunkCallback).toHaveBeenCalledTimes(6);
-
-      // Last call should be with null
-      expect(mockChunkCallback).toHaveBeenLastCalledWith(null);
+      // Should be called 5 times (5 chunks)
+      expect(mockChunkCallback).toHaveBeenCalledTimes(5);
     });
 
     it('should send chunks at 500ms intervals', async () => {
-      const promise = robot.acceptMessageStreamResponse(
-        mockMessageEnvelope,
-        mockChunkCallback,
-      );
+      const promise = robot.acceptMessageStreamResponse(mockMessageEnvelope, {
+        onStreamChunkReceived: mockChunkCallback,
+        onStreamStart: jest.fn(),
+        onStreamFinished: jest.fn(),
+        onFullMessageReceived: jest.fn(),
+        onError: jest.fn(),
+      });
 
       // Initially no calls
       expect(mockChunkCallback).not.toHaveBeenCalled();
@@ -229,53 +237,55 @@ describe('ChatRobotParrot', () => {
       jest.advanceTimersByTime(2500); // Advance remaining time
       await promise;
 
-      expect(mockChunkCallback).toHaveBeenCalledTimes(6);
+      expect(mockChunkCallback).toHaveBeenCalledTimes(5);
     });
 
     it('should prefix the message with random number before chunking', async () => {
-      const promise = robot.acceptMessageStreamResponse(
-        mockMessageEnvelope,
-        mockChunkCallback,
-      );
+      const promise = robot.acceptMessageStreamResponse(mockMessageEnvelope, {
+        onStreamChunkReceived: mockChunkCallback,
+        onStreamStart: jest.fn(),
+        onStreamFinished: jest.fn(),
+        onFullMessageReceived: jest.fn(),
+        onError: jest.fn(),
+      });
 
-      // Fast-forward through all intervals
-      for (let i = 0; i < 6; i++) {
-        jest.advanceTimersByTime(500);
-      }
+      // Run all timers to completion
+      jest.runAllTimers();
 
+      // Wait for the promise to resolve
       await promise;
 
-      // Reconstruct the full message from chunks (excluding the null terminator)
+      // Reconstruct the full message from chunks
       const allChunks = mockChunkCallback.mock.calls
-        .slice(0, -1) // Remove the null call
         .map((call) => call[0])
         .join('');
 
       expect(allChunks).toMatch(/^\(\d+\) Test message for streaming$/);
-    });
+    }, 10000);
 
     it('should handle empty message', async () => {
       mockMessageEnvelope.envelopePayload.content.payload = '';
 
-      const promise = robot.acceptMessageStreamResponse(
-        mockMessageEnvelope,
-        mockChunkCallback,
-      );
+      const promise = robot.acceptMessageStreamResponse(mockMessageEnvelope, {
+        onStreamChunkReceived: mockChunkCallback,
+        onStreamStart: jest.fn(),
+        onStreamFinished: jest.fn(),
+        onFullMessageReceived: jest.fn(),
+        onError: jest.fn(),
+      });
 
       // Fast-forward through all intervals
-      for (let i = 0; i < 10; i++) {
+      for (let i = 0; i < 5; i++) {
         jest.advanceTimersByTime(500);
       }
 
       await promise;
 
-      // Should call callback at least once and last call should be null
+      // Should call callback at least once
       expect(mockChunkCallback.mock.calls.length).toBeGreaterThan(0);
-      expect(mockChunkCallback).toHaveBeenLastCalledWith(null);
 
-      // Reconstruct message (excluding null)
+      // Reconstruct message
       const allChunks = mockChunkCallback.mock.calls
-        .slice(0, -1)
         .map((call) => call[0])
         .join('');
 

@@ -1,6 +1,7 @@
 import { AbstractRobot } from './AbstractRobot';
 import type {
   TConversationTextMessageEnvelope,
+  TRobotResponseEnvelope,
   IStreamingCallbacks,
 } from './types';
 import type { IConversationMessage } from '../chat-manager/interfaces/message.interface';
@@ -24,5 +25,5 @@ export abstract class AbstractRobotChat extends AbstractRobot {
   public abstract acceptMessageImmediateResponse(
     messageEnvelope: TConversationTextMessageEnvelope,
     getHistory?: () => IConversationMessage[],
-  ): Promise<TConversationTextMessageEnvelope>;
+  ): Promise<TRobotResponseEnvelope>;
 }

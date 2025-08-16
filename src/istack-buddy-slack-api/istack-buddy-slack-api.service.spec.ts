@@ -7,6 +7,7 @@ import { ChatConversationListService } from '../ConversationLists/ChatConversati
 import { UserRole, MessageType } from '../chat-manager/dto/create-message.dto';
 import { AuthorizationPermissionsService } from '../authorization-permissions/authorization-permissions.service';
 import { UserProfileService } from '../user-profile/user-profile.service';
+import { KnowledgeBaseService } from './knowledge-base.service';
 
 describe('IstackBuddySlackApiService', () => {
   let service: IstackBuddySlackApiService;
@@ -81,6 +82,10 @@ describe('IstackBuddySlackApiService', () => {
       updateUserProfile: jest.fn(),
     };
 
+    const mockKnowledgeBaseService = {
+      getSearchResults: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         IstackBuddySlackApiService,
@@ -98,6 +103,10 @@ describe('IstackBuddySlackApiService', () => {
         {
           provide: UserProfileService,
           useValue: mockUserProfileService,
+        },
+        {
+          provide: KnowledgeBaseService,
+          useValue: mockKnowledgeBaseService,
         },
       ],
     }).compile();
@@ -212,25 +221,27 @@ describe('IstackBuddySlackApiService', () => {
       expect(robotMessages).toHaveLength(3);
 
       // Verify user message content in order
-      expect(userMessages[0].content).toBe(
+      expect(userMessages[0].content.payload).toBe(
         '<@U092RRN555X> test message 1 - channel mention',
       );
       expect(userMessages[0].fromUserId).toBe('cx-slack-robot'); // Generic Slack robot user
       expect(userMessages[0].fromRole).toBe(UserRole.CUSTOMER);
 
-      expect(userMessages[1].content).toBe(
+      expect(userMessages[1].content.payload).toBe(
         '<@U092RRN555X> test message 2 - thread reply 1',
       );
       expect(userMessages[1].fromUserId).toBe('cx-slack-robot'); // Generic Slack robot user
 
-      expect(userMessages[2].content).toBe(
+      expect(userMessages[2].content.payload).toBe(
         '<@U092RRN555X> test message 3 - thread reply 2',
       );
       expect(userMessages[2].fromUserId).toBe('cx-slack-robot'); // Generic Slack robot user
 
       // Verify robot responses
       robotMessages.forEach((robotMsg) => {
-        expect(robotMsg.content).toBe('Mock robot response from callback');
+        expect(robotMsg.content.payload).toBe(
+          'Mock robot response from callback',
+        );
         expect(robotMsg.messageType).toBe(MessageType.ROBOT);
         expect(robotMsg.fromRole).toBe(UserRole.ROBOT);
       });
@@ -325,11 +336,19 @@ describe('IstackBuddySlackApiService', () => {
       // Find conversations by checking their messages
       const conv1 = conversations.find(async (c) => {
         const messages = await chatManagerService.getMessages(c.id, {});
-        return messages.some((m) => m.content.includes('conv1'));
+        return messages.some((m) => {
+          const content =
+            typeof m.content === 'string' ? m.content : m.content.payload;
+          return content.includes('conv1');
+        });
       });
       const conv2 = conversations.find(async (c) => {
         const messages = await chatManagerService.getMessages(c.id, {});
-        return messages.some((m) => m.content.includes('conv2'));
+        return messages.some((m) => {
+          const content =
+            typeof m.content === 'string' ? m.content : m.content.payload;
+          return content.includes('conv2');
+        });
       });
 
       // Verify conversation 1 messages
@@ -420,7 +439,9 @@ describe('IstackBuddySlackApiService', () => {
         (msg) => msg.fromRole === UserRole.ROBOT,
       );
       expect(robotMessage).toBeDefined();
-      expect(robotMessage!.content).toBe('Mock robot response from callback');
+      expect(robotMessage!.content.payload).toBe(
+        'Mock robot response from callback',
+      );
       expect(robotMessage!.messageType).toBe(MessageType.ROBOT);
       expect(robotMessage!.fromUserId).toBe('cx-slack-robot');
       expect(robotMessage!.toRole).toBe(UserRole.CUSTOMER);
@@ -506,7 +527,9 @@ describe('IstackBuddySlackApiService', () => {
         await chatManagerService.getFilteredRobotMessages(testConversationId);
       expect(robotMessages).toHaveLength(2); // Robot assistant + Slack robot
 
-      const robotMessageContents = robotMessages.map((msg) => msg.content);
+      const robotMessageContents = robotMessages.map((msg) =>
+        typeof msg.content === 'string' ? msg.content : msg.content.payload,
+      );
       expect(robotMessageContents).toContain('Robot response 1');
       expect(robotMessageContents).toContain('Slack robot message');
     });

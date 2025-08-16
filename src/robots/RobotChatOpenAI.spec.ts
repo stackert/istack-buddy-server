@@ -130,9 +130,10 @@ describe('RobotChatOpenAI', () => {
 
       await expect(
         robot.acceptMessageStreamResponse(mockMessageEnvelope, {
-          onChunkReceived: chunkCallback,
+          onStreamChunkReceived: chunkCallback,
           onStreamStart: streamStartCallback,
           onStreamFinished: streamFinishedCallback,
+          onFullMessageReceived: jest.fn(),
           onError: errorCallback,
         }),
       ).resolves.toBeUndefined();
@@ -156,9 +157,10 @@ describe('RobotChatOpenAI', () => {
 
       await expect(
         robot.acceptMessageStreamResponse(differentMessage, {
-          onChunkReceived: chunkCallback,
+          onStreamChunkReceived: chunkCallback,
           onStreamStart: jest.fn(),
           onStreamFinished: jest.fn(),
+          onFullMessageReceived: jest.fn(),
           onError: jest.fn(),
         }),
       ).resolves.toBeUndefined();
@@ -166,12 +168,15 @@ describe('RobotChatOpenAI', () => {
   });
 
   describe('acceptMessageImmediateResponse', () => {
-    it('should return the input message unchanged', async () => {
+    it('should return a robot response', async () => {
       const result =
         await robot.acceptMessageImmediateResponse(mockMessageEnvelope);
 
-      expect(result).toEqual(mockMessageEnvelope);
-      expect(result).toBe(mockMessageEnvelope); // Should be the same reference
+      expect(result.requestOrResponse).toBe('response');
+      expect(result.envelopePayload.author_role).toBe('assistant');
+      expect(result.envelopePayload.content.payload).toBe(
+        'This is a placeholder response from RobotChatOpenAI',
+      );
     });
 
     it('should work with different message content', async () => {
@@ -188,7 +193,11 @@ describe('RobotChatOpenAI', () => {
 
       const result =
         await robot.acceptMessageImmediateResponse(differentMessage);
-      expect(result).toEqual(differentMessage);
+      expect(result.requestOrResponse).toBe('response');
+      expect(result.envelopePayload.author_role).toBe('assistant');
+      expect(result.envelopePayload.content.payload).toBe(
+        'This is a placeholder response from RobotChatOpenAI',
+      );
     });
   });
 
@@ -238,9 +247,14 @@ describe('RobotChatOpenAI', () => {
         delayedCallback,
       );
 
-      // Should return the immediate response
+      // Should return a robot response (not the input message)
       const result = await resultPromise;
-      expect(result).toEqual(mockMessageEnvelope);
+      expect(result.requestOrResponse).toBe('response');
+      expect(result.envelopePayload.author_role).toBe('assistant');
+      expect(result.envelopePayload.content.type).toBe('text/plain');
+      expect(result.envelopePayload.content.payload).toBe(
+        'This is a placeholder response from RobotChatOpenAI',
+      );
 
       // Wait a bit for the streaming to complete
       await new Promise((resolve) => setTimeout(resolve, 100));
@@ -249,8 +263,8 @@ describe('RobotChatOpenAI', () => {
       expect(delayedCallback).toHaveBeenCalledTimes(1);
 
       const delayedCallArgs = delayedCallback.mock.calls[0][0];
-      expect(delayedCallArgs.requestOrResponse).toBe('request');
-      expect(delayedCallArgs.envelopePayload.author_role).toBe('user');
+      expect(delayedCallArgs.requestOrResponse).toBe('response');
+      expect(delayedCallArgs.envelopePayload.author_role).toBe('assistant');
       expect(delayedCallArgs.envelopePayload.content.payload).toBe(
         'Test response content',
       );
@@ -262,7 +276,8 @@ describe('RobotChatOpenAI', () => {
         null as any,
       );
 
-      expect(result).toEqual(mockMessageEnvelope);
+      expect(result.requestOrResponse).toBe('response');
+      expect(result.envelopePayload.author_role).toBe('assistant');
 
       // Should not throw error
       await new Promise((resolve) => setTimeout(resolve, 100));
@@ -283,8 +298,10 @@ describe('RobotChatOpenAI', () => {
 
       const [result1, result2] = await Promise.all([promise1, promise2]);
 
-      expect(result1).toEqual(mockMessageEnvelope);
-      expect(result2).toEqual(mockMessageEnvelope);
+      expect(result1.requestOrResponse).toBe('response');
+      expect(result1.envelopePayload.author_role).toBe('assistant');
+      expect(result2.requestOrResponse).toBe('response');
+      expect(result2.envelopePayload.author_role).toBe('assistant');
 
       // Wait for streaming to complete
       await new Promise((resolve) => setTimeout(resolve, 100));
@@ -306,7 +323,11 @@ describe('RobotChatOpenAI', () => {
 
       const result =
         await robot.acceptMessageImmediateResponse(assistantMessage);
-      expect(result).toEqual(assistantMessage);
+      expect(result.requestOrResponse).toBe('response');
+      expect(result.envelopePayload.author_role).toBe('assistant');
+      expect(result.envelopePayload.content.payload).toBe(
+        'This is a placeholder response from RobotChatOpenAI',
+      );
     });
 
     it('should handle messages with large content', async () => {
@@ -323,7 +344,11 @@ describe('RobotChatOpenAI', () => {
       };
 
       const result = await robot.acceptMessageImmediateResponse(largeMessage);
-      expect(result).toEqual(largeMessage);
+      expect(result.requestOrResponse).toBe('response');
+      expect(result.envelopePayload.author_role).toBe('assistant');
+      expect(result.envelopePayload.content.payload).toBe(
+        'This is a placeholder response from RobotChatOpenAI',
+      );
 
       // Verify token estimation works with large content
       expect(robot.estimateTokens(largeContent)).toBe(2500);
@@ -398,9 +423,10 @@ describe('RobotChatOpenAI', () => {
       await robot.acceptMessageStreamResponse(
         mockMessageEnvelope,
         {
-          onChunkReceived: chunkCallback,
+          onStreamChunkReceived: chunkCallback,
           onStreamStart: streamStartCallback,
           onStreamFinished: streamFinishedCallback,
+          onFullMessageReceived: jest.fn(),
           onError: jest.fn(),
         },
         () => mockHistory,
@@ -418,9 +444,10 @@ describe('RobotChatOpenAI', () => {
       await robot.acceptMessageStreamResponse(
         mockMessageEnvelope,
         {
-          onChunkReceived: chunkCallback,
+          onStreamChunkReceived: chunkCallback,
           onStreamStart: streamStartCallback,
           onStreamFinished: streamFinishedCallback,
+          onFullMessageReceived: jest.fn(),
           onError: jest.fn(),
         },
         () => [],
@@ -487,9 +514,10 @@ describe('RobotChatOpenAI', () => {
       const streamFinishedCallback = jest.fn();
 
       await robot.acceptMessageStreamResponse(mockMessageEnvelope, {
-        onChunkReceived: chunkCallback,
+        onStreamChunkReceived: chunkCallback,
         onStreamStart: streamStartCallback,
         onStreamFinished: streamFinishedCallback,
+        onFullMessageReceived: jest.fn(),
         onError: jest.fn(),
       });
 
@@ -543,9 +571,10 @@ describe('RobotChatOpenAI', () => {
       const streamFinishedCallback = jest.fn();
 
       await robot.acceptMessageStreamResponse(mockMessageEnvelope, {
-        onChunkReceived: chunkCallback,
+        onStreamChunkReceived: chunkCallback,
         onStreamStart: streamStartCallback,
         onStreamFinished: streamFinishedCallback,
+        onFullMessageReceived: jest.fn(),
         onError: jest.fn(),
       });
 
@@ -577,9 +606,10 @@ describe('RobotChatOpenAI', () => {
       const streamFinishedCallback = jest.fn();
 
       await robot.acceptMessageStreamResponse(mockMessageEnvelope, {
-        onChunkReceived: chunkCallback,
+        onStreamChunkReceived: chunkCallback,
         onStreamStart: jest.fn(),
         onStreamFinished: streamFinishedCallback,
+        onFullMessageReceived: jest.fn(),
         onError: errorCallback,
       });
 
@@ -596,9 +626,10 @@ describe('RobotChatOpenAI', () => {
 
       try {
         await robot.acceptMessageStreamResponse(mockMessageEnvelope, {
-          onChunkReceived: chunkCallback,
+          onStreamChunkReceived: chunkCallback,
           onStreamStart: jest.fn(),
           onStreamFinished: streamFinishedCallback,
+          onFullMessageReceived: jest.fn(),
           onError: errorCallback,
         });
       } catch (error) {
@@ -630,7 +661,8 @@ describe('RobotChatOpenAI', () => {
         delayedCallback,
       );
 
-      expect(result).toEqual(mockMessageEnvelope);
+      expect(result.requestOrResponse).toBe('response');
+      expect(result.envelopePayload.author_role).toBe('assistant');
 
       // Wait for error handling
       await new Promise((resolve) => setTimeout(resolve, 100));
@@ -710,21 +742,17 @@ describe('RobotChatOpenAI', () => {
       const streamFinishedCallback = jest.fn();
 
       await robot.acceptMessageStreamResponse(mockMessageEnvelope, {
-        onChunkReceived: jest.fn(),
+        onStreamChunkReceived: jest.fn(),
         onStreamStart: jest.fn(),
         onStreamFinished: streamFinishedCallback,
+        onFullMessageReceived: jest.fn(),
         onError: jest.fn(),
       });
 
       expect(streamFinishedCallback).toHaveBeenCalled();
-      const finishedMessage = streamFinishedCallback.mock.calls[0][0];
-      expect(finishedMessage.messageId).toBe(mockMessageEnvelope.messageId);
-      expect(finishedMessage.envelopePayload.content.payload).toBe(
-        'Updated content',
-      );
-      expect(finishedMessage.envelopePayload.author_role).toBe(
-        mockMessageEnvelope.envelopePayload.author_role,
-      );
+      const [content, authorRole] = streamFinishedCallback.mock.calls[0];
+      expect(content).toBe('Updated content');
+      expect(authorRole).toBe('assistant');
     });
   });
 });

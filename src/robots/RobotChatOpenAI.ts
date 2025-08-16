@@ -6,7 +6,11 @@ import {
 } from '../chat-manager/interfaces/message.interface';
 import { AbstractRobotChat } from './AbstractRobotChat';
 import { marvToolSet } from './tool-definitions/marv';
-import { TConversationTextMessageEnvelope, IStreamingCallbacks } from './types';
+import type {
+  TConversationTextMessageEnvelope,
+  TRobotResponseEnvelope,
+  IStreamingCallbacks,
+} from './types';
 
 // Type for tracking function calls during streaming
 type StreamingFunctionCall = {
@@ -267,8 +271,20 @@ class RobotChatOpenAI extends AbstractRobotChat {
 
   public async acceptMessageImmediateResponse(
     inboundMessage: TConversationTextMessageEnvelope,
-  ): Promise<TConversationTextMessageEnvelope> {
-    return Promise.resolve(inboundMessage);
+  ): Promise<TRobotResponseEnvelope> {
+    // Convert the inbound message to a robot response format without messageId
+    return {
+      requestOrResponse: 'response',
+      envelopePayload: {
+        author_role: 'assistant',
+        content: {
+          type: 'text/plain',
+          payload: 'This is a placeholder response from RobotChatOpenAI',
+        },
+        created_at: new Date().toISOString(),
+        estimated_token_count: 0,
+      },
+    };
   }
 
   /**
@@ -347,7 +363,21 @@ class RobotChatOpenAI extends AbstractRobotChat {
       }
     });
 
-    return immediateResponse;
+    // Convert TRobotResponseEnvelope to TConversationTextMessageEnvelope for return
+    const immediateResponseWithIds: TConversationTextMessageEnvelope = {
+      messageId: '', // Will be set by conversation manager
+      requestOrResponse: immediateResponse.requestOrResponse,
+      envelopePayload: {
+        messageId: '', // Will be set by conversation manager
+        author_role: immediateResponse.envelopePayload.author_role,
+        content: immediateResponse.envelopePayload.content,
+        created_at: immediateResponse.envelopePayload.created_at,
+        estimated_token_count:
+          immediateResponse.envelopePayload.estimated_token_count,
+      },
+    };
+
+    return immediateResponseWithIds;
   }
 
   private async makeToolCall(toolName: string, toolArgs: any): Promise<string> {

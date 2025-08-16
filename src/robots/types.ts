@@ -9,6 +9,17 @@ export type {
   TConversationListMessage,
 } from '../ConversationLists/types';
 
+// Type for robot responses that omits messageId since robots cannot create them
+export type TRobotResponseEnvelope = Omit<
+  import('../ConversationLists/types').TConversationTextMessageEnvelope,
+  'messageId' | 'envelopePayload'
+> & {
+  envelopePayload: Omit<
+    import('../ConversationLists/types').TConversationTextMessage,
+    'messageId'
+  >;
+};
+
 type TAnthropicIstackToolSet = {
   toolDefinitions: Anthropic.Messages.Tool[];
   executeToolCall: (toolName: string, toolArgs: any) => any | Promise<any>;

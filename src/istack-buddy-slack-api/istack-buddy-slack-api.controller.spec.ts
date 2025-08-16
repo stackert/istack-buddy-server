@@ -1,13 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { IstackBuddySlackApiController } from './istack-buddy-slack-api.controller';
-import { IstackBuddySlackApiService } from './istack-buddy-slack-api.service';
-import { ConversationListServiceModule } from '../ConversationLists';
-import { RobotModule } from '../robots/robot.module';
-import { ChatManagerModule } from '../chat-manager/chat-manager.module';
-import { AuthenticationModule } from '../authentication/authentication.module';
-import { LoggerModule } from '../common/logger/logger.module';
-import { AuthorizationPermissionsModule } from '../authorization-permissions/authorization-permissions.module';
-import { UserProfileModule } from '../user-profile/user-profile.module';
+import { IstackBuddySlackApiModule } from './istack-buddy-slack-api.module';
 
 describe('IstackBuddySlackApiController', () => {
   let controller: IstackBuddySlackApiController;
@@ -29,17 +22,7 @@ describe('IstackBuddySlackApiController', () => {
     );
 
     const module: TestingModule = await Test.createTestingModule({
-      imports: [
-        ConversationListServiceModule,
-        RobotModule,
-        ChatManagerModule,
-        AuthenticationModule,
-        LoggerModule,
-        AuthorizationPermissionsModule,
-        UserProfileModule,
-      ],
-      controllers: [IstackBuddySlackApiController],
-      providers: [IstackBuddySlackApiService],
+      imports: [IstackBuddySlackApiModule],
     }).compile();
 
     controller = module.get<IstackBuddySlackApiController>(

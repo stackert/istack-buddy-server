@@ -27,8 +27,8 @@ jest.mock('./tool-definitions', () => ({
   },
 }));
 
-jest.mock('./tool-definitions/toolCatalog', () => ({
-  anthropicToolSet: {
+jest.mock('./tool-definitions/marv', () => ({
+  marvToolSet: {
     toolDefinitions: [
       {
         name: 'test_tool',
@@ -79,9 +79,7 @@ jest.mock('@anthropic-ai/sdk', () => {
 
 // Get the mocked modules
 const mockslackyToolSet = slackyToolSet as jest.Mocked<typeof slackyToolSet>;
-const mockAnthropicToolSet = anthropicToolSet as jest.Mocked<
-  typeof anthropicToolSet
->;
+const mockMarvToolSet = marvToolSet as jest.Mocked<typeof marvToolSet>;
 const mockExecuteToolCall = marvToolSet.executeToolCall as jest.MockedFunction<
   typeof marvToolSet.executeToolCall
 >;
@@ -302,21 +300,21 @@ describe('RobotChatAnthropic', () => {
     });
 
     it('should execute tool call with string result', async () => {
-      mockAnthropicToolSet.executeToolCall.mockResolvedValue('String result');
+      mockMarvToolSet.executeToolCall.mockResolvedValue('String result');
 
       const result = await (robot as any).executeToolCall('test_tool', {
         param: 'value',
       });
 
       expect(result).toBe('"String result"');
-      expect(mockAnthropicToolSet.executeToolCall).toHaveBeenCalledWith(
+      expect(mockMarvToolSet.executeToolCall).toHaveBeenCalledWith(
         'test_tool',
         { param: 'value' },
       );
     });
 
     it('should execute tool call with Promise result', async () => {
-      mockAnthropicToolSet.executeToolCall.mockResolvedValue('Promise result');
+      mockMarvToolSet.executeToolCall.mockResolvedValue('Promise result');
 
       const result = await (robot as any).executeToolCall('test_tool', {
         param: 'value',
@@ -326,7 +324,7 @@ describe('RobotChatAnthropic', () => {
     });
 
     it('should handle tool execution error', async () => {
-      mockAnthropicToolSet.executeToolCall.mockRejectedValue(
+      mockMarvToolSet.executeToolCall.mockRejectedValue(
         new Error('Tool error'),
       );
 
@@ -338,7 +336,7 @@ describe('RobotChatAnthropic', () => {
     });
 
     it('should handle tool execution error with non-Error object', async () => {
-      mockAnthropicToolSet.executeToolCall.mockRejectedValue('String error');
+      mockMarvToolSet.executeToolCall.mockRejectedValue('String error');
 
       const result = await (robot as any).executeToolCall('failing_tool', {
         param: 'value',
@@ -350,7 +348,7 @@ describe('RobotChatAnthropic', () => {
 
   describe('Tool Execution', () => {
     it('should execute tool call and return string result', async () => {
-      mockAnthropicToolSet.executeToolCall.mockResolvedValue(
+      mockMarvToolSet.executeToolCall.mockResolvedValue(
         'Tool executed successfully',
       );
 
@@ -358,7 +356,7 @@ describe('RobotChatAnthropic', () => {
         param1: 'value1',
       });
 
-      expect(mockAnthropicToolSet.executeToolCall).toHaveBeenCalledWith(
+      expect(mockMarvToolSet.executeToolCall).toHaveBeenCalledWith(
         'test_tool',
         { param1: 'value1' },
       );
@@ -366,9 +364,7 @@ describe('RobotChatAnthropic', () => {
     });
 
     it('should execute tool call and await Promise result', async () => {
-      mockAnthropicToolSet.executeToolCall.mockResolvedValue(
-        'Async tool result',
-      );
+      mockMarvToolSet.executeToolCall.mockResolvedValue('Async tool result');
 
       const result = await (robot as any).executeToolCall('async_tool', {
         param1: 'value1',
@@ -406,15 +402,18 @@ describe('RobotChatAnthropic', () => {
       };
 
       mockCreate.mockResolvedValue(mockStream);
-      const chunkCallback = jest.fn();
+      const callbacks = {
+        onStreamChunkReceived: jest.fn(),
+        onStreamStart: jest.fn(),
+        onStreamFinished: jest.fn(),
+        onFullMessageReceived: jest.fn(),
+        onError: jest.fn(),
+      };
 
-      await robot.acceptMessageStreamResponse(
-        mockMessageEnvelope,
-        chunkCallback,
-      );
+      await robot.acceptMessageStreamResponse(mockMessageEnvelope, callbacks);
 
-      expect(chunkCallback).toHaveBeenCalledWith('Hello ');
-      expect(chunkCallback).toHaveBeenCalledWith('world!');
+      expect(callbacks.onStreamChunkReceived).toHaveBeenCalledWith('Hello ');
+      expect(callbacks.onStreamChunkReceived).toHaveBeenCalledWith('world!');
     });
 
     it('should handle tool use in streaming response with complete flow', async () => {
@@ -461,21 +460,24 @@ describe('RobotChatAnthropic', () => {
       };
 
       mockCreate.mockResolvedValue(mockStream);
-      mockAnthropicToolSet.executeToolCall.mockResolvedValue(
+      mockMarvToolSet.executeToolCall.mockResolvedValue(
         'Tool result from streaming',
       );
 
-      const chunkCallback = jest.fn();
-      await robot.acceptMessageStreamResponse(
-        mockMessageEnvelope,
-        chunkCallback,
-      );
+      const callbacks = {
+        onStreamChunkReceived: jest.fn(),
+        onStreamStart: jest.fn(),
+        onStreamFinished: jest.fn(),
+        onFullMessageReceived: jest.fn(),
+        onError: jest.fn(),
+      };
+      await robot.acceptMessageStreamResponse(mockMessageEnvelope, callbacks);
 
-      expect(mockAnthropicToolSet.executeToolCall).toHaveBeenCalledWith(
+      expect(mockMarvToolSet.executeToolCall).toHaveBeenCalledWith(
         'test_tool',
         { param1: 'test_value' },
       );
-      expect(chunkCallback).toHaveBeenCalledWith(
+      expect(callbacks.onStreamChunkReceived).toHaveBeenCalledWith(
         '\n\n"Tool result from streaming"',
       );
     });
@@ -508,11 +510,14 @@ describe('RobotChatAnthropic', () => {
 
       mockCreate.mockResolvedValue(mockStream);
 
-      const chunkCallback = jest.fn();
-      await robot.acceptMessageStreamResponse(
-        mockMessageEnvelope,
-        chunkCallback,
-      );
+      const callbacks = {
+        onStreamChunkReceived: jest.fn(),
+        onStreamStart: jest.fn(),
+        onStreamFinished: jest.fn(),
+        onFullMessageReceived: jest.fn(),
+        onError: jest.fn(),
+      };
+      await robot.acceptMessageStreamResponse(mockMessageEnvelope, callbacks);
 
       // Should not call tool execution since no tool use was properly set up
       expect(mockslackyToolSet.executeToolCall).not.toHaveBeenCalled();
@@ -556,13 +561,16 @@ describe('RobotChatAnthropic', () => {
 
       mockCreate.mockResolvedValue(mockStream);
 
-      const chunkCallback = jest.fn();
-      await robot.acceptMessageStreamResponse(
-        mockMessageEnvelope,
-        chunkCallback,
-      );
+      const callbacks = {
+        onStreamChunkReceived: jest.fn(),
+        onStreamStart: jest.fn(),
+        onStreamFinished: jest.fn(),
+        onFullMessageReceived: jest.fn(),
+        onError: jest.fn(),
+      };
+      await robot.acceptMessageStreamResponse(mockMessageEnvelope, callbacks);
 
-      expect(chunkCallback).toHaveBeenCalledWith(
+      expect(callbacks.onStreamChunkReceived).toHaveBeenCalledWith(
         expect.stringContaining('Error parsing tool arguments'),
       );
     });
@@ -604,17 +612,20 @@ describe('RobotChatAnthropic', () => {
       };
 
       mockCreate.mockResolvedValue(mockStream);
-      mockAnthropicToolSet.executeToolCall.mockRejectedValue(
+      mockMarvToolSet.executeToolCall.mockRejectedValue(
         new Error('Tool execution failed'),
       );
 
-      const chunkCallback = jest.fn();
-      await robot.acceptMessageStreamResponse(
-        mockMessageEnvelope,
-        chunkCallback,
-      );
+      const callbacks = {
+        onStreamChunkReceived: jest.fn(),
+        onStreamStart: jest.fn(),
+        onStreamFinished: jest.fn(),
+        onFullMessageReceived: jest.fn(),
+        onError: jest.fn(),
+      };
+      await robot.acceptMessageStreamResponse(mockMessageEnvelope, callbacks);
 
-      expect(chunkCallback).toHaveBeenCalledWith(
+      expect(callbacks.onStreamChunkReceived).toHaveBeenCalledWith(
         expect.stringContaining(
           'Error executing tool failing_tool: Tool execution failed',
         ),
@@ -658,15 +669,18 @@ describe('RobotChatAnthropic', () => {
       };
 
       mockCreate.mockResolvedValue(mockStream);
-      mockAnthropicToolSet.executeToolCall.mockRejectedValue('String error');
+      mockMarvToolSet.executeToolCall.mockRejectedValue('String error');
 
-      const chunkCallback = jest.fn();
-      await robot.acceptMessageStreamResponse(
-        mockMessageEnvelope,
-        chunkCallback,
-      );
+      const callbacks = {
+        onStreamChunkReceived: jest.fn(),
+        onStreamStart: jest.fn(),
+        onStreamFinished: jest.fn(),
+        onFullMessageReceived: jest.fn(),
+        onError: jest.fn(),
+      };
+      await robot.acceptMessageStreamResponse(mockMessageEnvelope, callbacks);
 
-      expect(chunkCallback).toHaveBeenCalledWith(
+      expect(callbacks.onStreamChunkReceived).toHaveBeenCalledWith(
         expect.stringContaining(
           'Error executing tool failing_tool: Unknown error',
         ),
@@ -718,51 +732,60 @@ describe('RobotChatAnthropic', () => {
       };
 
       mockCreate.mockResolvedValue(mockStream);
-      mockAnthropicToolSet.executeToolCall.mockResolvedValue(
+      mockMarvToolSet.executeToolCall.mockResolvedValue(
         'Tool analysis results',
       );
 
-      const chunkCallback = jest.fn();
-      await robot.acceptMessageStreamResponse(
-        mockMessageEnvelope,
-        chunkCallback,
-      );
+      const callbacks = {
+        onStreamChunkReceived: jest.fn(),
+        onStreamStart: jest.fn(),
+        onStreamFinished: jest.fn(),
+        onFullMessageReceived: jest.fn(),
+        onError: jest.fn(),
+      };
+      await robot.acceptMessageStreamResponse(mockMessageEnvelope, callbacks);
 
-      expect(chunkCallback).toHaveBeenCalledWith('Let me help you. ');
-      expect(chunkCallback).toHaveBeenCalledWith('\n\n"Tool analysis results"');
-      expect(chunkCallback).toHaveBeenCalledWith('Analysis complete.');
+      expect(callbacks.onStreamChunkReceived).toHaveBeenCalledWith(
+        'Let me help you. ',
+      );
+      expect(callbacks.onStreamChunkReceived).toHaveBeenCalledWith(
+        '\n\n"Tool analysis results"',
+      );
+      expect(callbacks.onStreamChunkReceived).toHaveBeenCalledWith(
+        'Analysis complete.',
+      );
     });
 
     it('should handle streaming API error', async () => {
       mockCreate.mockRejectedValue(new Error('Streaming API Error'));
 
-      const chunkCallback = jest.fn();
+      const callbacks = {
+        onStreamChunkReceived: jest.fn(),
+        onStreamStart: jest.fn(),
+        onStreamFinished: jest.fn(),
+        onFullMessageReceived: jest.fn(),
+        onError: jest.fn(),
+      };
 
-      await expect(
-        robot.acceptMessageStreamResponse(mockMessageEnvelope, chunkCallback),
-      ).rejects.toThrow('Streaming API Error');
+      await robot.acceptMessageStreamResponse(mockMessageEnvelope, callbacks);
 
-      expect(chunkCallback).toHaveBeenCalledWith('Error: Streaming API Error');
+      expect(callbacks.onError).toHaveBeenCalledWith(expect.any(Error));
     });
 
     it('should handle streaming API error with non-Error object', async () => {
       mockCreate.mockRejectedValue('String streaming error');
 
-      const chunkCallback = jest.fn();
+      const callbacks = {
+        onStreamChunkReceived: jest.fn(),
+        onStreamStart: jest.fn(),
+        onStreamFinished: jest.fn(),
+        onFullMessageReceived: jest.fn(),
+        onError: jest.fn(),
+      };
 
-      try {
-        await robot.acceptMessageStreamResponse(
-          mockMessageEnvelope,
-          chunkCallback,
-        );
-      } catch (error) {
-        // The error is rethrown, so we expect it to be thrown
-        expect(error).toBe('String streaming error');
-      }
+      await robot.acceptMessageStreamResponse(mockMessageEnvelope, callbacks);
 
-      expect(chunkCallback).toHaveBeenCalledWith(
-        'Error: Unknown error occurred',
-      );
+      expect(callbacks.onError).toHaveBeenCalledWith('String streaming error');
     });
   });
 
@@ -784,7 +807,7 @@ describe('RobotChatAnthropic', () => {
       };
 
       mockCreate.mockResolvedValue(mockResponse);
-      mockAnthropicToolSet.executeToolCall.mockResolvedValue(
+      mockMarvToolSet.executeToolCall.mockResolvedValue(
         'Tool executed successfully',
       );
 
@@ -797,7 +820,7 @@ describe('RobotChatAnthropic', () => {
       expect(result.envelopePayload.content.payload).toContain(
         '"Tool executed successfully"',
       );
-      expect(mockAnthropicToolSet.executeToolCall).toHaveBeenCalledWith(
+      expect(mockMarvToolSet.executeToolCall).toHaveBeenCalledWith(
         'test_tool',
         { param1: 'test_value' },
       );
@@ -816,7 +839,7 @@ describe('RobotChatAnthropic', () => {
       };
 
       mockCreate.mockResolvedValue(mockResponse);
-      mockAnthropicToolSet.executeToolCall.mockRejectedValue(
+      mockMarvToolSet.executeToolCall.mockRejectedValue(
         new Error('Tool failed'),
       );
 
@@ -841,7 +864,7 @@ describe('RobotChatAnthropic', () => {
       };
 
       mockCreate.mockResolvedValue(mockResponse);
-      mockAnthropicToolSet.executeToolCall.mockRejectedValue('String error');
+      mockMarvToolSet.executeToolCall.mockRejectedValue('String error');
 
       const result =
         await robot.acceptMessageImmediateResponse(mockMessageEnvelope);
@@ -874,7 +897,7 @@ describe('RobotChatAnthropic', () => {
       };
 
       mockCreate.mockResolvedValue(mockResponse);
-      mockAnthropicToolSet.executeToolCall
+      mockMarvToolSet.executeToolCall
         .mockResolvedValueOnce('Result from tool one')
         .mockResolvedValueOnce('Result from tool two');
 
@@ -890,7 +913,7 @@ describe('RobotChatAnthropic', () => {
       expect(result.envelopePayload.content.payload).toContain(
         '"Result from tool two"',
       );
-      expect(mockAnthropicToolSet.executeToolCall).toHaveBeenCalledTimes(2);
+      expect(mockMarvToolSet.executeToolCall).toHaveBeenCalledTimes(2);
     });
 
     it('should generate proper response structure', async () => {
@@ -915,7 +938,7 @@ describe('RobotChatAnthropic', () => {
         'This is a helpful response about your form issue.',
       );
       expect(result.envelopePayload.estimated_token_count).toBeGreaterThan(0);
-      expect(result.messageId).toMatch(/^response-\d+$/);
+      // messageId is not part of TRobotResponseEnvelope - it's added by conversation manager
       expect(result.envelopePayload.created_at).toMatch(
         /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/,
       );
@@ -995,7 +1018,7 @@ describe('RobotChatAnthropic', () => {
       };
 
       mockCreate.mockResolvedValue(mockResponse);
-      mockAnthropicToolSet.executeToolCall.mockResolvedValue(
+      mockMarvToolSet.executeToolCall.mockResolvedValue(
         'Tool executed successfully',
       );
 
@@ -1020,7 +1043,7 @@ describe('RobotChatAnthropic', () => {
       };
 
       mockCreate.mockResolvedValue(mockResponse);
-      mockAnthropicToolSet.executeToolCall.mockRejectedValue(
+      mockMarvToolSet.executeToolCall.mockRejectedValue(
         new Error('Tool failed'),
       );
 
@@ -1045,7 +1068,7 @@ describe('RobotChatAnthropic', () => {
       };
 
       mockCreate.mockResolvedValue(mockResponse);
-      mockAnthropicToolSet.executeToolCall.mockRejectedValue('String error');
+      mockMarvToolSet.executeToolCall.mockRejectedValue('String error');
 
       const result =
         await robot.acceptMessageImmediateResponse(mockMessageEnvelope);
@@ -1384,21 +1407,26 @@ describe('RobotChatAnthropic', () => {
       };
 
       mockCreate.mockResolvedValueOnce(streamResponse);
-      mockAnthropicToolSet.executeToolCall.mockResolvedValue(
+      mockMarvToolSet.executeToolCall.mockResolvedValue(
         'Integration test successful',
       );
 
-      const chunkCallback = jest.fn();
-      await robot.acceptMessageStreamResponse(
-        mockMessageEnvelope,
-        chunkCallback,
-      );
+      const callbacks = {
+        onStreamChunkReceived: jest.fn(),
+        onStreamStart: jest.fn(),
+        onStreamFinished: jest.fn(),
+        onFullMessageReceived: jest.fn(),
+        onError: jest.fn(),
+      };
+      await robot.acceptMessageStreamResponse(mockMessageEnvelope, callbacks);
 
-      expect(chunkCallback).toHaveBeenCalledWith('Analyzing... ');
-      expect(chunkCallback).toHaveBeenCalledWith(
+      expect(callbacks.onStreamChunkReceived).toHaveBeenCalledWith(
+        'Analyzing... ',
+      );
+      expect(callbacks.onStreamChunkReceived).toHaveBeenCalledWith(
         '\n\n"Integration test successful"',
       );
-      expect(mockAnthropicToolSet.executeToolCall).toHaveBeenCalledWith(
+      expect(mockMarvToolSet.executeToolCall).toHaveBeenCalledWith(
         'analysis_tool',
         { query: 'test' },
       );
