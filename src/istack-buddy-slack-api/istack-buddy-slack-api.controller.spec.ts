@@ -1,6 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { IstackBuddySlackApiController } from './istack-buddy-slack-api.controller';
 import { IstackBuddySlackApiModule } from './istack-buddy-slack-api.module';
+import { AuthenticationModule } from '../authentication/authentication.module';
+import { LoggerModule } from '../common/logger/logger.module';
+import { IstackBuddySlackApiService } from './istack-buddy-slack-api.service';
 
 describe('IstackBuddySlackApiController', () => {
   let controller: IstackBuddySlackApiController;
