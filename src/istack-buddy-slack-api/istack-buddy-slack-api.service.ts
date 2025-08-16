@@ -8,6 +8,9 @@ import { TConversationTextMessageEnvelope } from '../robots/types';
 import * as jwt from 'jsonwebtoken';
 import { AuthorizationPermissionsService } from '../authorization-permissions/authorization-permissions.service';
 import { UserProfileService } from '../user-profile/user-profile.service';
+import { KnowledgeBaseService } from './knowledge-base.service';
+import * as fs from 'fs';
+import * as path from 'path';
 
 // Interface for storing Slack conversation mapping and callback
 interface TSlackInterfaceRecord {
@@ -43,6 +46,7 @@ export class IstackBuddySlackApiService implements OnModuleDestroy {
     private readonly robotService: RobotService,
     private readonly authorizationPermissionsService: AuthorizationPermissionsService,
     private readonly userProfileService: UserProfileService,
+    private readonly knowledgeBaseService: KnowledgeBaseService,
   ) {
     // Clean up old processed events and slack mappings every minute
     this.cleanupIntervalId = setInterval(() => {
@@ -172,6 +176,9 @@ export class IstackBuddySlackApiService implements OnModuleDestroy {
       ) {
         this.logger.log('Received /marv-session command via app mention');
 
+        // IMMEDIATE ACKNOWLEDGMENT - Add thinking emoji reaction
+        await this.addSlackReaction('thinking_face', event.channel, event.ts);
+
         try {
           // Get the existing conversation ID from the Slack thread mapping
           const conversationId = event.thread_ts || event.ts;
@@ -246,6 +253,178 @@ export class IstackBuddySlackApiService implements OnModuleDestroy {
           this.logger.error('Error creating marv session:', error);
           await this.sendSlackMessage(
             'Error creating marv session. Please try again.',
+            event.channel,
+            event.thread_ts || event.ts,
+          );
+        }
+
+        return;
+      }
+
+      // /kb command handler
+      const kbMatch = trimmedText?.match(/\/kb(?::slack:(.+?))?\s+(.*)/i);
+      if (kbMatch) {
+        let specifiedChannel = kbMatch[1];
+        const searchQuery = kbMatch[2]?.trim() || '';
+        
+        // Handle Slack's <#CHANNELID|alias> format
+        if (specifiedChannel?.includes('<#') && specifiedChannel.includes('|')) {
+          const channelMatch = specifiedChannel.match(/<#([^|]+)\|([^>]*)>/);
+          if (channelMatch) {
+            const channelId = channelMatch[1];
+            const alias = channelMatch[2];
+            
+            specifiedChannel = channelMatch[1]; // Just use the channel ID: C3LQ7KNFN
+          }
+        }
+        
+        this.logger.log(`Parsed channel: "${specifiedChannel}", query: "${searchQuery}"`);
+        
+        await this.addSlackReaction('thinking_face', event.channel, event.ts);
+
+        if (!searchQuery) {
+          await this.sendSlackMessage(
+            `📚 **Knowledge Base Help**\n• \`/kb query\` - Search all channels\n• \`/kb:slack:channel-alias query\` - Search specific channel\n• \`/kb:slack:all query\` - Search all channels`,
+            event.channel, event.ts
+          );
+          return;
+        }
+
+        try {
+          let channels: string[] | string;
+          if (specifiedChannel === 'all') {
+            channels = 'all';
+          } else if (specifiedChannel) {
+            channels = [specifiedChannel]; // Send channel ID directly
+          } else {
+            channels = 'all';
+          }
+
+          const searchResults = await this.knowledgeBaseService.getSearchResults({
+            q: searchQuery,
+            channels: channels,
+          });
+
+          if (searchResults.length > 0) {
+            const resultsText = searchResults
+              .map((result, index) => {
+                const date = result.original_post_date
+                  ? new Date(result.original_post_date).toLocaleDateString()
+                  : 'Unknown date';
+                
+                // Clean up the excerpt - remove timestamps and user IDs, keep only the actual content
+                let cleanExcerpt = result.excerpt_text || '';
+                // Remove timestamp patterns like [2025-01-31T03:11:42.424Z] 
+                cleanExcerpt = cleanExcerpt.replace(/\[[\d\-T:.Z]+\]\s*/g, '');
+                // Remove user ID patterns like U07RCTLM69Z:
+                cleanExcerpt = cleanExcerpt.replace(/[A-Z0-9]{11}:\s*/g, '');
+                // Remove multiple --- separators and replace with simple breaks
+                cleanExcerpt = cleanExcerpt.replace(/\s*---\s*/g, '\n• ');
+                // Limit length to first ~200 characters for readability
+                if (cleanExcerpt.length > 200) {
+                  cleanExcerpt = cleanExcerpt.substring(0, 200) + '...';
+                }
+                
+                return `${index + 1}. **<${result.message_link}|View Message>** (${date}) - *${Math.round(result.relevance_score * 100)}% relevance*
+   ${cleanExcerpt}`;
+              })
+              .join('\n\n');
+
+            const responseMessage = `📚 **Knowledge Base Results**
+
+**Query:** "${searchQuery}"
+
+${resultsText}
+
+*Found ${searchResults.length} relevant results*`;
+
+            await this.sendSlackMessage(responseMessage, event.channel, event.ts);
+          } else {
+            const responseMessage = `📚 **Knowledge Base**
+
+**Query:** "${searchQuery}"
+
+No relevant results found. Try:
+• Using different keywords
+• \`@iStackBuddy /kb:slack:all ${searchQuery}\` to search all channels
+• Check spelling and try broader terms`;
+
+            await this.sendSlackMessage(responseMessage, event.channel, event.ts);
+          }
+                } catch (error) {
+          this.logger.error('Error retrieving knowledge base:', error);
+          await this.sendSlackMessage(
+            'Knowledge-buddy is offline',
+            event.channel,
+            event.ts,
+          );
+        }
+
+        return;
+      }
+
+      // Check for /feedback commands (with or without bot mention)
+      const feedbackMatch = trimmedText?.match(
+        /(?:@istack-buddy|<@[^>]+>)\s+\/feedback\s+(.+)/i,
+      );
+      if (feedbackMatch) {
+        this.logger.log('Received /feedback command via app mention');
+
+        // IMMEDIATE ACKNOWLEDGMENT - Add thinking emoji reaction
+        await this.addSlackReaction('thinking_face', event.channel, event.ts);
+
+        try {
+          const feedbackContent = feedbackMatch[1].trim();
+          const responseMessage = await this.handleFeedbackCommand(
+            event,
+            feedbackContent,
+          );
+
+          await this.sendSlackMessage(
+            responseMessage,
+            event.channel,
+            event.thread_ts || event.ts,
+          );
+        } catch (error) {
+          this.logger.error('Error processing feedback:', error);
+          await this.sendSlackMessage(
+            'Error processing feedback. Please try again.',
+            event.channel,
+            event.thread_ts || event.ts,
+          );
+        }
+
+        return;
+      }
+
+      // Check for /rating commands (with or without bot mention)
+      const ratingMatch = trimmedText?.match(
+        /(?:@istack-buddy|<@[^>]+>)\s+\/rating\s+([+-]?\d+)(?:\s+(.+))?/i,
+      );
+      if (ratingMatch) {
+        this.logger.log('Received /rating command via app mention');
+
+        // IMMEDIATE ACKNOWLEDGMENT - Add thinking emoji reaction
+        await this.addSlackReaction('thinking_face', event.channel, event.ts);
+
+        try {
+          const rating = parseInt(ratingMatch[1]);
+          const comment = ratingMatch[2]?.trim();
+          const responseMessage = await this.handleRatingCommand(
+            event,
+            rating,
+            comment,
+          );
+
+          await this.sendSlackMessage(
+            responseMessage,
+            event.channel,
+            event.thread_ts || event.ts,
+          );
+        } catch (error) {
+          this.logger.error('Error processing rating:', error);
+          await this.sendSlackMessage(
+            'Error processing rating. Please try again.',
             event.channel,
             event.thread_ts || event.ts,
           );
@@ -421,6 +600,9 @@ export class IstackBuddySlackApiService implements OnModuleDestroy {
       if (event.text && event.text.trim() === '/marv-session') {
         this.logger.log('Received /marv-session command in thread');
 
+        // IMMEDIATE ACKNOWLEDGMENT - Add thinking emoji reaction
+        await this.addSlackReaction('thinking_face', event.channel, event.ts);
+
         try {
           // Get the existing conversation ID from the Slack thread mapping
           const conversationId = event.thread_ts;
@@ -481,6 +663,196 @@ export class IstackBuddySlackApiService implements OnModuleDestroy {
           this.logger.error('Error creating marv session:', error);
           await this.sendSlackMessage(
             'Error creating marv session. Please try again.',
+            event.channel,
+            event.thread_ts,
+          );
+        }
+
+        return;
+      }
+
+      // Check for /kb commands in thread messages
+      const kbMatch = event.text?.match(/\/kb(?::slack:(.+?))?\s+(.*)/i);
+      if (kbMatch) {
+        let specifiedChannel = kbMatch[1]; // e.g., "all" or "channel-name" 
+        const searchQuery = kbMatch[2]?.trim() || ''; // The search query after /kb
+        
+        // Handle Slack's <#CHANNELID|alias> format
+        if (specifiedChannel?.includes('<#') && specifiedChannel.includes('|')) {
+          const channelMatch = specifiedChannel.match(/<#([^|]+)\|([^>]*)>/);
+          if (channelMatch) {
+            const channelId = channelMatch[1];
+            const alias = channelMatch[2];
+            
+            specifiedChannel = channelMatch[1]; // Just use the channel ID: C3LQ7KNFN
+          }
+        }
+        
+        this.logger.log(`Thread - Parsed channel: "${specifiedChannel}", query: "${searchQuery}"`);
+
+        // IMMEDIATE ACKNOWLEDGMENT - Add thinking emoji reaction
+        await this.addSlackReaction('thinking_face', event.channel, event.ts);
+
+        try {
+          let channels: string[] | string;
+          if (specifiedChannel === 'all') {
+            channels = 'all';
+          } else if (specifiedChannel) {
+            channels = [specifiedChannel]; // Send channel ID directly
+          } else {
+            channels = 'all';
+          }
+
+          if (!searchQuery) {
+            await this.sendSlackMessage(
+              `📚 **Knowledge Base Help**\n• \`/kb query\` - Search all channels\n• \`/kb:slack:channel-alias query\` - Search specific channel\n• \`/kb:slack:all query\` - Search all channels`,
+              event.channel, event.thread_ts
+            );
+            return;
+          }
+
+          const searchResults = await this.knowledgeBaseService.getSearchResults({
+            q: searchQuery,
+            channels: channels,
+          });
+          this.logger.log(`KB search returned ${searchResults.length} results`);
+
+          if (searchResults.length > 0) {
+            const resultsText = searchResults
+              .map((result, index) => {
+                const date = result.original_post_date
+                  ? new Date(result.original_post_date).toLocaleDateString()
+                  : 'Unknown date';
+                
+                // Clean up the excerpt - remove timestamps and user IDs, keep only the actual content
+                let cleanExcerpt = result.excerpt_text || '';
+                // Remove timestamp patterns like [2025-01-31T03:11:42.424Z] 
+                cleanExcerpt = cleanExcerpt.replace(/\[[\d\-T:.Z]+\]\s*/g, '');
+                // Remove user ID patterns like U07RCTLM69Z:
+                cleanExcerpt = cleanExcerpt.replace(/[A-Z0-9]{11}:\s*/g, '');
+                // Remove multiple --- separators and replace with simple breaks
+                cleanExcerpt = cleanExcerpt.replace(/\s*---\s*/g, '\n• ');
+                // Limit length to first ~200 characters for readability
+                if (cleanExcerpt.length > 200) {
+                  cleanExcerpt = cleanExcerpt.substring(0, 200) + '...';
+                }
+                
+                return `${index + 1}. **<${result.message_link}|View Message>** (${date}) - *${Math.round(result.relevance_score * 100)}% relevance*
+   ${cleanExcerpt}`;
+              })
+              .join('\n\n');
+
+            const responseMessage = `📚 **Knowledge Base Results**
+
+**Query:** "${searchQuery}"
+
+${resultsText}
+
+*Found ${searchResults.length} relevant results*`;
+
+            await this.sendSlackMessage(
+              responseMessage,
+              event.channel,
+              event.thread_ts,
+            );
+          } else {
+            const responseMessage = `📚 **Knowledge Base**
+
+**Query:** "${searchQuery}"
+
+No relevant results found. Try:
+• Using different keywords
+• \`/kb:slack:all ${searchQuery}\` to search all channels
+• Check spelling and try broader terms`;
+
+            await this.sendSlackMessage(
+              responseMessage,
+              event.channel,
+              event.thread_ts,
+            );
+          }
+        } catch (error) {
+          this.logger.error('Error retrieving knowledge base:', error);
+          
+          // Check if this is a knowledge buddy offline error
+          if (error.message === 'KNOWLEDGE_BUDDY_OFFLINE') {
+            await this.sendSlackMessage(
+              '⚠️ **Knowledge Buddy Offline**\n\nThe knowledge-buddy is currently offline. Please try again later or contact support.',
+              event.channel,
+              event.thread_ts,
+            );
+          } else {
+            await this.sendSlackMessage(
+              'Error retrieving knowledge base. Please try again.',
+              event.channel,
+              event.thread_ts,
+            );
+          }
+        }
+
+        return;
+      }
+
+      // Check for /feedback commands in thread messages
+      const feedbackMatch = event.text?.match(/\/feedback\s+(.+)/i);
+      if (feedbackMatch) {
+        this.logger.log('Received /feedback command in thread');
+
+        // IMMEDIATE ACKNOWLEDGMENT - Add thinking emoji reaction
+        await this.addSlackReaction('thinking_face', event.channel, event.ts);
+
+        try {
+          const feedbackContent = feedbackMatch[1].trim();
+          const responseMessage = await this.handleFeedbackCommand(
+            event,
+            feedbackContent,
+          );
+
+          await this.sendSlackMessage(
+            responseMessage,
+            event.channel,
+            event.thread_ts,
+          );
+        } catch (error) {
+          this.logger.error('Error processing feedback:', error);
+          await this.sendSlackMessage(
+            'Error processing feedback. Please try again.',
+            event.channel,
+            event.thread_ts,
+          );
+        }
+
+        return;
+      }
+
+      // Check for /rating commands in thread messages
+      const ratingMatch = event.text?.match(
+        /\/rating\s+([+-]?\d+)(?:\s+(.+))?/i,
+      );
+      if (ratingMatch) {
+        this.logger.log('Received /rating command in thread');
+
+        // IMMEDIATE ACKNOWLEDGMENT - Add thinking emoji reaction
+        await this.addSlackReaction('thinking_face', event.channel, event.ts);
+
+        try {
+          const rating = parseInt(ratingMatch[1]);
+          const comment = ratingMatch[2]?.trim();
+          const responseMessage = await this.handleRatingCommand(
+            event,
+            rating,
+            comment,
+          );
+
+          await this.sendSlackMessage(
+            responseMessage,
+            event.channel,
+            event.thread_ts,
+          );
+        } catch (error) {
+          this.logger.error('Error processing rating:', error);
+          await this.sendSlackMessage(
+            'Error processing rating. Please try again.',
             event.channel,
             event.thread_ts,
           );
@@ -800,6 +1172,200 @@ export class IstackBuddySlackApiService implements OnModuleDestroy {
       },
     };
 
-    return { messageEnvelope, conversationHistory: filteredHistory };
+    return {
+      messageEnvelope,
+      conversationHistory: filteredHistory,
+    };
+  }
+
+  /**
+   * Get knowledge base content for a specific channel
+   * This method retrieves channel-specific knowledge base information
+   */
+  private async getKnowledgeBaseContent(channelId: string): Promise<string> {
+    // Map channel IDs to their knowledge base content
+    const knowledgeBases: Record<string, string> = {
+      'cx-formstack': `**Core Forms Knowledge Base**
+
+**Common Issues & Solutions:**
+• **Form Logic Problems** - Field visibility, conditional logic, calculations
+• **Form Configuration** - Field setup, sections, validation rules
+• **Form Integration** - Submit actions, webhooks, notifications
+• **Form Rendering** - Display issues, styling problems
+
+**Available Tools:**
+• Form Logic Validation - Detect logic errors and configuration issues
+• Form Calculation Validation - Check for circular references
+• Form Overview - Get comprehensive form statistics and configuration
+• Sumo Logic Queries - Analyze submission logs and trace data
+
+**Quick Commands:**
+• \`@istack-buddy /help\` - Get detailed help
+• \`@istack-buddy /feedback [message]\` - Provide feedback
+• \`@istack-buddy /rating [+5 to -5] [comment]\` - Rate the service`,
+
+      'forms-sso-autofill': `**SSO & Auto-fill Knowledge Base**
+
+**SSO Troubleshooting:**
+• **SSO Configuration** - Setup and configuration issues
+• **Auto-fill Mapping** - Field mapping problems
+• **Authentication Issues** - Login and access problems
+• **Integration Problems** - SSO provider connectivity
+
+**Available Tools:**
+• SSO Auto-fill Assistance - Diagnose SSO configuration issues
+• Form Overview - Check SSO-related form settings
+• Sumo Logic Queries - Analyze SSO authentication logs
+
+**Quick Commands:**
+• \`@istack-buddy /help\` - Get detailed help
+• \`@istack-buddy /feedback [message]\` - Provide feedback
+• \`@istack-buddy /rating [+5 to -5] [comment]\` - Rate the service`,
+
+      'cx-f4sf': `**F4SF Knowledge Base**
+
+**F4SF-Specific Issues:**
+• **F4SF Configuration** - Setup and configuration problems
+• **F4SF Integration** - Integration with other systems
+• **F4SF Workflows** - Workflow and automation issues
+• **F4SF Data** - Data handling and processing problems
+
+**Available Tools:**
+• Form Overview - Check F4SF-related form settings
+• Sumo Logic Queries - Analyze F4SF logs and data
+
+**Quick Commands:**
+• \`@istack-buddy /help\` - Get detailed help
+• \`@istack-buddy /feedback [message]\` - Provide feedback
+• \`@istack-buddy /rating [+5 to -5] [comment]\` - Rate the service`,
+    };
+
+    // Remove # prefix if present for lookup
+    const cleanChannelId = channelId.replace(/^#/, '');
+
+    // Return channel-specific content or default
+    return (
+      knowledgeBases[cleanChannelId] ||
+      `**Knowledge Base - ${channelId}**
+
+**General Forms Support:**
+• Form troubleshooting and configuration
+• SSO and integration issues
+• Data analysis and logging
+
+**Quick Commands:**
+• \`@istack-buddy /help\` - Get detailed help
+• \`@istack-buddy /feedback [message]\` - Provide feedback
+• \`@istack-buddy /rating [+5 to -5] [comment]\` - Rate the service`
+    );
+  }
+
+  /**
+   * Handle feedback command
+   */
+  private async handleFeedbackCommand(
+    event: any,
+    feedbackContent: string,
+  ): Promise<string> {
+    try {
+      // Ensure logs directory exists
+      const logsDir = path.join(process.cwd(), 'logs');
+      if (!fs.existsSync(logsDir)) {
+        fs.mkdirSync(logsDir, { recursive: true });
+      }
+
+      // Append feedback to file
+      const feedbackFile = path.join(logsDir, 'feedback.json');
+      const feedbackEntry = {
+        channel: event.channel,
+        author: event.user,
+        date: new Date().toISOString(),
+        feedback: feedbackContent,
+      };
+
+      // Read existing entries or start with empty array
+      let entries = [];
+      if (fs.existsSync(feedbackFile)) {
+        const content = fs.readFileSync(feedbackFile, 'utf8');
+        entries = JSON.parse(content);
+      }
+
+      // Add new entry and write back
+      entries.push(feedbackEntry);
+      fs.writeFileSync(feedbackFile, JSON.stringify(entries, null, 2));
+
+      this.logger.log(`Feedback logged for ${event.user} in ${event.channel}`);
+      return `Thank you for your feedback! We appreciate your input to help improve our service.`;
+    } catch (error) {
+      this.logger.error('Error processing feedback:', error);
+      return `Thank you for your feedback! We appreciate your input to help improve our service.`;
+    }
+  }
+
+  /**
+   * Handle rating command
+   */
+  private async handleRatingCommand(
+    event: any,
+    rating: number,
+    comment?: string,
+  ): Promise<string> {
+    try {
+      // Validate rating range
+      if (rating < -5 || rating > 5) {
+        return `**Invalid Rating**
+
+Ratings must be between -5 and +5. Please provide a rating in this range.
+
+**Examples:**
+• \`@istack-buddy /rating +4 Very helpful!\`
+• \`@istack-buddy /rating -2 Information was wrong\`
+• \`@istack-buddy /rating 0\`
+
+**Rating Scale:**
+• -5: World War III bad  
+• -2: Misleading or just wrong  
+• -1: Information had inaccuracies
+• 0: Not good/not bad
+• +1: A little helpful
+• +2: Helpful, will use again
+• +5: Nominate iStackBuddy for world peace prize`;
+      }
+
+      // Ensure logs directory exists
+      const logsDir = path.join(process.cwd(), 'logs');
+      if (!fs.existsSync(logsDir)) {
+        fs.mkdirSync(logsDir, { recursive: true });
+      }
+
+      // Append rating to file
+      const ratingFile = path.join(logsDir, 'rating.json');
+      const ratingEntry = {
+        channel: event.channel,
+        author: event.user,
+        date: new Date().toISOString(),
+        rating: rating,
+        comment: comment,
+      };
+
+      // Read existing entries or start with empty array
+      let entries = [];
+      if (fs.existsSync(ratingFile)) {
+        const content = fs.readFileSync(ratingFile, 'utf8');
+        entries = JSON.parse(content);
+      }
+
+      // Add new entry and write back
+      entries.push(ratingEntry);
+      fs.writeFileSync(ratingFile, JSON.stringify(entries, null, 2));
+
+      this.logger.log(
+        `Rating logged for ${event.user} in ${event.channel}: ${rating}/5`,
+      );
+      return `Thank you for your rating of ${rating >= 0 ? '+' : ''}${rating}/5! We appreciate your feedback to help us improve our service.`;
+    } catch (error) {
+      this.logger.error('Error processing rating:', error);
+      return `Thank you for your rating! We appreciate your feedback to help us improve our service.`;
+    }
   }
 }

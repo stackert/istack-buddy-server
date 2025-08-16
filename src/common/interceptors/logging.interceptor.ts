@@ -54,19 +54,26 @@ export class LoggingInterceptor implements NestInterceptor {
       accountType: request.user?.accountType,
     };
 
+    // Prepare request data for logging
+    const requestData: any = {
+      userAgent: request.headers['user-agent'],
+      ip: request.ip,
+      params: request.params,
+      query: request.query,
+    };
+
+    // Log request body for POST requests using JSON.stringify for readability
+    if (request.method === 'POST' && request.body) {
+      requestData.body = JSON.stringify(request.body, null, 2);
+    }
+
     // Log incoming request
     this.logger.logWithContext(
       'log',
       `Incoming ${request.method} ${request.url}`,
       'HttpRequest',
       logContext,
-      {
-        userAgent: request.headers['user-agent'],
-        ip: request.ip,
-        params: request.params,
-        query: request.query,
-        // Don't log request body by default - can contain sensitive data
-      },
+      requestData,
     );
 
     return next.handle().pipe(

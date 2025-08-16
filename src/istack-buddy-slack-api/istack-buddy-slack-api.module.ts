@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
+import { HttpModule } from '@nestjs/axios';
 import { IstackBuddySlackApiService } from './istack-buddy-slack-api.service';
 import { IstackBuddySlackApiController } from './istack-buddy-slack-api.controller';
+import { KnowledgeBaseService } from './knowledge-base.service';
 import { ChatManagerModule } from '../chat-manager/chat-manager.module';
 import { AuthenticationModule } from '../authentication/authentication.module';
 import { LoggerModule } from '../common/logger/logger.module';
@@ -9,6 +11,7 @@ import { UserProfileModule } from '../user-profile/user-profile.module';
 
 @Module({
   imports: [
+    HttpModule,
     ChatManagerModule,
     AuthenticationModule,
     LoggerModule,
@@ -16,7 +19,7 @@ import { UserProfileModule } from '../user-profile/user-profile.module';
     UserProfileModule,
   ],
   controllers: [IstackBuddySlackApiController],
-  providers: [IstackBuddySlackApiService],
-  exports: [IstackBuddySlackApiService],
+  providers: [IstackBuddySlackApiService, KnowledgeBaseService],
+  exports: [IstackBuddySlackApiService, KnowledgeBaseService],
 })
 export class IstackBuddySlackApiModule {}
