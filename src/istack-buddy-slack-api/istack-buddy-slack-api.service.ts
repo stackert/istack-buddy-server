@@ -16,9 +16,10 @@ import * as path from 'path';
 interface TSlackInterfaceRecord {
   internalConversationId: string;
   slackConversationId: string; // Slack thread timestamp
-  sendConversationResponseToSlack: (
-    delayedResponse: TConversationTextMessageEnvelope,
-  ) => Promise<void>;
+  sendConversationResponseToSlack: (content: {
+    type: 'text';
+    payload: string;
+  }) => Promise<void>;
 }
 
 /**
@@ -70,7 +71,7 @@ export class IstackBuddySlackApiService implements OnModuleDestroy {
    * @param text The event text to parse
    * @returns Array of short codes found in the text
    */
-  private getShortCodes(text: string): string[] {
+  private getShortCodesFromEvent(text: string): string[] {
     const shortCodes: string[] = [];
 
     // Remove bot mentions and clean the text
@@ -202,9 +203,9 @@ export class IstackBuddySlackApiService implements OnModuleDestroy {
         `DEBUG: Event text: "${event.text}", trimmed: "${event.text?.trim()}"`,
       );
 
-      const shortCodes = this.getShortCodes(event.text || '');
+      const shortCodes = this.getShortCodesFromEvent(event.text || '');
 
-      shortCodes.forEach((shortCode) => {
+      shortCodes.forEach((shortCode: string) => {
         this.logger.log(`Received short code: ${shortCode}`);
         switch (shortCode) {
           case '/marv-session':
@@ -235,36 +236,12 @@ export class IstackBuddySlackApiService implements OnModuleDestroy {
       // IMMEDIATE ACKNOWLEDGMENT - Add thinking emoji reaction
       await this.addSlackReaction('thinking_face', event.channel, event.ts);
 
-      // Add message to conversation
-      await this.chatManagerService.addMessage({
-        conversationId: conversationRecord.internalConversationId,
-        fromUserId: 'cx-slack-robot',
-        content: event.text,
-        messageType: MessageType.TEXT,
-        fromRole: UserRole.CUSTOMER,
-        toRole: UserRole.AGENT,
-      });
-
-      // --------------------
-      const robot =
-        this.robotService.getRobotByName<SlackyOpenAiAgent>(
-          'SlackyOpenAiAgent',
-        )!;
-
-      // this creates the first message in the thread
-      const { messageEnvelope, conversationHistory } =
-        await this.createMessageEnvelopeWithHistory({
-          conversationId: conversationRecord.internalConversationId,
-          fromUserId: event.user,
-          content: event.text,
-        });
-
-      await robot.acceptMessageMultiPartResponse(
-        messageEnvelope,
+      // Add message to conversation and trigger robot response
+      await this.chatManagerService.addMessageFromSlack(
+        conversationRecord.internalConversationId,
+        { type: 'text', payload: event.text },
         conversationRecord.sendConversationResponseToSlack,
-        () => conversationHistory, // Pass getHistory callback
       );
-      // ----------------------
     } catch (error) {
       this.logger.error('Error handling app mention:', error);
 
@@ -297,286 +274,31 @@ export class IstackBuddySlackApiService implements OnModuleDestroy {
         return;
       }
 
-      // Check if this is a /marv-session command with formId
-      const marvMatch = event.text?.match(/\/marv-session\s+formId:(\d+)/i);
-      if (marvMatch) {
-        this.logger.log('Received /marv-session command in thread');
+      // Check for short codes in thread messages
+      const shortCodes = this.getShortCodesFromEvent(event.text || '');
 
-        // IMMEDIATE ACKNOWLEDGMENT - Add thinking emoji reaction
-        await this.addSlackReaction('thinking_face', event.channel, event.ts);
-
-        try {
-          const formId = marvMatch[1];
-          this.logger.log(`Extracted formId: ${formId} from command`);
-
-          // Get the existing conversation ID from the Slack thread mapping
-          const conversationId = event.thread_ts;
-          const conversationRecord =
-            this.slackThreadToConversationMap[conversationId];
-
-          if (!conversationRecord) {
-            // No existing conversation found - this shouldn't happen in a thread
-            await this.sendSlackMessage(
-              '❌ **No conversation found**\n\nPlease start a conversation with @istack-buddy first, then use `/marv-session formId:123456` in the thread.',
-              event.channel,
-              event.thread_ts,
-            );
-            return;
-          }
-
-          // Create a new form-marv session
-          const tempUserId = conversationRecord.internalConversationId; // Use conversation ID as user ID
-
-          // Create a JWT token for the temporary user
-          const jwtToken = jwt.sign(
-            {
-              userId: tempUserId,
-              email: `form-marv-${Date.now()}@example.com`,
-              username: tempUserId,
-              accountType: 'TEMPORARY',
-            },
-            'istack-buddy-secret-key-2024',
-            { expiresIn: '8h' },
-          );
-
-          // Add user to permissions system
-          this.authorizationPermissionsService.addUser(
-            tempUserId,
-            ['cx-agent:form-marv:read', 'cx-agent:form-marv:write'],
-            [],
-          );
-
-          // Create temporary user profile
-          this.userProfileService.addTemporaryUser(tempUserId, {
-            email: `form-marv-${Date.now()}@example.com`,
-            username: tempUserId,
-            account_type_informal: 'TEMPORARY',
-            first_name: 'Form',
-            last_name: 'Marv',
-          });
-
-          // Set the formId in the conversation metadata
-          this.chatManagerService.setConversationFormId(
-            conversationRecord.internalConversationId,
-            formId,
-          );
-
-          // Generate the session URL using the internal conversation ID and formId
-          const baseUrl = this.getBaseUrl();
-          const sessionUrl = `${baseUrl}/public/form-marv/${conversationRecord.internalConversationId}/${formId}?jwtToken=${jwtToken}`;
-
-          // Send immediate response to Slack with the session link
-          await this.sendSlackMessage(
-            `✅ **Form Marv Session Created**\n\n📋 **Form ID:** ${formId}\n🔗 **Session Link:** ${sessionUrl}\n\nClick the link above to access the form session.`,
-            event.channel,
-            event.thread_ts,
-          );
-        } catch (error) {
-          this.logger.error('Error creating marv session:', error);
-          await this.sendSlackMessage(
-            '❌ **Error creating marv session**\n\nPlease try again or contact support if the problem persists.',
-            event.channel,
-            event.thread_ts,
-          );
+      shortCodes.forEach((shortCode: string) => {
+        this.logger.log(`Received short code in thread: ${shortCode}`);
+        switch (shortCode) {
+          case '/marv-session':
+            this.handleShortCodeMarvSession(event);
+            break;
+          case '/kb':
+            this.handleShortCodeKb(event);
+            break;
+          case '/feedback':
+            this.handleShortCodeFeedback(event);
+            break;
+          case '/rating':
+            this.handleShortCodeRating(event);
+            break;
+          default:
+            this.logger.log(`Unknown short code: ${shortCode}`);
+            break;
         }
+      });
 
-        return;
-      }
-
-      // Check for /kb commands in thread messages
-      const kbMatch = event.text?.match(/\/kb(?::slack:(.+?))?\s+(.*)/i);
-      if (kbMatch) {
-        let specifiedChannel = kbMatch[1]; // e.g., "all" or "channel-name"
-        const searchQuery = kbMatch[2]?.trim() || ''; // The search query after /kb
-
-        // Handle Slack's <#CHANNELID|alias> format
-        if (
-          specifiedChannel?.includes('<#') &&
-          specifiedChannel.includes('|')
-        ) {
-          const channelMatch = specifiedChannel.match(/<#([^|]+)\|([^>]*)>/);
-          if (channelMatch) {
-            const channelId = channelMatch[1];
-            const alias = channelMatch[2];
-
-            specifiedChannel = channelMatch[1]; // Just use the channel ID: C3LQ7KNFN
-          }
-        }
-
-        this.logger.log(
-          `Thread - Parsed channel: "${specifiedChannel}", query: "${searchQuery}"`,
-        );
-
-        // IMMEDIATE ACKNOWLEDGMENT - Add thinking emoji reaction
-        await this.addSlackReaction('thinking_face', event.channel, event.ts);
-
-        try {
-          let channels: string[] | string;
-          if (specifiedChannel === 'all') {
-            channels = 'all';
-          } else if (specifiedChannel) {
-            channels = [specifiedChannel]; // Send channel ID directly
-          } else {
-            channels = 'all';
-          }
-
-          if (!searchQuery) {
-            await this.sendSlackMessage(
-              `📚 **Knowledge Base Help**\n• \`/kb query\` - Search all channels\n• \`/kb:slack:channel-alias query\` - Search specific channel\n• \`/kb:slack:all query\` - Search all channels`,
-              event.channel,
-              event.thread_ts,
-            );
-            return;
-          }
-
-          const searchResults =
-            await this.knowledgeBaseService.getSearchResults({
-              q: searchQuery,
-              channels: channels,
-            });
-          this.logger.log(`KB search returned ${searchResults.length} results`);
-
-          if (searchResults.length > 0) {
-            const resultsText = searchResults
-              .map((result, index) => {
-                const date = result.original_post_date
-                  ? new Date(result.original_post_date).toLocaleDateString()
-                  : 'Unknown date';
-
-                // Clean up the excerpt - remove timestamps and user IDs, keep only the actual content
-                let cleanExcerpt = result.excerpt_text || '';
-                // Remove timestamp patterns like [2025-01-31T03:11:42.424Z]
-                cleanExcerpt = cleanExcerpt.replace(/\[[\d\-T:.Z]+\]\s*/g, '');
-                // Remove user ID patterns like U07RCTLM69Z:
-                cleanExcerpt = cleanExcerpt.replace(/[A-Z0-9]{11}:\s*/g, '');
-                // Remove multiple --- separators and replace with simple breaks
-                cleanExcerpt = cleanExcerpt.replace(/\s*---\s*/g, '\n• ');
-                // Limit length to first ~200 characters for readability
-                if (cleanExcerpt.length > 200) {
-                  cleanExcerpt = cleanExcerpt.substring(0, 200) + '...';
-                }
-
-                return `${index + 1}. **<${result.message_link}|View Message>** (${date}) - *${Math.round(result.relevance_score * 100)}% relevance*
-   ${cleanExcerpt}`;
-              })
-              .join('\n\n');
-
-            const responseMessage = `📚 **Knowledge Base Results**
-
-**Query:** "${searchQuery}"
-
-${resultsText}
-
-*Found ${searchResults.length} relevant results*`;
-
-            await this.sendSlackMessage(
-              responseMessage,
-              event.channel,
-              event.thread_ts,
-            );
-          } else {
-            const responseMessage = `📚 **Knowledge Base**
-
-**Query:** "${searchQuery}"
-
-No relevant results found. Try:
-• Using different keywords
-• \`/kb:slack:all ${searchQuery}\` to search all channels
-• Check spelling and try broader terms`;
-
-            await this.sendSlackMessage(
-              responseMessage,
-              event.channel,
-              event.thread_ts,
-            );
-          }
-        } catch (error) {
-          this.logger.error('Error retrieving knowledge base:', error);
-
-          // Check if this is a knowledge buddy offline error
-          if (error.message === 'KNOWLEDGE_BUDDY_OFFLINE') {
-            await this.sendSlackMessage(
-              '⚠️ **Knowledge Buddy Offline**\n\nThe knowledge-buddy is currently offline. Please try again later or contact support.',
-              event.channel,
-              event.thread_ts,
-            );
-          } else {
-            await this.sendSlackMessage(
-              'Error retrieving knowledge base. Please try again.',
-              event.channel,
-              event.thread_ts,
-            );
-          }
-        }
-
-        return;
-      }
-
-      // Check for /feedback commands in thread messages
-      const feedbackMatch = event.text?.match(/\/feedback\s+(.+)/i);
-      if (feedbackMatch) {
-        this.logger.log('Received /feedback command in thread');
-
-        // IMMEDIATE ACKNOWLEDGMENT - Add thinking emoji reaction
-        await this.addSlackReaction('thinking_face', event.channel, event.ts);
-
-        try {
-          const feedbackContent = feedbackMatch[1].trim();
-          const responseMessage = await this.handleFeedbackCommand(
-            event,
-            feedbackContent,
-          );
-
-          await this.sendSlackMessage(
-            responseMessage,
-            event.channel,
-            event.thread_ts,
-          );
-        } catch (error) {
-          this.logger.error('Error processing feedback:', error);
-          await this.sendSlackMessage(
-            'Error processing feedback. Please try again.',
-            event.channel,
-            event.thread_ts,
-          );
-        }
-
-        return;
-      }
-
-      // Check for /rating commands in thread messages
-      const ratingMatch = event.text?.match(
-        /\/rating\s+([+-]?\d+)(?:\s+(.+))?/i,
-      );
-      if (ratingMatch) {
-        this.logger.log('Received /rating command in thread');
-
-        // IMMEDIATE ACKNOWLEDGMENT - Add thinking emoji reaction
-        await this.addSlackReaction('thinking_face', event.channel, event.ts);
-
-        try {
-          const rating = parseInt(ratingMatch[1]);
-          const comment = ratingMatch[2]?.trim();
-          const responseMessage = await this.handleRatingCommand(
-            event,
-            rating,
-            comment,
-          );
-
-          await this.sendSlackMessage(
-            responseMessage,
-            event.channel,
-            event.thread_ts,
-          );
-        } catch (error) {
-          this.logger.error('Error processing rating:', error);
-          await this.sendSlackMessage(
-            'Error processing rating. Please try again.',
-            event.channel,
-            event.thread_ts,
-          );
-        }
-
+      if (shortCodes.length > 0) {
         return;
       }
 
@@ -595,34 +317,11 @@ No relevant results found. Try:
       // IMMEDIATE ACKNOWLEDGMENT - Add thinking emoji reaction for thread replies
       await this.addSlackReaction('thinking_face', event.channel, event.ts);
 
-      await this.chatManagerService.addMessage({
-        conversationId: conversationRecord.internalConversationId,
-        fromUserId: 'cx-slack-robot', // Generic Slack robot user - actual Slack user not tracked
-        content: event.text,
-        messageType: MessageType.TEXT,
-        fromRole: UserRole.CUSTOMER,
-        toRole: UserRole.AGENT,
-      });
-
-      // --------------------
-      const robot =
-        this.robotService.getRobotByName<SlackyOpenAiAgent>(
-          'SlackyOpenAiAgent',
-        )!;
-
-      const { messageEnvelope, conversationHistory } =
-        await this.createMessageEnvelopeWithHistory({
-          conversationId: conversationRecord.internalConversationId,
-          fromUserId: event.user,
-          content: event.text,
-        });
-
-      const response = await robot.acceptMessageMultiPartResponse(
-        messageEnvelope,
+      await this.chatManagerService.addMessageFromSlack(
+        conversationRecord.internalConversationId,
+        { type: 'text', payload: event.text },
         conversationRecord.sendConversationResponseToSlack,
-        () => conversationHistory, // Pass getHistory callback
       );
-      // ----------------------
     } catch (error) {
       this.logger.error('Error handling message event:', error);
 
@@ -788,65 +487,6 @@ No relevant results found. Try:
 
     // Priority 3: Fallback to relative path
     return '';
-  }
-
-  /**
-   * Extract form ID from conversation history by looking for form ID patterns
-   */
-  private async extractFormIdFromConversation(
-    conversationId: string,
-  ): Promise<string> {
-    try {
-      // Get recent messages from the conversation
-      const messages = await this.chatManagerService.getMessages(
-        conversationId,
-        {
-          limit: 20, // Look at last 20 messages
-          offset: 0,
-        },
-      );
-
-      // Look for form ID patterns in the conversation
-      for (const message of messages) {
-        const content = message.content?.payload || message.content || '';
-        const contentStr =
-          typeof content === 'string' ? content : String(content);
-
-        // Look for patterns like "form 6201623", "form ID 6201623", etc.
-        const formIdMatch = contentStr.match(/form\s+(?:id\s+)?(\d{6,7})/i);
-        if (formIdMatch) {
-          this.logger.log(
-            `Extracted form ID ${formIdMatch[1]} from conversation message`,
-          );
-          return formIdMatch[1];
-        }
-
-        // Also look for just 6-7 digit numbers that might be form IDs
-        const numberMatch = contentStr.match(/(\d{6,7})/);
-        if (numberMatch) {
-          // Additional validation: check if it's likely a form ID (not a timestamp, etc.)
-          const num = parseInt(numberMatch[1]);
-          if (num > 100000 && num < 9999999) {
-            this.logger.log(
-              `Extracted potential form ID ${numberMatch[1]} from conversation message`,
-            );
-            return numberMatch[1];
-          }
-        }
-      }
-
-      // If no form ID found, return a default
-      this.logger.warn(
-        `No form ID found in conversation ${conversationId}, using default`,
-      );
-      return '5375703'; // Default fallback
-    } catch (error) {
-      this.logger.error(
-        `Error extracting form ID from conversation ${conversationId}:`,
-        error,
-      );
-      return '5375703'; // Default fallback
-    }
   }
 
   /**
@@ -1107,26 +747,15 @@ Ratings must be between -5 and +5. Please provide a rating in this range.
       });
 
       // Create callback function for this specific conversation
-      const sendConversationResponseToSlack = async (
-        delayedResponse: TConversationTextMessageEnvelope,
-      ) => {
-        const messageContent = delayedResponse.envelopePayload.content.payload;
-
+      const sendConversationResponseToSlack = async (content: {
+        type: 'text';
+        payload: string;
+      }) => {
         // Only send to Slack if we have actual content
-        if (messageContent && messageContent.trim()) {
-          // Add robot response to conversation history
-          await this.chatManagerService.addMessage({
-            conversationId: conversation.id,
-            fromUserId: 'cx-slack-robot',
-            content: messageContent,
-            messageType: MessageType.ROBOT,
-            fromRole: UserRole.ROBOT,
-            toRole: UserRole.CUSTOMER,
-          });
-
+        if (content.payload && content.payload.trim()) {
           // Send message to Slack
           await this.sendSlackMessage(
-            messageContent,
+            content.payload,
             event.channel,
             event.ts, // this is what creates the thread
           );

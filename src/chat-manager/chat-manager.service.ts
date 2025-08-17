@@ -563,6 +563,113 @@ export class ChatManagerService {
   }
 
   /**
+   * Add a message from Slack and trigger robot response
+   * This method handles the common pattern of adding a user message from Slack and automatically triggering the robot
+   */
+  async addMessageFromSlack(
+    conversationId: string,
+    content: { type: 'text'; payload: string },
+    slackResponseCallback?: (content: {
+      type: 'text';
+      payload: string;
+    }) => Promise<void>,
+  ): Promise<IConversationMessage> {
+    // Add the user message to the conversation
+    const userMessage = await this.addMessage({
+      conversationId,
+      fromUserId: 'cx-slack-robot',
+      content: content.payload,
+      messageType: MessageType.TEXT,
+      fromRole: UserRole.CUSTOMER,
+      toRole: UserRole.AGENT,
+    });
+
+    // Trigger the robot response internally
+    try {
+      const robot = this.robotService.getRobotByName('SlackyOpenAiAgent')!;
+
+      // Get conversation history for context
+      const conversationHistory = await this.getLastMessages(
+        conversationId,
+        20,
+      );
+
+      // Create message envelope
+      const messageEnvelope: TConversationTextMessageEnvelope = {
+        messageId: uuidv4(),
+        requestOrResponse: 'request',
+        envelopePayload: {
+          messageId: uuidv4(),
+          author_role: 'cx-slack-robot',
+          content: {
+            type: 'text/plain',
+            payload: content.payload,
+          },
+          created_at: new Date().toISOString(),
+          estimated_token_count: -1,
+        },
+      };
+
+      // Create internal callback that handles robot responses
+      const internalRobotCallback = async (
+        response: TConversationTextMessageEnvelope,
+      ) => {
+        const responseContent = response.envelopePayload.content.payload;
+
+        // Add robot response to conversation history
+        await this.addRobotResponseFromSlack(conversationId, {
+          type: 'text',
+          payload: responseContent,
+        });
+
+        // If Slack callback is provided, send response to Slack
+        if (
+          slackResponseCallback &&
+          responseContent &&
+          responseContent.trim()
+        ) {
+          await slackResponseCallback({
+            type: 'text',
+            payload: responseContent,
+          });
+        }
+      };
+
+      // Trigger robot response
+      await robot.acceptMessageMultiPartResponse(
+        messageEnvelope,
+        internalRobotCallback,
+        () => conversationHistory,
+      );
+    } catch (error) {
+      console.error('Error triggering robot response:', error);
+    }
+
+    return userMessage;
+  }
+
+  /**
+   * Add a robot response message from Slack
+   * This method handles the common pattern of adding a robot response message from Slack
+   */
+  async addRobotResponseFromSlack(
+    conversationId: string,
+    content: { type: 'text'; payload: string },
+  ): Promise<IConversationMessage> {
+    // Add the robot response to the conversation
+    const robotMessage = await this.addMessage({
+      conversationId,
+      fromUserId: 'cx-slack-robot',
+      content: content.payload,
+      messageType: MessageType.ROBOT,
+      fromRole: UserRole.ROBOT,
+      toRole: UserRole.CUSTOMER,
+    });
+
+    return robotMessage;
+  }
+
+  /**
    * Get all conversations
    */
   async getConversations(userId?: string): Promise<Conversation[]> {
