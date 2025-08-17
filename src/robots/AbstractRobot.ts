@@ -1,5 +1,9 @@
 import type { TConversationTextMessageEnvelope } from './types';
-import type { IConversationMessage } from '../chat-manager/interfaces/message.interface';
+import type {
+  IConversationMessage,
+  IConversationMessageOpenAI,
+} from '../chat-manager/interfaces/message.interface';
+import { UserRole } from '../chat-manager/dto/create-message.dto';
 /**
  * Abstract base class for all robot types
  */
@@ -72,5 +76,21 @@ export abstract class AbstractRobot {
    */
   public getVersion(): string {
     return this.version;
+  }
+
+  /**
+   * Get the transformer function to convert conversation messages to the format expected by this robot
+   * Default implementation uses OpenAI format, can be overridden by specific robot implementations
+   */
+  public getGetFromRobotToConversationTransformer(): (
+    msg: IConversationMessage,
+  ) => IConversationMessageOpenAI {
+    return (msg) => ({
+      role:
+        msg.fromRole === UserRole.CUSTOMER || msg.fromRole === UserRole.AGENT
+          ? 'user'
+          : 'assistant',
+      content: (msg.content as any).payload,
+    });
   }
 }

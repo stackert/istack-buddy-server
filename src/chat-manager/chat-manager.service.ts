@@ -17,7 +17,6 @@ import {
   IConversationMessageOpenAI,
 } from './interfaces/message.interface';
 import { v4 as uuidv4 } from 'uuid';
-import { ConversationListSlackAppService } from '../ConversationLists/ConversationListSlackAppService';
 import { ChatConversationListService } from '../ConversationLists/ChatConversationListService';
 import {
   TConversationTextMessageEnvelope,
@@ -35,7 +34,6 @@ export class ChatManagerService {
   private gateway: any; // Will be set by the gateway
 
   constructor(
-    private readonly conversationListService: ConversationListSlackAppService,
     private readonly chatConversationListService: ChatConversationListService,
     private readonly robotService: RobotService,
   ) {}
@@ -276,7 +274,9 @@ export class ChatManagerService {
       // Get the robot
       const robot = this.robotService.getRobotByName(robotName);
       if (!robot) {
-        throw new Error(`Robot ${robotName} not found`);
+        throw new Error(
+          `Robot ${robotName} not found for conversation ${conversationId}`,
+        );
       }
 
       // Create message envelope
@@ -295,23 +295,14 @@ export class ChatManagerService {
         },
       };
 
-      // Get conversation history for context - use appropriate format based on robot type
+      // Get conversation history for context using the robot's transformer
       const getHistory = () => {
         try {
-          if (
-            robotName.toLowerCase().includes('anthropic') ||
-            robotName === 'AnthropicMarv'
-          ) {
-            return this.getHistoryForAnthropic(conversationId, 50);
-          } else if (
-            robotName.toLowerCase().includes('openai') ||
-            robotName === 'MarvOpenAiAgent'
-          ) {
-            return this.getHistoryForOpenAI(conversationId, 50);
-          } else {
-            // For other robots, return the raw format (backward compatibility)
-            return this.getLastMessages(conversationId, 50);
-          }
+          return this.getHistory(
+            conversationId,
+            50,
+            robot.getGetFromRobotToConversationTransformer(),
+          );
         } catch (error) {
           console.error('Error loading history:', error);
           return [];
@@ -329,12 +320,12 @@ export class ChatManagerService {
         );
       } else {
         throw new Error(
-          `Robot ${robotName} does not support streaming responses`,
+          `Robot ${robotName} does not support streaming responses for conversation ${conversationId}`,
         );
       }
     } catch (error) {
       console.error(
-        `Error in handleRobotStreamingResponse for robot ${robotName}:`,
+        `Error in handleRobotStreamingResponse for robot ${robotName} in conversation ${conversationId}:`,
         error,
       );
       await callbacks.onError(error);
@@ -379,78 +370,6 @@ export class ChatManagerService {
   }
 
   /**
-   * Convert Message to TConversationMessageEnvelope format for storage
-   */
-  private messageToEnvelope(
-    message: IConversationMessage,
-  ): TConversationTextMessageEnvelope {
-    const conversationMessage: any = {
-      messageId: message.id,
-      author_role: message.fromRole,
-      fromUserId: message.fromUserId, // Preserve the original fromUserId
-      content: message.content,
-      created_at: message.createdAt.toISOString(),
-      estimated_token_count: Math.ceil(
-        (this.getContentPayload(message.content) || '').length / 4,
-      ), // Rough token estimate
-      messageType: message.messageType, // Preserve messageType
-      toRole: message.toRole, // Preserve toRole
-    };
-
-    return {
-      messageId: message.id,
-      requestOrResponse:
-        message.fromRole === UserRole.CUSTOMER ? 'request' : 'response',
-      envelopePayload: conversationMessage,
-    };
-  }
-
-  /**
-   * Safely extract payload from message content
-   */
-  private getContentPayload(content: any): string | null {
-    if (!content) return null;
-
-    // Handle direct string content first
-    if (typeof content === 'string') {
-      return content;
-    }
-
-    // Handle TConversationMessageContentString structure
-    if (content.payload && typeof content.payload === 'string') {
-      return content.payload;
-    }
-
-    // Handle other content types
-    if (content.payload) {
-      return String(content.payload);
-    }
-
-    return null;
-  }
-
-  /**
-   * Convert TConversationMessageEnvelope back to Message format
-   */
-  private envelopeToMessage(
-    envelope: any,
-    conversationId: string,
-  ): IConversationMessage {
-    const payload = envelope.envelope.envelopePayload;
-    return {
-      id: payload.messageId,
-      content: payload.content,
-      conversationId: conversationId,
-      fromUserId: payload.fromUserId || null, // Use preserved fromUserId or null as fallback
-      fromRole: payload.author_role as UserRole,
-      toRole: payload.toRole || UserRole.AGENT, // Use preserved toRole or default to AGENT
-      messageType: payload.messageType || MessageType.TEXT, // Use preserved messageType or default to TEXT
-      createdAt: new Date(payload.created_at),
-      updatedAt: new Date(payload.created_at),
-    };
-  }
-
-  /**
    * Generate MD5 hash for message content to detect duplicates
    */
   private generateMessageContentHash(
@@ -481,28 +400,14 @@ export class ChatManagerService {
     const messageId = uuidv4();
     const now = new Date();
 
-    // Ensure conversation exists in conversation list service
-    const conversationList =
-      this.conversationListService.getConversationOrCreate(
-        createMessageDto.conversationId,
-        `Conversation ${createMessageDto.conversationId}`,
-        `Auto-created conversation for ${createMessageDto.conversationId}`,
-      );
-
-    // Ensure conversation metadata exists
-    if (!this.conversationMetadata[createMessageDto.conversationId]) {
-      const conversation: Conversation = {
-        id: createMessageDto.conversationId,
-        participantIds: [createMessageDto.fromUserId as string],
-        participantRoles: [createMessageDto.fromRole],
-        messageCount: 0,
-        lastMessageAt: now,
-        isActive: true,
-        createdAt: now,
-        updatedAt: now,
-      };
-      this.conversationMetadata[createMessageDto.conversationId] = conversation;
-    }
+    // Ensure conversation exists using centralized method
+    await this.ensureConversationExists(
+      createMessageDto.conversationId,
+      `Conversation ${createMessageDto.conversationId}`,
+      `Auto-created conversation for ${createMessageDto.conversationId}`,
+      createMessageDto.fromUserId as string,
+      createMessageDto.fromRole,
+    );
 
     const message: IConversationMessage = {
       id: messageId,
@@ -523,11 +428,7 @@ export class ChatManagerService {
       updatedAt: now,
     };
 
-    // Store the message in conversation list
-    const envelope = this.messageToEnvelope(message);
-    conversationList.addMessageEnvelope(envelope);
-
-    // Also store the message in the chat conversation list service
+    // Store the message in the chat conversation list service
     this.chatConversationListService.addMessageToConversation(
       createMessageDto.conversationId,
       message,
@@ -575,20 +476,19 @@ export class ChatManagerService {
     }) => Promise<void>,
   ): Promise<IConversationMessage> {
     // Add the user message to the conversation
-    const userMessage = await this.addMessage({
+    const userMessage = await this.addUserMessage(
       conversationId,
-      fromUserId: 'cx-slack-robot',
-      content: content.payload,
-      messageType: MessageType.TEXT,
-      fromRole: UserRole.CUSTOMER,
-      toRole: UserRole.AGENT,
-    });
+      content.payload,
+      'cx-slack-robot',
+      UserRole.CUSTOMER,
+      UserRole.AGENT,
+    );
 
     // Trigger the robot response internally
     try {
       const robot = this.robotService.getRobotByName('SlackyOpenAiAgent')!;
 
-      // Get conversation history for context
+      // Get conversation history for context (using original format for robot callback)
       const conversationHistory = await this.getLastMessages(
         conversationId,
         20,
@@ -642,7 +542,10 @@ export class ChatManagerService {
         () => conversationHistory,
       );
     } catch (error) {
-      console.error('Error triggering robot response:', error);
+      console.error(
+        `Error triggering robot response for conversation ${conversationId}:`,
+        error,
+      );
     }
 
     return userMessage;
@@ -657,14 +560,13 @@ export class ChatManagerService {
     content: { type: 'text'; payload: string },
   ): Promise<IConversationMessage> {
     // Add the user message to the conversation
-    const userMessage = await this.addMessage({
+    const userMessage = await this.addUserMessage(
       conversationId,
-      fromUserId: 'form-marv-user',
-      content: content.payload,
-      messageType: MessageType.TEXT,
-      fromRole: UserRole.CUSTOMER,
-      toRole: UserRole.AGENT,
-    });
+      content.payload,
+      'form-marv-user',
+      UserRole.CUSTOMER,
+      UserRole.AGENT,
+    );
 
     // Trigger the robot response internally
     try {
@@ -686,7 +588,10 @@ export class ChatManagerService {
         });
       }
     } catch (error) {
-      console.error('Error triggering robot response for Marv session:', error);
+      console.error(
+        `Error triggering robot response for Marv session in conversation ${conversationId}:`,
+        error,
+      );
     }
 
     return userMessage;
@@ -700,17 +605,49 @@ export class ChatManagerService {
     conversationId: string,
     content: { type: 'text'; payload: string },
   ): Promise<IConversationMessage> {
-    // Add the robot response to the conversation
-    const robotMessage = await this.addMessage({
+    return this.addRobotResponse(
       conversationId,
-      fromUserId: 'cx-slack-robot',
-      content: content.payload,
+      content.payload,
+      'cx-slack-robot',
+    );
+  }
+
+  /**
+   * Add a robot response to a conversation
+   */
+  async addRobotResponse(
+    conversationId: string,
+    content: string,
+    robotName: string,
+  ): Promise<IConversationMessage> {
+    return this.addMessage({
+      conversationId,
+      fromUserId: robotName,
+      content,
       messageType: MessageType.ROBOT,
       fromRole: UserRole.ROBOT,
       toRole: UserRole.CUSTOMER,
     });
+  }
 
-    return robotMessage;
+  /**
+   * Add a user message to a conversation
+   */
+  async addUserMessage(
+    conversationId: string,
+    content: string,
+    userId: string,
+    fromRole: UserRole = UserRole.CUSTOMER,
+    toRole: UserRole = UserRole.AGENT,
+  ): Promise<IConversationMessage> {
+    return this.addMessage({
+      conversationId,
+      fromUserId: userId,
+      content,
+      messageType: MessageType.TEXT,
+      fromRole,
+      toRole,
+    });
   }
 
   /**
@@ -748,16 +685,13 @@ export class ChatManagerService {
     query: GetMessagesDto,
   ): Promise<IConversationMessage[]> {
     const conversationList =
-      this.conversationListService.getConversationById(conversationId);
+      this.chatConversationListService.getConversationById(conversationId);
     if (!conversationList) {
       return [];
     }
 
-    // Get all envelopes and convert to messages
-    const allEnvelopes = conversationList.getLastAddedEnvelopes();
-    const allMessages = allEnvelopes
-      .map((envelope) => this.envelopeToMessage(envelope, conversationId))
-      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+    // Get all messages directly from the chat conversation list
+    const allMessages = conversationList.getAllChatMessages();
 
     let filteredMessages = allMessages;
 
@@ -789,28 +723,61 @@ export class ChatManagerService {
     count: number,
   ): Promise<IConversationMessage[]> {
     const conversationList =
-      this.conversationListService.getConversationById(conversationId);
+      this.chatConversationListService.getConversationById(conversationId);
 
     if (!conversationList) {
       return [];
     }
 
-    // Get all envelopes and convert to messages
-    const allEnvelopes = conversationList.getLastAddedEnvelopes();
-    const allMessages = allEnvelopes
-      .map((envelope) => this.envelopeToMessage(envelope, conversationId))
-      .sort((a, b) => {
-        // Primary sort by createdAt timestamp
-        const timeDiff = a.createdAt.getTime() - b.createdAt.getTime();
-        if (timeDiff !== 0) {
-          return timeDiff;
-        }
-        // Secondary sort by message ID for stability when timestamps are identical
-        return a.id.localeCompare(b.id);
-      });
+    // Get all messages and sort them
+    const allMessages = conversationList.getAllChatMessages().sort((a, b) => {
+      // Primary sort by createdAt timestamp
+      const timeDiff = a.createdAt.getTime() - b.createdAt.getTime();
+      if (timeDiff !== 0) {
+        return timeDiff;
+      }
+      // Secondary sort by message ID for stability when timestamps are identical
+      return a.id.localeCompare(b.id);
+    });
 
     // Return the last N messages
     return allMessages.slice(-count);
+  }
+
+  /**
+   * Generic function to get conversation history with custom transformation
+   * @param conversationId The conversation ID
+   * @param count Number of messages to return (default: 50)
+   * @param transformFn Function to transform each message
+   * @returns Transformed messages
+   */
+  private getHistory<T>(
+    conversationId: string,
+    count: number = 50,
+    transformFn: (msg: IConversationMessage) => T,
+  ): T[] {
+    const conversationList =
+      this.chatConversationListService.getConversationById(conversationId);
+
+    if (!conversationList) {
+      return [];
+    }
+
+    // Get all messages and sort them
+    const allMessages = conversationList.getAllChatMessages().sort((a, b) => {
+      // Primary sort by createdAt timestamp
+      const timeDiff = a.createdAt.getTime() - b.createdAt.getTime();
+      if (timeDiff !== 0) {
+        return timeDiff;
+      }
+      // Secondary sort by message ID for stability when timestamps are identical
+      return a.id.localeCompare(b.id);
+    });
+
+    // Return the last N messages
+    const messages = allMessages.slice(-count);
+
+    return messages.map(transformFn);
   }
 
   /**
@@ -821,31 +788,7 @@ export class ChatManagerService {
     conversationId: string,
     count: number = 50,
   ): IConversationMessageAnthropic[] {
-    const conversationList =
-      this.conversationListService.getConversationById(conversationId);
-
-    if (!conversationList) {
-      return [];
-    }
-
-    // Get all envelopes and convert to messages
-    const allEnvelopes = conversationList.getLastAddedEnvelopes();
-    const allMessages = allEnvelopes
-      .map((envelope) => this.envelopeToMessage(envelope, conversationId))
-      .sort((a, b) => {
-        // Primary sort by createdAt timestamp
-        const timeDiff = a.createdAt.getTime() - b.createdAt.getTime();
-        if (timeDiff !== 0) {
-          return timeDiff;
-        }
-        // Secondary sort by message ID for stability when timestamps are identical
-        return a.id.localeCompare(b.id);
-      });
-
-    // Return the last N messages
-    const messages = allMessages.slice(-count);
-
-    return messages.map((msg) => ({
+    return this.getHistory(conversationId, count, (msg) => ({
       role:
         msg.fromRole === UserRole.CUSTOMER || msg.fromRole === UserRole.AGENT
           ? 'user'
@@ -862,31 +805,7 @@ export class ChatManagerService {
     conversationId: string,
     count: number = 50,
   ): IConversationMessageOpenAI[] {
-    const conversationList =
-      this.conversationListService.getConversationById(conversationId);
-
-    if (!conversationList) {
-      return [];
-    }
-
-    // Get all envelopes and convert to messages
-    const allEnvelopes = conversationList.getLastAddedEnvelopes();
-    const allMessages = allEnvelopes
-      .map((envelope) => this.envelopeToMessage(envelope, conversationId))
-      .sort((a, b) => {
-        // Primary sort by createdAt timestamp
-        const timeDiff = a.createdAt.getTime() - b.createdAt.getTime();
-        if (timeDiff !== 0) {
-          return timeDiff;
-        }
-        // Secondary sort by message ID for stability when timestamps are identical
-        return a.id.localeCompare(b.id);
-      });
-
-    // Return the last N messages
-    const messages = allMessages.slice(-count);
-
-    return messages.map((msg) => ({
+    return this.getHistory(conversationId, count, (msg) => ({
       role:
         msg.fromRole === UserRole.CUSTOMER || msg.fromRole === UserRole.AGENT
           ? 'user'
@@ -1044,16 +963,15 @@ export class ChatManagerService {
     let totalMessages = 0;
     const recentUserIds = new Set<string>();
 
-    for (const conversationId of this.conversationListService.getAllConversationIds()) {
+    for (const conversationId of this.chatConversationListService.getAllConversationIds()) {
       const conversationList =
-        this.conversationListService.getConversationById(conversationId);
+        this.chatConversationListService.getConversationById(conversationId);
       if (conversationList) {
-        totalMessages += conversationList.getMessageCount();
+        const messages = conversationList.getAllChatMessages();
+        totalMessages += messages.length;
 
         // Check for recent messages to count active users
-        const envelopes = conversationList.getLastAddedEnvelopes();
-        for (const envelope of envelopes) {
-          const message = this.envelopeToMessage(envelope, conversationId);
+        for (const message of messages) {
           if (message.createdAt > oneHourAgo && message.fromUserId) {
             recentUserIds.add(message.fromUserId);
           }
@@ -1081,54 +999,23 @@ export class ChatManagerService {
     const conversationId = this.generateId();
     const now = new Date();
 
-    // Create conversation in conversation list service
-    const conversationList =
-      this.conversationListService.getConversationOrCreate(
-        conversationId,
-        `Conversation ${conversationId}`,
-        `Conversation created by ${startConversationDto.createdBy}`,
+    // Create conversation using centralized method
+    await this.ensureConversationExists(
+      conversationId,
+      `Conversation ${conversationId}`,
+      `Conversation created by ${startConversationDto.createdBy}`,
+      startConversationDto.createdBy,
+      startConversationDto.createdByRole,
+      startConversationDto.initialParticipants,
+    );
+
+    // Get the created conversation metadata
+    const conversation = this.conversationMetadata[conversationId];
+    if (!conversation) {
+      throw new Error(
+        `Conversation ${conversationId} not found after creation`,
       );
-
-    const conversation: Conversation = {
-      id: conversationId,
-      participantIds: [startConversationDto.createdBy],
-      participantRoles: [startConversationDto.createdByRole],
-      messageCount: 0,
-      lastMessageAt: now,
-      isActive: true,
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    // Store conversation metadata
-    this.conversationMetadata[conversationId] = conversation;
-
-    // Add creator as participant
-    const creatorParticipant: Participant = {
-      userId: startConversationDto.createdBy,
-      userRole: startConversationDto.createdByRole,
-      joinedAt: now,
-    };
-
-    const participantList = [creatorParticipant];
-
-    // Add initial participants if provided
-    if (startConversationDto.initialParticipants) {
-      for (const participantId of startConversationDto.initialParticipants) {
-        if (participantId !== startConversationDto.createdBy) {
-          participantList.push({
-            userId: participantId,
-            userRole: UserRole.CUSTOMER, // Default role for additional participants
-            joinedAt: now,
-          });
-
-          conversation.participantIds.push(participantId);
-          conversation.participantRoles.push(UserRole.CUSTOMER);
-        }
-      }
     }
-
-    this.participants.set(conversationId, participantList);
 
     // Broadcast conversation created event to dashboard
     if (this.gateway) {
@@ -1159,45 +1046,30 @@ export class ChatManagerService {
       return existingConversation;
     }
 
-    // Create conversation in conversation list service
+    // Create conversation using centralized method
     const displayName = channelName
       ? `${source} - ${channelName}`
       : `${source} - ${externalConversationId}`;
 
-    const conversationList =
-      this.conversationListService.getConversationOrCreate(
-        externalConversationId,
-        displayName,
-        `External conversation from ${source}`,
+    await this.ensureConversationExists(
+      externalConversationId,
+      displayName,
+      `External conversation from ${source}`,
+      createdBy,
+      UserRole.CUSTOMER, // External users start as customers
+    );
+
+    // Get the created conversation metadata
+    const conversation = this.conversationMetadata[externalConversationId];
+    if (!conversation) {
+      throw new Error(
+        `External conversation ${externalConversationId} not found after creation`,
       );
-
-    // Create new conversation metadata
-    const now = new Date();
-
-    const conversation: Conversation = {
-      id: externalConversationId,
-      participantIds: [createdBy],
-      participantRoles: [UserRole.CUSTOMER], // External users start as customers
-      messageCount: 0,
-      lastMessageAt: now,
-      isActive: true,
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    this.conversationMetadata[externalConversationId] = conversation;
-
-    // Add the creator as a participant
-    const creatorParticipant: Participant = {
-      userId: createdBy,
-      userRole: UserRole.CUSTOMER,
-      joinedAt: now,
-    };
-
-    this.participants.set(externalConversationId, [creatorParticipant]);
+    }
 
     // Broadcast conversation created event to dashboard
     if (this.gateway) {
+      const now = new Date();
       this.gateway.broadcastToDashboard('conversation_created', {
         conversation,
         createdBy,
@@ -1211,6 +1083,77 @@ export class ChatManagerService {
   }
 
   // Private helper methods
+
+  /**
+   * Centralized method to ensure a conversation exists in all storage systems
+   */
+  private async ensureConversationExists(
+    conversationId: string,
+    displayName: string,
+    description: string,
+    createdBy?: string,
+    createdByRole?: UserRole,
+    initialParticipants?: string[],
+  ): Promise<void> {
+    // Ensure conversation exists in chat conversation list service
+    this.chatConversationListService.getConversationOrCreate(conversationId);
+
+    // Ensure conversation metadata exists
+    if (!this.conversationMetadata[conversationId]) {
+      const now = new Date();
+      const conversation: Conversation = {
+        id: conversationId,
+        participantIds: createdBy ? [createdBy] : [],
+        participantRoles: createdByRole ? [createdByRole] : [],
+        messageCount: 0,
+        lastMessageAt: now,
+        isActive: true,
+        createdAt: now,
+        updatedAt: now,
+      };
+      this.conversationMetadata[conversationId] = conversation;
+
+      // Add initial participants if provided
+      if (initialParticipants && createdBy) {
+        for (const participantId of initialParticipants) {
+          if (participantId !== createdBy) {
+            conversation.participantIds.push(participantId);
+            conversation.participantRoles.push(UserRole.CUSTOMER);
+          }
+        }
+
+        // Create participant list
+        const participantList = [
+          {
+            userId: createdBy,
+            userRole: createdByRole || UserRole.CUSTOMER,
+            joinedAt: now,
+          },
+        ];
+
+        for (const participantId of initialParticipants) {
+          if (participantId !== createdBy) {
+            participantList.push({
+              userId: participantId,
+              userRole: UserRole.CUSTOMER,
+              joinedAt: now,
+            });
+          }
+        }
+
+        this.participants.set(conversationId, participantList);
+      } else if (createdBy) {
+        // Just add the creator as participant
+        this.participants.set(conversationId, [
+          {
+            userId: createdBy,
+            userRole: createdByRole || UserRole.CUSTOMER,
+            joinedAt: new Date(),
+          },
+        ]);
+      }
+    }
+  }
 
   private generateId(): string {
     return uuidv4();

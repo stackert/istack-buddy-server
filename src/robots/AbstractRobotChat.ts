@@ -4,7 +4,11 @@ import type {
   TRobotResponseEnvelope,
   IStreamingCallbacks,
 } from './types';
-import type { IConversationMessage } from '../chat-manager/interfaces/message.interface';
+import type {
+  IConversationMessage,
+  IConversationMessageAnthropic,
+} from '../chat-manager/interfaces/message.interface';
+import { UserRole } from '../chat-manager/dto/create-message.dto';
 
 /**
  * Abstract chat robot class that extends the base robot functionality
@@ -26,4 +30,19 @@ export abstract class AbstractRobotChat extends AbstractRobot {
     messageEnvelope: TConversationTextMessageEnvelope,
     getHistory?: () => IConversationMessage[],
   ): Promise<TRobotResponseEnvelope>;
+
+  /**
+   * Override the transformer to use Anthropic format for all chat robots
+   */
+  public getGetFromRobotToConversationTransformer(): (
+    msg: IConversationMessage,
+  ) => IConversationMessageAnthropic {
+    return (msg) => ({
+      role:
+        msg.fromRole === UserRole.CUSTOMER || msg.fromRole === UserRole.AGENT
+          ? 'user'
+          : 'assistant',
+      content: (msg.content as any).payload,
+    });
+  }
 }
