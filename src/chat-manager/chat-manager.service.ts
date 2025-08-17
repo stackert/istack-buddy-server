@@ -649,6 +649,50 @@ export class ChatManagerService {
   }
 
   /**
+   * Add a message from Marv Session and trigger robot response
+   * This method handles the common pattern of adding a user message from form-marv session and automatically triggering the robot
+   */
+  async addMessageFromMarvSession(
+    conversationId: string,
+    content: { type: 'text'; payload: string },
+  ): Promise<IConversationMessage> {
+    // Add the user message to the conversation
+    const userMessage = await this.addMessage({
+      conversationId,
+      fromUserId: 'form-marv-user',
+      content: content.payload,
+      messageType: MessageType.TEXT,
+      fromRole: UserRole.CUSTOMER,
+      toRole: UserRole.AGENT,
+    });
+
+    // Trigger the robot response internally
+    try {
+      // Create conversation callbacks for streaming
+      const callbacks = this.createConversationCallbacks(conversationId);
+
+      // Handle robot streaming response
+      await this.handleRobotStreamingResponse(
+        conversationId,
+        'AnthropicMarv',
+        content.payload,
+        callbacks,
+      );
+
+      // Broadcast completion via WebSocket
+      if (this.gateway) {
+        this.gateway.broadcastToConversation(conversationId, 'robot_complete', {
+          message: 'Robot response completed',
+        });
+      }
+    } catch (error) {
+      console.error('Error triggering robot response for Marv session:', error);
+    }
+
+    return userMessage;
+  }
+
+  /**
    * Add a robot response message from Slack
    * This method handles the common pattern of adding a robot response message from Slack
    */

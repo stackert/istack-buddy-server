@@ -265,54 +265,12 @@ export class PublicInterfaceController {
         return { success: false };
       }
 
-      // A) Add message to conversation
-      const userMessage = await this.chatManagerService.addMessage({
-        conversationId: conversationId,
-        fromUserId: 'form-marv-user',
-        content: messageData.content || messageData.message,
-        messageType: MessageType.TEXT,
-        fromRole: UserRole.CUSTOMER,
-        toRole: UserRole.AGENT,
-      });
-
-      // C) Stream robot response via WebSocket and collect full response
-      let fullResponse = '';
-      console.log(
-        `Starting streaming response for conversation: ${conversationId}`,
-      );
-
-      // Use conversation manager callbacks directly
-      const callbacks =
-        this.chatManagerService.createConversationCallbacks(conversationId);
-
-      await this.chatManagerService.handleRobotStreamingResponse(
-        conversationId,
-        'AnthropicMarv',
-        messageData.content || messageData.message,
-        callbacks,
-      );
-      console.log(`Streaming complete. Full response: "${fullResponse}"`);
-
-      // D) Add complete robot response to conversation
-      if (fullResponse) {
-        const robotMessage = await this.chatManagerService.addMessage({
-          conversationId: conversationId,
-          fromUserId: 'anthropic-marv-robot',
-          content: fullResponse,
-          messageType: MessageType.ROBOT,
-          fromRole: UserRole.ROBOT,
-          toRole: UserRole.CUSTOMER,
-        });
-
-        // E) Broadcast completion
-        if (this.chatManagerService.getGateway()) {
-          this.chatManagerService
-            .getGateway()
-            .broadcastToConversation(conversationId, 'robot_complete', {
-              messageId: robotMessage.id,
-            });
-        }
-      }
+      // Add message to conversation and trigger robot response
+      const userMessage =
+        await this.chatManagerService.addMessageFromMarvSession(
+          conversationId,
+          { type: 'text', payload: messageData.content || messageData.message },
+        );
 
       return { success: true, messageId: userMessage.id };
     } catch (error) {
