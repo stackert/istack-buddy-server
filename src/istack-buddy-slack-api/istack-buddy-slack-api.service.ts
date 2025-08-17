@@ -65,6 +65,40 @@ export class IstackBuddySlackApiService implements OnModuleDestroy {
     }
   }
 
+  /**
+   * Extract all short codes from event text
+   * @param text The event text to parse
+   * @returns Array of short codes found in the text
+   */
+  private getShortCodes(text: string): string[] {
+    const shortCodes: string[] = [];
+
+    // Remove bot mentions and clean the text
+    const cleanText = text.replace(/@istack-buddy|<@[^>]+>/g, '').trim();
+
+    // Extract /marv-session command with formId parameter
+    if (cleanText.match(/\/marv-session\s+formId:(\d+)/i)) {
+      shortCodes.push('/marv-session');
+    }
+
+    // Extract /kb command
+    if (cleanText.match(/\/kb(?::slack:(.+?))?\s+(.*)/i)) {
+      shortCodes.push('/kb');
+    }
+
+    // Extract /feedback command
+    if (cleanText.match(/\/feedback\s+(.+)/i)) {
+      shortCodes.push('/feedback');
+    }
+
+    // Extract /rating command
+    if (cleanText.match(/\/rating\s+([+-]?\d+)(?:\s+(.+))?/i)) {
+      shortCodes.push('/rating');
+    }
+
+    return shortCodes;
+  }
+
   private makeSimplifiedEvent(event: any): {
     eventType: string;
     conversationId: string;
@@ -168,402 +202,69 @@ export class IstackBuddySlackApiService implements OnModuleDestroy {
         `DEBUG: Event text: "${event.text}", trimmed: "${event.text?.trim()}"`,
       );
 
-      // Check for /marv-session command (with or without bot mention)
-      const trimmedText = event.text?.trim();
-      if (
-        trimmedText === '/marv-session' ||
-        trimmedText?.endsWith(' /marv-session')
-      ) {
-        this.logger.log('Received /marv-session command via app mention');
+      const shortCodes = this.getShortCodes(event.text || '');
 
-        // IMMEDIATE ACKNOWLEDGMENT - Add thinking emoji reaction
-        await this.addSlackReaction('thinking_face', event.channel, event.ts);
-
-        try {
-          // Get the existing conversation ID from the Slack thread mapping
-          const conversationId = event.thread_ts || event.ts;
-          const conversationRecord =
-            this.slackThreadToConversationMap[conversationId];
-
-          this.logger.log(`DEBUG: Slack conversationId: ${conversationId}`);
-          this.logger.log(
-            `DEBUG: Conversation record: ${JSON.stringify(conversationRecord)}`,
-          );
-          this.logger.log(
-            `DEBUG: Internal conversation ID: ${conversationRecord?.internalConversationId}`,
-          );
-
-          if (!conversationRecord) {
-            // No existing conversation found - this shouldn't happen in a thread
-            await this.sendSlackMessage(
-              'session link: http://localhost:3500/public/form-marv/_CONVERSATION_ID_UNKNOWN_/_FORM_ID_UNKNOWN_?jwtToken=_JWT_TOKEN_UNKNOWN_',
-              event.channel,
-              event.thread_ts || event.ts,
-            );
-            return;
-          }
-
-          // Create a new form-marv session
-          const tempUserId = conversationRecord.internalConversationId; // Use conversation ID as user ID
-
-          // Create a JWT token for the temporary user
-          const jwtToken = jwt.sign(
-            {
-              userId: tempUserId,
-              email: `form-marv-${Date.now()}@example.com`,
-              username: tempUserId,
-              accountType: 'TEMPORARY',
-            },
-            'istack-buddy-secret-key-2024',
-            { expiresIn: '8h' },
-          );
-
-          // Add user to permissions system
-          this.authorizationPermissionsService.addUser(
-            tempUserId,
-            ['cx-agent:form-marv:read', 'cx-agent:form-marv:write'],
-            [],
-          );
-
-          // Create temporary user profile
-          this.userProfileService.addTemporaryUser(tempUserId, {
-            email: `form-marv-${Date.now()}@example.com`,
-            username: tempUserId,
-            account_type_informal: 'TEMPORARY',
-            first_name: 'Form',
-            last_name: 'Marv',
-          });
-
-          // Extract form ID from conversation history
-          const formId = await this.extractFormIdFromConversation(
-            conversationRecord.internalConversationId,
-          );
-
-          // Generate the session URL using the internal conversation ID and extracted form ID
-          const baseUrl = this.getBaseUrl();
-          const sessionUrl = `${baseUrl}/public/form-marv/${conversationRecord.internalConversationId}/${formId}?jwtToken=${jwtToken}`;
-
-          // Send immediate response to Slack with the session link
-          await this.sendSlackMessage(
-            `session link: ${sessionUrl}`,
-            event.channel,
-            event.thread_ts || event.ts, // Use thread_ts if available, otherwise ts
-          );
-        } catch (error) {
-          this.logger.error('Error creating marv session:', error);
-          await this.sendSlackMessage(
-            'Error creating marv session. Please try again.',
-            event.channel,
-            event.thread_ts || event.ts,
-          );
+      shortCodes.forEach((shortCode) => {
+        this.logger.log(`Received short code: ${shortCode}`);
+        switch (shortCode) {
+          case '/marv-session':
+            this.handleShortCodeMarvSession(event);
+            break;
+          case '/kb':
+            this.handleShortCodeKb(event);
+            break;
+          case '/feedback':
+            this.handleShortCodeFeedback(event);
+            break;
+          case '/rating':
+            this.handleShortCodeRating(event);
+            break;
+          default:
+            this.logger.log(`Unknown short code: ${shortCode}`);
+            break;
         }
+      });
 
+      if (shortCodes.length > 0) {
         return;
       }
 
-      // /kb command handler
-      const kbMatch = trimmedText?.match(/\/kb(?::slack:(.+?))?\s+(.*)/i);
-      if (kbMatch) {
-        let specifiedChannel = kbMatch[1];
-        const searchQuery = kbMatch[2]?.trim() || '';
-        
-        // Handle Slack's <#CHANNELID|alias> format
-        if (specifiedChannel?.includes('<#') && specifiedChannel.includes('|')) {
-          const channelMatch = specifiedChannel.match(/<#([^|]+)\|([^>]*)>/);
-          if (channelMatch) {
-            const channelId = channelMatch[1];
-            const alias = channelMatch[2];
-            
-            specifiedChannel = channelMatch[1]; // Just use the channel ID: C3LQ7KNFN
-          }
-        }
-        
-        this.logger.log(`Parsed channel: "${specifiedChannel}", query: "${searchQuery}"`);
-        
-        await this.addSlackReaction('thinking_face', event.channel, event.ts);
+      // Get or create conversation for app mention events
+      const conversationRecord = await this.getOrCreateConversation(event);
 
-        if (!searchQuery) {
-          await this.sendSlackMessage(
-            `📚 **Knowledge Base Help**\n• \`/kb query\` - Search all channels\n• \`/kb:slack:channel-alias query\` - Search specific channel\n• \`/kb:slack:all query\` - Search all channels`,
-            event.channel, event.ts
-          );
-          return;
-        }
+      // IMMEDIATE ACKNOWLEDGMENT - Add thinking emoji reaction
+      await this.addSlackReaction('thinking_face', event.channel, event.ts);
 
-        try {
-          let channels: string[] | string;
-          if (specifiedChannel === 'all') {
-            channels = 'all';
-          } else if (specifiedChannel) {
-            channels = [specifiedChannel]; // Send channel ID directly
-          } else {
-            channels = 'all';
-          }
+      // Add message to conversation
+      await this.chatManagerService.addMessage({
+        conversationId: conversationRecord.internalConversationId,
+        fromUserId: 'cx-slack-robot',
+        content: event.text,
+        messageType: MessageType.TEXT,
+        fromRole: UserRole.CUSTOMER,
+        toRole: UserRole.AGENT,
+      });
 
-          const searchResults = await this.knowledgeBaseService.getSearchResults({
-            q: searchQuery,
-            channels: channels,
-          });
+      // --------------------
+      const robot =
+        this.robotService.getRobotByName<SlackyOpenAiAgent>(
+          'SlackyOpenAiAgent',
+        )!;
 
-          if (searchResults.length > 0) {
-            const resultsText = searchResults
-              .map((result, index) => {
-                const date = result.original_post_date
-                  ? new Date(result.original_post_date).toLocaleDateString()
-                  : 'Unknown date';
-                
-                // Clean up the excerpt - remove timestamps and user IDs, keep only the actual content
-                let cleanExcerpt = result.excerpt_text || '';
-                // Remove timestamp patterns like [2025-01-31T03:11:42.424Z] 
-                cleanExcerpt = cleanExcerpt.replace(/\[[\d\-T:.Z]+\]\s*/g, '');
-                // Remove user ID patterns like U07RCTLM69Z:
-                cleanExcerpt = cleanExcerpt.replace(/[A-Z0-9]{11}:\s*/g, '');
-                // Remove multiple --- separators and replace with simple breaks
-                cleanExcerpt = cleanExcerpt.replace(/\s*---\s*/g, '\n• ');
-                // Limit length to first ~200 characters for readability
-                if (cleanExcerpt.length > 200) {
-                  cleanExcerpt = cleanExcerpt.substring(0, 200) + '...';
-                }
-                
-                return `${index + 1}. **<${result.message_link}|View Message>** (${date}) - *${Math.round(result.relevance_score * 100)}% relevance*
-   ${cleanExcerpt}`;
-              })
-              .join('\n\n');
-
-            const responseMessage = `📚 **Knowledge Base Results**
-
-**Query:** "${searchQuery}"
-
-${resultsText}
-
-*Found ${searchResults.length} relevant results*`;
-
-            await this.sendSlackMessage(responseMessage, event.channel, event.ts);
-          } else {
-            const responseMessage = `📚 **Knowledge Base**
-
-**Query:** "${searchQuery}"
-
-No relevant results found. Try:
-• Using different keywords
-• \`@iStackBuddy /kb:slack:all ${searchQuery}\` to search all channels
-• Check spelling and try broader terms`;
-
-            await this.sendSlackMessage(responseMessage, event.channel, event.ts);
-          }
-                } catch (error) {
-          this.logger.error('Error retrieving knowledge base:', error);
-          await this.sendSlackMessage(
-            'Knowledge-buddy is offline',
-            event.channel,
-            event.ts,
-          );
-        }
-
-        return;
-      }
-
-      // Check for /feedback commands (with or without bot mention)
-      const feedbackMatch = trimmedText?.match(
-        /(?:@istack-buddy|<@[^>]+>)\s+\/feedback\s+(.+)/i,
-      );
-      if (feedbackMatch) {
-        this.logger.log('Received /feedback command via app mention');
-
-        // IMMEDIATE ACKNOWLEDGMENT - Add thinking emoji reaction
-        await this.addSlackReaction('thinking_face', event.channel, event.ts);
-
-        try {
-          const feedbackContent = feedbackMatch[1].trim();
-          const responseMessage = await this.handleFeedbackCommand(
-            event,
-            feedbackContent,
-          );
-
-          await this.sendSlackMessage(
-            responseMessage,
-            event.channel,
-            event.thread_ts || event.ts,
-          );
-        } catch (error) {
-          this.logger.error('Error processing feedback:', error);
-          await this.sendSlackMessage(
-            'Error processing feedback. Please try again.',
-            event.channel,
-            event.thread_ts || event.ts,
-          );
-        }
-
-        return;
-      }
-
-      // Check for /rating commands (with or without bot mention)
-      const ratingMatch = trimmedText?.match(
-        /(?:@istack-buddy|<@[^>]+>)\s+\/rating\s+([+-]?\d+)(?:\s+(.+))?/i,
-      );
-      if (ratingMatch) {
-        this.logger.log('Received /rating command via app mention');
-
-        // IMMEDIATE ACKNOWLEDGMENT - Add thinking emoji reaction
-        await this.addSlackReaction('thinking_face', event.channel, event.ts);
-
-        try {
-          const rating = parseInt(ratingMatch[1]);
-          const comment = ratingMatch[2]?.trim();
-          const responseMessage = await this.handleRatingCommand(
-            event,
-            rating,
-            comment,
-          );
-
-          await this.sendSlackMessage(
-            responseMessage,
-            event.channel,
-            event.thread_ts || event.ts,
-          );
-        } catch (error) {
-          this.logger.error('Error processing rating:', error);
-          await this.sendSlackMessage(
-            'Error processing rating. Please try again.',
-            event.channel,
-            event.thread_ts || event.ts,
-          );
-        }
-
-        return;
-      }
-
-      if (simpleEvent.eventType === 'conversation_start') {
-        // IMMEDIATE ACKNOWLEDGMENT - Add thinking emoji reaction
-        await this.addSlackReaction('thinking_face', event.channel, event.ts);
-
-        const conversation = await this.chatManagerService.startConversation({
-          createdBy: event.user,
-          createdByRole: UserRole.CUSTOMER,
-          title: 'Slack Channel Conversation',
-          description: `Slack conversation from channel mention`,
-          initialParticipants: [event.user],
-        });
-
-        const userMessage = await this.chatManagerService.addMessage({
-          conversationId: conversation.id,
-          fromUserId: 'cx-slack-robot', // Generic Slack robot user - actual Slack user not tracked
-          content: event.text,
-          messageType: MessageType.TEXT,
-          fromRole: UserRole.CUSTOMER,
-          toRole: UserRole.AGENT,
-        });
-
-        // Create callback function for this specific conversation
-        const sendConversationResponseToSlack = async (
-          delayedResponse: TConversationTextMessageEnvelope,
-        ) => {
-          const messageContent =
-            delayedResponse.envelopePayload.content.payload;
-
-          // Only send to Slack if we have actual content
-          if (messageContent && messageContent.trim()) {
-            // Add robot response to conversation history
-            await this.chatManagerService.addMessage({
-              conversationId: conversation.id,
-              fromUserId: 'cx-slack-robot',
-              content: messageContent,
-              messageType: MessageType.ROBOT,
-              fromRole: UserRole.ROBOT,
-              toRole: UserRole.CUSTOMER,
-            });
-
-            // Send message to Slack
-            await this.sendSlackMessage(
-              messageContent,
-              event.channel,
-              event.ts, // this is what creates the thread
-            );
-          } else {
-            this.logger.warn('Skipping empty message response to Slack');
-          }
-        };
-
-        // Map the Slack thread to conversation record with callback for future lookups
-        this.slackThreadToConversationMap[event.ts] = {
-          internalConversationId: conversation.id,
-          slackConversationId: event.ts,
-          sendConversationResponseToSlack,
-        };
-
-        // --------------------
-        const robot =
-          this.robotService.getRobotByName<SlackyOpenAiAgent>(
-            'SlackyOpenAiAgent',
-          )!;
-
-        // this creates the first message in the thread
-        const { messageEnvelope, conversationHistory } =
-          await this.createMessageEnvelopeWithHistory({
-            conversationId: conversation.id,
-            fromUserId: event.user,
-            content: event.text,
-          });
-
-        const response = await robot.acceptMessageMultiPartResponse(
-          messageEnvelope,
-          sendConversationResponseToSlack,
-          () => conversationHistory, // Pass getHistory callback
-        );
-        // ----------------------
-
-        return;
-      } else if (simpleEvent.eventType === 'thread_reply') {
-        // Thread message with existing mapping - ADD message to conversation
-        const conversationRecord =
-          this.slackThreadToConversationMap[event.thread_ts];
-
-        if (!conversationRecord) {
-          // Unknown scenario - log and ignore
-          this.logger.log(
-            `Ignoring event - thread_ts: ${event.thread_ts}, no mapping found or unrecognized pattern`,
-          );
-          return;
-        }
-
-        // IMMEDIATE ACKNOWLEDGMENT - Add thinking emoji reaction for thread replies
-        await this.addSlackReaction('thinking_face', event.channel, event.ts);
-
-        const userMessage = await this.chatManagerService.addMessage({
+      // this creates the first message in the thread
+      const { messageEnvelope, conversationHistory } =
+        await this.createMessageEnvelopeWithHistory({
           conversationId: conversationRecord.internalConversationId,
-          fromUserId: 'cx-slack-robot', // Generic Slack robot user - actual Slack user not tracked
+          fromUserId: event.user,
           content: event.text,
-          messageType: MessageType.TEXT,
-          fromRole: UserRole.CUSTOMER,
-          toRole: UserRole.AGENT,
         });
 
-        // --------------------
-        const robot =
-          this.robotService.getRobotByName<SlackyOpenAiAgent>(
-            'SlackyOpenAiAgent',
-          )!;
-
-        const { messageEnvelope, conversationHistory } =
-          await this.createMessageEnvelopeWithHistory({
-            conversationId: conversationRecord.internalConversationId,
-            fromUserId: event.user,
-            content: event.text,
-          });
-
-        const response = await robot.acceptMessageMultiPartResponse(
-          messageEnvelope,
-          conversationRecord.sendConversationResponseToSlack,
-          () => conversationHistory, // Pass getHistory callback
-        );
-        // ----------------------
-      } else {
-        // looks like it was not a channel or thread mention - we're done, goodbye
-        // Unknown scenario - log and ignore
-        this.logger.log(
-          `Ignoring event - thread_ts: ${event.thread_ts}, no mapping found or unrecognized pattern`,
-        );
-      }
+      await robot.acceptMessageMultiPartResponse(
+        messageEnvelope,
+        conversationRecord.sendConversationResponseToSlack,
+        () => conversationHistory, // Pass getHistory callback
+      );
+      // ----------------------
     } catch (error) {
       this.logger.error('Error handling app mention:', error);
 
@@ -596,14 +297,18 @@ No relevant results found. Try:
         return;
       }
 
-      // Check if this is a /marv-session command
-      if (event.text && event.text.trim() === '/marv-session') {
+      // Check if this is a /marv-session command with formId
+      const marvMatch = event.text?.match(/\/marv-session\s+formId:(\d+)/i);
+      if (marvMatch) {
         this.logger.log('Received /marv-session command in thread');
 
         // IMMEDIATE ACKNOWLEDGMENT - Add thinking emoji reaction
         await this.addSlackReaction('thinking_face', event.channel, event.ts);
 
         try {
+          const formId = marvMatch[1];
+          this.logger.log(`Extracted formId: ${formId} from command`);
+
           // Get the existing conversation ID from the Slack thread mapping
           const conversationId = event.thread_ts;
           const conversationRecord =
@@ -612,7 +317,7 @@ No relevant results found. Try:
           if (!conversationRecord) {
             // No existing conversation found - this shouldn't happen in a thread
             await this.sendSlackMessage(
-              'session link: http://localhost:3500/public/form-marv/_CONVERSATION_ID_UNKNOWN_/_FORM_ID_UNKNOWN_?jwtToken=_JWT_TOKEN_UNKNOWN_',
+              '❌ **No conversation found**\n\nPlease start a conversation with @istack-buddy first, then use `/marv-session formId:123456` in the thread.',
               event.channel,
               event.thread_ts,
             );
@@ -650,19 +355,26 @@ No relevant results found. Try:
             last_name: 'Marv',
           });
 
-          // Generate the session URL using the internal conversation ID
-          const sessionUrl = `http://localhost:3500/public/form-marv/${conversationRecord.internalConversationId}/5375703?jwtToken=${jwtToken}`;
+          // Set the formId in the conversation metadata
+          this.chatManagerService.setConversationFormId(
+            conversationRecord.internalConversationId,
+            formId,
+          );
+
+          // Generate the session URL using the internal conversation ID and formId
+          const baseUrl = this.getBaseUrl();
+          const sessionUrl = `${baseUrl}/public/form-marv/${conversationRecord.internalConversationId}/${formId}?jwtToken=${jwtToken}`;
 
           // Send immediate response to Slack with the session link
           await this.sendSlackMessage(
-            `session link: ${sessionUrl}`,
+            `✅ **Form Marv Session Created**\n\n📋 **Form ID:** ${formId}\n🔗 **Session Link:** ${sessionUrl}\n\nClick the link above to access the form session.`,
             event.channel,
             event.thread_ts,
           );
         } catch (error) {
           this.logger.error('Error creating marv session:', error);
           await this.sendSlackMessage(
-            'Error creating marv session. Please try again.',
+            '❌ **Error creating marv session**\n\nPlease try again or contact support if the problem persists.',
             event.channel,
             event.thread_ts,
           );
@@ -674,21 +386,26 @@ No relevant results found. Try:
       // Check for /kb commands in thread messages
       const kbMatch = event.text?.match(/\/kb(?::slack:(.+?))?\s+(.*)/i);
       if (kbMatch) {
-        let specifiedChannel = kbMatch[1]; // e.g., "all" or "channel-name" 
+        let specifiedChannel = kbMatch[1]; // e.g., "all" or "channel-name"
         const searchQuery = kbMatch[2]?.trim() || ''; // The search query after /kb
-        
+
         // Handle Slack's <#CHANNELID|alias> format
-        if (specifiedChannel?.includes('<#') && specifiedChannel.includes('|')) {
+        if (
+          specifiedChannel?.includes('<#') &&
+          specifiedChannel.includes('|')
+        ) {
           const channelMatch = specifiedChannel.match(/<#([^|]+)\|([^>]*)>/);
           if (channelMatch) {
             const channelId = channelMatch[1];
             const alias = channelMatch[2];
-            
+
             specifiedChannel = channelMatch[1]; // Just use the channel ID: C3LQ7KNFN
           }
         }
-        
-        this.logger.log(`Thread - Parsed channel: "${specifiedChannel}", query: "${searchQuery}"`);
+
+        this.logger.log(
+          `Thread - Parsed channel: "${specifiedChannel}", query: "${searchQuery}"`,
+        );
 
         // IMMEDIATE ACKNOWLEDGMENT - Add thinking emoji reaction
         await this.addSlackReaction('thinking_face', event.channel, event.ts);
@@ -706,15 +423,17 @@ No relevant results found. Try:
           if (!searchQuery) {
             await this.sendSlackMessage(
               `📚 **Knowledge Base Help**\n• \`/kb query\` - Search all channels\n• \`/kb:slack:channel-alias query\` - Search specific channel\n• \`/kb:slack:all query\` - Search all channels`,
-              event.channel, event.thread_ts
+              event.channel,
+              event.thread_ts,
             );
             return;
           }
 
-          const searchResults = await this.knowledgeBaseService.getSearchResults({
-            q: searchQuery,
-            channels: channels,
-          });
+          const searchResults =
+            await this.knowledgeBaseService.getSearchResults({
+              q: searchQuery,
+              channels: channels,
+            });
           this.logger.log(`KB search returned ${searchResults.length} results`);
 
           if (searchResults.length > 0) {
@@ -723,10 +442,10 @@ No relevant results found. Try:
                 const date = result.original_post_date
                   ? new Date(result.original_post_date).toLocaleDateString()
                   : 'Unknown date';
-                
+
                 // Clean up the excerpt - remove timestamps and user IDs, keep only the actual content
                 let cleanExcerpt = result.excerpt_text || '';
-                // Remove timestamp patterns like [2025-01-31T03:11:42.424Z] 
+                // Remove timestamp patterns like [2025-01-31T03:11:42.424Z]
                 cleanExcerpt = cleanExcerpt.replace(/\[[\d\-T:.Z]+\]\s*/g, '');
                 // Remove user ID patterns like U07RCTLM69Z:
                 cleanExcerpt = cleanExcerpt.replace(/[A-Z0-9]{11}:\s*/g, '');
@@ -736,7 +455,7 @@ No relevant results found. Try:
                 if (cleanExcerpt.length > 200) {
                   cleanExcerpt = cleanExcerpt.substring(0, 200) + '...';
                 }
-                
+
                 return `${index + 1}. **<${result.message_link}|View Message>** (${date}) - *${Math.round(result.relevance_score * 100)}% relevance*
    ${cleanExcerpt}`;
               })
@@ -773,7 +492,7 @@ No relevant results found. Try:
           }
         } catch (error) {
           this.logger.error('Error retrieving knowledge base:', error);
-          
+
           // Check if this is a knowledge buddy offline error
           if (error.message === 'KNOWLEDGE_BUDDY_OFFLINE') {
             await this.sendSlackMessage(
@@ -876,7 +595,7 @@ No relevant results found. Try:
       // IMMEDIATE ACKNOWLEDGMENT - Add thinking emoji reaction for thread replies
       await this.addSlackReaction('thinking_face', event.channel, event.ts);
 
-      const userMessage = await this.chatManagerService.addMessage({
+      await this.chatManagerService.addMessage({
         conversationId: conversationRecord.internalConversationId,
         fromUserId: 'cx-slack-robot', // Generic Slack robot user - actual Slack user not tracked
         content: event.text,
@@ -1366,6 +1085,349 @@ Ratings must be between -5 and +5. Please provide a rating in this range.
     } catch (error) {
       this.logger.error('Error processing rating:', error);
       return `Thank you for your rating! We appreciate your feedback to help us improve our service.`;
+    }
+  }
+
+  /**
+   * Get or create conversation for Slack event
+   */
+  private async getOrCreateConversation(
+    event: any,
+  ): Promise<TSlackInterfaceRecord> {
+    const simpleEvent = this.makeSimplifiedEvent(event);
+
+    if (simpleEvent.eventType === 'conversation_start') {
+      // Create new conversation
+      const conversation = await this.chatManagerService.startConversation({
+        createdBy: event.user,
+        createdByRole: UserRole.CUSTOMER,
+        title: 'Slack Channel Conversation',
+        description: `Slack conversation from channel mention`,
+        initialParticipants: [event.user],
+      });
+
+      // Create callback function for this specific conversation
+      const sendConversationResponseToSlack = async (
+        delayedResponse: TConversationTextMessageEnvelope,
+      ) => {
+        const messageContent = delayedResponse.envelopePayload.content.payload;
+
+        // Only send to Slack if we have actual content
+        if (messageContent && messageContent.trim()) {
+          // Add robot response to conversation history
+          await this.chatManagerService.addMessage({
+            conversationId: conversation.id,
+            fromUserId: 'cx-slack-robot',
+            content: messageContent,
+            messageType: MessageType.ROBOT,
+            fromRole: UserRole.ROBOT,
+            toRole: UserRole.CUSTOMER,
+          });
+
+          // Send message to Slack
+          await this.sendSlackMessage(
+            messageContent,
+            event.channel,
+            event.ts, // this is what creates the thread
+          );
+        } else {
+          this.logger.warn('Skipping empty message response to Slack');
+        }
+      };
+
+      // Map the Slack thread to conversation record with callback for future lookups
+      const conversationRecord: TSlackInterfaceRecord = {
+        internalConversationId: conversation.id,
+        slackConversationId: event.ts,
+        sendConversationResponseToSlack,
+      };
+
+      this.slackThreadToConversationMap[event.ts] = conversationRecord;
+      return conversationRecord;
+    } else {
+      // Get existing conversation
+      const conversationRecord =
+        this.slackThreadToConversationMap[event.thread_ts];
+      if (!conversationRecord) {
+        throw new Error(
+          `No conversation found for thread_ts: ${event.thread_ts}`,
+        );
+      }
+      return conversationRecord;
+    }
+  }
+
+  private async handleShortCodeMarvSession(event: any): Promise<void> {
+    this.logger.log('Received /marv-session command via app mention');
+
+    // IMMEDIATE ACKNOWLEDGMENT - Add thinking emoji reaction
+    await this.addSlackReaction('thinking_face', event.channel, event.ts);
+
+    try {
+      // Extract formId from the command
+      const trimmedText = event.text?.trim();
+      const marvMatch = trimmedText?.match(/\/marv-session\s+formId:(\d+)/i);
+
+      if (!marvMatch) {
+        await this.sendSlackMessage(
+          '❌ **Invalid command format**\n\nPlease use: `/marv-session formId:123456`\n\nExample: `/marv-session formId:6201623`',
+          event.channel,
+          event.thread_ts || event.ts,
+        );
+        return;
+      }
+
+      const formId = marvMatch[1];
+      this.logger.log(`Extracted formId: ${formId} from command`);
+
+      // Get the existing conversation ID from the Slack thread mapping
+      const conversationId = event.thread_ts || event.ts;
+      const conversationRecord =
+        this.slackThreadToConversationMap[conversationId];
+
+      this.logger.log(`DEBUG: Slack conversationId: ${conversationId}`);
+      this.logger.log(
+        `DEBUG: Conversation record: ${JSON.stringify(conversationRecord)}`,
+      );
+      this.logger.log(
+        `DEBUG: Internal conversation ID: ${conversationRecord?.internalConversationId}`,
+      );
+
+      if (!conversationRecord) {
+        // No existing conversation found - this shouldn't happen in a thread
+        await this.sendSlackMessage(
+          '❌ **No conversation found**\n\nPlease start a conversation with @istack-buddy first, then use `/marv-session formId:123456` in the thread.',
+          event.channel,
+          event.thread_ts || event.ts,
+        );
+        return;
+      }
+
+      // Create a new form-marv session
+      const tempUserId = conversationRecord.internalConversationId; // Use conversation ID as user ID
+
+      // Create a JWT token for the temporary user
+      const jwtToken = jwt.sign(
+        {
+          userId: tempUserId,
+          email: `form-marv-${Date.now()}@example.com`,
+          username: tempUserId,
+          accountType: 'TEMPORARY',
+        },
+        'istack-buddy-secret-key-2024',
+        { expiresIn: '8h' },
+      );
+
+      // Add user to permissions system
+      this.authorizationPermissionsService.addUser(
+        tempUserId,
+        ['cx-agent:form-marv:read', 'cx-agent:form-marv:write'],
+        [],
+      );
+
+      // Create temporary user profile
+      this.userProfileService.addTemporaryUser(tempUserId, {
+        email: `form-marv-${Date.now()}@example.com`,
+        username: tempUserId,
+        account_type_informal: 'TEMPORARY',
+        first_name: 'Form',
+        last_name: 'Marv',
+      });
+
+      // Set the formId in the conversation metadata
+      this.chatManagerService.setConversationFormId(
+        conversationRecord.internalConversationId,
+        formId,
+      );
+
+      // Generate the session URL using the internal conversation ID and formId
+      const baseUrl = this.getBaseUrl();
+      const sessionUrl = `${baseUrl}/public/form-marv/${conversationRecord.internalConversationId}/${formId}?jwtToken=${jwtToken}`;
+
+      // Send immediate response to Slack with the session link
+      await this.sendSlackMessage(
+        `✅ **Form Marv Session Created**\n\n📋 **Form ID:** ${formId}\n🔗 **Session Link:** ${sessionUrl}\n\nClick the link above to access the form session.`,
+        event.channel,
+        event.thread_ts || event.ts, // Use thread_ts if available, otherwise ts
+      );
+    } catch (error) {
+      this.logger.error('Error creating marv session:', error);
+      await this.sendSlackMessage(
+        '❌ **Error creating marv session**\n\nPlease try again or contact support if the problem persists.',
+        event.channel,
+        event.thread_ts || event.ts,
+      );
+    }
+  }
+
+  private async handleShortCodeKb(event: any): Promise<void> {
+    const trimmedText = event.text?.trim();
+    const kbMatch = trimmedText?.match(/\/kb(?::slack:(.+?))?\s+(.*)/i);
+    if (kbMatch) {
+      let specifiedChannel = kbMatch[1];
+      const searchQuery = kbMatch[2]?.trim() || '';
+
+      // Handle Slack's <#CHANNELID|alias> format
+      if (specifiedChannel?.includes('<#') && specifiedChannel.includes('|')) {
+        const channelMatch = specifiedChannel.match(/<#([^|]+)\|([^>]*)>/);
+        if (channelMatch) {
+          const channelId = channelMatch[1];
+          const alias = channelMatch[2];
+
+          specifiedChannel = channelMatch[1]; // Just use the channel ID: C3LQ7KNFN
+        }
+      }
+
+      this.logger.log(
+        `Parsed channel: "${specifiedChannel}", query: "${searchQuery}"`,
+      );
+
+      await this.addSlackReaction('thinking_face', event.channel, event.ts);
+
+      if (!searchQuery) {
+        await this.sendSlackMessage(
+          `📚 **Knowledge Base Help**\n• \`/kb query\` - Search all channels\n• \`/kb:slack:channel-alias query\` - Search specific channel\n• \`/kb:slack:all query\` - Search all channels`,
+          event.channel,
+          event.ts,
+        );
+        return;
+      }
+
+      try {
+        let channels: string[] | string;
+        if (specifiedChannel === 'all') {
+          channels = 'all';
+        } else if (specifiedChannel) {
+          channels = [specifiedChannel]; // Send channel ID directly
+        } else {
+          channels = 'all';
+        }
+
+        const searchResults = await this.knowledgeBaseService.getSearchResults({
+          q: searchQuery,
+          channels: channels,
+        });
+
+        if (searchResults.length > 0) {
+          const resultsText = searchResults
+            .map((result, index) => {
+              const date = result.original_post_date
+                ? new Date(result.original_post_date).toLocaleDateString()
+                : 'Unknown date';
+
+              // Clean up the excerpt - remove timestamps and user IDs, keep only the actual content
+              let cleanExcerpt = result.excerpt_text || '';
+              // Remove timestamp patterns like [2025-01-31T03:11:42.424Z]
+              cleanExcerpt = cleanExcerpt.replace(/\[[\d\-T:.Z]+\]\s*/g, '');
+              // Remove user ID patterns like U07RCTLM69Z:
+              cleanExcerpt = cleanExcerpt.replace(/[A-Z0-9]{11}:\s*/g, '');
+              // Remove multiple --- separators and replace with simple breaks
+              cleanExcerpt = cleanExcerpt.replace(/\s*---\s*/g, '\n• ');
+              // Limit length to first ~200 characters for readability
+              if (cleanExcerpt.length > 200) {
+                cleanExcerpt = cleanExcerpt.substring(0, 200) + '...';
+              }
+
+              return `${index + 1}. **<${result.message_link}|View Message>** (${date}) - *${Math.round(result.relevance_score * 100)}% relevance*
+   ${cleanExcerpt}`;
+            })
+            .join('\n\n');
+
+          const responseMessage = `📚 **Knowledge Base Results**
+
+**Query:** "${searchQuery}"
+
+${resultsText}
+
+*Found ${searchResults.length} relevant results*`;
+
+          await this.sendSlackMessage(responseMessage, event.channel, event.ts);
+        } else {
+          const responseMessage = `📚 **Knowledge Base**
+
+**Query:** "${searchQuery}"
+
+No relevant results found. Try:
+• Using different keywords
+• \`@iStackBuddy /kb:slack:all ${searchQuery}\` to search all channels
+• Check spelling and try broader terms`;
+
+          await this.sendSlackMessage(responseMessage, event.channel, event.ts);
+        }
+      } catch (error) {
+        this.logger.error('Error retrieving knowledge base:', error);
+        await this.sendSlackMessage(
+          'Knowledge-buddy is offline',
+          event.channel,
+          event.ts,
+        );
+      }
+    }
+  }
+
+  private async handleShortCodeFeedback(event: any): Promise<void> {
+    this.logger.log('Received /feedback command via app mention');
+
+    // IMMEDIATE ACKNOWLEDGMENT - Add thinking emoji reaction
+    await this.addSlackReaction('thinking_face', event.channel, event.ts);
+
+    try {
+      const trimmedText = event.text?.trim();
+      const feedbackMatch = trimmedText?.match(
+        /(?:@istack-buddy|<@[^>]+>)\s+\/feedback\s+(.+)/i,
+      );
+      const feedbackContent = feedbackMatch[1].trim();
+      const responseMessage = await this.handleFeedbackCommand(
+        event,
+        feedbackContent,
+      );
+
+      await this.sendSlackMessage(
+        responseMessage,
+        event.channel,
+        event.thread_ts || event.ts,
+      );
+    } catch (error) {
+      this.logger.error('Error processing feedback:', error);
+      await this.sendSlackMessage(
+        'Error processing feedback. Please try again.',
+        event.channel,
+        event.thread_ts || event.ts,
+      );
+    }
+  }
+
+  private async handleShortCodeRating(event: any): Promise<void> {
+    this.logger.log('Received /rating command via app mention');
+
+    // IMMEDIATE ACKNOWLEDGMENT - Add thinking emoji reaction
+    await this.addSlackReaction('thinking_face', event.channel, event.ts);
+
+    try {
+      const trimmedText = event.text?.trim();
+      const ratingMatch = trimmedText?.match(
+        /(?:@istack-buddy|<@[^>]+>)\s+\/rating\s+([+-]?\d+)(?:\s+(.+))?/i,
+      );
+      const rating = parseInt(ratingMatch[1]);
+      const comment = ratingMatch[2]?.trim();
+      const responseMessage = await this.handleRatingCommand(
+        event,
+        rating,
+        comment,
+      );
+
+      await this.sendSlackMessage(
+        responseMessage,
+        event.channel,
+        event.thread_ts || event.ts,
+      );
+    } catch (error) {
+      this.logger.error('Error processing rating:', error);
+      await this.sendSlackMessage(
+        'Error processing rating. Please try again.',
+        event.channel,
+        event.thread_ts || event.ts,
+      );
     }
   }
 }

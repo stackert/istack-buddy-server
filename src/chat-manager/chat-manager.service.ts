@@ -77,6 +77,11 @@ export class ChatManagerService {
         contentType: string = 'text/plain',
       ) => {
         console.log('Stream finished');
+        // _TMC_ notice none of the parameters are used
+        // onStreamFinished should accept 'final' or 'complete' message
+        // it should broadcast with message content type 'stream/finish'
+        // onStreamStart should broadcast with message content type 'stream/start'
+        // they should use exactly the same messageId
 
         // Create final robot message and broadcast through gateway
         if (accumulatedContent && accumulatedContent.trim()) {
@@ -108,6 +113,10 @@ export class ChatManagerService {
         content: string,
         contentType: string = 'text/plain',
       ) => {
+        // this differs from onStreamFinished - in that clients
+        // may listen for either this Event or onStreamFinished.
+        // if they subscribe to both they will get duplicate messages (same messageId)
+
         console.log(
           'onFullMessageReceived called with content:',
           content.substring(0, 100) + '...',
