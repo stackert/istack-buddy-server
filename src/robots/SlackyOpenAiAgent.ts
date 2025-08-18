@@ -1528,7 +1528,7 @@ Need help? Just ask!`;
       }
     });
 
-    return message.content;
+    return immediateResponse.content;
   }
 
   /**

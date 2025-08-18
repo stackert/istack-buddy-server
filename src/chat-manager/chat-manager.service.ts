@@ -53,6 +53,10 @@ export class ChatManagerService {
         chunk: string,
         contentType: string = 'text/plain',
       ) => {
+        console.log('=== CALLBACK onStreamChunkReceived ENTRY ===');
+        console.log('chunk:', JSON.stringify(chunk, null, 2));
+        console.log('contentType:', JSON.stringify(contentType, null, 2));
+
         accumulatedContent += chunk;
 
         // Only broadcast non-empty chunks through gateway
@@ -67,14 +71,28 @@ export class ChatManagerService {
             );
           }
         }
+
+        console.log('=== CALLBACK onStreamChunkReceived EXIT ===');
       },
       onStreamStart: async (message) => {
+        console.log('=== CALLBACK onStreamStart ENTRY ===');
+        console.log('message:', JSON.stringify(message, null, 2));
+
         accumulatedContent = '';
         console.log('Stream started');
+
+        console.log('=== CALLBACK onStreamStart EXIT ===');
       },
       onStreamFinished: async (
         message: IConversationMessage<TConversationMessageContentString>,
       ) => {
+        console.log('=== CALLBACK onStreamFinished ENTRY ===');
+        console.log('message:', JSON.stringify(message, null, 2));
+        console.log(
+          'accumulatedContent:',
+          JSON.stringify(accumulatedContent, null, 2),
+        );
+
         console.log('Stream finished');
         // _TMC_ notice none of the parameters are used
         // onStreamFinished should accept 'final' or 'complete' message
@@ -84,6 +102,7 @@ export class ChatManagerService {
 
         // Create final robot message and broadcast through gateway
         if (accumulatedContent && accumulatedContent.trim()) {
+          console.log('=== CALLBACK onStreamFinished CREATING MESSAGE ===');
           const robotMessage = await this.createMessage({
             conversationId: conversationId,
             fromUserId: 'anthropic-marv-robot',
@@ -92,6 +111,9 @@ export class ChatManagerService {
             fromRole: UserRole.ROBOT,
             toRole: UserRole.AGENT,
           });
+
+          console.log('=== CALLBACK onStreamFinished CREATED MESSAGE ===');
+          console.log('robotMessage:', JSON.stringify(robotMessage, null, 2));
 
           // Broadcast robot response and completion through gateway
           if (this.getGateway()) {
@@ -107,10 +129,23 @@ export class ChatManagerService {
             );
           }
         }
+
+        console.log('=== CALLBACK onStreamFinished EXIT ===');
       },
       onFullMessageReceived: async (
         message: TStreamingCallbackMessageOnFullMessageReceived,
       ) => {
+        console.log('=== CALLBACK onFullMessageReceived ENTRY ===');
+        console.log('message:', JSON.stringify(message, null, 2));
+        console.log(
+          'message.content:',
+          JSON.stringify(message.content, null, 2),
+        );
+        console.log(
+          'message.content.payload:',
+          JSON.stringify(message.content.payload, null, 2),
+        );
+
         // this differs from onStreamFinished - in that clients
         // may listen for either this Event or onStreamFinished.
         // if they subscribe to both they will get duplicate messages (same messageId)
@@ -195,8 +230,14 @@ export class ChatManagerService {
         }
 
         console.log('Tool response added to conversation');
+        console.log('=== CALLBACK onFullMessageReceived EXIT ===');
       },
       onError: async (error: any) => {
+        console.log('=== CALLBACK onError ENTRY ===');
+        console.log('error:', JSON.stringify(error, null, 2));
+        console.log('error.message:', JSON.stringify(error?.message, null, 2));
+        console.log('error.stack:', JSON.stringify(error?.stack, null, 2));
+
         await this.addMessage({
           conversationId: conversationId,
           fromUserId: 'AnthropicMarv',
@@ -229,6 +270,8 @@ export class ChatManagerService {
             },
           );
         }
+
+        console.log('=== CALLBACK onError EXIT ===');
       },
     };
   }
@@ -238,9 +281,17 @@ export class ChatManagerService {
    * This orchestrates the entire robot interaction flow
    */
   async handleRobotMessage(createMessageDto: CreateMessageDto): Promise<void> {
+    console.log('=== handleRobotMessage ENTRY ===');
+    console.log('createMessageDto:', JSON.stringify(createMessageDto, null, 2));
+
     const conversationId = createMessageDto.conversationId;
     const userMessage = createMessageDto.content;
     const robotName = 'AnthropicMarv';
+
+    console.log('=== handleRobotMessage EXTRACTED VALUES ===');
+    console.log('conversationId:', JSON.stringify(conversationId, null, 2));
+    console.log('userMessage:', JSON.stringify(userMessage, null, 2));
+    console.log('robotName:', JSON.stringify(robotName, null, 2));
 
     console.log(
       `Starting streaming response for conversation: ${conversationId}`,
@@ -258,6 +309,7 @@ export class ChatManagerService {
     );
 
     console.log(`Streaming complete for conversation: ${conversationId}`);
+    console.log('=== handleRobotMessage EXIT ===');
   }
 
   /**
@@ -270,6 +322,12 @@ export class ChatManagerService {
     userMessage: string,
     callbacks: IStreamingCallbacks,
   ): Promise<void> {
+    console.log('=== handleRobotStreamingResponse ENTRY ===');
+    console.log('conversationId:', JSON.stringify(conversationId, null, 2));
+    console.log('robotName:', JSON.stringify(robotName, null, 2));
+    console.log('userMessage:', JSON.stringify(userMessage, null, 2));
+    console.log('callbacks:', JSON.stringify(Object.keys(callbacks), null, 2));
+
     try {
       // Get the robot
       const robot = this.robotService.getRobotByName(robotName);
@@ -279,21 +337,33 @@ export class ChatManagerService {
         );
       }
 
-      // Create message envelope
-      const messageEnvelope: TConversationTextMessageEnvelope = {
-        messageId: '', // Will be set by conversation manager
-        requestOrResponse: 'request',
-        envelopePayload: {
-          messageId: '', // Will be set by conversation manager
-          author_role: 'user',
+      console.log('=== handleRobotStreamingResponse ROBOT FOUND ===');
+      console.log('robot:', JSON.stringify(robot.constructor.name, null, 2));
+
+      // Create conversation message in the correct format
+      const conversationMessage: IConversationMessage<TConversationMessageContentString> =
+        {
+          id: uuidv4(),
           content: {
             type: 'text/plain',
             payload: userMessage,
           },
-          created_at: new Date().toISOString(),
-          estimated_token_count: Math.ceil(userMessage.length / 4),
-        },
-      };
+          conversationId: conversationId,
+          authorUserId: 'form-marv-user',
+          fromRole: UserRole.CUSTOMER,
+          toRole: UserRole.AGENT,
+          messageType: MessageType.TEXT,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+
+      console.log(
+        '=== handleRobotStreamingResponse CONVERSATION MESSAGE CREATED ===',
+      );
+      console.log(
+        'conversationMessage:',
+        JSON.stringify(conversationMessage, null, 2),
+      );
 
       // Get conversation history for context using the robot's transformer
       const getHistory = () => {
@@ -309,14 +379,24 @@ export class ChatManagerService {
         }
       };
 
+      console.log('=== handleRobotStreamingResponse ABOUT TO CALL ROBOT ===');
+      console.log(
+        'Robot method available:',
+        JSON.stringify('acceptMessageStreamResponse' in robot, null, 2),
+      );
+
       // Use the provided callbacks directly
 
       // Call robot streaming response
       if ('acceptMessageStreamResponse' in robot) {
+        console.log('=== handleRobotStreamingResponse CALLING ROBOT ===');
         await (robot as any).acceptMessageStreamResponse(
-          messageEnvelope,
+          conversationMessage,
           callbacks,
           getHistory,
+        );
+        console.log(
+          '=== handleRobotStreamingResponse ROBOT CALL COMPLETED ===',
         );
       } else {
         throw new Error(
@@ -324,12 +404,19 @@ export class ChatManagerService {
         );
       }
     } catch (error) {
+      console.log('=== handleRobotStreamingResponse ERROR ===');
+      console.log('error:', JSON.stringify(error, null, 2));
+      console.log('error.message:', JSON.stringify(error?.message, null, 2));
+      console.log('error.stack:', JSON.stringify(error?.stack, null, 2));
+
       console.error(
         `Error in handleRobotStreamingResponse for robot ${robotName} in conversation ${conversationId}:`,
         error,
       );
       await callbacks.onError(error);
     }
+
+    console.log('=== handleRobotStreamingResponse EXIT ===');
   }
 
   // Method to set the gateway reference (called by the gateway)
@@ -397,6 +484,17 @@ export class ChatManagerService {
     createMessageDto: CreateMessageDto,
     contentType: string = 'text',
   ): Promise<IConversationMessage> {
+    console.log('=== CHAT MANAGER addMessage ENTRY ===');
+    console.log(
+      'Input createMessageDto:',
+      JSON.stringify(createMessageDto, null, 2),
+    );
+    console.log('Input contentType:', JSON.stringify(contentType, null, 2));
+    console.log(
+      'Stack trace:',
+      new Error().stack?.split('\n').slice(1, 6).join('\n'),
+    );
+
     const messageId = uuidv4();
     const now = new Date();
 
@@ -428,6 +526,9 @@ export class ChatManagerService {
       updatedAt: now,
     };
 
+    console.log('=== CHAT MANAGER addMessage CREATED MESSAGE ===');
+    console.log('Created message:', JSON.stringify(message, null, 2));
+
     // Store the message in the chat conversation list service
     this.chatConversationListService.addMessageToConversation(
       createMessageDto.conversationId,
@@ -439,6 +540,11 @@ export class ChatManagerService {
 
     // Broadcast message to WebSocket subscribers
     if (this.gateway) {
+      console.log('=== CHAT MANAGER addMessage BROADCASTING ===');
+      console.log(
+        'Broadcasting to conversation:',
+        createMessageDto.conversationId,
+      );
       this.gateway.broadcastToConversation(
         createMessageDto.conversationId,
         'new_message',
@@ -449,6 +555,8 @@ export class ChatManagerService {
       );
     }
 
+    console.log('=== CHAT MANAGER addMessage EXIT ===');
+    console.log('Returning message ID:', messageId);
     return message;
   }
 
@@ -475,6 +583,14 @@ export class ChatManagerService {
       payload: string;
     }) => Promise<void>,
   ): Promise<IConversationMessage> {
+    console.log('=== CHAT MANAGER addMessageFromSlack ENTRY ===');
+    console.log('conversationId:', JSON.stringify(conversationId, null, 2));
+    console.log('content:', JSON.stringify(content, null, 2));
+    console.log(
+      'has slackResponseCallback:',
+      JSON.stringify(!!slackResponseCallback, null, 2),
+    );
+
     // Add the user message to the conversation
     const userMessage = await this.addUserMessage(
       conversationId,
@@ -483,6 +599,9 @@ export class ChatManagerService {
       UserRole.CUSTOMER,
       UserRole.AGENT,
     );
+
+    console.log('=== CHAT MANAGER addMessageFromSlack USER MESSAGE ADDED ===');
+    console.log('userMessage:', JSON.stringify(userMessage, null, 2));
 
     // Trigger the robot response internally
     try {
@@ -510,6 +629,11 @@ export class ChatManagerService {
         updatedAt: new Date(),
       };
 
+      console.log(
+        '=== CHAT MANAGER addMessageFromSlack ROBOT MESSAGE CREATED ===',
+      );
+      console.log('robot message:', JSON.stringify(message, null, 2));
+
       // Create internal callback that handles robot responses
       const internalRobotCallback = async (
         response: Pick<
@@ -517,6 +641,17 @@ export class ChatManagerService {
           'content'
         >,
       ) => {
+        console.log(
+          '=== CHAT MANAGER addMessageFromSlack ROBOT CALLBACK ENTRY ===',
+        );
+        console.log('robot response:', JSON.stringify(response, null, 2));
+
+        // Defensive check to ensure response has the expected structure
+        if (!response || !response.content || !response.content.payload) {
+          console.error('Invalid robot response structure:', response);
+          return;
+        }
+
         const responseContent = response.content.payload;
 
         // Add robot response to conversation history
@@ -531,6 +666,9 @@ export class ChatManagerService {
           responseContent &&
           responseContent.trim()
         ) {
+          console.log(
+            '=== CHAT MANAGER addMessageFromSlack CALLING SLACK CALLBACK ===',
+          );
           await slackResponseCallback({
             type: 'text',
             payload: responseContent,
@@ -539,6 +677,7 @@ export class ChatManagerService {
       };
 
       // Trigger robot response
+      console.log('=== CHAT MANAGER addMessageFromSlack TRIGGERING ROBOT ===');
       await robot.acceptMessageMultiPartResponse(
         message,
         internalRobotCallback,
@@ -551,6 +690,7 @@ export class ChatManagerService {
       );
     }
 
+    console.log('=== CHAT MANAGER addMessageFromSlack EXIT ===');
     return userMessage;
   }
 
@@ -562,6 +702,10 @@ export class ChatManagerService {
     conversationId: string,
     content: { type: 'text'; payload: string },
   ): Promise<IConversationMessage> {
+    console.log('=== CHAT MANAGER addMessageFromMarvSession ENTRY ===');
+    console.log('conversationId:', JSON.stringify(conversationId, null, 2));
+    console.log('content:', JSON.stringify(content, null, 2));
+
     // Add the user message to the conversation
     const userMessage = await this.addUserMessage(
       conversationId,
@@ -571,10 +715,19 @@ export class ChatManagerService {
       UserRole.AGENT,
     );
 
+    console.log(
+      '=== CHAT MANAGER addMessageFromMarvSession USER MESSAGE ADDED ===',
+    );
+    console.log('userMessage:', JSON.stringify(userMessage, null, 2));
+
     // Trigger the robot response internally
     try {
       // Create conversation callbacks for streaming
       const callbacks = this.createConversationCallbacks(conversationId);
+
+      console.log(
+        '=== CHAT MANAGER addMessageFromMarvSession CREATED CALLBACKS ===',
+      );
 
       // Handle robot streaming response
       await this.handleRobotStreamingResponse(
@@ -584,8 +737,15 @@ export class ChatManagerService {
         callbacks,
       );
 
+      console.log(
+        '=== CHAT MANAGER addMessageFromMarvSession ROBOT STREAMING COMPLETE ===',
+      );
+
       // Broadcast completion via WebSocket
       if (this.gateway) {
+        console.log(
+          '=== CHAT MANAGER addMessageFromMarvSession BROADCASTING COMPLETION ===',
+        );
         this.gateway.broadcastToConversation(conversationId, 'robot_complete', {
           message: 'Robot response completed',
         });
@@ -597,6 +757,7 @@ export class ChatManagerService {
       );
     }
 
+    console.log('=== CHAT MANAGER addMessageFromMarvSession EXIT ===');
     return userMessage;
   }
 
@@ -623,7 +784,12 @@ export class ChatManagerService {
     content: string,
     robotName: string,
   ): Promise<IConversationMessage> {
-    return this.addMessage({
+    console.log('=== CHAT MANAGER addRobotResponse ENTRY ===');
+    console.log('conversationId:', JSON.stringify(conversationId, null, 2));
+    console.log('content:', JSON.stringify(content, null, 2));
+    console.log('robotName:', JSON.stringify(robotName, null, 2));
+
+    const result = await this.addMessage({
       conversationId,
       fromUserId: robotName,
       content,
@@ -631,6 +797,10 @@ export class ChatManagerService {
       fromRole: UserRole.ROBOT,
       toRole: UserRole.CUSTOMER,
     });
+
+    console.log('=== CHAT MANAGER addRobotResponse EXIT ===');
+    console.log('result:', JSON.stringify(result, null, 2));
+    return result;
   }
 
   /**
@@ -643,7 +813,14 @@ export class ChatManagerService {
     fromRole: UserRole = UserRole.CUSTOMER,
     toRole: UserRole = UserRole.AGENT,
   ): Promise<IConversationMessage> {
-    return this.addMessage({
+    console.log('=== CHAT MANAGER addUserMessage ENTRY ===');
+    console.log('conversationId:', JSON.stringify(conversationId, null, 2));
+    console.log('content:', JSON.stringify(content, null, 2));
+    console.log('userId:', JSON.stringify(userId, null, 2));
+    console.log('fromRole:', JSON.stringify(fromRole, null, 2));
+    console.log('toRole:', JSON.stringify(toRole, null, 2));
+
+    const result = await this.addMessage({
       conversationId,
       fromUserId: userId,
       content,
@@ -651,6 +828,10 @@ export class ChatManagerService {
       fromRole,
       toRole,
     });
+
+    console.log('=== CHAT MANAGER addUserMessage EXIT ===');
+    console.log('result:', JSON.stringify(result, null, 2));
+    return result;
   }
 
   /**
