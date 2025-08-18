@@ -4,23 +4,10 @@ import { TConversationMessageContentString } from '../ConversationLists/types';
 
 // Direct exports of ConversationLists types for robots
 export type {
-  TConversationTextMessageEnvelope,
   TConversationTextMessage,
   TConversationMessageContentString,
-  TConversationMessageEnvelope,
   TConversationListMessage,
 } from '../ConversationLists/types';
-
-// Type for robot responses that omits messageId since robots cannot create them
-export type TRobotResponseEnvelope = Omit<
-  import('../ConversationLists/types').TConversationTextMessageEnvelope,
-  'messageId' | 'envelopePayload'
-> & {
-  envelopePayload: Omit<
-    import('../ConversationLists/types').TConversationTextMessage,
-    'messageId'
-  >;
-};
 
 type TAnthropicIstackToolSet = {
   toolDefinitions: Anthropic.Messages.Tool[];
@@ -47,13 +34,9 @@ export interface IStreamingCallbacks {
   ) => void;
   onStreamFinished: (
     message: IConversationMessage<TConversationMessageContentString>,
-    // content: string,
-    // authorRole: string,
-    // contentType?: string,
   ) => void;
   onFullMessageReceived: (
     message: TStreamingCallbackMessageOnFullMessageReceived,
-    // message: IConversationMessage<TConversationMessageContentString>,
   ) => void;
   onError: (error: any) => void;
 }

@@ -260,7 +260,12 @@ I'm designed to help you solve Forms Core issues quickly and effectively. Just a
    */
   private async executeToolAllCallsWithDelayedCallback(
     toolUses: any[],
-    delayedMessageCallback: (message: any) => void,
+    delayedMessageCallback: (
+      message: Pick<
+        IConversationMessage<TConversationMessageContentString>,
+        'content'
+      >,
+    ) => void,
   ): Promise<any[]> {
     const toolResultMessages: any[] = [];
 
@@ -273,17 +278,9 @@ I'm designed to help you solve Forms Core issues quickly and effectively. Just a
 
         // Send raw tool result immediately via delayed callback
         delayedMessageCallback({
-          messageId: `slacky-tool-result-${Date.now()}`,
-          requestOrResponse: 'response',
-          envelopePayload: {
-            messageId: `slacky-tool-msg-${Date.now()}`,
-            author_role: 'assistant',
-            content: {
-              type: 'text/plain',
-              payload: `**Tool: ${toolUse.name}**\n\n${toolResult}`,
-            },
-            created_at: new Date().toISOString(),
-            estimated_token_count: this.estimateTokens(toolResult),
+          content: {
+            type: 'text/plain',
+            payload: `**Tool: ${toolUse.name}**\n\n${toolResult}`,
           },
         });
 
@@ -297,17 +294,9 @@ I'm designed to help you solve Forms Core issues quickly and effectively. Just a
 
         // Send raw tool error immediately via delayed callback
         delayedMessageCallback({
-          messageId: `slacky-tool-error-${Date.now()}`,
-          requestOrResponse: 'response',
-          envelopePayload: {
-            messageId: `slacky-tool-error-msg-${Date.now()}`,
-            author_role: 'assistant',
-            content: {
-              type: 'text/plain',
-              payload: `**Tool Error: ${toolUse.name}**\n\n${errorMsg}`,
-            },
-            created_at: new Date().toISOString(),
-            estimated_token_count: this.estimateTokens(errorMsg),
+          content: {
+            type: 'text/plain',
+            payload: `**Tool Error: ${toolUse.name}**\n\n${errorMsg}`,
           },
         });
 

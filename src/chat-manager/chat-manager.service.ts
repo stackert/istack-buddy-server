@@ -18,10 +18,7 @@ import {
 } from './interfaces/message.interface';
 import { v4 as uuidv4 } from 'uuid';
 import { ChatConversationListService } from '../ConversationLists/ChatConversationListService';
-import {
-  TConversationTextMessageEnvelope,
-  TConversationMessageContentString,
-} from '../ConversationLists/types';
+import { TConversationMessageContentString } from '../ConversationLists/types';
 import { RobotService } from '../robots/robot.service';
 import {
   IStreamingCallbacks,

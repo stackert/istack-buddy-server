@@ -33,7 +33,7 @@ export class ChatRobotParrot extends AbstractRobotChat {
     This robot is ideal for:
     - Testing chat interfaces and message handling
     - Demonstrating streaming vs immediate response patterns  
-    - Debugging message envelope structures
+    - Debugging message structures
     - Basic conversational flow testing without AI costs
     
     The robot supports both immediate responses and streaming responses, breaking messages into 

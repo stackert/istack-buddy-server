@@ -1028,19 +1028,16 @@ Need help? Just ask!`;
   }
 
   /**
-   * Create tool status response envelope
+   * Create tool status response
    */
   private createToolStatusResponse(status: string): {
     content: { payload: string; type: 'text/plain' };
   } {
     return {
-      // author_role: 'assistant',
       content: {
         type: 'text/plain',
         payload: status,
       },
-      // created_at: new Date().toISOString(),
-      // estimated_token_count: this.estimateTokens(status),
     };
   }
 
@@ -1382,7 +1379,7 @@ Need help? Just ask!`;
               'content'
             >,
           ) => {
-            // Create a minimal message envelope for the callback
+            // Create a minimal message for the callback
             finalResponse = message;
           },
           onFullMessageReceived: ({ content: string }) => {
@@ -1402,7 +1399,7 @@ Need help? Just ask!`;
         getHistory,
       );
 
-      // Create the final response envelope
+      // Create the final response
       if (finalResponse) {
         return finalResponse;
       } else {
@@ -1412,8 +1409,6 @@ Need help? Just ask!`;
             type: 'text/plain',
             payload: accumulatedContent || 'No response generated',
           },
-          // created_at: new Date().toISOString(),
-          // estimated_token_count: this.estimateTokens(accumulatedContent),
         };
       }
     } catch (error) {
@@ -1421,13 +1416,10 @@ Need help? Just ask!`;
         error instanceof Error ? error.message : 'Unknown error occurred';
 
       return {
-        //author_role: 'assistant',
         content: {
           type: 'text/plain',
           payload: `I apologize, but I encountered an error: ${errorMessage}`,
         },
-        // created_at: new Date().toISOString(),
-        // estimated_token_count: this.estimateTokens(errorMessage),
       };
     }
   }

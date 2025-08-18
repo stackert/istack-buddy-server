@@ -4,7 +4,6 @@ import { RobotService } from '../robots/robot.service';
 import { v4 as uuidv4 } from 'uuid';
 import { ChatManagerService } from '../chat-manager/chat-manager.service';
 import { MessageType, UserRole } from '../chat-manager/dto/create-message.dto';
-import { TConversationTextMessageEnvelope } from '../robots/types';
 import * as jwt from 'jsonwebtoken';
 import { AuthorizationPermissionsService } from '../authorization-permissions/authorization-permissions.service';
 import { UserProfileService } from '../user-profile/user-profile.service';
@@ -498,7 +497,7 @@ export class IstackBuddySlackApiService implements OnModuleDestroy {
     fromUserId: string;
     content: string;
   }): Promise<{
-    messageEnvelope: TConversationTextMessageEnvelope;
+    messageEnvelope: any; // TConversationTextMessageEnvelope; // This type is removed
     conversationHistory: any[];
   }> {
     // Get conversation history - get last 20 messages to provide context
@@ -516,7 +515,8 @@ export class IstackBuddySlackApiService implements OnModuleDestroy {
     });
 
     // Create the envelope with the current message
-    const messageEnvelope: TConversationTextMessageEnvelope = {
+    const messageEnvelope: any = {
+      // TConversationTextMessageEnvelope; // This type is removed
       messageId: uuidv4(),
       requestOrResponse: 'request',
       envelopePayload: {

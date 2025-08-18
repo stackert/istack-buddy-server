@@ -25,7 +25,6 @@ export { SlackAgentCoreFormsSsoAutofillParrot } from './SlackAgents/SlackAgentCo
 // Types
 export type {
   TConversationTextMessage,
-  TConversationTextMessageEnvelope,
 } from './types';
 
 // Services and Modules

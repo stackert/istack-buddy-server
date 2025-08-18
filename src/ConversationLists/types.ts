@@ -46,13 +46,6 @@ type TConversationListMessage<T = TConversationMessageContent> = {
   estimated_token_count: number;
 };
 
-// Message envelope - contains the actual message as envelopePayload
-type TConversationMessageEnvelope<T = TConversationListMessage> = {
-  messageId: string;
-  requestOrResponse: 'request' | 'response';
-  envelopePayload: T;
-};
-
 // Convenience types for specific content types
 type TConversationTextMessage =
   TConversationListMessage<TConversationMessageContentString>;
@@ -60,20 +53,6 @@ type TConversationImageMessage =
   TConversationListMessage<TConversationMessageContentImageBuffer>;
 type TConversationFileMessage =
   TConversationListMessage<TConversationMessageContentFileBuffer>;
-
-// Convenience envelope types
-type TConversationTextMessageEnvelope =
-  TConversationMessageEnvelope<TConversationTextMessage>;
-type TConversationImageMessageEnvelope =
-  TConversationMessageEnvelope<TConversationImageMessage>;
-type TConversationFileMessageEnvelope =
-  TConversationMessageEnvelope<TConversationFileMessage>;
-
-// Union type for mixed content envelopes
-type TConversationMixedMessageEnvelope =
-  | TConversationTextMessageEnvelope
-  | TConversationImageMessageEnvelope
-  | TConversationFileMessageEnvelope;
 
 export type {
   // Media types
@@ -89,11 +68,4 @@ export type {
   TConversationTextMessage,
   TConversationImageMessage,
   TConversationFileMessage,
-
-  // Envelope types
-  TConversationMessageEnvelope,
-  TConversationTextMessageEnvelope,
-  TConversationImageMessageEnvelope,
-  TConversationFileMessageEnvelope,
-  TConversationMixedMessageEnvelope,
 };
