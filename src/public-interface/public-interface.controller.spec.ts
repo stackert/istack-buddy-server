@@ -12,6 +12,7 @@ import * as path from 'path';
 import { ChatManagerService } from '../chat-manager/chat-manager.service';
 import { RobotService } from '../robots/robot.service';
 import { UserProfileService } from '../user-profile/user-profile.service';
+import * as jwt from 'jsonwebtoken';
 
 // Mock fs and path modules
 jest.mock('fs');
@@ -41,10 +42,16 @@ describe('PublicInterfaceController', () => {
   let mockFormMarvSessionService: jest.Mocked<FormMarvSessionService>;
   let mockAuthService: jest.Mocked<AuthenticationService>;
   let mockAuthPermissionsService: jest.Mocked<AuthorizationPermissionsService>;
+  let mockChatManagerService: jest.Mocked<ChatManagerService>;
   let mockResponse: Partial<Response>;
   let mockRequest: any;
+  let originalEnv: NodeJS.ProcessEnv;
 
   beforeEach(async () => {
+    // Store original environment
+    originalEnv = process.env;
+    process.env = { ...originalEnv };
+
     // Create mock services
     mockFormMarvSessionService = {
       createSession: jest.fn(),
@@ -60,12 +67,7 @@ describe('PublicInterfaceController', () => {
       hasPermission: jest.fn(),
     } as any;
 
-    // Create mock guard
-    const mockGuard = {
-      canActivate: jest.fn().mockReturnValue(true),
-    };
-
-    const mockChatManagerService = {
+    mockChatManagerService = {
       createMessage: jest.fn(),
       joinConversation: jest.fn(),
       leaveConversation: jest.fn(),
@@ -79,7 +81,7 @@ describe('PublicInterfaceController', () => {
       validateConversationFormId: jest.fn().mockReturnValue(true),
       getConversations: jest
         .fn()
-        .mockResolvedValue([{ id: 'test-secret-key', formId: '123456' }]),
+        .mockResolvedValue([{ id: 'test-conversation-id', formId: '123456' }]),
       createConversationCallbacks: jest.fn().mockReturnValue({
         onStreamChunkReceived: jest.fn(),
         onStreamStart: jest.fn(),
@@ -91,7 +93,7 @@ describe('PublicInterfaceController', () => {
       getGateway: jest.fn().mockReturnValue({
         broadcastToConversation: jest.fn(),
       }),
-    };
+    } as any;
 
     const mockRobotService = {
       getRobotByName: jest.fn(),
@@ -107,6 +109,11 @@ describe('PublicInterfaceController', () => {
       getUserProfile: jest.fn(),
       createUserProfile: jest.fn(),
       updateUserProfile: jest.fn(),
+    };
+
+    // Create mock guard
+    const mockGuard = {
+      canActivate: jest.fn().mockReturnValue(true),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -187,9 +194,80 @@ describe('PublicInterfaceController', () => {
 
   afterEach(() => {
     jest.clearAllMocks();
+    process.env = originalEnv;
   });
 
-  describe('serveFormMarvContent (secretKey only - should return 401)', () => {
+  describe('getBaseUrl', () => {
+    it('should return NGROK_URL when available', () => {
+      process.env.NGROK_URL = 'https://abc123.ngrok.io';
+
+      const result = (controller as any).getBaseUrl();
+
+      expect(result).toBe('https://abc123.ngrok.io');
+    });
+
+    it('should remove trailing slash from NGROK_URL', () => {
+      process.env.NGROK_URL = 'https://abc123.ngrok.io/';
+
+      const result = (controller as any).getBaseUrl();
+
+      expect(result).toBe('https://abc123.ngrok.io');
+    });
+
+    it('should return ISTACK_BUDDY_FRONT_END_HOST when NGROK_URL is not available', () => {
+      delete process.env.NGROK_URL;
+      process.env.ISTACK_BUDDY_FRONT_END_HOST = 'https://example.com';
+
+      const result = (controller as any).getBaseUrl();
+
+      expect(result).toBe('https://example.com');
+    });
+
+    it('should remove trailing slash from ISTACK_BUDDY_FRONT_END_HOST', () => {
+      delete process.env.NGROK_URL;
+      process.env.ISTACK_BUDDY_FRONT_END_HOST = 'https://example.com/';
+
+      const result = (controller as any).getBaseUrl();
+
+      expect(result).toBe('https://example.com');
+    });
+
+    it('should return empty string when no environment variables are set', () => {
+      delete process.env.NGROK_URL;
+      delete process.env.ISTACK_BUDDY_FRONT_END_HOST;
+
+      const result = (controller as any).getBaseUrl();
+
+      expect(result).toBe('');
+    });
+  });
+
+  describe('serveRootContent', () => {
+    it('should serve HTML content with proper headers', async () => {
+      await controller.serveRootContent(mockResponse as Response);
+
+      expect(mockResponse.setHeader).toHaveBeenCalledWith(
+        'Content-Type',
+        'text/html',
+      );
+      expect(mockResponse.send).toHaveBeenCalledWith(
+        expect.stringContaining('iStackBuddy Public Interface'),
+      );
+    });
+  });
+
+  describe('handleFormMarvRoot', () => {
+    it('should return 404 with form ID required message', async () => {
+      await controller.handleFormMarvRoot(mockResponse as Response);
+
+      expect(mockResponse.status).toHaveBeenCalledWith(404);
+      expect(mockResponse.send).toHaveBeenCalledWith(
+        'Form ID is required in the URL path',
+      );
+    });
+  });
+
+  describe('serveFormMarvContent', () => {
     it('should return 401 when formId is required in URL path', async () => {
       await controller.serveFormMarvContent(
         'test-secret-key',
@@ -216,11 +294,155 @@ describe('PublicInterfaceController', () => {
       expiresInMs: 24 * 60 * 60 * 1000,
     };
 
-    it('should serve content when session and formId are valid', async () => {
-      mockFormMarvSessionService.getSession.mockReturnValue(mockSession);
+    beforeEach(() => {
+      mockChatManagerService.getConversations.mockResolvedValue([
+        { id: 'test-conversation-id', formId: '123456' } as any,
+      ]);
+    });
+
+    it('should handle JWT token in query parameter', async () => {
+      const jwtToken = 'valid-jwt-token';
+      (jwt.verify as jest.Mock).mockReturnValue({ userId: 'test-user' });
+      mockAuthService.authenticateUser.mockResolvedValue({ success: true });
 
       await controller.serveFormMarvContentWithFormId(
-        'test-secret-key',
+        'test-conversation-id',
+        '123456',
+        jwtToken,
+        mockResponse as Response,
+        mockRequest,
+      );
+
+      expect(jwt.verify).toHaveBeenCalledWith(
+        jwtToken,
+        'istack-buddy-secret-key-2024',
+      );
+      expect(mockAuthService.authenticateUser).toHaveBeenCalledWith(
+        'test-user',
+        jwtToken,
+      );
+      expect(mockResponse.cookie).toHaveBeenCalledWith(
+        'jwtToken',
+        jwtToken,
+        expect.any(Object),
+      );
+      expect(mockResponse.redirect).toHaveBeenCalledWith(
+        '/public/form-marv/test-conversation-id/123456',
+      );
+    });
+
+    it('should handle JWT authentication failure', async () => {
+      const jwtToken = 'invalid-jwt-token';
+      mockAuthService.authenticateUser.mockResolvedValue({ success: false });
+
+      await controller.serveFormMarvContentWithFormId(
+        'test-conversation-id',
+        '123456',
+        jwtToken,
+        mockResponse as Response,
+        mockRequest,
+      );
+
+      expect(mockResponse.status).toHaveBeenCalledWith(401);
+      expect(mockResponse.send).toHaveBeenCalledWith('Invalid JWT token');
+    });
+
+    it('should handle JWT verification error', async () => {
+      const jwtToken = 'invalid-jwt-token';
+      (jwt.verify as jest.Mock).mockImplementation(() => {
+        throw new Error('Invalid token');
+      });
+
+      await controller.serveFormMarvContentWithFormId(
+        'test-conversation-id',
+        '123456',
+        jwtToken,
+        mockResponse as Response,
+        mockRequest,
+      );
+
+      expect(mockResponse.status).toHaveBeenCalledWith(401);
+      expect(mockResponse.send).toHaveBeenCalledWith('Invalid JWT token');
+    });
+
+    it('should handle missing JWT token in cookie', async () => {
+      mockRequest.cookies = {};
+
+      await controller.serveFormMarvContentWithFormId(
+        'test-conversation-id',
+        '123456',
+        '',
+        mockResponse as Response,
+        mockRequest,
+      );
+
+      expect(mockResponse.status).toHaveBeenCalledWith(401);
+      expect(mockResponse.send).toHaveBeenCalledWith(
+        'Authentication required - JWT token not found in cookie',
+      );
+    });
+
+    it('should handle invalid JWT token in cookie', async () => {
+      mockAuthService.authenticateUser.mockResolvedValue({ success: false });
+
+      await controller.serveFormMarvContentWithFormId(
+        'test-conversation-id',
+        '123456',
+        '',
+        mockResponse as Response,
+        mockRequest,
+      );
+
+      expect(mockResponse.status).toHaveBeenCalledWith(401);
+      expect(mockResponse.send).toHaveBeenCalledWith(
+        'Invalid JWT token in cookie',
+      );
+    });
+
+    it('should handle JWT verification error from cookie', async () => {
+      (jwt.verify as jest.Mock).mockImplementation(() => {
+        throw new Error('Invalid token');
+      });
+
+      await controller.serveFormMarvContentWithFormId(
+        'test-conversation-id',
+        '123456',
+        '',
+        mockResponse as Response,
+        mockRequest,
+      );
+
+      expect(mockResponse.status).toHaveBeenCalledWith(401);
+      expect(mockResponse.send).toHaveBeenCalledWith(
+        'Invalid JWT token in cookie',
+      );
+    });
+
+    it('should handle conversation not found', async () => {
+      mockChatManagerService.getConversations.mockResolvedValue([]);
+      // Ensure JWT verification passes for this test
+      (jwt.verify as jest.Mock).mockReturnValue({ userId: 'test-user' });
+      mockAuthService.authenticateUser.mockResolvedValue({ success: true });
+
+      await controller.serveFormMarvContentWithFormId(
+        'non-existent-conversation',
+        '123456',
+        '',
+        mockResponse as Response,
+        mockRequest,
+      );
+
+      expect(mockResponse.status).toHaveBeenCalledWith(404);
+      expect(mockResponse.send).toHaveBeenCalledWith('Session not found');
+    });
+
+    it('should serve static content successfully', async () => {
+      // Ensure JWT verification passes for this test
+      (jwt.verify as jest.Mock).mockReturnValue({ userId: 'test-user' });
+      mockAuthService.authenticateUser.mockResolvedValue({ success: true });
+
+      await controller.serveFormMarvContentWithFormId(
+        'test-conversation-id',
         '123456',
         '',
         mockResponse as Response,
@@ -231,19 +453,83 @@ describe('PublicInterfaceController', () => {
         'Content-Type',
         'text/html',
       );
+      expect(mockResponse.setHeader).toHaveBeenCalledWith(
+        'Cache-Control',
+        'no-cache, no-store, must-revalidate',
+      );
+      expect(mockResponse.setHeader).toHaveBeenCalledWith('Pragma', 'no-cache');
+      expect(mockResponse.setHeader).toHaveBeenCalledWith('Expires', '0');
       expect(mockResponse.send).toHaveBeenCalledWith(
         expect.stringContaining('Welcome to Forms Marv!'),
-      );
-      expect(mockResponse.send).toHaveBeenCalledWith(
-        expect.stringContaining('123456'),
       );
     });
   });
 
   describe('getChatMessages', () => {
-    it('should return empty array', async () => {
+    it('should return messages when validation passes', async () => {
+      const mockMessages = [
+        {
+          id: 'msg1',
+          conversationId: 'test-conversation-id',
+          authorUserId: 'user1',
+          fromRole: 'cx-customer',
+          toRole: 'cx-agent',
+          messageType: 'text',
+          content: { type: 'text/plain', payload: 'Hello' },
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: 'msg2',
+          conversationId: 'test-conversation-id',
+          authorUserId: 'user1',
+          fromRole: 'cx-customer',
+          toRole: 'cx-agent',
+          messageType: 'text',
+          content: { type: 'text/plain', payload: 'World' },
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ] as any;
+      mockChatManagerService.getMessages.mockResolvedValue(mockMessages);
+
       const result = await controller.getChatMessages(
-        'test-secret-key',
+        'test-conversation-id',
+        '123456',
+        mockRequest,
+        undefined,
+      );
+
+      expect(result).toEqual(mockMessages);
+      expect(mockChatManagerService.getMessages).toHaveBeenCalledWith(
+        'test-conversation-id',
+        {
+          limit: 100,
+          offset: 0,
+        },
+      );
+    });
+
+    it('should return empty array when validation fails', async () => {
+      mockChatManagerService.validateConversationFormId.mockReturnValue(false);
+
+      const result = await controller.getChatMessages(
+        'test-conversation-id',
+        '123456',
+        mockRequest,
+        undefined,
+      );
+
+      expect(result).toEqual([]);
+    });
+
+    it('should return empty array when error occurs', async () => {
+      mockChatManagerService.getMessages.mockRejectedValue(
+        new Error('Database error'),
+      );
+
+      const result = await controller.getChatMessages(
+        'test-conversation-id',
         '123456',
         mockRequest,
         undefined,
@@ -254,7 +540,7 @@ describe('PublicInterfaceController', () => {
 
     it('should return empty array with dtSinceMs parameter', async () => {
       const result = await controller.getChatMessages(
-        'test-secret-key',
+        'test-conversation-id',
         '123456',
         mockRequest,
         '1640995200000',
@@ -267,16 +553,70 @@ describe('PublicInterfaceController', () => {
   describe('postChatMessage', () => {
     const mockMessageData = { message: 'Hello, world!', type: 'user' };
 
-    it('should return success response', async () => {
+    it('should return success response when validation passes', async () => {
       const result = await controller.postChatMessage(
-        'test-secret-key',
+        'test-conversation-id',
         '123456',
         mockMessageData,
         mockRequest,
       );
 
       expect(result.success).toBe(true);
-      expect(result.messageId).toMatch(/^msg_\d+_[a-z0-9]{9}$/);
+      expect(result.messageId).toBe('msg_123_abc123def');
+      expect(
+        mockChatManagerService.addMessageFromMarvSession,
+      ).toHaveBeenCalledWith('test-conversation-id', {
+        type: 'text',
+        payload: 'Hello, world!',
+      });
+    });
+
+    it('should handle message content from content field', async () => {
+      const messageData = { content: 'Test content', type: 'user' };
+
+      await controller.postChatMessage(
+        'test-conversation-id',
+        '123456',
+        messageData,
+        mockRequest,
+      );
+
+      expect(
+        mockChatManagerService.addMessageFromMarvSession,
+      ).toHaveBeenCalledWith('test-conversation-id', {
+        type: 'text',
+        payload: 'Test content',
+      });
+    });
+
+    it('should return failure response when validation fails', async () => {
+      mockChatManagerService.validateConversationFormId.mockReturnValue(false);
+
+      const result = await controller.postChatMessage(
+        'test-conversation-id',
+        '123456',
+        mockMessageData,
+        mockRequest,
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.messageId).toBeUndefined();
+    });
+
+    it('should return failure response when error occurs', async () => {
+      mockChatManagerService.addMessageFromMarvSession.mockRejectedValue(
+        new Error('Database error'),
+      );
+
+      const result = await controller.postChatMessage(
+        'test-conversation-id',
+        '123456',
+        mockMessageData,
+        mockRequest,
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.messageId).toBeUndefined();
     });
   });
 });

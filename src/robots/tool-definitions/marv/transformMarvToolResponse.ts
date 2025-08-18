@@ -72,6 +72,14 @@ function isLargeToolResponse(
   }
 
   // Also check if the response itself is large (over 1000 characters)
+  // Handle undefined/null responses
+  if (
+    functionResponse.response === undefined ||
+    functionResponse.response === null
+  ) {
+    return false;
+  }
+
   const responseString = JSON.stringify(functionResponse.response);
   if (responseString.length > 1000) {
     return true;

@@ -489,55 +489,6 @@ export class IstackBuddySlackApiService implements OnModuleDestroy {
   }
 
   /**
-   * Create message envelope with full conversation history
-   * This replaces the simple createMessageEnvelope method
-   */
-  private async createMessageEnvelopeWithHistory(request: {
-    conversationId: string;
-    fromUserId: string;
-    content: string;
-  }): Promise<{
-    messageEnvelope: any; // TConversationTextMessageEnvelope; // This type is removed
-    conversationHistory: any[];
-  }> {
-    // Get conversation history - get last 20 messages to provide context
-    const filteredHistory = await this.chatManagerService.getLastMessages(
-      request.conversationId,
-      20,
-    );
-
-    // Log trimmed conversation history for dev/debug
-    filteredHistory.forEach((msg: any, index: number) => {
-      const trimmedContent = msg.content;
-      this.logger.log(
-        `Message ${index + 1}: [${msg.fromRole}] ${trimmedContent}`,
-      );
-    });
-
-    // Create the envelope with the current message
-    const messageEnvelope: any = {
-      // TConversationTextMessageEnvelope; // This type is removed
-      messageId: uuidv4(),
-      requestOrResponse: 'request',
-      envelopePayload: {
-        messageId: uuidv4(),
-        author_role: request.fromUserId,
-        content: {
-          type: 'text/plain',
-          payload: request.content,
-        },
-        created_at: new Date().toISOString(),
-        estimated_token_count: -1,
-      },
-    };
-
-    return {
-      messageEnvelope,
-      conversationHistory: filteredHistory,
-    };
-  }
-
-  /**
    * Get knowledge base content for a specific channel
    * This method retrieves channel-specific knowledge base information
    */
