@@ -73,6 +73,9 @@ describe('PublicInterfaceController', () => {
       setGateway: jest.fn(),
       getMessages: jest.fn().mockResolvedValue([]),
       addMessage: jest.fn().mockResolvedValue({ id: 'msg_123_abc123def' }),
+      addMessageFromMarvSession: jest
+        .fn()
+        .mockResolvedValue({ id: 'msg_123_abc123def' }),
       validateConversationFormId: jest.fn().mockReturnValue(true),
       getConversations: jest
         .fn()

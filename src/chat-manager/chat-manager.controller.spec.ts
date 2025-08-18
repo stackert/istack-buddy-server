@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ChatManagerController } from './chat-manager.controller';
 import { ChatManagerService } from './chat-manager.service';
-import { ConversationListSlackAppService } from '../ConversationLists/ConversationListSlackAppService';
+
 import { ChatConversationListService } from '../ConversationLists/ChatConversationListService';
 import {
   CreateMessageDto,
@@ -59,7 +59,7 @@ describe('ChatManagerController', () => {
           provide: AuthenticationService,
           useValue: mockAuthenticationService,
         },
-        ConversationListSlackAppService,
+
         ChatConversationListService,
       ],
     }).compile();
