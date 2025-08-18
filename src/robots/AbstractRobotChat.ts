@@ -1,13 +1,13 @@
 import { AbstractRobot } from './AbstractRobot';
 import type {
-  TConversationTextMessageEnvelope,
-  TRobotResponseEnvelope,
   IStreamingCallbacks,
+  TConversationMessageContentString,
 } from './types';
 import type {
   IConversationMessage,
   IConversationMessageAnthropic,
 } from '../chat-manager/interfaces/message.interface';
+import type { TConversationMessageContent } from '../ConversationLists/types';
 import { UserRole } from '../chat-manager/dto/create-message.dto';
 
 /**
@@ -17,9 +17,9 @@ import { UserRole } from '../chat-manager/dto/create-message.dto';
 export abstract class AbstractRobotChat extends AbstractRobot {
   // streaming response
   public abstract acceptMessageStreamResponse(
-    messageEnvelope: TConversationTextMessageEnvelope,
+    message: IConversationMessage<TConversationMessageContentString>,
     callbacks: IStreamingCallbacks,
-    getHistory?: () => IConversationMessage[],
+    getHistory?: () => IConversationMessage<TConversationMessageContent>[],
   ): Promise<void>;
 
   // immediate response
@@ -27,9 +27,11 @@ export abstract class AbstractRobotChat extends AbstractRobot {
   // Some clients can't support streaming response.
   // so they will have to wait for completed response
   public abstract acceptMessageImmediateResponse(
-    messageEnvelope: TConversationTextMessageEnvelope,
-    getHistory?: () => IConversationMessage[],
-  ): Promise<TRobotResponseEnvelope>;
+    message: IConversationMessage<TConversationMessageContentString>,
+    getHistory?: () => IConversationMessage<TConversationMessageContent>[],
+  ): Promise<
+    Pick<IConversationMessage<TConversationMessageContentString>, 'content'>
+  >;
 
   /**
    * Override the transformer to use Anthropic format for all chat robots

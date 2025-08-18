@@ -1,8 +1,9 @@
-import type { TConversationTextMessageEnvelope } from './types';
+import type { TConversationMessageContentString } from './types';
 import type {
   IConversationMessage,
   IConversationMessageOpenAI,
 } from '../chat-manager/interfaces/message.interface';
+import type { TConversationMessageContent } from '../ConversationLists/types';
 import { UserRole } from '../chat-manager/dto/create-message.dto';
 /**
  * Abstract base class for all robot types
@@ -36,27 +37,24 @@ export abstract class AbstractRobot {
 
   /**
    *
-   * @param messageEnvelope
+   * @param message
    * @param delayedMessageCallback
-   * @description `messageEnvelope` will have properties
-   * will have the shape of
-   * {
-   *   messageId: string;
-   *   author_role: string
-   *   content: any
-   *   created_at: string
-   * }
+   * @description `message` will have the shape of IConversationMessage<TConversationMessageContentString>
+   * with properties like id, conversationId, content, fromRole, etc.
    *
-   * By convention, 'acceptMessage*' functions will return the envelop replacing
-   * author_role, content, created_at
+   * By convention, 'acceptMessage*' functions will return the content portion
+   * since we can't generate message IDs
    */
   public abstract acceptMessageMultiPartResponse(
-    messageEnvelope: TConversationTextMessageEnvelope,
+    message: IConversationMessage<TConversationMessageContentString>,
     delayedMessageCallback: (
-      response: TConversationTextMessageEnvelope,
+      response: Pick<
+        IConversationMessage<TConversationMessageContentString>,
+        'content'
+      >,
     ) => void,
-    getHistory?: () => IConversationMessage[],
-  ): Promise<TConversationTextMessageEnvelope>;
+    getHistory?: () => IConversationMessage<TConversationMessageContent>[],
+  ): Promise<TConversationMessageContentString>;
 
   get robotClass(): string {
     return this.constructor.name;

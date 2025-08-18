@@ -1,29 +1,13 @@
 import { AbstractRobotChat } from './AbstractRobotChat';
 import type {
-  TConversationTextMessageEnvelope,
-  TRobotResponseEnvelope,
-  TConversationTextMessage,
   IStreamingCallbacks,
+  TConversationMessageContentString,
 } from './types';
 import type { IConversationMessage } from '../chat-manager/interfaces/message.interface';
+import type { TConversationMessageContent } from '../ConversationLists/types';
 
 // Helper functions for the streaming pattern
 const noOp = (...args: any[]) => {};
-
-// Factory for creating message envelope with updated content
-const createMessageEnvelopeWithContent = (
-  originalEnvelope: TConversationTextMessageEnvelope,
-  newContent: string,
-): TConversationTextMessageEnvelope => ({
-  ...originalEnvelope,
-  envelopePayload: {
-    ...originalEnvelope.envelopePayload,
-    content: {
-      ...originalEnvelope.envelopePayload.content,
-      payload: newContent,
-    },
-  },
-});
 
 /**
  * A concrete chat robot that parrots (repeats) messages back to the user
@@ -62,73 +46,47 @@ export class ChatRobotParrot extends AbstractRobotChat {
   }
 
   public acceptMessageImmediateResponse(
-    messageEnvelope: TConversationTextMessageEnvelope,
-  ): Promise<TRobotResponseEnvelope> {
-    const recvMessage = messageEnvelope.envelopePayload;
+    message: IConversationMessage<TConversationMessageContentString>,
+    getHistory?: () => IConversationMessage<TConversationMessageContent>[],
+  ): Promise<
+    Pick<IConversationMessage<TConversationMessageContentString>, 'content'>
+  > {
     const randomNumber = Math.floor(Math.random() * 10000);
 
-    const responseEnvelope: TRobotResponseEnvelope = {
-      requestOrResponse: 'response',
-      envelopePayload: {
-        author_role: 'assistant',
-        content: {
-          type: 'text/plain',
-          payload: `(${randomNumber}) ${recvMessage.content.payload}`,
-        },
-        created_at: new Date().toISOString(),
-        estimated_token_count: Math.ceil(
-          recvMessage.content.payload.length / 4,
-        ),
+    return Promise.resolve({
+      content: {
+        type: 'text/plain',
+        payload: `(${randomNumber}) ${message.content.payload}`,
       },
-    };
-
-    return Promise.resolve(responseEnvelope);
+    });
   }
 
   // streaming response
   public async acceptMessageMultiPartResponse(
-    messageEnvelope: TConversationTextMessageEnvelope,
+    message: IConversationMessage<TConversationMessageContentString>,
     delayedMessageCallback: (
-      response: TConversationTextMessageEnvelope,
+      response: Pick<
+        IConversationMessage<TConversationMessageContentString>,
+        'content'
+      >,
     ) => void,
-    getHistory?: () => IConversationMessage[],
-  ): Promise<TConversationTextMessageEnvelope> {
+    getHistory?: () => IConversationMessage<TConversationMessageContent>[],
+  ): Promise<TConversationMessageContentString> {
     // For chat robots, we can implement multipart by using the immediate response
     // and then potentially sending additional responses via callback
     const immediateResponse =
-      await this.acceptMessageImmediateResponse(messageEnvelope);
-
-    // Convert TRobotResponseEnvelope to TConversationTextMessageEnvelope for return
-    const immediateResponseWithIds: TConversationTextMessageEnvelope = {
-      messageId: '', // Will be set by conversation manager
-      requestOrResponse: immediateResponse.requestOrResponse,
-      envelopePayload: {
-        messageId: '', // Will be set by conversation manager
-        author_role: immediateResponse.envelopePayload.author_role,
-        content: immediateResponse.envelopePayload.content,
-        created_at: immediateResponse.envelopePayload.created_at,
-        estimated_token_count:
-          immediateResponse.envelopePayload.estimated_token_count,
-      },
-    };
+      await this.acceptMessageImmediateResponse(message);
 
     // Optionally send delayed additional responses
     setTimeout(() => {
-      const delayedRespMessage: TConversationTextMessage = {
-        ...messageEnvelope.envelopePayload,
-        messageId: '', // Will be set by conversation manager
+      const delayedMessage: Pick<
+        IConversationMessage<TConversationMessageContentString>,
+        'content'
+      > = {
         content: {
           type: 'text/plain',
-          payload: `Follow-up chat response for: ${messageEnvelope.envelopePayload.content.payload}`,
+          payload: `Follow-up chat response for: ${message.content.payload}`,
         },
-        author_role: 'assistant',
-        created_at: new Date().toISOString(),
-      };
-
-      const delayedMessage: TConversationTextMessageEnvelope = {
-        messageId: '', // Will be set by conversation manager
-        requestOrResponse: 'response',
-        envelopePayload: delayedRespMessage,
       };
 
       if (
@@ -139,23 +97,20 @@ export class ChatRobotParrot extends AbstractRobotChat {
       }
     }, 300);
 
-    return immediateResponseWithIds;
+    return immediateResponse.content;
   }
 
   public acceptMessageStreamResponse(
-    messageEnvelope: TConversationTextMessageEnvelope,
+    message: IConversationMessage<TConversationMessageContentString>,
     callbacks: IStreamingCallbacks,
-    getHistory?: () => IConversationMessage[],
+    getHistory?: () => IConversationMessage<TConversationMessageContent>[],
   ): Promise<void> {
-    const recvMessage: TConversationTextMessage =
-      messageEnvelope.envelopePayload;
-
     const randomNumber = Math.floor(Math.random() * 10000);
-    const response = `(${randomNumber}) ${recvMessage.content.payload}`;
+    const response = `(${randomNumber}) ${message.content.payload}`;
 
     // Call onStreamStart if provided
     if (typeof callbacks.onStreamStart === 'function') {
-      callbacks.onStreamStart(messageEnvelope);
+      callbacks.onStreamStart(message);
     }
 
     // Break response into 5 chunks of similar size
@@ -181,7 +136,7 @@ export class ChatRobotParrot extends AbstractRobotChat {
 
             // Call onStreamFinished with minimal data
             if (typeof callbacks.onStreamFinished === 'function') {
-              callbacks.onStreamFinished(response, 'assistant');
+              callbacks.onStreamFinished(message);
             }
             resolve();
           }

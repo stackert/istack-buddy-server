@@ -1,4 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
+import { IConversationMessage } from 'src/chat-manager/interfaces/message.interface';
+import { TConversationMessageContentString } from '../ConversationLists/types';
 
 // Direct exports of ConversationLists types for robots
 export type {
@@ -33,16 +35,25 @@ export type { TAnthropicIstackToolSet };
  * All handlers are required and should be implemented by the conversation manager
  * Callbacks receive minimal necessary data - conversation manager handles message IDs, timestamps, etc.
  */
+
+export type TStreamingCallbackMessageOnFullMessageReceived = {
+  content: { payload: string; type: 'text/plain' };
+};
+
 export interface IStreamingCallbacks {
   onStreamChunkReceived: (chunk: string, contentType?: string) => void;
   onStreamStart: (
-    message: import('../ConversationLists/types').TConversationTextMessageEnvelope,
+    message: IConversationMessage<TConversationMessageContentString>,
   ) => void;
   onStreamFinished: (
-    content: string,
-    authorRole: string,
-    contentType?: string,
+    message: IConversationMessage<TConversationMessageContentString>,
+    // content: string,
+    // authorRole: string,
+    // contentType?: string,
   ) => void;
-  onFullMessageReceived: (content: string, contentType?: string) => void;
+  onFullMessageReceived: (
+    message: TStreamingCallbackMessageOnFullMessageReceived,
+    // message: IConversationMessage<TConversationMessageContentString>,
+  ) => void;
   onError: (error: any) => void;
 }

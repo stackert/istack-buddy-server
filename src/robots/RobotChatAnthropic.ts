@@ -1,10 +1,10 @@
 import { AbstractRobotChat } from './AbstractRobotChat';
 import type {
-  TConversationTextMessageEnvelope,
-  TRobotResponseEnvelope,
   IStreamingCallbacks,
+  TConversationMessageContentString,
 } from './types';
 import type { IConversationMessage } from '../chat-manager/interfaces/message.interface';
+import type { TConversationMessageContent } from '../ConversationLists/types';
 import { UserRole } from '../chat-manager/dto/create-message.dto';
 import Anthropic from '@anthropic-ai/sdk';
 import { marvToolSet } from './tool-definitions/marv';
@@ -12,21 +12,6 @@ import { CustomLoggerService } from '../common/logger/custom-logger.service';
 
 // Helper functions for the streaming pattern
 const noOp = (...args: any[]) => {};
-
-// Factory for creating message envelope with updated content
-const createMessageEnvelopeWithContent = (
-  originalEnvelope: TConversationTextMessageEnvelope,
-  newContent: string,
-): TConversationTextMessageEnvelope => ({
-  ...originalEnvelope,
-  envelopePayload: {
-    ...originalEnvelope.envelopePayload,
-    content: {
-      ...originalEnvelope.envelopePayload.content,
-      payload: newContent,
-    },
-  },
-});
 
 /**
  * Anthropic Claude Chat Robot implementation
@@ -147,12 +132,13 @@ Please provide helpful, accurate, and detailed responses to user questions. If y
   }
 
   /**
-   * Convert our message envelope to Anthropic format with conversation history
+   * Convert our message to Anthropic format with conversation history
    */
   private createAnthropicMessageRequest(
-    messageEnvelope: TConversationTextMessageEnvelope,
+    message: IConversationMessage<TConversationMessageContentString>,
+    getHistory?: () => IConversationMessage<TConversationMessageContent>[],
   ): Anthropic.Messages.MessageCreateParams {
-    const userMessage = messageEnvelope.envelopePayload.content.payload;
+    const userMessage = message.content.payload;
     const messages = this.buildClaudeMessageHistory(userMessage);
 
     return {
@@ -191,17 +177,17 @@ Please provide helpful, accurate, and detailed responses to user questions. If y
    * Handle streaming response using Anthropic's streaming API
    */
   public async acceptMessageStreamResponse(
-    messageEnvelope: TConversationTextMessageEnvelope,
+    message: IConversationMessage<TConversationMessageContentString>,
     callbacks: IStreamingCallbacks,
-    getHistory?: () => IConversationMessage[],
+    getHistory?: () => IConversationMessage<TConversationMessageContent>[],
   ): Promise<void> {
     try {
       const client = this.getClient();
-      const request = this.createAnthropicMessageRequest(messageEnvelope);
+      const request = this.createAnthropicMessageRequest(message, getHistory);
 
       // Call onStreamStart if provided
       if (callbacks.onStreamStart) {
-        callbacks.onStreamStart(messageEnvelope);
+        callbacks.onStreamStart(message);
       }
 
       const stream = await client.messages.create({
@@ -267,7 +253,7 @@ Please provide helpful, accurate, and detailed responses to user questions. If y
 
       // Call onStreamFinished with minimal data
       if (typeof callbacks.onStreamFinished === 'function') {
-        callbacks.onStreamFinished(accumulatedContent, 'assistant');
+        callbacks.onStreamFinished(message);
       }
     } catch (error) {
       const errorMessage =
@@ -287,11 +273,14 @@ Please provide helpful, accurate, and detailed responses to user questions. If y
    * Handle immediate response using Anthropic's messages API
    */
   public async acceptMessageImmediateResponse(
-    messageEnvelope: TConversationTextMessageEnvelope,
-  ): Promise<TRobotResponseEnvelope> {
+    message: IConversationMessage<TConversationMessageContentString>,
+    getHistory?: () => IConversationMessage<TConversationMessageContent>[],
+  ): Promise<
+    Pick<IConversationMessage<TConversationMessageContentString>, 'content'>
+  > {
     try {
       const client = this.getClient();
-      const request = this.createAnthropicMessageRequest(messageEnvelope);
+      const request = this.createAnthropicMessageRequest(message, getHistory);
 
       const response = (await client.messages.create(
         request,
@@ -353,40 +342,22 @@ Please provide helpful, accurate, and detailed responses to user questions. If y
           (responseText.length > 200 ? '...' : ''),
       });
 
-      // Create response envelope without messageId
-      const responseEnvelope: TRobotResponseEnvelope = {
-        requestOrResponse: 'response',
-        envelopePayload: {
-          author_role: 'assistant',
-          content: {
-            type: 'text/plain',
-            payload: responseText,
-          },
-          created_at: new Date().toISOString(),
-          estimated_token_count: this.estimateTokens(responseText),
+      return {
+        content: {
+          type: 'text/plain',
+          payload: responseText,
         },
       };
-
-      return responseEnvelope;
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error occurred';
 
-      // Return error response envelope without messageId
-      const errorResponse: TRobotResponseEnvelope = {
-        requestOrResponse: 'response',
-        envelopePayload: {
-          author_role: 'assistant',
-          content: {
-            type: 'text/plain',
-            payload: `I apologize, but I encountered an error: ${errorMessage}`,
-          },
-          created_at: new Date().toISOString(),
-          estimated_token_count: this.estimateTokens(errorMessage),
+      return {
+        content: {
+          type: 'text/plain',
+          payload: `I apologize, but I encountered an error: ${errorMessage}`,
         },
       };
-
-      return errorResponse;
     }
   }
 
@@ -394,28 +365,36 @@ Please provide helpful, accurate, and detailed responses to user questions. If y
    * Handle multi-part response with delayed callback
    */
   public async acceptMessageMultiPartResponse(
-    messageEnvelope: TConversationTextMessageEnvelope,
+    message: IConversationMessage<TConversationMessageContentString>,
     delayedMessageCallback: (
-      response: TConversationTextMessageEnvelope,
+      response: Pick<
+        IConversationMessage<TConversationMessageContentString>,
+        'content'
+      >,
     ) => void,
-  ): Promise<TConversationTextMessageEnvelope> {
+    getHistory?: () => IConversationMessage<TConversationMessageContent>[],
+  ): Promise<TConversationMessageContentString> {
     // Get immediate response first
-    const immediateResponse =
-      await this.acceptMessageImmediateResponse(messageEnvelope);
+    const immediateResponse = await this.acceptMessageImmediateResponse(
+      message,
+      getHistory,
+    );
 
     // Send a delayed follow-up after processing
     setTimeout(async () => {
       try {
-        const followUpRequest = this.createAnthropicMessageRequest({
-          ...messageEnvelope,
-          envelopePayload: {
-            ...messageEnvelope.envelopePayload,
+        const followUpMessage: IConversationMessage<TConversationMessageContentString> =
+          {
+            ...message,
             content: {
               type: 'text/plain',
-              payload: `Follow up on: "${messageEnvelope.envelopePayload.content.payload}". Is there anything else I can help you with regarding this topic? I have tools available for Sumo Logic queries and SSO auto-fill troubleshooting if needed.`,
+              payload: `Follow up on: "${message.content.payload}". Is there anything else I can help you with regarding this topic? I have tools available for Sumo Logic queries and SSO auto-fill troubleshooting if needed.`,
             },
-          },
-        });
+          };
+        const followUpRequest = this.createAnthropicMessageRequest(
+          followUpMessage,
+          getHistory,
+        );
 
         const client = this.getClient();
         const followUpResponse = (await client.messages.create(
@@ -429,18 +408,13 @@ Please provide helpful, accurate, and detailed responses to user questions. If y
           }
         }
 
-        const delayedResponse: TConversationTextMessageEnvelope = {
-          messageId: `delayed-${Date.now()}`,
-          requestOrResponse: 'response',
-          envelopePayload: {
-            messageId: `delayed-msg-${Date.now()}`,
-            author_role: 'assistant',
-            content: {
-              type: 'text/plain',
-              payload: followUpText,
-            },
-            created_at: new Date().toISOString(),
-            estimated_token_count: this.estimateTokens(followUpText),
+        const delayedResponse: Pick<
+          IConversationMessage<TConversationMessageContentString>,
+          'content'
+        > = {
+          content: {
+            type: 'text/plain',
+            payload: followUpText,
           },
         };
 
@@ -450,18 +424,13 @@ Please provide helpful, accurate, and detailed responses to user questions. If y
           error instanceof Error
             ? error.message
             : 'Unknown error in delayed response';
-        const errorResponse: TConversationTextMessageEnvelope = {
-          messageId: `delayed-error-${Date.now()}`,
-          requestOrResponse: 'response',
-          envelopePayload: {
-            messageId: `delayed-error-msg-${Date.now()}`,
-            author_role: 'assistant',
-            content: {
-              type: 'text/plain',
-              payload: `Error in delayed response: ${errorMessage}`,
-            },
-            created_at: new Date().toISOString(),
-            estimated_token_count: this.estimateTokens(errorMessage),
+        const errorResponse: Pick<
+          IConversationMessage<TConversationMessageContentString>,
+          'content'
+        > = {
+          content: {
+            type: 'text/plain',
+            payload: `Error in delayed response: ${errorMessage}`,
           },
         };
 
@@ -469,20 +438,6 @@ Please provide helpful, accurate, and detailed responses to user questions. If y
       }
     }, 2000);
 
-    // Convert TRobotResponseEnvelope to TConversationTextMessageEnvelope for return
-    const immediateResponseWithIds: TConversationTextMessageEnvelope = {
-      messageId: '', // Will be set by conversation manager
-      requestOrResponse: immediateResponse.requestOrResponse,
-      envelopePayload: {
-        messageId: '', // Will be set by conversation manager
-        author_role: immediateResponse.envelopePayload.author_role,
-        content: immediateResponse.envelopePayload.content,
-        created_at: immediateResponse.envelopePayload.created_at,
-        estimated_token_count:
-          immediateResponse.envelopePayload.estimated_token_count,
-      },
-    };
-
-    return immediateResponseWithIds;
+    return immediateResponse.content;
   }
 }

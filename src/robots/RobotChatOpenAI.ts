@@ -7,10 +7,10 @@ import {
 import { AbstractRobotChat } from './AbstractRobotChat';
 import { marvToolSet } from './tool-definitions/marv';
 import type {
-  TConversationTextMessageEnvelope,
-  TRobotResponseEnvelope,
   IStreamingCallbacks,
+  TConversationMessageContentString,
 } from './types';
+import type { TConversationMessageContent } from '../ConversationLists/types';
 
 // Type for tracking function calls during streaming
 type StreamingFunctionCall = {
@@ -27,23 +27,6 @@ const noOp = (...args: any[]) => {};
 const log = (...args: any[]) => {
   console.log(...args);
 };
-
-// Factory for creating message envelope with updated content
-
-// Factory for creating message envelope with updated content
-const createMessageEnvelopeWithContent = (
-  originalEnvelope: TConversationTextMessageEnvelope,
-  newContent: string,
-): TConversationTextMessageEnvelope => ({
-  ...originalEnvelope,
-  envelopePayload: {
-    ...originalEnvelope.envelopePayload,
-    content: {
-      ...originalEnvelope.envelopePayload.content,
-      payload: newContent,
-    },
-  },
-});
 
 const fakeLogger = {
   debug: noOp,
@@ -95,18 +78,18 @@ class RobotChatOpenAI extends AbstractRobotChat {
    * @TMC_ We may want to allow options parameter ({disableStreaming: true}) to control streaming behavior
    */
   public async acceptMessageStreamResponse(
-    messageEnvelope: TConversationTextMessageEnvelope,
+    message: IConversationMessage<TConversationMessageContentString>,
     callbacks: IStreamingCallbacks,
-    getHistory?: () => IConversationMessage[],
+    getHistory?: () => IConversationMessage<TConversationMessageContent>[],
   ): Promise<void> {
-    const userMessage = messageEnvelope.envelopePayload.content.payload;
+    const userMessage = message.content.payload;
     let accumulatedContent = '';
 
     try {
       const openAiClient = this.getClient();
       // Call onStreamStart with initial message
       if (callbacks.onStreamStart) {
-        callbacks.onStreamStart(messageEnvelope);
+        callbacks.onStreamStart(message);
       }
 
       // Build conversation history if provided
@@ -264,25 +247,21 @@ class RobotChatOpenAI extends AbstractRobotChat {
     } finally {
       // Call onStreamFinished with minimal data
       if (typeof callbacks.onStreamFinished === 'function') {
-        callbacks.onStreamFinished(accumulatedContent, 'assistant');
+        callbacks.onStreamFinished(message);
       }
     }
   }
 
   public async acceptMessageImmediateResponse(
-    inboundMessage: TConversationTextMessageEnvelope,
-  ): Promise<TRobotResponseEnvelope> {
-    // Convert the inbound message to a robot response format without messageId
+    message: IConversationMessage<TConversationMessageContentString>,
+    getHistory?: () => IConversationMessage<TConversationMessageContent>[],
+  ): Promise<
+    Pick<IConversationMessage<TConversationMessageContentString>, 'content'>
+  > {
     return {
-      requestOrResponse: 'response',
-      envelopePayload: {
-        author_role: 'assistant',
-        content: {
-          type: 'text/plain',
-          payload: 'This is a placeholder response from RobotChatOpenAI',
-        },
-        created_at: new Date().toISOString(),
-        estimated_token_count: 0,
+      content: {
+        type: 'text/plain',
+        payload: 'This is a placeholder response from RobotChatOpenAI',
       },
     };
   }
@@ -292,92 +271,83 @@ class RobotChatOpenAI extends AbstractRobotChat {
    * Calls acceptMessageStreamResponse and sends immediate response, then promises to send second message when streaming completes
    */
   public async acceptMessageMultiPartResponse(
-    messageEnvelope: TConversationTextMessageEnvelope,
+    message: IConversationMessage<TConversationMessageContentString>,
     delayedMessageCallback: (
-      response: TConversationTextMessageEnvelope,
+      response: Pick<
+        IConversationMessage<TConversationMessageContentString>,
+        'content'
+      >,
     ) => void,
-  ): Promise<TConversationTextMessageEnvelope> {
+    getHistory?: () => IConversationMessage<TConversationMessageContent>[],
+  ): Promise<TConversationMessageContentString> {
     // Send immediate response first
-    const immediateResponse =
-      await this.acceptMessageImmediateResponse(messageEnvelope);
+    const immediateResponse = await this.acceptMessageImmediateResponse(
+      message,
+      getHistory,
+    );
 
     // Start streaming in background and promise to send delayed message when complete
-    this.acceptMessageStreamResponse(messageEnvelope, {
-      onStreamChunkReceived: (chunk: string) => {
-        // Handle chunks if needed
-      },
-      onStreamStart: (message) => {
-        // Handle stream start if needed
-      },
-      onStreamFinished: (content: string, authorRole: string) => {
-        // Create a minimal message envelope for the callback
-        const finishedMessage: TConversationTextMessageEnvelope = {
-          messageId: '', // Will be set by conversation manager
-          requestOrResponse: 'response',
-          envelopePayload: {
-            messageId: '', // Will be set by conversation manager
-            author_role: authorRole as any,
+    this.acceptMessageStreamResponse(
+      message,
+      {
+        onStreamChunkReceived: (chunk: string) => {
+          // Handle chunks if needed
+        },
+        onStreamStart: (message) => {
+          // Handle stream start if needed
+        },
+        onStreamFinished: (message) => {
+          // Send the complete response as delayed message
+          if (
+            delayedMessageCallback &&
+            typeof delayedMessageCallback === 'function'
+          ) {
+            delayedMessageCallback(message);
+          }
+        },
+        onFullMessageReceived: (message) => {
+          // Handle full message if needed
+        },
+        onError: (error) => {
+          // Handle error in delayed message
+          const errorResponse: Pick<
+            IConversationMessage<TConversationMessageContentString>,
+            'content'
+          > = {
             content: {
               type: 'text/plain',
-              payload: content,
+              payload: `Error in streaming response: ${error.message}`,
             },
-            created_at: new Date().toISOString(),
-            estimated_token_count: this.estimateTokens(content),
-          },
-        };
-        // Send the complete response as delayed message
-        if (
-          delayedMessageCallback &&
-          typeof delayedMessageCallback === 'function'
-        ) {
-          delayedMessageCallback(finishedMessage);
-        }
+          };
+          if (
+            delayedMessageCallback &&
+            typeof delayedMessageCallback === 'function'
+          ) {
+            delayedMessageCallback(errorResponse);
+          }
+        },
       },
-      onFullMessageReceived: (content: string) => {
-        // Handle full message if needed
-      },
-      onError: (error) => {
-        // Handle error in delayed message
-        const errorMessage = createMessageEnvelopeWithContent(
-          messageEnvelope,
-          `Error in streaming response: ${error.message}`,
-        );
-        if (
-          delayedMessageCallback &&
-          typeof delayedMessageCallback === 'function'
-        ) {
-          delayedMessageCallback(errorMessage);
-        }
-      },
-    }).catch((error) => {
+      getHistory,
+    ).catch((error) => {
       // Handle any errors in the streaming process
-      const errorMessage = createMessageEnvelopeWithContent(
-        messageEnvelope,
-        `Error in streaming response: ${error.message}`,
-      );
+      const errorResponse: Pick<
+        IConversationMessage<TConversationMessageContentString>,
+        'content'
+      > = {
+        content: {
+          type: 'text/plain',
+          payload: `Error in streaming response: ${error.message}`,
+        },
+      };
       if (
         delayedMessageCallback &&
         typeof delayedMessageCallback === 'function'
       ) {
-        delayedMessageCallback(errorMessage);
+        delayedMessageCallback(errorResponse);
       }
     });
 
-    // Convert TRobotResponseEnvelope to TConversationTextMessageEnvelope for return
-    const immediateResponseWithIds: TConversationTextMessageEnvelope = {
-      messageId: '', // Will be set by conversation manager
-      requestOrResponse: immediateResponse.requestOrResponse,
-      envelopePayload: {
-        messageId: '', // Will be set by conversation manager
-        author_role: immediateResponse.envelopePayload.author_role,
-        content: immediateResponse.envelopePayload.content,
-        created_at: immediateResponse.envelopePayload.created_at,
-        estimated_token_count:
-          immediateResponse.envelopePayload.estimated_token_count,
-      },
-    };
-
-    return immediateResponseWithIds;
+    return immediateResponse.content;
   }
 
   private async makeToolCall(toolName: string, toolArgs: any): Promise<string> {

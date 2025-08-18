@@ -1,10 +1,10 @@
 import { AbstractRobotChat } from './AbstractRobotChat';
 import type {
-  TConversationTextMessageEnvelope,
-  TRobotResponseEnvelope,
   IStreamingCallbacks,
+  TConversationMessageContentString,
 } from './types';
 import type { IConversationMessage } from '../chat-manager/interfaces/message.interface';
+import type { TConversationMessageContent } from '../ConversationLists/types';
 import { UserRole } from '../chat-manager/dto/create-message.dto';
 import Anthropic from '@anthropic-ai/sdk';
 import { slackyToolSet } from './tool-definitions/slacky';
@@ -18,21 +18,6 @@ import { CustomLoggerService } from '../common/logger/custom-logger.service';
 
 // Helper functions for the streaming pattern
 const noOp = (...args: any[]) => {};
-
-// Factory for creating message envelope with updated content
-const createMessageEnvelopeWithContent = (
-  originalEnvelope: TConversationTextMessageEnvelope,
-  newContent: string,
-): TConversationTextMessageEnvelope => ({
-  ...originalEnvelope,
-  envelopePayload: {
-    ...originalEnvelope.envelopePayload,
-    content: {
-      ...originalEnvelope.envelopePayload.content,
-      payload: newContent,
-    },
-  },
-});
 
 /**
  * Slack-specific Anthropic Claude Chat Robot implementation
@@ -342,17 +327,17 @@ I'm designed to help you solve Forms Core issues quickly and effectively. Just a
    * Stream response from Anthropic API with proper tool result handling
    */
   public async acceptMessageStreamResponse(
-    messageEnvelope: TConversationTextMessageEnvelope,
+    message: IConversationMessage<TConversationMessageContentString>,
     callbacks: IStreamingCallbacks,
-    getHistory?: () => IConversationMessage[],
+    getHistory?: () => IConversationMessage<TConversationMessageContent>[],
   ): Promise<void> {
     const client = this.getClient();
-    const userMessage = messageEnvelope.envelopePayload.content.payload;
+    const userMessage = message.content.payload;
 
     try {
       // Call onStreamStart if provided
       if (callbacks.onStreamStart) {
-        callbacks.onStreamStart(messageEnvelope);
+        callbacks.onStreamStart(message);
       }
 
       // Initial request to Claude
@@ -389,7 +374,7 @@ I'm designed to help you solve Forms Core issues quickly and effectively. Just a
 
         // Call onStreamFinished with minimal data
         if (typeof callbacks.onStreamFinished === 'function') {
-          callbacks.onStreamFinished(accumulatedContent, 'assistant');
+          callbacks.onStreamFinished(message);
         }
         return;
       }
@@ -479,7 +464,7 @@ I'm designed to help you solve Forms Core issues quickly and effectively. Just a
 
       // Call onStreamFinished with minimal data
       if (typeof callbacks.onStreamFinished === 'function') {
-        callbacks.onStreamFinished(accumulatedContent, 'assistant');
+        callbacks.onStreamFinished(message);
       }
     } catch (error) {
       const errorMessage =
@@ -635,24 +620,21 @@ Ratings must be between -5 and +5. Please provide a rating in this range.
    * Handle immediate response using Anthropic's messages API
    */
   public async acceptMessageImmediateResponse(
-    messageEnvelope: TConversationTextMessageEnvelope,
-  ): Promise<TRobotResponseEnvelope> {
-    const userMessage = messageEnvelope.envelopePayload.content.payload;
+    message: IConversationMessage<TConversationMessageContentString>,
+    getHistory?: () => IConversationMessage<TConversationMessageContent>[],
+  ): Promise<
+    Pick<IConversationMessage<TConversationMessageContentString>, 'content'>
+  > {
+    const userMessage = message.content.payload;
 
     // Check for direct feedback/rating commands FIRST (before needing API key)
     const directCommandResult =
       await this.handleDirectFeedbackCommands(userMessage);
     if (directCommandResult) {
       return {
-        requestOrResponse: 'response',
-        envelopePayload: {
-          author_role: 'assistant',
-          content: {
-            type: 'text/plain',
-            payload: directCommandResult,
-          },
-          created_at: new Date().toISOString(),
-          estimated_token_count: this.estimateTokens(directCommandResult),
+        content: {
+          type: 'text/plain',
+          payload: directCommandResult,
         },
       };
     }
@@ -688,15 +670,9 @@ Ratings must be between -5 and +5. Please provide a rating in this range.
       // If no tools were used, return the response directly
       if (toolUses.length === 0) {
         return {
-          requestOrResponse: 'response',
-          envelopePayload: {
-            author_role: 'assistant',
-            content: {
-              type: 'text/plain',
-              payload: responseText,
-            },
-            created_at: new Date().toISOString(),
-            estimated_token_count: this.estimateTokens(responseText),
+          content: {
+            type: 'text/plain',
+            payload: responseText,
           },
         };
       }
@@ -730,15 +706,9 @@ Ratings must be between -5 and +5. Please provide a rating in this range.
       }
 
       return {
-        requestOrResponse: 'response',
-        envelopePayload: {
-          author_role: 'assistant',
-          content: {
-            type: 'text/plain',
-            payload: finalResponseText,
-          },
-          created_at: new Date().toISOString(),
-          estimated_token_count: this.estimateTokens(finalResponseText),
+        content: {
+          type: 'text/plain',
+          payload: finalResponseText,
         },
       };
     } catch (error) {
@@ -746,15 +716,9 @@ Ratings must be between -5 and +5. Please provide a rating in this range.
         error instanceof Error ? error.message : 'Unknown error occurred';
 
       return {
-        requestOrResponse: 'response',
-        envelopePayload: {
-          author_role: 'assistant',
-          content: {
-            type: 'text/plain',
-            payload: `I apologize, but I encountered an error: ${errorMessage}`,
-          },
-          created_at: new Date().toISOString(),
-          estimated_token_count: this.estimateTokens(errorMessage),
+        content: {
+          type: 'text/plain',
+          payload: `I apologize, but I encountered an error: ${errorMessage}`,
         },
       };
     }
@@ -764,12 +728,16 @@ Ratings must be between -5 and +5. Please provide a rating in this range.
    * Multi-part response with proper tool result handling
    */
   public async acceptMessageMultiPartResponse(
-    messageEnvelope: TConversationTextMessageEnvelope,
+    message: IConversationMessage<TConversationMessageContentString>,
     delayedMessageCallback: (
-      response: TConversationTextMessageEnvelope,
+      response: Pick<
+        IConversationMessage<TConversationMessageContentString>,
+        'content'
+      >,
     ) => void,
-  ): Promise<TConversationTextMessageEnvelope> {
-    const userMessage = messageEnvelope.envelopePayload.content.payload;
+    getHistory?: () => IConversationMessage<TConversationMessageContent>[],
+  ): Promise<TConversationMessageContentString> {
+    const userMessage = message.content.payload;
 
     // Debug logging for multipart response processing
     this.logger.debug('MultiPart response processing', {
@@ -784,21 +752,10 @@ Ratings must be between -5 and +5. Please provide a rating in this range.
     });
     if (directCommandResult) {
       this.logger.log('Returning direct command response');
-      const responseWithIds: TConversationTextMessageEnvelope = {
-        messageId: '', // Will be set by conversation manager
-        requestOrResponse: 'response',
-        envelopePayload: {
-          messageId: '', // Will be set by conversation manager
-          author_role: 'assistant',
-          content: {
-            type: 'text/plain',
-            payload: directCommandResult,
-          },
-          created_at: new Date().toISOString(),
-          estimated_token_count: this.estimateTokens(directCommandResult),
-        },
+      return {
+        type: 'text/plain',
+        payload: directCommandResult,
       };
-      return responseWithIds;
     }
 
     // Only initialize client if we need Claude for normal conversation
@@ -831,21 +788,10 @@ Ratings must be between -5 and +5. Please provide a rating in this range.
 
       // If no tools were used, return the response directly
       if (toolUses.length === 0) {
-        const responseWithIds: TConversationTextMessageEnvelope = {
-          messageId: '', // Will be set by conversation manager
-          requestOrResponse: 'response',
-          envelopePayload: {
-            messageId: '', // Will be set by conversation manager
-            author_role: 'assistant',
-            content: {
-              type: 'text/plain',
-              payload: responseText,
-            },
-            created_at: new Date().toISOString(),
-            estimated_token_count: this.estimateTokens(responseText),
-          },
+        return {
+          type: 'text/plain',
+          payload: responseText,
         };
-        return responseWithIds;
       }
 
       // Execute tools and send raw results immediately
@@ -881,40 +827,18 @@ Ratings must be between -5 and +5. Please provide a rating in this range.
       }
 
       // Return Claude's analysis as the main response
-      const responseWithIds: TConversationTextMessageEnvelope = {
-        messageId: '', // Will be set by conversation manager
-        requestOrResponse: 'response',
-        envelopePayload: {
-          messageId: '', // Will be set by conversation manager
-          author_role: 'assistant',
-          content: {
-            type: 'text/plain',
-            payload: finalResponseText,
-          },
-          created_at: new Date().toISOString(),
-          estimated_token_count: this.estimateTokens(finalResponseText),
-        },
+      return {
+        type: 'text/plain',
+        payload: finalResponseText,
       };
-      return responseWithIds;
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error occurred';
 
-      const errorResponseWithIds: TConversationTextMessageEnvelope = {
-        messageId: '', // Will be set by conversation manager
-        requestOrResponse: 'response',
-        envelopePayload: {
-          messageId: '', // Will be set by conversation manager
-          author_role: 'assistant',
-          content: {
-            type: 'text/plain',
-            payload: `I apologize, but I encountered an error: ${errorMessage}`,
-          },
-          created_at: new Date().toISOString(),
-          estimated_token_count: this.estimateTokens(errorMessage),
-        },
+      return {
+        type: 'text/plain',
+        payload: `I apologize, but I encountered an error: ${errorMessage}`,
       };
-      return errorResponseWithIds;
     }
   }
 }

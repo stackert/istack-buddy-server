@@ -1,31 +1,16 @@
 import { AbstractRobotChat } from './AbstractRobotChat';
 import type {
-  TConversationTextMessageEnvelope,
-  TRobotResponseEnvelope,
   IStreamingCallbacks,
+  TConversationMessageContentString,
 } from './types';
 import type { IConversationMessage } from '../chat-manager/interfaces/message.interface';
+import type { TConversationMessageContent } from '../ConversationLists/types';
 import { OpenAI } from 'openai';
 import { marvToolSet } from './tool-definitions/marv';
 import { CustomLoggerService } from '../common/logger/custom-logger.service';
 
 // Helper functions for the streaming pattern
 const noOp = (...args: any[]) => {};
-
-// Factory for creating message envelope with updated content
-const createMessageEnvelopeWithContent = (
-  originalEnvelope: TConversationTextMessageEnvelope,
-  newContent: string,
-): TConversationTextMessageEnvelope => ({
-  ...originalEnvelope,
-  envelopePayload: {
-    ...originalEnvelope.envelopePayload,
-    content: {
-      ...originalEnvelope.envelopePayload.content,
-      payload: newContent,
-    },
-  },
-});
 
 /**
  * Marv OpenAI - Specialized Formstack API Robot
@@ -125,12 +110,13 @@ IMPORTANT: Never use emojis, emoticons, or any graphical symbols in your respons
   }
 
   /**
-   * Convert our message envelope to OpenAI format
+   * Convert our message to OpenAI format
    */
   private createOpenAIMessageRequest(
-    messageEnvelope: TConversationTextMessageEnvelope,
+    message: IConversationMessage<TConversationMessageContentString>,
+    getHistory?: () => IConversationMessage<TConversationMessageContent>[],
   ): OpenAI.Chat.Completions.ChatCompletionCreateParams {
-    const userMessage = messageEnvelope.envelopePayload.content.payload;
+    const userMessage = message.content.payload;
 
     const messages = [
       {
@@ -192,17 +178,17 @@ IMPORTANT: Never use emojis, emoticons, or any graphical symbols in your respons
    * Handle streaming response using OpenAI's streaming API
    */
   public async acceptMessageStreamResponse(
-    messageEnvelope: TConversationTextMessageEnvelope,
+    message: IConversationMessage<TConversationMessageContentString>,
     callbacks: IStreamingCallbacks,
-    getHistory?: () => IConversationMessage[],
+    getHistory?: () => IConversationMessage<TConversationMessageContent>[],
   ): Promise<void> {
     try {
       const client = this.getClient();
-      const request = this.createOpenAIMessageRequest(messageEnvelope);
+      const request = this.createOpenAIMessageRequest(message, getHistory);
 
       // Call onStreamStart if provided
       if (callbacks.onStreamStart) {
-        callbacks.onStreamStart(messageEnvelope);
+        callbacks.onStreamStart(message);
       }
 
       const stream = await client.chat.completions.create({
@@ -221,7 +207,7 @@ IMPORTANT: Never use emojis, emoticons, or any graphical symbols in your respons
 
       // Call onStreamFinished with minimal data
       if (typeof callbacks.onStreamFinished === 'function') {
-        callbacks.onStreamFinished(accumulatedContent, 'assistant');
+        callbacks.onStreamFinished(message);
       }
     } catch (error) {
       const errorMessage =
@@ -243,11 +229,14 @@ IMPORTANT: Never use emojis, emoticons, or any graphical symbols in your respons
    * Handle immediate response using OpenAI's chat completions API
    */
   public async acceptMessageImmediateResponse(
-    messageEnvelope: TConversationTextMessageEnvelope,
-  ): Promise<TRobotResponseEnvelope> {
+    message: IConversationMessage<TConversationMessageContentString>,
+    getHistory?: () => IConversationMessage<TConversationMessageContent>[],
+  ): Promise<
+    Pick<IConversationMessage<TConversationMessageContentString>, 'content'>
+  > {
     try {
       const client = this.getClient();
-      const request = this.createOpenAIMessageRequest(messageEnvelope);
+      const request = this.createOpenAIMessageRequest(message, getHistory);
 
       const response = await client.chat.completions.create(request);
 
@@ -274,40 +263,24 @@ IMPORTANT: Never use emojis, emoticons, or any graphical symbols in your respons
         }
       }
 
-      // Create response envelope without messageId
-      const responseEnvelope: TRobotResponseEnvelope = {
-        requestOrResponse: 'response',
-        envelopePayload: {
-          author_role: 'assistant',
-          content: {
-            type: 'text/plain',
-            payload: responseText,
-          },
-          created_at: new Date().toISOString(),
-          estimated_token_count: this.estimateTokens(responseText),
+      // Return just the content
+      return {
+        content: {
+          type: 'text/plain',
+          payload: responseText,
         },
       };
-
-      return responseEnvelope;
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error occurred';
 
-      // Return error response envelope without messageId
-      const errorResponse: TRobotResponseEnvelope = {
-        requestOrResponse: 'response',
-        envelopePayload: {
-          author_role: 'assistant',
-          content: {
-            type: 'text/plain',
-            payload: `I apologize, but I encountered an error: ${errorMessage}`,
-          },
-          created_at: new Date().toISOString(),
-          estimated_token_count: this.estimateTokens(errorMessage),
+      // Return error response
+      return {
+        content: {
+          type: 'text/plain',
+          payload: `I apologize, but I encountered an error: ${errorMessage}`,
         },
       };
-
-      return errorResponse;
     }
   }
 
@@ -315,28 +288,36 @@ IMPORTANT: Never use emojis, emoticons, or any graphical symbols in your respons
    * Handle multi-part response with delayed callback
    */
   public async acceptMessageMultiPartResponse(
-    messageEnvelope: TConversationTextMessageEnvelope,
+    message: IConversationMessage<TConversationMessageContentString>,
     delayedMessageCallback: (
-      response: TConversationTextMessageEnvelope,
+      response: Pick<
+        IConversationMessage<TConversationMessageContentString>,
+        'content'
+      >,
     ) => void,
-  ): Promise<TConversationTextMessageEnvelope> {
+    getHistory?: () => IConversationMessage<TConversationMessageContent>[],
+  ): Promise<TConversationMessageContentString> {
     // Get immediate response first
-    const immediateResponse =
-      await this.acceptMessageImmediateResponse(messageEnvelope);
+    const immediateResponse = await this.acceptMessageImmediateResponse(
+      message,
+      getHistory,
+    );
 
     // Send a delayed follow-up after processing
     setTimeout(async () => {
       try {
-        const followUpRequest = this.createOpenAIMessageRequest({
-          ...messageEnvelope,
-          envelopePayload: {
-            ...messageEnvelope.envelopePayload,
+        const followUpMessage: IConversationMessage<TConversationMessageContentString> =
+          {
+            ...message,
             content: {
               type: 'text/plain',
-              payload: `Follow up on: "${messageEnvelope.envelopePayload.content.payload}". Is there anything else I can help you with regarding Formstack form management? I have tools available for form creation, field management, logic operations, and more.`,
+              payload: `Follow up on: "${message.content.payload}". Is there anything else I can help you with regarding Formstack form management? I have tools available for form creation, field management, logic operations, and more.`,
             },
-          },
-        });
+          };
+        const followUpRequest = this.createOpenAIMessageRequest(
+          followUpMessage,
+          getHistory,
+        );
 
         const client = this.getClient();
         const followUpResponse =
@@ -350,19 +331,13 @@ IMPORTANT: Never use emojis, emoticons, or any graphical symbols in your respons
           followUpText = followUpResponse.choices[0].message.content || '';
         }
 
-        // we need to verify where/who/how messageId are generated.  Is it the responsibility of the robot? or conversation manager.
-        const delayedResponse: TConversationTextMessageEnvelope = {
-          messageId: `delayed-${Date.now()}`,
-          requestOrResponse: 'response',
-          envelopePayload: {
-            messageId: `delayed-msg-${Date.now()}`,
-            author_role: 'assistant',
-            content: {
-              type: 'text/plain',
-              payload: followUpText,
-            },
-            created_at: new Date().toISOString(),
-            estimated_token_count: this.estimateTokens(followUpText),
+        const delayedResponse: Pick<
+          IConversationMessage<TConversationMessageContentString>,
+          'content'
+        > = {
+          content: {
+            type: 'text/plain',
+            payload: followUpText,
           },
         };
 
@@ -372,19 +347,13 @@ IMPORTANT: Never use emojis, emoticons, or any graphical symbols in your respons
           error instanceof Error
             ? error.message
             : 'Unknown error in delayed response';
-        // we need to verify where/who/how messageId are generated.  Is it the responsibility of the robot? or conversation manager.
-        const errorResponse: TConversationTextMessageEnvelope = {
-          messageId: `delayed-error-${Date.now()}`,
-          requestOrResponse: 'response',
-          envelopePayload: {
-            messageId: `delayed-error-msg-${Date.now()}`,
-            author_role: 'assistant',
-            content: {
-              type: 'text/plain',
-              payload: `Error in delayed response: ${errorMessage}`,
-            },
-            created_at: new Date().toISOString(),
-            estimated_token_count: this.estimateTokens(errorMessage),
+        const errorResponse: Pick<
+          IConversationMessage<TConversationMessageContentString>,
+          'content'
+        > = {
+          content: {
+            type: 'text/plain',
+            payload: `Error in delayed response: ${errorMessage}`,
           },
         };
 
@@ -392,20 +361,6 @@ IMPORTANT: Never use emojis, emoticons, or any graphical symbols in your respons
       }
     }, 2000);
 
-    // Convert TRobotResponseEnvelope to TConversationTextMessageEnvelope for return
-    const immediateResponseWithIds: TConversationTextMessageEnvelope = {
-      messageId: '', // Will be set by conversation manager
-      requestOrResponse: immediateResponse.requestOrResponse,
-      envelopePayload: {
-        messageId: '', // Will be set by conversation manager
-        author_role: immediateResponse.envelopePayload.author_role,
-        content: immediateResponse.envelopePayload.content,
-        created_at: immediateResponse.envelopePayload.created_at,
-        estimated_token_count:
-          immediateResponse.envelopePayload.estimated_token_count,
-      },
-    };
-
-    return immediateResponseWithIds;
+    return immediateResponse.content;
   }
 }

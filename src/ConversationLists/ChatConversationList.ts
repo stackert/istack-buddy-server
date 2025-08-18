@@ -52,9 +52,9 @@ export class ChatConversationList {
         msg.fromRole === UserRole.ROBOT || msg.toRole === UserRole.ROBOT;
       const isRobotType = msg.messageType === MessageType.ROBOT;
       const isKnownRobotUserId =
-        msg.fromUserId &&
-        (msg.fromUserId.includes('robot') ||
-          msg.fromUserId === 'cx-slack-robot');
+        msg.authorUserId &&
+        (msg.authorUserId.includes('robot') ||
+          msg.authorUserId === 'cx-slack-robot');
 
       return isRobotRole || isRobotType || isKnownRobotUserId;
     });
@@ -164,7 +164,7 @@ export class ChatConversationList {
    */
   getMessagesByUser(userId: string): IConversationMessage[] {
     return this.getAllChatMessages().filter(
-      (msg: IConversationMessage) => msg.fromUserId === userId,
+      (msg: IConversationMessage) => msg.authorUserId === userId,
     );
   }
 

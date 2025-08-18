@@ -1,10 +1,7 @@
 import { AbstractSlackRobotAgent } from './AbstractSlackRobotAgent';
-import {
-  TConversationTextMessageEnvelope,
-  TConversationTextMessage,
-  TRobotResponseEnvelope,
-} from '../types';
+import { TConversationMessageContentString } from '../types';
 import type { IConversationMessage } from '../../chat-manager/interfaces/message.interface';
+import type { TConversationMessageContent } from '../../ConversationLists/types';
 import { TKnowledgeBase, TSlackAgentFunctionDescription } from './types';
 
 /**
@@ -69,87 +66,61 @@ class SlackAgentCoreFormsParrot extends AbstractSlackRobotAgent {
   }
 
   public acceptMessageImmediateResponse(
-    messageEnvelope: TConversationTextMessageEnvelope,
-  ): Promise<TRobotResponseEnvelope> {
-    const recvMessage = messageEnvelope.envelopePayload;
+    message: IConversationMessage<TConversationMessageContentString>,
+    getHistory?: () => IConversationMessage<TConversationMessageContent>[],
+  ): Promise<
+    Pick<IConversationMessage<TConversationMessageContentString>, 'content'>
+  > {
     const randomNumber = Math.floor(Math.random() * 10000);
 
-    const responseEnvelope: TRobotResponseEnvelope = {
-      requestOrResponse: 'response',
-      envelopePayload: {
-        author_role: 'assistant',
-        content: {
-          type: 'text/plain',
-          payload: `(${randomNumber}) ${recvMessage.content.payload}`,
-        },
-        created_at: new Date().toISOString(),
-        estimated_token_count: Math.ceil(
-          recvMessage.content.payload.length / 4,
-        ),
+    return Promise.resolve({
+      content: {
+        type: 'text/plain',
+        payload: `(${randomNumber}) ${message.content.payload}`,
       },
-    };
-
-    return Promise.resolve(responseEnvelope);
+    });
   }
 
   public acceptMessageMultiPartResponse(
-    messageEnvelope: TConversationTextMessageEnvelope,
+    message: IConversationMessage<TConversationMessageContentString>,
     delayedMessageCallback: (
-      response: TConversationTextMessageEnvelope,
+      response: Pick<
+        IConversationMessage<TConversationMessageContentString>,
+        'content'
+      >,
     ) => void,
-    getHistory?: () => IConversationMessage[],
-  ): Promise<TConversationTextMessageEnvelope> {
-    const recvMessage: TConversationTextMessage =
-      messageEnvelope.envelopePayload;
-    const originalContent = recvMessage.content.payload;
+    getHistory?: () => IConversationMessage<TConversationMessageContent>[],
+  ): Promise<TConversationMessageContentString> {
+    const originalContent = message.content.payload;
     const randomNumber = () => Math.floor(Math.random() * 10000);
 
     // Send delayed responses
     for (let i = 1; i < 4; i++) {
       setTimeout(() => {
-        const respMessage: TConversationTextMessage = {
-          ...recvMessage,
+        const delayedResponse: Pick<
+          IConversationMessage<TConversationMessageContentString>,
+          'content'
+        > = {
           content: {
             type: 'text/plain',
             payload: `${randomNumber()} ${originalContent}`,
           },
-          author_role: 'assistant',
-          created_at: new Date().toISOString(),
-        };
-
-        const responseEnvelope: TConversationTextMessageEnvelope = {
-          messageId: `response-${Date.now()}-${i}`,
-          requestOrResponse: 'response',
-          envelopePayload: respMessage,
         };
 
         if (
           delayedMessageCallback &&
           typeof delayedMessageCallback === 'function'
         ) {
-          delayedMessageCallback(responseEnvelope);
+          delayedMessageCallback(delayedResponse);
         }
       }, 500 * i);
     }
 
     // Return immediate response
-    const immediateRespMessage: TConversationTextMessage = {
-      ...recvMessage,
-      content: {
-        type: 'text/plain',
-        payload: `${randomNumber()} ${originalContent}`,
-      },
-      author_role: 'assistant',
-      created_at: new Date().toISOString(),
-    };
-
-    const immediateResponseEnvelope: TConversationTextMessageEnvelope = {
-      messageId: `response-${Date.now()}`,
-      requestOrResponse: 'response',
-      envelopePayload: immediateRespMessage,
-    };
-
-    return Promise.resolve(immediateResponseEnvelope);
+    return Promise.resolve({
+      type: 'text/plain',
+      payload: `${randomNumber()} ${originalContent}`,
+    });
   }
 }
 

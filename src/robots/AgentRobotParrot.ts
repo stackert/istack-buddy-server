@@ -1,10 +1,7 @@
 import { AbstractRobotAgent } from './AbstractRobotAgent';
-import {
-  TConversationTextMessageEnvelope,
-  TConversationTextMessage,
-  TRobotResponseEnvelope,
-} from './types';
+import type { TConversationMessageContentString } from './types';
 import type { IConversationMessage } from '../chat-manager/interfaces/message.interface';
+import type { TConversationMessageContent } from '../ConversationLists/types';
 
 /**
  * A concrete agent robot that parrots (repeats) task descriptions as it executes them
@@ -43,143 +40,43 @@ export class AgentRobotParrot extends AbstractRobotAgent {
     return Math.ceil(message.length / 4);
   }
 
-  public acceptMessageImmediateResponse(
-    messageEnvelope: TConversationTextMessageEnvelope,
-  ): Promise<TRobotResponseEnvelope> {
-    const recvMessage = messageEnvelope.envelopePayload;
-    const randomNumber = Math.floor(Math.random() * 10000);
-
-    const responseEnvelope: TRobotResponseEnvelope = {
-      requestOrResponse: 'response',
-      envelopePayload: {
-        author_role: 'assistant',
-        content: {
-          type: 'text/plain',
-          payload: `(${randomNumber}) ${recvMessage.content.payload}`,
-        },
-        created_at: new Date().toISOString(),
-        estimated_token_count: Math.ceil(
-          recvMessage.content.payload.length / 4,
-        ),
-      },
-    };
-
-    return Promise.resolve(responseEnvelope);
-  }
-
   public acceptMessageMultiPartResponse(
-    messageEnvelope: TConversationTextMessageEnvelope,
+    message: IConversationMessage<TConversationMessageContentString>,
     delayedMessageCallback: (
-      response: TConversationTextMessageEnvelope,
+      response: Pick<
+        IConversationMessage<TConversationMessageContentString>,
+        'content'
+      >,
     ) => void,
-    getHistory?: () => IConversationMessage[],
-  ): Promise<TConversationTextMessageEnvelope> {
-    const recvMessage: TConversationTextMessage =
-      messageEnvelope.envelopePayload;
-    const originalContent = recvMessage.content.payload;
+    getHistory?: () => IConversationMessage<TConversationMessageContent>[],
+  ): Promise<TConversationMessageContentString> {
+    const originalContent = message.content.payload;
     const randomNumber = Math.floor(Math.random() * 10000);
 
     // Send delayed response
     setTimeout(() => {
-      const delayedRespMessage: TConversationTextMessage = {
-        ...recvMessage,
+      const delayedMessage: Pick<
+        IConversationMessage<TConversationMessageContentString>,
+        'content'
+      > = {
         content: {
           type: 'text/plain',
           payload: `(${randomNumber}) - complete: ${originalContent}`,
         },
-        author_role: 'assistant',
-        created_at: new Date().toISOString(),
-      };
-
-      const delayedResponseEnvelope: TConversationTextMessageEnvelope = {
-        messageId: `response-${Date.now()}-delayed`,
-        requestOrResponse: 'response',
-        envelopePayload: delayedRespMessage,
       };
 
       if (
         delayedMessageCallback &&
         typeof delayedMessageCallback === 'function'
       ) {
-        delayedMessageCallback(delayedResponseEnvelope);
+        delayedMessageCallback(delayedMessage);
       }
     }, 500);
 
     // Return immediate response
-    const immediateRespMessage: TConversationTextMessage = {
-      ...recvMessage,
-      content: {
-        type: 'text/plain',
-        payload: `(${randomNumber}) ${originalContent}`,
-      },
-      author_role: 'assistant',
-      created_at: new Date().toISOString(),
-    };
-
-    const immediateResponseEnvelope: TConversationTextMessageEnvelope = {
-      messageId: `response-${Date.now()}`,
-      requestOrResponse: 'response',
-      envelopePayload: immediateRespMessage,
-    };
-
-    return Promise.resolve(immediateResponseEnvelope);
-  }
-
-  public acceptMessageStreamResponse(
-    messageEnvelope: TConversationTextMessageEnvelope,
-    chunkCallback: (chunk: string) => void,
-  ): Promise<void> {
-    const recvMessage: TConversationTextMessage =
-      messageEnvelope.envelopePayload;
-
-    const randomNumber = Math.floor(Math.random() * 10000);
-    const response = `(${randomNumber}) ${recvMessage.content.payload}`;
-
-    console.log(
-      `AgentRobotParrot: Starting streaming for message: "${recvMessage.content.payload}"`,
-    );
-    console.log(`AgentRobotParrot: Full response will be: "${response}"`);
-
-    // Break response into 5 chunks of similar size
-    const chunkSize = Math.ceil(response.length / 5);
-    const chunks: string[] = [];
-
-    for (let i = 0; i < response.length; i += chunkSize) {
-      chunks.push(response.slice(i, i + chunkSize));
-    }
-
-    console.log(`AgentRobotParrot: Created ${chunks.length} chunks:`, chunks);
-
-    return new Promise<void>((resolve) => {
-      let chunkIndex = 0;
-
-      const interval = setInterval(() => {
-        try {
-          if (chunkIndex < chunks.length) {
-            console.log(
-              `AgentRobotParrot: Sending chunk ${chunkIndex + 1}/${chunks.length}: "${chunks[chunkIndex]}"`,
-            );
-            chunkCallback(chunks[chunkIndex]);
-            chunkIndex++;
-          } else {
-            // Send null after all chunks are sent
-            console.log(`AgentRobotParrot: Sending final null chunk`);
-            chunkCallback(null as any);
-            clearInterval(interval);
-            console.log(`AgentRobotParrot: Streaming complete`);
-            resolve();
-          }
-        } catch (error) {
-          console.log(`AgentRobotParrot: Error in chunk callback:`, error);
-          // Continue even if callback throws an error
-          if (chunkIndex < chunks.length) {
-            chunkIndex++;
-          } else {
-            clearInterval(interval);
-            resolve();
-          }
-        }
-      }, 500);
+    return Promise.resolve({
+      type: 'text/plain',
+      payload: `(${randomNumber}) ${originalContent}`,
     });
   }
 }

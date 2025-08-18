@@ -23,7 +23,10 @@ import {
   TConversationMessageContentString,
 } from '../ConversationLists/types';
 import { RobotService } from '../robots/robot.service';
-import { IStreamingCallbacks } from '../robots/types';
+import {
+  IStreamingCallbacks,
+  TStreamingCallbackMessageOnFullMessageReceived,
+} from '../robots/types';
 
 @Injectable()
 export class ChatManagerService {
@@ -70,9 +73,7 @@ export class ChatManagerService {
         console.log('Stream started');
       },
       onStreamFinished: async (
-        content: string,
-        authorRole: string,
-        contentType: string = 'text/plain',
+        message: IConversationMessage<TConversationMessageContentString>,
       ) => {
         console.log('Stream finished');
         // _TMC_ notice none of the parameters are used
@@ -108,8 +109,7 @@ export class ChatManagerService {
         }
       },
       onFullMessageReceived: async (
-        content: string,
-        contentType: string = 'text/plain',
+        message: TStreamingCallbackMessageOnFullMessageReceived,
       ) => {
         // this differs from onStreamFinished - in that clients
         // may listen for either this Event or onStreamFinished.
@@ -117,7 +117,7 @@ export class ChatManagerService {
 
         console.log(
           'onFullMessageReceived called with content:',
-          content.substring(0, 100) + '...',
+          message.content.payload.substring(0, 100) + '...',
         );
 
         // Add tool response to conversation database
@@ -125,12 +125,12 @@ export class ChatManagerService {
           {
             conversationId: conversationId,
             fromUserId: 'anthropic-marv-robot',
-            content: content,
+            content: message.content.payload,
             messageType: MessageType.TEXT,
             fromRole: UserRole.ROBOT,
             toRole: UserRole.CUSTOMER,
           },
-          contentType,
+          message.content.type,
         );
 
         // Create message and broadcast through gateway like onError does
@@ -153,9 +153,9 @@ export class ChatManagerService {
             // messageType: MessageType.TEXT,
             // fromRole: UserRole.AGENT,
             // toRole: UserRole.CUSTOMER,
-            content: content,
+            content: message.content.payload,
           },
-          contentType,
+          message.content.type,
         );
 
         `
@@ -416,7 +416,7 @@ export class ChatManagerService {
         payload: createMessageDto.content,
       } as TConversationMessageContentString,
       conversationId: createMessageDto.conversationId,
-      fromUserId: createMessageDto.fromUserId,
+      authorUserId: createMessageDto.fromUserId,
       fromRole: createMessageDto.fromRole,
       toRole: createMessageDto.toRole,
       messageType: createMessageDto.messageType || MessageType.TEXT,
@@ -494,27 +494,30 @@ export class ChatManagerService {
         20,
       );
 
-      // Create message envelope
-      const messageEnvelope: TConversationTextMessageEnvelope = {
-        messageId: uuidv4(),
-        requestOrResponse: 'request',
-        envelopePayload: {
-          messageId: uuidv4(),
-          author_role: 'cx-slack-robot',
-          content: {
-            type: 'text/plain',
-            payload: content.payload,
-          },
-          created_at: new Date().toISOString(),
-          estimated_token_count: -1,
+      // Create message for robot
+      const message: IConversationMessage<TConversationMessageContentString> = {
+        id: uuidv4(),
+        conversationId,
+        content: {
+          type: 'text/plain',
+          payload: content.payload,
         },
+        authorUserId: 'cx-slack-robot',
+        fromRole: UserRole.CUSTOMER,
+        toRole: UserRole.AGENT,
+        messageType: MessageType.TEXT,
+        createdAt: new Date(),
+        updatedAt: new Date(),
       };
 
       // Create internal callback that handles robot responses
       const internalRobotCallback = async (
-        response: TConversationTextMessageEnvelope,
+        response: Pick<
+          IConversationMessage<TConversationMessageContentString>,
+          'content'
+        >,
       ) => {
-        const responseContent = response.envelopePayload.content.payload;
+        const responseContent = response.content.payload;
 
         // Add robot response to conversation history
         await this.addRobotResponseFromSlack(conversationId, {
@@ -537,7 +540,7 @@ export class ChatManagerService {
 
       // Trigger robot response
       await robot.acceptMessageMultiPartResponse(
-        messageEnvelope,
+        message,
         internalRobotCallback,
         () => conversationHistory,
       );
@@ -704,7 +707,7 @@ export class ChatManagerService {
     if (query.userId) {
       filteredMessages = filteredMessages.filter(
         (msg) =>
-          msg.fromUserId === query.userId ||
+          msg.authorUserId === query.userId ||
           this.isMessageVisibleToUser(msg, query.userId!),
       );
     }
@@ -972,8 +975,8 @@ export class ChatManagerService {
 
         // Check for recent messages to count active users
         for (const message of messages) {
-          if (message.createdAt > oneHourAgo && message.fromUserId) {
-            recentUserIds.add(message.fromUserId);
+          if (message.createdAt > oneHourAgo && message.authorUserId) {
+            recentUserIds.add(message.authorUserId);
           }
         }
       }
@@ -1195,7 +1198,7 @@ export class ChatManagerService {
   ): boolean {
     // Simple visibility logic - can be enhanced based on your requirements
     return (
-      message.fromUserId === userId ||
+      message.authorUserId === userId ||
       message.toRole === UserRole.CUSTOMER ||
       message.fromRole === UserRole.CUSTOMER
     );
