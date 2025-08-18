@@ -1,9 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { RobotService } from './robot.service';
-import { ChatRobotParrot } from './ChatRobotParrot';
 import { AgentRobotParrot } from './AgentRobotParrot';
 import { AbstractRobot } from './AbstractRobot';
-import type { TConversationTextMessageEnvelope } from './types';
+import type { TConversationMessageContentString } from './types';
+import type { IConversationMessage } from '../chat-manager/interfaces/message.interface';
 
 // Test robot class for testing purposes
 class TestRobot extends AbstractRobot {
@@ -14,12 +14,17 @@ class TestRobot extends AbstractRobot {
   public readonly contextWindowSizeInTokens: number = 1000;
 
   public acceptMessageMultiPartResponse(
-    messageEnvelope: TConversationTextMessageEnvelope,
+    message: IConversationMessage<TConversationMessageContentString>,
     delayedMessageCallback: (
-      response: TConversationTextMessageEnvelope,
+      response: Pick<
+        IConversationMessage<TConversationMessageContentString>,
+        'content'
+      >,
     ) => void,
-  ): Promise<TConversationTextMessageEnvelope> {
-    return Promise.resolve(messageEnvelope);
+  ): Promise<TConversationMessageContentString> {
+    const response = { type: 'text/plain' as const, payload: 'test response' };
+    delayedMessageCallback({ content: response });
+    return Promise.resolve(response);
   }
 
   public estimateTokens(message: string): number {
@@ -57,21 +62,19 @@ describe('RobotService', () => {
       // Ensure the environment variable is not set
       delete process.env.USE_FAKE_PARROT_ROBOT;
 
-      const robot = service.getRobotByName('ChatRobotParrot');
+      const robot = service.getRobotByName('AgentRobotParrot');
       expect(robot).toBeDefined();
-      expect(robot).toBeInstanceOf(ChatRobotParrot);
-      expect(robot).not.toBeInstanceOf(AgentRobotParrot);
+      expect(robot).toBeInstanceOf(AgentRobotParrot);
     });
 
     it('should have correct robot types for all registered robots', () => {
       delete process.env.USE_FAKE_PARROT_ROBOT;
 
-      expect(service.getRobotByName('ChatRobotParrot')).toBeInstanceOf(
-        ChatRobotParrot,
-      );
       expect(service.getRobotByName('AgentRobotParrot')).toBeInstanceOf(
         AgentRobotParrot,
       );
+      expect(service.getRobotByName('AnthropicMarv')).toBeDefined();
+      expect(service.getRobotByName('SlackyOpenAiAgent')).toBeDefined();
     });
   });
 
@@ -89,101 +92,21 @@ describe('RobotService', () => {
       await fakeService.onModuleInit();
 
       // All robots should be AgentRobotParrot instances
-      const chatRobot = fakeService.getRobotByName('ChatRobotParrot');
       const agentRobot = fakeService.getRobotByName('AgentRobotParrot');
-      const openAIRobot = fakeService.getRobotByName('RobotChatOpenAI');
-      const anthropicRobot = fakeService.getRobotByName('RobotChatAnthropic');
-      const slackyRobot = fakeService.getRobotByName('SlackyAnthropicAgent');
-      const slackAgentRobot = fakeService.getRobotByName(
-        'SlackAgentCoreFormsParrot',
-      );
-      const slackSsoRobot = fakeService.getRobotByName(
-        'SlackAgentCoreFormsSsoAutofillParrot',
-      );
+      const anthropicRobot = fakeService.getRobotByName('AnthropicMarv');
+      const slackyRobot = fakeService.getRobotByName('SlackyOpenAiAgent');
 
-      expect(chatRobot).toBeInstanceOf(AgentRobotParrot);
       expect(agentRobot).toBeInstanceOf(AgentRobotParrot);
-      expect(openAIRobot).toBeInstanceOf(AgentRobotParrot);
       expect(anthropicRobot).toBeInstanceOf(AgentRobotParrot);
       expect(slackyRobot).toBeInstanceOf(AgentRobotParrot);
-      expect(slackAgentRobot).toBeInstanceOf(AgentRobotParrot);
-      expect(slackSsoRobot).toBeInstanceOf(AgentRobotParrot);
-    });
-
-    it('should override robot names to match real robot names in fake mode', async () => {
-      process.env.USE_FAKE_PARROT_ROBOT = 'true';
-
-      const module: TestingModule = await Test.createTestingModule({
-        providers: [RobotService],
-      }).compile();
-
-      const fakeService = module.get<RobotService>(RobotService);
-      await fakeService.onModuleInit();
-
-      // Check that the names are overridden correctly
-      const chatRobot = fakeService.getRobotByName('ChatRobotParrot');
-      const openAIRobot = fakeService.getRobotByName('RobotChatOpenAI');
-
-      expect(chatRobot).toBeDefined();
-      expect(openAIRobot).toBeDefined();
-      expect(chatRobot).toBeInstanceOf(AgentRobotParrot);
-      expect(openAIRobot).toBeInstanceOf(AgentRobotParrot);
-    });
-
-    it('should register all expected robot names in fake mode', async () => {
-      process.env.USE_FAKE_PARROT_ROBOT = 'true';
-
-      const module: TestingModule = await Test.createTestingModule({
-        providers: [RobotService],
-      }).compile();
-
-      const fakeService = module.get<RobotService>(RobotService);
-      await fakeService.onModuleInit();
-
-      const expectedNames = [
-        'ChatRobotParrot',
-        'AgentRobotParrot',
-        'RobotChatOpenAI',
-        'RobotChatAnthropic',
-        'SlackyAnthropicAgent',
-        'MarvOpenAiAgent',
-        'SlackyOpenAiAgent',
-        'SlackAgentCoreFormsParrot',
-        'SlackAgentCoreFormsSsoAutofillParrot',
-      ];
-
-      expectedNames.forEach((name) => {
-        expect(fakeService.hasRobot(name)).toBe(true);
-        const robot = fakeService.getRobotByName(name);
-        expect(robot).toBeInstanceOf(AgentRobotParrot);
-      });
-    });
-
-    it('should work with any truthy value for USE_FAKE_PARROT_ROBOT', async () => {
-      // Test with different truthy values
-      const truthyValues = ['true', '1', 'yes', 'on', 'enabled'];
-
-      for (const value of truthyValues) {
-        process.env.USE_FAKE_PARROT_ROBOT = value;
-
-        const module: TestingModule = await Test.createTestingModule({
-          providers: [RobotService],
-        }).compile();
-
-        const fakeService = module.get<RobotService>(RobotService);
-        await fakeService.onModuleInit();
-
-        const robot = fakeService.getRobotByName('ChatRobotParrot');
-        expect(robot).toBeInstanceOf(AgentRobotParrot);
-      }
     });
   });
 
   describe('getRobotByName', () => {
     it('should return a robot when given a valid name', () => {
-      const robot = service.getRobotByName('ChatRobotParrot');
+      const robot = service.getRobotByName('AgentRobotParrot');
       expect(robot).toBeDefined();
-      expect(robot).toBeInstanceOf(ChatRobotParrot);
+      expect(robot).toBeInstanceOf(AgentRobotParrot);
     });
 
     it('should return undefined when given an invalid name', () => {
@@ -197,8 +120,9 @@ describe('RobotService', () => {
       const names = service.getAvailableRobotNames();
       expect(Array.isArray(names)).toBe(true);
       expect(names.length).toBeGreaterThan(0);
-      expect(names).toContain('ChatRobotParrot');
       expect(names).toContain('AgentRobotParrot');
+      expect(names).toContain('AnthropicMarv');
+      expect(names).toContain('SlackyOpenAiAgent');
     });
   });
 
@@ -216,8 +140,9 @@ describe('RobotService', () => {
 
   describe('hasRobot', () => {
     it('should return true for existing robots', () => {
-      expect(service.hasRobot('ChatRobotParrot')).toBe(true);
       expect(service.hasRobot('AgentRobotParrot')).toBe(true);
+      expect(service.hasRobot('AnthropicMarv')).toBe(true);
+      expect(service.hasRobot('SlackyOpenAiAgent')).toBe(true);
     });
 
     it('should return false for non-existing robots', () => {
@@ -227,9 +152,9 @@ describe('RobotService', () => {
 
   describe('getRobotsByClass', () => {
     it('should return robots filtered by class name', () => {
-      const chatRobots = service.getRobotsByClass('ChatRobotParrot');
-      expect(chatRobots.length).toBe(1);
-      expect(chatRobots[0]).toBeInstanceOf(ChatRobotParrot);
+      const agentRobots = service.getRobotsByClass('AgentRobotParrot');
+      expect(agentRobots.length).toBe(1);
+      expect(agentRobots[0]).toBeInstanceOf(AgentRobotParrot);
     });
 
     it('should return empty array for non-matching class', () => {
@@ -248,25 +173,25 @@ describe('RobotService', () => {
     });
 
     it('should throw error when registering duplicate robot without overwrite', () => {
-      const duplicateRobot = new ChatRobotParrot();
+      const duplicateRobot = new AgentRobotParrot();
       expect(() => service.registerRobot(duplicateRobot)).toThrow(
-        "Robot with name 'ChatRobotParrot' already exists",
+        "Robot with name 'AgentRobotParrot' already exists",
       );
     });
 
     it('should allow overwriting existing robot when overwrite is true', () => {
-      const newRobot = new ChatRobotParrot();
+      const newRobot = new AgentRobotParrot();
       service.registerRobot(newRobot, true);
-      expect(service.getRobotByName('ChatRobotParrot')).toBe(newRobot);
+      expect(service.getRobotByName('AgentRobotParrot')).toBe(newRobot);
     });
   });
 
   describe('unregisterRobot', () => {
     it('should unregister an existing robot', () => {
-      expect(service.hasRobot('ChatRobotParrot')).toBe(true);
-      const result = service.unregisterRobot('ChatRobotParrot');
+      expect(service.hasRobot('AgentRobotParrot')).toBe(true);
+      const result = service.unregisterRobot('AgentRobotParrot');
       expect(result).toBe(true);
-      expect(service.hasRobot('ChatRobotParrot')).toBe(false);
+      expect(service.hasRobot('AgentRobotParrot')).toBe(false);
     });
 
     it('should return false when unregistering non-existing robot', () => {

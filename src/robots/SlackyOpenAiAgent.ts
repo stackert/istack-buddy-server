@@ -582,8 +582,6 @@ IMPORTANT: Never use emojis, emoticons, or any graphical symbols in your respons
 
   // Store conversation history for context
   private conversationHistory: IConversationMessage[] = [];
-  private isActivelyListeningForResponse: boolean = false;
-  private activeMonitoringIntervals: Map<string, NodeJS.Timeout> = new Map();
   private toolStatus: {
     executing: string[];
     completed: string[];
@@ -711,65 +709,10 @@ Need help? Just ask!`;
   }
 
   /**
-   * Execute all tool calls in parallel
-   */
-  private async executeToolAllCalls(toolCalls: any[]): Promise<any[]> {
-    const results = [];
-    for (const toolCall of toolCalls) {
-      try {
-        const toolName = toolCall.function?.name || '';
-        const toolArgs = JSON.parse(toolCall.function?.arguments || '{}');
-
-        // Log tool call and response for debugging (but don't send to Slack)
-        const toolCallMessage = `Calling tool: ${toolName} with arguments: ${JSON.stringify(toolArgs, null, 2)}`;
-        this.logger.log(toolCallMessage);
-
-        const result = await this.executeToolCall(toolName, toolArgs);
-
-        const toolResponseMessage = `Tool ${toolName} returned: ${JSON.stringify(result, null, 2)}`;
-        this.logger.log(toolResponseMessage);
-
-        results.push({
-          tool_call_id: toolCall.id,
-          role: 'tool' as const,
-          content: result,
-        });
-      } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : 'Unknown error';
-
-        // Send tool error message to Slack
-        const toolErrorMessage = `Tool ${toolCall.function?.name || 'unknown'} failed: ${errorMessage}`;
-        this.logger.log(toolErrorMessage);
-        if (this.currentCallback) {
-          this.currentCallback(this.createToolStatusResponse(toolErrorMessage));
-        }
-
-        results.push({
-          tool_call_id: toolCall.id,
-          role: 'tool' as const,
-          content: `Error executing tool: ${errorMessage}`,
-        });
-      }
-    }
-
-    // Store the results for final response generation
-    // this.lastToolResults = results;
-    this.logger.log(`Stored ${results.length} tool results for final response`);
-    this.logger.log(
-      `Tool results content: ${JSON.stringify(results, null, 2)}`,
-    );
-
-    return results;
-  }
-
-  /**
    * Handle streaming response using OpenAI's streaming API
    */
   public async acceptMessageStreamResponse(
     message: IConversationMessage<TConversationMessageContentString>,
-    // message: TConversationMessageContentString,
-    //TConversationMessageContentString
     callbacks: IStreamingCallbacks,
     getHistory?: () => IConversationMessage[],
   ): Promise<void> {
@@ -1009,167 +952,6 @@ Need help? Just ask!`;
     }
 
     this.logger.log(`Tool status updated: ${toolName} -> ${status}`);
-  }
-
-  /**
-   * Get current tool status for monitoring
-   */
-  private getToolStatus(): string | null {
-    if (this.toolStatus.executing.length > 0) {
-      return `Executing tools: ${this.toolStatus.executing.join(', ')}`;
-    }
-    if (this.toolStatus.completed.length > 0) {
-      return `Completed tools: ${this.toolStatus.completed.join(', ')}`;
-    }
-    if (this.toolStatus.errors.length > 0) {
-      return `Tool errors: ${this.toolStatus.errors.join(', ')}`;
-    }
-    return null;
-  }
-
-  /**
-   * Create tool status response
-   */
-  private createToolStatusResponse(status: string): {
-    content: { payload: string; type: 'text/plain' };
-  } {
-    return {
-      content: {
-        type: 'text/plain',
-        payload: status,
-      },
-    };
-  }
-
-  /**
-   * Create a fallback response when the final API call fails or returns empty
-   */
-  private createFallbackResponse(toolResults: any[]): string {
-    // AI DO NOT REMOVE THIS COMMENT
-    // 'createFallbackResponse' is a product of an poor understanding of OpenAi API - I believe
-    // it's possible we need a fall back response but in vibe-coding AI uses as a crutch.
-    // We're going to look at 'events' which may remove the need to 'poll' which will
-    // remove the need for 'createFallbackResponse'
-    this.logger.log(
-      `createFallbackResponse called with ${toolResults.length} tool results`,
-    );
-    this.logger.log(
-      `Tool results for fallback: ${JSON.stringify(toolResults, null, 2)}`,
-    );
-
-    // Parse tool results - they come as strings but may contain JSON objects
-    const parsedResults = toolResults.map((result) => {
-      if (typeof result.content === 'string') {
-        try {
-          // Try to parse as JSON
-          const parsed = JSON.parse(result.content);
-          return { ...result, content: parsed };
-        } catch (e) {
-          // If not JSON, keep as string
-          return result;
-        }
-      }
-      return result;
-    });
-
-    this.logger.log('Parsed tool results:', {
-      parsedResults: parsedResults,
-    });
-
-    const errors = parsedResults
-      .filter(
-        (result) =>
-          result.content &&
-          typeof result.content === 'object' &&
-          result.content.errorItems,
-      )
-      .flatMap((result) => result.content.errorItems || []);
-
-    const successes = parsedResults.filter(
-      (result) =>
-        result.content &&
-        typeof result.content === 'object' &&
-        result.content.isSuccess === true,
-    );
-
-    // Debug logging to see what we're filtering
-    this.logger.log('Filtered tool results:', {
-      errors: errors,
-      successes: successes,
-      successCount: successes.length,
-    });
-
-    if (errors.length > 0) {
-      return `I attempted to process your request but encountered some issues:\n\n${errors.map((error) => `• ${error}`).join('\n')}\n\nPlease verify the form ID or try a different approach.`;
-    } else if (successes.length > 0) {
-      // Actually use the tool results to create a meaningful response
-      const successResult = successes[0];
-      this.logger.log('Processing success result:', {
-        successResult: successResult,
-        hasContent: !!successResult.content,
-        hasResponse: !!(
-          successResult.content && successResult.content.response
-        ),
-      });
-
-      if (successResult.content && successResult.content.response) {
-        const data = successResult.content.response;
-        this.logger.log('Processing response data:', {
-          data: data,
-          hasFormId: !!data.formId,
-          formId: data.formId,
-        });
-
-        // Create a comprehensive summary of the form data
-        let summary = `## Form Overview: ${data.formId}\n\n`;
-
-        if (data.url) {
-          summary += `**Form URL:** ${data.url}\n`;
-        }
-        if (data.submissions !== undefined) {
-          summary += `**Total Submissions:** ${data.submissions}\n`;
-        }
-        if (data.submissionsToday !== undefined) {
-          summary += `**Submissions Today:** ${data.submissionsToday}\n`;
-        }
-        if (data.version) {
-          summary += `**Version:** ${data.version}\n`;
-        }
-        if (data.fieldCount) {
-          summary += `**Field Count:** ${data.fieldCount}\n`;
-        }
-        if (data.isActive !== undefined) {
-          summary += `**Status:** ${data.isActive ? 'Active' : 'Inactive'}\n`;
-        }
-
-        if (data.submitActions && data.submitActions.length > 0) {
-          summary += `\n**Submit Actions (${data.submitActions.length}):**\n`;
-          data.submitActions.forEach((action: any) => {
-            summary += `• ${action.name} (ID: ${action.id})\n`;
-          });
-        }
-
-        if (data.notificationEmails && data.notificationEmails.length > 0) {
-          summary += `\n**Notification Emails (${data.notificationEmails.length}):**\n`;
-          data.notificationEmails.forEach((email: any) => {
-            summary += `• ${email.name} (ID: ${email.id})\n`;
-          });
-        }
-
-        if (data.confirmationEmails && data.confirmationEmails.length > 0) {
-          summary += `\n**Confirmation Emails (${data.confirmationEmails.length}):**\n`;
-          data.confirmationEmails.forEach((email: any) => {
-            summary += `• ${email.name} (ID: ${email.id})\n`;
-          });
-        }
-
-        return summary;
-      } else {
-        return `I've completed the requested analysis. The tools executed successfully and provided the requested information.`;
-      }
-    } else {
-      return `I processed your request but didn't receive the expected results. Please try again or provide more specific details about what you need.`;
-    }
   }
 
   /**
