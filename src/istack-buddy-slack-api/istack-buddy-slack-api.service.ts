@@ -7,6 +7,7 @@ import { ChatManagerService } from '../chat-manager/chat-manager.service';
 import { UserRole } from '../chat-manager/dto/create-message.dto';
 import { UserProfileService } from '../user-profile/user-profile.service';
 import { KnowledgeBaseService } from './knowledge-base.service';
+import * as helpers from './helpers';
 
 // Interface for storing Slack conversation mapping and callback
 interface TSlackInterfaceRecord {
@@ -62,63 +63,6 @@ export class IstackBuddySlackApiService implements OnModuleDestroy {
   }
 
   /**
-   * Extract all short codes from event text
-   * @param text The event text to parse
-   * @returns Array of short codes found in the text
-   */
-  private getShortCodesFromEvent(text: string): string[] {
-    const shortCodes: string[] = [];
-
-    // Remove bot mentions and clean the text
-    const cleanText = text.replace(/@istack-buddy|<@[^>]+>/g, '').trim();
-
-    // Extract /marv-session command with formId parameter
-    if (cleanText.match(/\/marv-session\s+formId:(\d+)/i)) {
-      shortCodes.push('/marv-session');
-    }
-
-    // Extract /kb command
-    if (cleanText.match(/\/kb(?::slack:(.+?))?\s+(.*)/i)) {
-      shortCodes.push('/kb');
-    }
-
-    // Extract /feedback command
-    if (cleanText.match(/\/feedback\s+(.+)/i)) {
-      shortCodes.push('/feedback');
-    }
-
-    // Extract /rating command
-    if (cleanText.match(/\/rating\s+([+-]?\d+)(?:\s+(.+))?/i)) {
-      shortCodes.push('/rating');
-    }
-
-    return shortCodes;
-  }
-
-  private makeSimplifiedEvent(event: any): {
-    eventType: string;
-    conversationId: string;
-    message: string;
-    eventTs: string;
-  } {
-    if (!event.thread_ts) {
-      return {
-        eventType: 'conversation_start',
-        conversationId: event.ts,
-        message: event.text,
-        eventTs: event.ts,
-      };
-    } else {
-      return {
-        eventType: 'thread_reply',
-        conversationId: event.thread_ts,
-        message: event.text,
-        eventTs: event.ts,
-      };
-    }
-  }
-
-  /**
    * Handle incoming Slack events
    * Main entry point for all Slack webhook events
    */
@@ -138,7 +82,7 @@ export class IstackBuddySlackApiService implements OnModuleDestroy {
         this.logger.log('Received app mention event');
 
         // Create simplified event for app mention events only
-        const simpleEvent = this.makeSimplifiedEvent(body.event);
+        const simpleEvent = helpers.makeSimplifiedEvent(body.event);
 
         if (this.uniqueEventList[simpleEvent.eventTs]) {
           this.logger.log(`Duplicate event detected: ${body.event_id}`);
@@ -157,7 +101,7 @@ export class IstackBuddySlackApiService implements OnModuleDestroy {
         this.logger.log('Received message event');
 
         // Create simplified event for message events
-        const simpleEvent = this.makeSimplifiedEvent(body.event);
+        const simpleEvent = helpers.makeSimplifiedEvent(body.event);
 
         if (this.uniqueEventList[simpleEvent.eventTs]) {
           this.logger.log(`Duplicate event detected: ${body.event_id}`);
@@ -190,36 +134,15 @@ export class IstackBuddySlackApiService implements OnModuleDestroy {
    * - Mention in external thread → New conversation
    */
   private async handleAppMention(event: any): Promise<void> {
-    const simpleEvent = this.makeSimplifiedEvent(event);
-
     try {
       // Check if this is a /marv-session command (for both conversation_start and thread_reply)
       this.logger.log(
         `DEBUG: Event text: "${event.text}", trimmed: "${event.text?.trim()}"`,
       );
 
-      const shortCodes = this.getShortCodesFromEvent(event.text || '');
+      const shortCodes = helpers.getShortCodesFromEventText(event.text || '');
 
-      shortCodes.forEach((shortCode: string) => {
-        this.logger.log(`Received short code: ${shortCode}`);
-        switch (shortCode) {
-          case '/marv-session':
-            this.handleShortCodeMarvSession(event);
-            break;
-          case '/kb':
-            this.handleShortCodeKb(event);
-            break;
-          case '/feedback':
-            this.handleShortCodeFeedback(event);
-            break;
-          case '/rating':
-            this.handleShortCodeRating(event);
-            break;
-          default:
-            this.logger.log(`Unknown short code: ${shortCode}`);
-            break;
-        }
-      });
+      this.processShortCodes(event, shortCodes);
 
       if (shortCodes.length > 0) {
         return;
@@ -260,7 +183,7 @@ export class IstackBuddySlackApiService implements OnModuleDestroy {
    * Currently handles /marv-session command in thread messages only
    */
   private async handleMessageEvent(event: any): Promise<void> {
-    const simpleEvent = this.makeSimplifiedEvent(event);
+    const simpleEvent = helpers.makeSimplifiedEvent(event);
 
     try {
       // Only handle thread messages (not channel messages)
@@ -270,28 +193,9 @@ export class IstackBuddySlackApiService implements OnModuleDestroy {
       }
 
       // Check for short codes in thread messages
-      const shortCodes = this.getShortCodesFromEvent(event.text || '');
+      const shortCodes = helpers.getShortCodesFromEventText(event.text || '');
 
-      shortCodes.forEach((shortCode: string) => {
-        this.logger.log(`Received short code in thread: ${shortCode}`);
-        switch (shortCode) {
-          case '/marv-session':
-            this.handleShortCodeMarvSession(event);
-            break;
-          case '/kb':
-            this.handleShortCodeKb(event);
-            break;
-          case '/feedback':
-            this.handleShortCodeFeedback(event);
-            break;
-          case '/rating':
-            this.handleShortCodeRating(event);
-            break;
-          default:
-            this.logger.log(`Unknown short code: ${shortCode}`);
-            break;
-        }
-      });
+      this.processShortCodes(event, shortCodes);
 
       if (shortCodes.length > 0) {
         return;
@@ -463,7 +367,9 @@ export class IstackBuddySlackApiService implements OnModuleDestroy {
       }
     });
 
-    this.logger.log(`Garbage collection completed. Cleaned up old events.`);
+    this.logger.log(
+      `Slacky Garbage collection completed. Cleaned up old events.`,
+    );
   }
 
   /**
@@ -485,121 +391,71 @@ export class IstackBuddySlackApiService implements OnModuleDestroy {
   }
 
   /**
-   * Handle feedback command
+   * Create a callback function for sending conversation responses to Slack
+   * @param channel The Slack channel ID
+   * @param threadTs The Slack thread timestamp
+   * @returns A callback function for sending messages to Slack
    */
-  private async handleFeedbackCommand(
-    event: any,
-    feedbackContent: string,
-  ): Promise<string> {
-    try {
-      // Ensure logs directory exists
-      const logsDir = path.join(process.cwd(), 'logs');
-      if (!fs.existsSync(logsDir)) {
-        fs.mkdirSync(logsDir, { recursive: true });
+  private createSlackResponseCallback(
+    channel: string,
+    threadTs: string,
+  ): (content: { type: 'text'; payload: string }) => Promise<void> {
+    return async (content: { type: 'text'; payload: string }) => {
+      // Only send to Slack if we have actual content
+      if (content.payload && content.payload.trim()) {
+        // Send message to Slack
+        await this.sendSlackMessage(
+          content.payload,
+          channel,
+          threadTs, // this is what creates the thread
+        );
+      } else {
+        this.logger.warn('Skipping empty message response to Slack');
       }
-
-      // Append feedback to file
-      const feedbackFile = path.join(logsDir, 'feedback.json');
-      const feedbackEntry = {
-        channel: event.channel,
-        author: event.user,
-        date: new Date().toISOString(),
-        feedback: feedbackContent,
-      };
-
-      // Read existing entries or start with empty array
-      let entries = [];
-      if (fs.existsSync(feedbackFile)) {
-        const content = fs.readFileSync(feedbackFile, 'utf8');
-        entries = JSON.parse(content);
-      }
-
-      // Add new entry and write back
-      entries.push(feedbackEntry);
-      fs.writeFileSync(feedbackFile, JSON.stringify(entries, null, 2));
-
-      this.logger.log(`Feedback logged for ${event.user} in ${event.channel}`);
-      return `Thank you for your feedback! We appreciate your input to help improve our service.`;
-    } catch (error) {
-      this.logger.error('Error processing feedback:', error);
-      return `Thank you for your feedback! We appreciate your input to help improve our service.`;
-    }
+    };
   }
 
   /**
-   * Handle rating command
+   * Process short codes from event text
+   * @param event The Slack event
+   * @param shortCodes Array of short codes to process
    */
-  private async handleRatingCommand(
-    event: any,
-    rating: number,
-    comment?: string,
-  ): Promise<string> {
-    try {
-      // Validate rating range
-      if (rating < -5 || rating > 5) {
-        return `**Invalid Rating**
-
-Ratings must be between -5 and +5. Please provide a rating in this range.
-
-**Examples:**
-• \`@istack-buddy /rating +4 Very helpful!\`
-• \`@istack-buddy /rating -2 Information was wrong\`
-• \`@istack-buddy /rating 0\`
-
-**Rating Scale:**
-• -5: World War III bad  
-• -2: Misleading or just wrong  
-• -1: Information had inaccuracies
-• 0: Not good/not bad
-• +1: A little helpful
-• +2: Helpful, will use again
-• +5: Nominate iStackBuddy for world peace prize`;
-      }
-
-      // Ensure logs directory exists
-      const logsDir = path.join(process.cwd(), 'logs');
-      if (!fs.existsSync(logsDir)) {
-        fs.mkdirSync(logsDir, { recursive: true });
-      }
-
-      // Append rating to file
-      const ratingFile = path.join(logsDir, 'rating.json');
-      const ratingEntry = {
-        channel: event.channel,
-        author: event.user,
-        date: new Date().toISOString(),
-        rating: rating,
-        comment: comment,
-      };
-
-      // Read existing entries or start with empty array
-      let entries = [];
-      if (fs.existsSync(ratingFile)) {
-        const content = fs.readFileSync(ratingFile, 'utf8');
-        entries = JSON.parse(content);
-      }
-
-      // Add new entry and write back
-      entries.push(ratingEntry);
-      fs.writeFileSync(ratingFile, JSON.stringify(entries, null, 2));
-
-      this.logger.log(
-        `Rating logged for ${event.user} in ${event.channel}: ${rating}/5`,
-      );
-      return `Thank you for your rating of ${rating >= 0 ? '+' : ''}${rating}/5! We appreciate your feedback to help us improve our service.`;
-    } catch (error) {
-      this.logger.error('Error processing rating:', error);
-      return `Thank you for your rating! We appreciate your feedback to help us improve our service.`;
+  private processShortCodes(event: any, shortCodes: string[]): void {
+    if (shortCodes.length === 0) {
+      return;
     }
+
+    shortCodes.forEach((shortCode: string) => {
+      this.logger.log(`Processing short code: ${shortCode}`);
+      switch (shortCode) {
+        case '/marv-session':
+          this.handleShortCodeMarvSession(event);
+          break;
+        case '/kb':
+          this.handleShortCodeKnowledgeBuddy(event);
+          break;
+        case '/feedback':
+          this.handleShortCodeFeedback(event);
+          break;
+        case '/rating':
+          this.handleShortCodeRating(event);
+          break;
+        default:
+          this.logger.log(`Unknown short code: ${shortCode}`);
+          break;
+      }
+    });
   }
 
   /**
-   * Get or create conversation for Slack event
+   * Get or create conversation for Slack events
+   * @param event The Slack event
+   * @returns The conversation record
    */
   private async getOrCreateConversation(
     event: any,
   ): Promise<TSlackInterfaceRecord> {
-    const simpleEvent = this.makeSimplifiedEvent(event);
+    const simpleEvent = helpers.makeSimplifiedEvent(event);
 
     if (simpleEvent.eventType === 'conversation_start') {
       // Create new conversation
@@ -612,22 +468,10 @@ Ratings must be between -5 and +5. Please provide a rating in this range.
       });
 
       // Create callback function for this specific conversation
-      const sendConversationResponseToSlack = async (content: {
-        type: 'text';
-        payload: string;
-      }) => {
-        // Only send to Slack if we have actual content
-        if (content.payload && content.payload.trim()) {
-          // Send message to Slack
-          await this.sendSlackMessage(
-            content.payload,
-            event.channel,
-            event.ts, // this is what creates the thread
-          );
-        } else {
-          this.logger.warn('Skipping empty message response to Slack');
-        }
-      };
+      const sendConversationResponseToSlack = this.createSlackResponseCallback(
+        event.channel,
+        event.ts,
+      );
 
       // Map the Slack thread to conversation record with callback for future lookups
       const conversationRecord: TSlackInterfaceRecord = {
@@ -730,7 +574,7 @@ Ratings must be between -5 and +5. Please provide a rating in this range.
     }
   }
 
-  private async handleShortCodeKb(event: any): Promise<void> {
+  private async handleShortCodeKnowledgeBuddy(event: any): Promise<void> {
     const trimmedText = event.text?.trim();
     const kbMatch = trimmedText?.match(/\/kb(?::slack:(.+?))?\s+(.*)/i);
     if (kbMatch) {
@@ -847,7 +691,7 @@ No relevant results found. Try:
         /(?:@istack-buddy|<@[^>]+>)\s+\/feedback\s+(.+)/i,
       );
       const feedbackContent = feedbackMatch[1].trim();
-      const responseMessage = await this.handleFeedbackCommand(
+      const responseMessage = helpers.handleFeedbackCommand(
         event,
         feedbackContent,
       );
@@ -880,7 +724,7 @@ No relevant results found. Try:
       );
       const rating = parseInt(ratingMatch[1]);
       const comment = ratingMatch[2]?.trim();
-      const responseMessage = await this.handleRatingCommand(
+      const responseMessage = helpers.handleRatingCommand(
         event,
         rating,
         comment,
