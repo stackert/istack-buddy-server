@@ -11,6 +11,7 @@ import type { TConversationMessageContent } from '../ConversationLists/types';
 import { UserRole } from '../chat-manager/dto/create-message.dto';
 import Anthropic from '@anthropic-ai/sdk';
 import { marvToolSet } from './tool-definitions/marv';
+import { CustomLoggerService } from '../common/logger/custom-logger.service';
 
 // Helper functions for the streaming pattern
 const noOp = (...args: any[]) => {};
@@ -20,6 +21,8 @@ const noOp = (...args: any[]) => {};
  * Focused on Formstack form management and field operations
  */
 export class AnthropicMarv extends AbstractRobotChat {
+  private readonly logger = new CustomLoggerService();
+
   // Required properties from AbstractRobot
   public readonly contextWindowSizeInTokens: number = 200000;
   public readonly LLModelName: string = 'claude-3-5-sonnet-20241022';
@@ -175,13 +178,12 @@ Your goal is to help users efficiently manage their Formstack forms through thes
 
       // If there's a chat response, send it as a full message with JSON content type
       if (chatResponse && onFullMessageReceived) {
-        console.log(
-          'Sending chat response to onFullMessageReceived:',
-          chatResponse.message.substring(0, 100) + '...',
+        this.logger.log(
+          `Sending chat response to onFullMessageReceived: ${chatResponse.message.substring(0, 100)}...`,
         );
         onFullMessageReceived(chatResponse.message, 'application/json');
       } else {
-        console.log(
+        this.logger.warn(
           'No chat response or onFullMessageReceived callback available',
         );
       }

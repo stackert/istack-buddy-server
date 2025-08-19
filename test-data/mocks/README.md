@@ -76,6 +76,19 @@ Reusable mocks for the CustomLoggerService.
 - `expectLoggerCalledWithContext(message, context)` - Helper for context logging assertions
 - `mockLoggerResponses` - Mock specific logger behaviors for testing error paths
 
+### `nest-logger.ts`
+
+Reusable mocks for NestJS `Logger`.
+
+**Exports:**
+
+- `MockNestLogger` - TypeScript interface for the mock NestJS logger
+- `mockNestLogger` - Pre-configured mock NestJS logger instance
+- `mockNestLoggerProvider` - NestJS provider configuration for the logger
+- `resetNestLoggerMocks()` - Helper to reset all NestJS logger mocks
+- `expectNestLoggerCalled(method, message)` - Helper for asserting NestJS logger calls
+- `expectNestLoggerCalledWithContext(message, context)` - Helper for context logging assertions
+
 ## Usage
 
 ```typescript
@@ -97,6 +110,12 @@ import {
   resetLoggerMocks,
   expectLoggerCalled,
 } from '../test-data/mocks/logger';
+import {
+  mockNestLogger,
+  mockNestLoggerProvider,
+  resetNestLoggerMocks,
+  expectNestLoggerCalled,
+} from '../test-data/mocks/nest-logger';
 
 // Create a test message
 const message = mockConversationMessages.customerMessage(
@@ -135,6 +154,23 @@ beforeEach(() => {
 // Assert logger calls
 expectLoggerCalled('log', 'Expected log message');
 expectLoggerCalled('error', /Error pattern/);
+
+// Use NestJS logger mock
+const nestModule = await Test.createTestingModule({
+  providers: [
+    MyService,
+    mockNestLoggerProvider, // Use centralized NestJS logger mock
+  ],
+}).compile();
+
+// Reset NestJS logger mocks in beforeEach
+beforeEach(() => {
+  resetNestLoggerMocks();
+});
+
+// Assert NestJS logger calls
+expectNestLoggerCalled('log', 'Expected log message');
+expectNestLoggerCalled('warn', /Warning pattern/);
 ```
 
 ## Benefits

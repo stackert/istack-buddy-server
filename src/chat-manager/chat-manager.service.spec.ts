@@ -961,4 +961,346 @@ describe('ChatManagerService', () => {
       expect(result).toBeUndefined();
     });
   });
+
+  // **New Tests for Coverage Improvement**
+  describe('validateConversationFormId', () => {
+    it('should return false when conversation does not exist', () => {
+      const conversationId = 'non-existent';
+      const formId = 'form-123';
+
+      const result = service.validateConversationFormId(conversationId, formId);
+
+      expect(result).toBe(false);
+    });
+
+    it('should return false when form ID does not match', () => {
+      const conversationId = 'test-conversation';
+      const formId = 'form-123';
+      const wrongFormId = 'form-456';
+
+      // Mock conversation exists
+      (service as any).conversationMetadata = {
+        [conversationId]: { id: conversationId },
+      };
+      // Set form ID
+      (service as any).conversationFormIds.set(conversationId, formId);
+
+      const result = service.validateConversationFormId(
+        conversationId,
+        wrongFormId,
+      );
+
+      expect(result).toBe(false);
+    });
+
+    it('should return true when conversation and form ID match', () => {
+      const conversationId = 'test-conversation';
+      const formId = 'form-123';
+
+      // Mock conversation exists
+      (service as any).conversationMetadata = {
+        [conversationId]: { id: conversationId },
+      };
+      // Set form ID
+      (service as any).conversationFormIds.set(conversationId, formId);
+
+      const result = service.validateConversationFormId(conversationId, formId);
+
+      expect(result).toBe(true);
+    });
+  });
+
+  describe('handleRobotStreamingResponse', () => {
+    it('should handle robot not found error', async () => {
+      const conversationId = 'test-conversation';
+      const robotName = 'NonExistentRobot';
+      const userMessage = 'Hello';
+      const callbacks = {
+        onError: jest.fn(),
+      } as any;
+
+      mockRobotService.getRobotByName.mockReturnValue(null);
+
+      await service.handleRobotStreamingResponse(
+        conversationId,
+        robotName,
+        userMessage,
+        callbacks,
+      );
+
+      expect(callbacks.onError).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: expect.stringContaining('Robot NonExistentRobot not found'),
+        }),
+      );
+    });
+
+    it('should handle robot without streaming support', async () => {
+      const conversationId = 'test-conversation';
+      const robotName = 'BasicRobot';
+      const userMessage = 'Hello';
+      const callbacks = {
+        onError: jest.fn(),
+      } as any;
+
+      const mockRobot = {
+        // Robot without acceptMessageStreamResponse method
+        name: 'BasicRobot',
+      };
+      mockRobotService.getRobotByName.mockReturnValue(mockRobot as any);
+
+      await service.handleRobotStreamingResponse(
+        conversationId,
+        robotName,
+        userMessage,
+        callbacks,
+      );
+
+      expect(callbacks.onError).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: expect.stringContaining(
+            'does not support streaming responses',
+          ),
+        }),
+      );
+    });
+
+    it('should handle getHistory error gracefully', async () => {
+      const conversationId = 'test-conversation';
+      const robotName = 'AnthropicMarv';
+      const userMessage = 'Hello';
+      const callbacks = {
+        onError: jest.fn(),
+      } as any;
+
+      const mockRobot = {
+        acceptMessageStreamResponse: jest.fn().mockResolvedValue(undefined),
+        getGetFromRobotToConversationTransformer: jest.fn(),
+      };
+      mockRobotService.getRobotByName.mockReturnValue(mockRobot as any);
+
+      // Mock getHistory to throw error
+      jest.spyOn(service as any, 'getHistory').mockImplementation(() => {
+        throw new Error('History error');
+      });
+
+      await service.handleRobotStreamingResponse(
+        conversationId,
+        robotName,
+        userMessage,
+        callbacks,
+      );
+
+      // Should not call onError since getHistory error is caught internally
+      expect(mockRobot.acceptMessageStreamResponse).toHaveBeenCalled();
+    });
+  });
+
+  describe('addMessageFromSlack error handling', () => {
+    it('should handle robot error gracefully', async () => {
+      const conversationId = 'test-conversation';
+      const content = { type: 'text', payload: 'Hello from Slack' };
+      const slackResponseCallback = jest.fn();
+
+      // Mock robot that throws error
+      const mockRobot = {
+        acceptMessageMultiPartResponse: jest
+          .fn()
+          .mockRejectedValue(new Error('Robot error')),
+      };
+      mockRobotService.getRobotByName.mockReturnValue(mockRobot as any);
+
+      const expectedMessage =
+        mockConversationMessages.customerMessage('Hello from Slack');
+      jest.spyOn(service, 'addUserMessage').mockResolvedValue(expectedMessage);
+      jest.spyOn(service, 'getLastMessages').mockResolvedValue([]);
+
+      const result = await service.addMessageFromSlack(
+        conversationId,
+        content,
+        slackResponseCallback,
+      );
+
+      expect(result).toBe(expectedMessage);
+      // Should still return the user message even if robot fails
+      expect(service.addUserMessage).toHaveBeenCalled();
+    });
+
+    it('should handle invalid robot response structure', async () => {
+      const conversationId = 'test-conversation';
+      const content = { type: 'text', payload: 'Hello from Slack' };
+      const slackResponseCallback = jest.fn();
+
+      const mockRobot = {
+        acceptMessageMultiPartResponse: jest
+          .fn()
+          .mockImplementation(async (message, callback) => {
+            // Call callback with invalid response structure
+            await callback({ content: null });
+          }),
+      };
+      mockRobotService.getRobotByName.mockReturnValue(mockRobot as any);
+
+      const expectedMessage =
+        mockConversationMessages.customerMessage('Hello from Slack');
+      jest.spyOn(service, 'addUserMessage').mockResolvedValue(expectedMessage);
+      jest.spyOn(service, 'getLastMessages').mockResolvedValue([]);
+
+      const result = await service.addMessageFromSlack(
+        conversationId,
+        content,
+        slackResponseCallback,
+      );
+
+      expect(result).toBe(expectedMessage);
+      expect(slackResponseCallback).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('addMessageFromMarvSession error handling', () => {
+    it('should handle robot streaming error gracefully', async () => {
+      const conversationId = 'test-conversation';
+      const content = { type: 'text', payload: 'Hello from Marv' };
+
+      const expectedMessage =
+        mockConversationMessages.customerMessage('Hello from Marv');
+      jest.spyOn(service, 'addUserMessage').mockResolvedValue(expectedMessage);
+
+      // Mock handleRobotStreamingResponse to throw error
+      jest
+        .spyOn(service, 'handleRobotStreamingResponse')
+        .mockRejectedValue(new Error('Streaming error'));
+
+      const result = await service.addMessageFromMarvSession(
+        conversationId,
+        content,
+      );
+
+      expect(result).toBe(expectedMessage);
+      // Should still return the user message even if robot streaming fails
+      expect(service.addUserMessage).toHaveBeenCalled();
+    });
+  });
+
+  describe('getMessages with filtering', () => {
+    it('should filter messages by threadId', async () => {
+      const conversationId = 'test-conversation';
+      const threadId = 'thread-123';
+      const query = { threadId, limit: 10, offset: 0 };
+
+      const mockMessages = [
+        {
+          ...mockConversationMessages.customerMessage('Hello'),
+          threadId: 'thread-123',
+        },
+        {
+          ...mockConversationMessages.customerMessage('World'),
+          threadId: 'thread-456',
+        },
+      ];
+
+      mockChatConversationListService.getConversationById.mockReturnValue({
+        getAllChatMessages: jest.fn().mockReturnValue(mockMessages),
+      } as any);
+
+      const result = await service.getMessages(conversationId, query);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].threadId).toBe(threadId);
+    });
+
+    it('should filter messages by userId', async () => {
+      const conversationId = 'test-conversation';
+      const userId = 'user-123';
+      const query = { userId, limit: 10, offset: 0 };
+
+      const mockMessages = [
+        {
+          ...mockConversationMessages.customerMessage('Hello'),
+          authorUserId: 'user-123',
+        },
+        {
+          ...mockConversationMessages.robotMessage('World'),
+          authorUserId: 'user-456',
+          fromRole: UserRole.ROBOT,
+          toRole: UserRole.AGENT,
+        },
+      ];
+
+      mockChatConversationListService.getConversationById.mockReturnValue({
+        getAllChatMessages: jest.fn().mockReturnValue(mockMessages),
+      } as any);
+
+      const result = await service.getMessages(conversationId, query);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].authorUserId).toBe(userId);
+    });
+  });
+
+  describe('onStreamChunkReceived edge cases', () => {
+    it('should not broadcast empty chunks', async () => {
+      const conversationId = 'test-conversation';
+      const callbacks = service.createConversationCallbacks(conversationId);
+
+      await callbacks.onStreamChunkReceived('', 'text/plain');
+      await callbacks.onStreamChunkReceived('   ', 'text/plain');
+
+      expect(mockGateway.broadcastToConversation).not.toHaveBeenCalled();
+    });
+
+    it('should handle missing gateway in onStreamChunkReceived', async () => {
+      const conversationId = 'test-conversation';
+
+      // Temporarily remove gateway
+      const originalGateway = (service as any).gateway;
+      (service as any).gateway = null;
+
+      const callbacks = service.createConversationCallbacks(conversationId);
+
+      await callbacks.onStreamChunkReceived('test chunk', 'text/plain');
+
+      // Should not throw error
+      expect(true).toBe(true);
+
+      // Restore gateway
+      (service as any).gateway = originalGateway;
+    });
+  });
+
+  describe('onStreamFinished edge cases', () => {
+    it('should handle empty accumulated content', async () => {
+      const conversationId = 'test-conversation';
+      const callbacks = service.createConversationCallbacks(conversationId);
+      const message = mockConversationMessages.robotMessage('');
+
+      await callbacks.onStreamFinished(message);
+
+      expect(mockGateway.server.to).not.toHaveBeenCalled();
+    });
+
+    it('should handle missing gateway in onStreamFinished', async () => {
+      const conversationId = 'test-conversation';
+
+      // Temporarily remove gateway
+      const originalGateway = (service as any).gateway;
+      (service as any).gateway = null;
+
+      const callbacks = service.createConversationCallbacks(conversationId);
+      const message = mockConversationMessages.robotMessage('Final response');
+
+      // Mock the createMessage method
+      jest.spyOn(service, 'createMessage').mockResolvedValue(message);
+
+      // Add content first
+      await callbacks.onStreamChunkReceived('Final response');
+      await callbacks.onStreamFinished(message);
+
+      // Should not throw error
+      expect(service.createMessage).toHaveBeenCalled();
+
+      // Restore gateway
+      (service as any).gateway = originalGateway;
+    });
+  });
 });

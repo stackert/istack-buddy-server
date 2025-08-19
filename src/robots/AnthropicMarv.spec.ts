@@ -528,4 +528,69 @@ describe('AnthropicMarv', () => {
       expect(result.content).toBe('I can help');
     });
   });
+
+  describe('Coverage Improvements', () => {
+    it('should handle tool call without onFullMessageReceived callback', async () => {
+      // Mock the marvToolSet to return a response without chatResponse
+      const mockMarvToolSet = require('./tool-definitions/marv');
+      mockMarvToolSet.marvToolSet.transformToolResponse.mockReturnValueOnce({
+        robotResponse: { status: 'ok', message: 'Tool executed successfully' },
+        chatResponse: null, // No chat response
+      });
+
+      const result = await (robot as any).executeToolCall('testTool', {});
+
+      expect(result).toBe('Tool executed successfully');
+    });
+
+    it('should handle immediate response with onStreamFinished callback', async () => {
+      const message = mockConversationMessages.customerMessage('Test message');
+
+      // Mock streaming response to call onStreamFinished
+      const streamingSpy = jest
+        .spyOn(robot as any, 'acceptMessageStreamResponse')
+        .mockImplementation(async (_msg, callbacks: any) => {
+          callbacks.onStreamChunkReceived('Hello');
+          callbacks.onStreamFinished(message);
+        });
+
+      const result = await robot.acceptMessageImmediateResponse(message);
+
+      expect(result.content.type).toBe('text/plain');
+      expect(result.content.payload).toBe('Hello');
+
+      streamingSpy.mockRestore();
+    });
+
+    it('should handle multi-part response with onStreamFinished callback', async () => {
+      const message = mockConversationMessages.customerMessage('Test message');
+      const delayedCallback = jest.fn();
+
+      // Mock immediate response
+      const immediateSpy = jest
+        .spyOn(robot as any, 'acceptMessageImmediateResponse')
+        .mockResolvedValueOnce({
+          content: { type: 'text/plain', payload: 'Immediate response' },
+        });
+
+      // Mock streaming response to call onStreamFinished
+      const streamingSpy = jest
+        .spyOn(robot as any, 'acceptMessageStreamResponse')
+        .mockImplementation(async (_msg, callbacks: any) => {
+          callbacks.onStreamFinished(message);
+        });
+
+      const result = await robot.acceptMessageMultiPartResponse(
+        message,
+        delayedCallback,
+      );
+
+      expect(result.type).toBe('text/plain');
+      expect(result.payload).toBe('Immediate response');
+      expect(delayedCallback).toHaveBeenCalledWith(message);
+
+      immediateSpy.mockRestore();
+      streamingSpy.mockRestore();
+    });
+  });
 });
