@@ -1,7 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { Response } from 'express';
 import { PublicInterfaceController } from './public-interface.controller';
-import { FormMarvSessionService } from './form-marv-session.service';
 import { AuthenticationService } from '../authentication/authentication.service';
 import { AuthorizationPermissionsService } from '../authorization-permissions/authorization-permissions.service';
 import { AuthPermissionGuard } from '../common/guards/auth-permission.guard';
@@ -39,7 +38,6 @@ jest.mock('jsonwebtoken', () => ({
 
 describe('PublicInterfaceController', () => {
   let controller: PublicInterfaceController;
-  let mockFormMarvSessionService: jest.Mocked<FormMarvSessionService>;
   let mockAuthService: jest.Mocked<AuthenticationService>;
   let mockAuthPermissionsService: jest.Mocked<AuthorizationPermissionsService>;
   let mockChatManagerService: jest.Mocked<ChatManagerService>;
@@ -51,12 +49,6 @@ describe('PublicInterfaceController', () => {
     // Store original environment
     originalEnv = process.env;
     process.env = { ...originalEnv };
-
-    // Create mock services
-    mockFormMarvSessionService = {
-      createSession: jest.fn(),
-      getSession: jest.fn(),
-    } as any;
 
     mockAuthService = {
       isUserAuthenticated: jest.fn(),
@@ -119,10 +111,6 @@ describe('PublicInterfaceController', () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [PublicInterfaceController],
       providers: [
-        {
-          provide: FormMarvSessionService,
-          useValue: mockFormMarvSessionService,
-        },
         {
           provide: AuthenticationService,
           useValue: mockAuthService,

@@ -14,7 +14,6 @@ import * as jwt from 'jsonwebtoken';
 import { AuthenticationService } from '../authentication/authentication.service';
 import { AuthorizationPermissionsService } from '../authorization-permissions/authorization-permissions.service';
 import { ChatManagerService } from '../chat-manager/chat-manager.service';
-import { MessageType, UserRole } from '../chat-manager/dto/create-message.dto';
 import { RequirePermissions } from '../common/decorators/require-permissions.decorator';
 import { AuthPermissionGuard } from '../common/guards/auth-permission.guard';
 import { RobotService } from '../robots/robot.service';
