@@ -349,6 +349,22 @@ describe('IstackBuddySlackApiService', () => {
       // Mock no short codes
       mockHelpers.getShortCodesFromEventText.mockReturnValue([]);
 
+      // Mock conversation creation for unknown thread
+      chatManagerService.startConversation.mockResolvedValue({
+        id: 'new-conversation-id',
+        createdBy: 'test-user',
+        createdByRole: 'cx-customer',
+        title: 'Slack Thread Conversation',
+        description: 'Slack conversation from existing thread',
+        initialParticipants: ['test-user'],
+        participantIds: ['test-user'],
+        participantRoles: ['cx-customer'],
+        messageCount: 0,
+        lastMessageAt: new Date(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as any);
+
       // Empty conversation mapping
       (service as any).slackThreadToConversationMap = {};
 
@@ -356,6 +372,13 @@ describe('IstackBuddySlackApiService', () => {
 
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith({ status: 'ok' });
+      expect(chatManagerService.startConversation).toHaveBeenCalledWith({
+        createdBy: 'test-user',
+        createdByRole: 'cx-customer',
+        title: 'Slack Thread Conversation',
+        description: 'Slack conversation from existing thread',
+        initialParticipants: ['test-user'],
+      });
     });
 
     it('should ignore non-thread message events', async () => {

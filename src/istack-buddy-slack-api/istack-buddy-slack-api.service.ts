@@ -202,15 +202,35 @@ export class IstackBuddySlackApiService implements OnModuleDestroy {
       }
 
       // For other messages in threads, continue with normal conversation flow
-      const conversationRecord =
+      let conversationRecord =
         this.slackThreadToConversationMap[event.thread_ts];
 
       if (!conversationRecord) {
-        // Unknown scenario - log and ignore
+        // Create new conversation for existing thread that doesn't have a mapping
         this.logger.log(
-          `Ignoring event - thread_ts: ${event.thread_ts}, no mapping found or unrecognized pattern`,
+          `Creating new conversation for existing thread: ${event.thread_ts}`,
         );
-        return;
+
+        const conversation = await this.chatManagerService.startConversation({
+          createdBy: event.user,
+          createdByRole: UserRole.CUSTOMER,
+          title: 'Slack Thread Conversation',
+          description: `Slack conversation from existing thread`,
+          initialParticipants: [event.user],
+        });
+
+        // Create callback function for this specific conversation
+        const sendConversationResponseToSlack =
+          this.createSlackResponseCallback(event.channel, event.thread_ts);
+
+        // Map the Slack thread to conversation record with callback for future lookups
+        conversationRecord = {
+          internalConversationId: conversation.id,
+          slackConversationId: event.thread_ts,
+          sendConversationResponseToSlack,
+        };
+
+        this.slackThreadToConversationMap[event.thread_ts] = conversationRecord;
       }
 
       // IMMEDIATE ACKNOWLEDGMENT - Add thinking emoji reaction for thread replies
@@ -484,13 +504,37 @@ export class IstackBuddySlackApiService implements OnModuleDestroy {
       return conversationRecord;
     } else {
       // Get existing conversation
-      const conversationRecord =
+      let conversationRecord =
         this.slackThreadToConversationMap[event.thread_ts];
+
       if (!conversationRecord) {
-        throw new Error(
-          `No conversation found for thread_ts: ${event.thread_ts}`,
+        // Create new conversation for existing thread that doesn't have a mapping
+        this.logger.log(
+          `Creating new conversation for existing thread: ${event.thread_ts}`,
         );
+
+        const conversation = await this.chatManagerService.startConversation({
+          createdBy: event.user,
+          createdByRole: UserRole.CUSTOMER,
+          title: 'Slack Thread Conversation',
+          description: 'Slack conversation from existing thread',
+          initialParticipants: [event.user],
+        });
+
+        // Create callback function for this specific conversation
+        const sendConversationResponseToSlack =
+          this.createSlackResponseCallback(event.channel, event.thread_ts);
+
+        // Map the Slack thread to conversation record with callback for future lookups
+        conversationRecord = {
+          internalConversationId: conversation.id,
+          slackConversationId: event.thread_ts,
+          sendConversationResponseToSlack,
+        };
+
+        this.slackThreadToConversationMap[event.thread_ts] = conversationRecord;
       }
+
       return conversationRecord;
     }
   }
