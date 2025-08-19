@@ -1,15 +1,12 @@
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
-import { SlackyOpenAiAgent } from '../robots/SlackyOpenAiAgent';
-import { RobotService } from '../robots/robot.service';
-import { v4 as uuidv4 } from 'uuid';
-import { ChatManagerService } from '../chat-manager/chat-manager.service';
-import { MessageType, UserRole } from '../chat-manager/dto/create-message.dto';
+import * as fs from 'fs';
 import * as jwt from 'jsonwebtoken';
+import * as path from 'path';
 import { AuthorizationPermissionsService } from '../authorization-permissions/authorization-permissions.service';
+import { ChatManagerService } from '../chat-manager/chat-manager.service';
+import { UserRole } from '../chat-manager/dto/create-message.dto';
 import { UserProfileService } from '../user-profile/user-profile.service';
 import { KnowledgeBaseService } from './knowledge-base.service';
-import * as fs from 'fs';
-import * as path from 'path';
 
 // Interface for storing Slack conversation mapping and callback
 interface TSlackInterfaceRecord {
@@ -43,7 +40,6 @@ export class IstackBuddySlackApiService implements OnModuleDestroy {
 
   public constructor(
     private readonly chatManagerService: ChatManagerService,
-    private readonly robotService: RobotService,
     private readonly authorizationPermissionsService: AuthorizationPermissionsService,
     private readonly userProfileService: UserProfileService,
     private readonly knowledgeBaseService: KnowledgeBaseService,
@@ -489,88 +485,6 @@ export class IstackBuddySlackApiService implements OnModuleDestroy {
   }
 
   /**
-   * Get knowledge base content for a specific channel
-   * This method retrieves channel-specific knowledge base information
-   */
-  private async getKnowledgeBaseContent(channelId: string): Promise<string> {
-    // Map channel IDs to their knowledge base content
-    const knowledgeBases: Record<string, string> = {
-      'cx-formstack': `**Core Forms Knowledge Base**
-
-**Common Issues & Solutions:**
-• **Form Logic Problems** - Field visibility, conditional logic, calculations
-• **Form Configuration** - Field setup, sections, validation rules
-• **Form Integration** - Submit actions, webhooks, notifications
-• **Form Rendering** - Display issues, styling problems
-
-**Available Tools:**
-• Form Logic Validation - Detect logic errors and configuration issues
-• Form Calculation Validation - Check for circular references
-• Form Overview - Get comprehensive form statistics and configuration
-• Sumo Logic Queries - Analyze submission logs and trace data
-
-**Quick Commands:**
-• \`@istack-buddy /help\` - Get detailed help
-• \`@istack-buddy /feedback [message]\` - Provide feedback
-• \`@istack-buddy /rating [+5 to -5] [comment]\` - Rate the service`,
-
-      'forms-sso-autofill': `**SSO & Auto-fill Knowledge Base**
-
-**SSO Troubleshooting:**
-• **SSO Configuration** - Setup and configuration issues
-• **Auto-fill Mapping** - Field mapping problems
-• **Authentication Issues** - Login and access problems
-• **Integration Problems** - SSO provider connectivity
-
-**Available Tools:**
-• SSO Auto-fill Assistance - Diagnose SSO configuration issues
-• Form Overview - Check SSO-related form settings
-• Sumo Logic Queries - Analyze SSO authentication logs
-
-**Quick Commands:**
-• \`@istack-buddy /help\` - Get detailed help
-• \`@istack-buddy /feedback [message]\` - Provide feedback
-• \`@istack-buddy /rating [+5 to -5] [comment]\` - Rate the service`,
-
-      'cx-f4sf': `**F4SF Knowledge Base**
-
-**F4SF-Specific Issues:**
-• **F4SF Configuration** - Setup and configuration problems
-• **F4SF Integration** - Integration with other systems
-• **F4SF Workflows** - Workflow and automation issues
-• **F4SF Data** - Data handling and processing problems
-
-**Available Tools:**
-• Form Overview - Check F4SF-related form settings
-• Sumo Logic Queries - Analyze F4SF logs and data
-
-**Quick Commands:**
-• \`@istack-buddy /help\` - Get detailed help
-• \`@istack-buddy /feedback [message]\` - Provide feedback
-• \`@istack-buddy /rating [+5 to -5] [comment]\` - Rate the service`,
-    };
-
-    // Remove # prefix if present for lookup
-    const cleanChannelId = channelId.replace(/^#/, '');
-
-    // Return channel-specific content or default
-    return (
-      knowledgeBases[cleanChannelId] ||
-      `**Knowledge Base - ${channelId}**
-
-**General Forms Support:**
-• Form troubleshooting and configuration
-• SSO and integration issues
-• Data analysis and logging
-
-**Quick Commands:**
-• \`@istack-buddy /help\` - Get detailed help
-• \`@istack-buddy /feedback [message]\` - Provide feedback
-• \`@istack-buddy /rating [+5 to -5] [comment]\` - Rate the service`
-    );
-  }
-
-  /**
    * Handle feedback command
    */
   private async handleFeedbackCommand(
@@ -783,36 +697,12 @@ Ratings must be between -5 and +5. Please provide a rating in this range.
         return;
       }
 
-      // Create a new form-marv session
-      const tempUserId = conversationRecord.internalConversationId; // Use conversation ID as user ID
-
-      // Create a JWT token for the temporary user
-      const jwtToken = jwt.sign(
-        {
-          userId: tempUserId,
-          email: `form-marv-${Date.now()}@example.com`,
-          username: tempUserId,
-          accountType: 'TEMPORARY',
-        },
-        'istack-buddy-secret-key-2024',
-        { expiresIn: '8h' },
-      );
-
-      // Add user to permissions system
-      this.authorizationPermissionsService.addUser(
-        tempUserId,
-        ['cx-agent:form-marv:read', 'cx-agent:form-marv:write'],
-        [],
-      );
-
-      // Create temporary user profile
-      this.userProfileService.addTemporaryUser(tempUserId, {
-        email: `form-marv-${Date.now()}@example.com`,
-        username: tempUserId,
-        account_type_informal: 'TEMPORARY',
-        first_name: 'Form',
-        last_name: 'Marv',
-      });
+      // Create temporary user and session using the AuthorizationPermissionsService
+      const sessionResult =
+        this.authorizationPermissionsService.createTempUserAndSession(
+          conversationRecord.internalConversationId,
+          formId,
+        );
 
       // Set the formId in the conversation metadata
       this.chatManagerService.setConversationFormId(
@@ -820,9 +710,9 @@ Ratings must be between -5 and +5. Please provide a rating in this range.
         formId,
       );
 
-      // Generate the session URL using the internal conversation ID and formId
+      // Generate the session URL using the sessionId as sessionToken and formId
       const baseUrl = this.getBaseUrl();
-      const sessionUrl = `${baseUrl}/public/form-marv/${conversationRecord.internalConversationId}/${formId}?jwtToken=${jwtToken}`;
+      const sessionUrl = `${baseUrl}/public/form-marv/${sessionResult.sessionId}/${formId}?jwtToken=${sessionResult.jwtToken}`;
 
       // Send immediate response to Slack with the session link
       await this.sendSlackMessage(

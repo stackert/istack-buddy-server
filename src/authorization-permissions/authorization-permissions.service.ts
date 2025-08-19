@@ -1,12 +1,31 @@
 import { Injectable, Inject } from '@nestjs/common';
 import * as jwt from 'jsonwebtoken';
+import { v4 as uuidv4 } from 'uuid';
 import { CustomLoggerService } from '../common/logger/custom-logger.service';
+import { UserProfileService } from '../user-profile/user-profile.service';
 import {
   PermissionWithConditions,
   EvaluateAllowConditions,
 } from './permission-evaluator.helper';
 
 const JWT_SECRET = 'istack-buddy-secret-key-2024';
+
+export interface IFormMarvSession {
+  sessionId: string;
+  userId: string;
+  jwtToken: string;
+  formId: string;
+  conversationId: string;
+  createdAt: Date;
+  lastActivityAt: Date;
+  expiresInMs: number;
+}
+
+export interface TempUserAndSessionResult {
+  sessionId: string;
+  userId: string;
+  jwtToken: string;
+}
 
 interface FileBasedUserPermissions {
   user_permissions: {
@@ -62,8 +81,12 @@ export class AuthorizationPermissionsService {
   private groupPermissions: FileBasedGroupPermissions;
   private userGroupMemberships: FileBasedUserGroupMemberships;
 
+  // Session management
+  private formMarvSessions: Record<string, IFormMarvSession> = {};
+
   constructor(
     private readonly logger: CustomLoggerService,
+    private readonly userProfileService: UserProfileService,
     @Inject('PermissionEvaluator')
     private readonly permissionEvaluator: PermissionEvaluator,
     // Accept configuration data as constructor parameters for testability
@@ -219,6 +242,193 @@ export class AuthorizationPermissionsService {
         groupMembershipsCount: groupMemberships.length,
       },
     );
+  }
+
+  /**
+   * Create a temporary user and session for a specific conversation
+   * @param sessionId The session/conversation ID to use as the user ID
+   * @param formId The form ID for the session
+   * @returns Object containing sessionId, userId, and jwtToken
+   */
+  createTempUserAndSession(
+    sessionId: string,
+    formId: string,
+  ): TempUserAndSessionResult {
+    const userId = sessionId; // Use the provided sessionId as userId
+    const now = new Date();
+    const expiresInMs = 24 * 60 * 60 * 1000; // 24 hours
+
+    // Create a temporary user with the required permissions for both read and write
+    this.addUser(
+      userId,
+      ['cx-agent:form-marv:read', 'cx-agent:form-marv:write'],
+      [],
+    );
+
+    // Create a temporary user profile
+    this.userProfileService.addTemporaryUser(userId, {
+      email: `marv-session-${Date.now()}@istackbuddy.com`,
+      username: userId,
+      account_type_informal: 'TEMPORARY',
+      first_name: 'Temporary',
+      last_name: 'Session-' + sessionId,
+    });
+
+    // Create JWT token for the temporary user
+    const jwtSecret = process.env.ISTACK_BUDDY_INTERNAL_JWT_SECRET;
+    if (!jwtSecret) {
+      throw new Error(
+        'ISTACK_BUDDY_INTERNAL_JWT_SECRET environment variable is not set',
+      );
+    }
+
+    const jwtToken = jwt.sign(
+      {
+        userId,
+        email: `marv-session-${Date.now()}@istackbuddy.com`,
+        username: userId,
+        accountType: 'TEMPORARY',
+        sessionId,
+        formId,
+      },
+      jwtSecret,
+      { expiresIn: '8h' },
+    );
+
+    // Create and store the session using JWT token as internal key
+    const session: IFormMarvSession = {
+      sessionId, // Use sessionId for URL path (obscure, not secret)
+      userId,
+      jwtToken,
+      formId,
+      conversationId: sessionId, // Keep original sessionId as conversationId
+      createdAt: now,
+      lastActivityAt: now,
+      expiresInMs,
+    };
+
+    this.formMarvSessions[jwtToken] = session;
+
+    this.logger.logWithContext(
+      'log',
+      'Temporary user and session created',
+      'AuthorizationPermissionsService.createTempUserAndSession',
+      undefined,
+      { sessionId, userId, formId },
+    );
+
+    return {
+      sessionId,
+      userId,
+      jwtToken,
+    };
+  }
+
+  /**
+   * Get a session by JWT token and update last activity
+   * @param jwtToken The JWT token to look up
+   * @returns The session if found and not expired, null otherwise
+   */
+  getSessionByJwt(jwtToken: string): IFormMarvSession | null {
+    const session = this.formMarvSessions[jwtToken];
+
+    if (!session) {
+      return null;
+    }
+
+    // Check if session is expired
+    const now = new Date();
+    const expirationTime = new Date(
+      session.createdAt.getTime() + session.expiresInMs,
+    );
+
+    if (now > expirationTime) {
+      delete this.formMarvSessions[jwtToken];
+      this.logger.logWithContext(
+        'log',
+        'Form-marv session expired and removed',
+        'AuthorizationPermissionsService.getSessionByJwt',
+        undefined,
+        { jwtToken: jwtToken.substring(0, 20) + '...' },
+      );
+      return null;
+    }
+
+    // Update last activity
+    session.lastActivityAt = now;
+    this.formMarvSessions[jwtToken] = session;
+
+    return session;
+  }
+
+  /**
+   * Update an existing session
+   * @param jwtToken The JWT token of the session to update
+   * @param updatedSession The updated session data
+   */
+  updateSession(jwtToken: string, updatedSession: IFormMarvSession): void {
+    this.formMarvSessions[jwtToken] = updatedSession;
+
+    this.logger.logWithContext(
+      'log',
+      'Form-marv session updated',
+      'AuthorizationPermissionsService.updateSession',
+      undefined,
+      { conversationId: updatedSession.conversationId },
+    );
+  }
+
+  /**
+   * Clean up expired sessions
+   */
+  cleanupExpiredSessions(): void {
+    const now = new Date();
+    const expiredTokens: string[] = [];
+
+    for (const [jwtToken, session] of Object.entries(this.formMarvSessions)) {
+      const expirationTime = new Date(
+        session.createdAt.getTime() + session.expiresInMs,
+      );
+      if (now > expirationTime) {
+        expiredTokens.push(jwtToken);
+      }
+    }
+
+    expiredTokens.forEach((token) => {
+      delete this.formMarvSessions[token];
+    });
+
+    if (expiredTokens.length > 0) {
+      this.logger.logWithContext(
+        'log',
+        'Cleaned up expired form-marv sessions',
+        'AuthorizationPermissionsService.cleanupExpiredSessions',
+        undefined,
+        { expiredCount: expiredTokens.length },
+      );
+    }
+  }
+
+  /**
+   * Get session statistics for debugging
+   */
+  getSessionStats(): { total: number; active: number } {
+    const now = new Date();
+    let activeCount = 0;
+
+    for (const session of Object.values(this.formMarvSessions)) {
+      const expirationTime = new Date(
+        session.createdAt.getTime() + session.expiresInMs,
+      );
+      if (now <= expirationTime) {
+        activeCount++;
+      }
+    }
+
+    return {
+      total: Object.keys(this.formMarvSessions).length,
+      active: activeCount,
+    };
   }
 
   /**
