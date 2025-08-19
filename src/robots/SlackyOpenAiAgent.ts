@@ -1,491 +1,30 @@
-import { AbstractRobotChat } from './AbstractRobotChat';
-import type {
-  TConversationTextMessageEnvelope,
-  IStreamingCallbacks,
-} from './types';
-import { IConversationMessage } from '../chat-manager/interfaces/message.interface';
-import { UserRole } from '../chat-manager/dto/create-message.dto';
 import { OpenAI } from 'openai';
-import { slackyToolSet } from './tool-definitions/slacky';
+import type { TConversationMessageContent } from '../ConversationLists/types';
+import { UserRole } from '../chat-manager/dto/create-message.dto';
+import { IConversationMessage } from '../chat-manager/interfaces/message.interface';
+import { CustomLoggerService } from '../common/logger/custom-logger.service';
+import { AbstractRobotChat } from './AbstractRobotChat';
 import {
+  FsRestrictedApiRoutesEnum,
   marvToolDefinitions,
   performMarvToolCall,
-  FsRestrictedApiRoutesEnum,
 } from './tool-definitions/marv';
+import { slackyToolSet } from './tool-definitions/slacky';
 import { createCompositeToolSet } from './tool-definitions/toolCatalog';
-import { CustomLoggerService } from '../common/logger/custom-logger.service';
+import type {
+  IStreamingCallbacks,
+  TConversationMessageContentString,
+} from './types';
 
 // Helper functions for the streaming pattern
 const noOp = (...args: any[]) => {};
 
-// Factory for creating message envelope with updated content
-const createMessageEnvelopeWithContent = (
-  originalEnvelope: TConversationTextMessageEnvelope,
-  newContent: string,
-): TConversationTextMessageEnvelope => ({
-  ...originalEnvelope,
-  envelopePayload: {
-    ...originalEnvelope.envelopePayload,
-    content: {
-      ...originalEnvelope.envelopePayload.content,
-      payload: newContent,
-    },
-  },
-});
-
-import {
-  ObservationMakers,
-  EObservationSubjectType,
-} from 'istack-buddy-utilities';
-
-import type {
-  IObservationResult,
-  IObservationLogItem,
-  IObservationContext,
-} from 'istack-buddy-utilities';
-
-/**
- * ObservationMakerViewer - Extends ObservationMaker for display purposes
- * Filters and formats observations for Slack display
- */
-class ObservationMakerViewer extends ObservationMakers.AbstractObservationMaker {
-  protected subjectType = EObservationSubjectType.FORM;
-  protected observationClass = this.constructor.name;
-  protected messagePrimary = 'Observation Viewer';
-  private logItems: IObservationLogItem[] = [];
-
-  constructor() {
-    super();
-  }
-
-  getRequiredResources(): string[] {
-    return ['formModel'];
-  }
-
-  async makeObservation(
-    context: IObservationContext,
-  ): Promise<IObservationResult> {
-    // This is a viewer class, not a real observation maker
-    // It just displays existing observation results
-    return { isObservationTrue: true, logItems: this.logItems };
-  }
-
-  setLogItems(logItems: IObservationLogItem[]): void {
-    this.logItems = logItems;
-  }
-
-  /**
-   * Create an ObservationMakerViewer from observation results
-   */
-  static fromObservationResults(
-    observationMakerResult: any,
-  ): ObservationMakerViewer {
-    const viewer = new ObservationMakerViewer();
-
-    console.log('ObservationMakerViewer.fromObservationResults called with:', {
-      hasResult: !!observationMakerResult,
-      hasResponse: !!(
-        observationMakerResult && observationMakerResult.response
-      ),
-      resultType: typeof observationMakerResult,
-      responseType: observationMakerResult?.response
-        ? typeof observationMakerResult.response
-        : 'undefined',
-    });
-
-    // Extract log items from the observation result
-    if (observationMakerResult && observationMakerResult.response) {
-      const logItems = viewer.extractLogItems(observationMakerResult.response);
-      viewer.setLogItems(logItems);
-
-      console.log('Extracted log items:', {
-        count: logItems.length,
-        logItems: JSON.stringify(logItems.slice(0, 2), null, 2), // Show first 2 for debugging
-      });
-    } else {
-      console.log('No valid observation maker result found');
-    }
-
-    return viewer;
-  }
-
-  private extractLogItems(response: any): any[] {
-    const logItems = [];
-
-    console.log('extractLogItems called with:', {
-      responseType: typeof response,
-      isArray: Array.isArray(response),
-      hasLogItems: !!(response && response.logItems),
-      hasObservations: !!(response && response.observations),
-      hasData: !!(response && response.data),
-      responseKeys:
-        response && typeof response === 'object' ? Object.keys(response) : [],
-    });
-
-    // Handle different response structures
-    if (response && response.logItems && Array.isArray(response.logItems)) {
-      console.log(
-        'Extracting from response.logItems, length:',
-        response.logItems.length,
-      );
-      logItems.push(...response.logItems);
-    } else if (Array.isArray(response)) {
-      console.log('Extracting from array response, length:', response.length);
-      logItems.push(...response);
-    } else if (
-      response &&
-      response.observations &&
-      Array.isArray(response.observations)
-    ) {
-      console.log(
-        'Extracting from response.observations, length:',
-        response.observations.length,
-      );
-      logItems.push(...response.observations);
-    } else if (response && response.data && Array.isArray(response.data)) {
-      console.log(
-        'Extracting from response.data, length:',
-        response.data.length,
-      );
-      logItems.push(...response.data);
-    } else if (typeof response === 'object') {
-      console.log('Extracting single observation object');
-      logItems.push(response);
-    } else {
-      console.log('No valid observation structure found');
-    }
-
-    console.log('Final log items count:', logItems.length);
-    return logItems;
-  }
-
-  /**
-   * Get only warning and error log items
-   */
-  getWarningsAndErrors(): any[] {
-    return this.logItems.filter(
-      (item) => item.logLevel === 'warn' || item.logLevel === 'error',
-    );
-  }
-
-  /**
-   * Get log items by level
-   */
-  getLogItemsByLevel(level: string): any[] {
-    return this.logItems.filter((item) => item.logLevel === level);
-  }
-
-  /**
-   * Get all log items
-   */
-  getAllLogItems(): any[] {
-    return this.logItems;
-  }
-
-  /**
-   * Get the observation class name
-   */
-  getObservationClassName(): string {
-    return this.observationClass;
-  }
-
-  /**
-   * Format log items for Slack display
-   */
-  formatForSlack(): string {
-    const warningsAndErrors = this.getWarningsAndErrors();
-
-    if (warningsAndErrors.length === 0) {
-      return '✅ *No issues found* - All validations passed successfully!';
-    }
-
-    let formatted = `⚠️ *Found ${warningsAndErrors.length} issue(s):*\n\n`;
-
-    warningsAndErrors.forEach((item, index) => {
-      const emoji = item.logLevel === 'error' ? '❌' : '⚠️';
-      const level = item.logLevel === 'error' ? 'ERROR' : 'WARNING';
-
-      formatted += `${emoji} *${level}* (${index + 1}/${warningsAndErrors.length})\n`;
-
-      // Use messageSecondary as the primary message (capped at 150 characters)
-      if (item.messageSecondary) {
-        const truncatedMessage = this.truncateMessage(item.messageSecondary);
-        formatted += `• *Message:* ${truncatedMessage}\n`;
-      }
-
-      if (item.subjectId) {
-        formatted += `• *Subject ID:* \`${item.subjectId}\`\n`;
-      }
-
-      // Skip additional details as they're not helpful for Slack display
-      // if (item.additionalDetails) {
-      //   formatted += `• *Additional Details:* ${JSON.stringify(item.additionalDetails)}\n`;
-      // }
-
-      formatted += '\n';
-    });
-
-    return formatted;
-  }
-
-  /**
-   * Format all log items for Slack display (including info and debug)
-   */
-  formatAllForSlack(): string {
-    if (this.logItems.length === 0) {
-      return '📝 *No log items found*';
-    }
-
-    let formatted = `📊 *All Log Items (${this.logItems.length} total):*\n\n`;
-
-    this.logItems.forEach((item, index) => {
-      const emoji = this.getEmojiForLevel(item.logLevel);
-      const level = item.logLevel.toUpperCase();
-
-      formatted += `${emoji} *${level}* (${index + 1}/${this.logItems.length})\n`;
-
-      // Use messageSecondary as the primary message (capped at 150 characters)
-      if (item.messageSecondary) {
-        const truncatedMessage = this.truncateMessage(item.messageSecondary);
-        formatted += `• *Message:* ${truncatedMessage}\n`;
-      }
-
-      if (item.subjectId) {
-        formatted += `• *Subject ID:* \`${item.subjectId}\`\n`;
-      }
-
-      // Skip additional details as they're not helpful for Slack display
-      // if (item.additionalDetails) {
-      //   formatted += `• *Additional Details:* ${JSON.stringify(item.additionalDetails)}\n`;
-      // }
-
-      formatted += '\n';
-    });
-
-    return formatted;
-  }
-
-  /**
-   * Get emoji for log level
-   */
-  private getEmojiForLevel(level: string): string {
-    switch (level) {
-      case 'error':
-        return '❌';
-      case 'warn':
-        return '⚠️';
-      case 'info':
-        return 'ℹ️';
-      case 'debug':
-        return '🔍';
-      default:
-        return '📝';
-    }
-  }
-
-  /**
-   * Truncate message to specified length with ellipsis
-   */
-  private truncateMessage(message: string, maxLength: number = 150): string {
-    if (message.length <= maxLength) {
-      return message;
-    }
-    return message.substring(0, maxLength - 3) + '...';
-  }
-
-  /**
-   * Get summary statistics
-   */
-  getSummary(): string {
-    const total = this.logItems.length;
-    const errors = this.logItems.filter(
-      (item) => item.logLevel === 'error',
-    ).length;
-    const warnings = this.logItems.filter(
-      (item) => item.logLevel === 'warn',
-    ).length;
-    const info = this.logItems.filter(
-      (item) => item.logLevel === 'info',
-    ).length;
-    const debug = this.logItems.filter(
-      (item) => item.logLevel === 'debug',
-    ).length;
-
-    return (
-      `📊 *Summary:* ${total} total log items\n` +
-      `• ❌ ${errors} errors\n` +
-      `• ⚠️ ${warnings} warnings\n` +
-      `• ℹ️ ${info} info\n` +
-      `• 🔍 ${debug} debug`
-    );
-  }
-}
+import { slackyToolResultFormatter } from './tool-definitions/slacky/slack-formatters';
 
 /**
  * Slacky Tool Result Formatter
  * Formats tool results for better Slack display
  */
-function slackyToolResultFormatter(functionName: string, result: any): string {
-  try {
-    // Handle different function types
-    switch (functionName) {
-      case 'fsRestrictedApiFormCalculationValidation':
-      case 'fsRestrictedApiFormLogicValidation':
-        return formatValidationResult(functionName, result);
-
-      case 'fsRestrictedApiFormAndRelatedEntityOverview':
-        return formatFormOverviewResult(result);
-
-      case 'sumoLogicQuery':
-        return formatSumoQueryResult(result);
-
-      case 'ssoAutoFillAssistance':
-        return formatSsoResult(result);
-
-      default:
-        return formatGenericResult(functionName, result);
-    }
-  } catch (error) {
-    return `❌ *Error formatting result:* ${error instanceof Error ? error.message : 'Unknown error'}\n\n*Raw result:*\n\`\`\`${JSON.stringify(result, null, 2)}\`\`\``;
-  }
-}
-
-function formatValidationResult(functionName: string, result: any): string {
-  const viewer = ObservationMakerViewer.fromObservationResults(result);
-  const summary = viewer.getSummary();
-  const formatted = viewer.formatForSlack();
-
-  const functionDisplayName =
-    functionName === 'fsRestrictedApiFormCalculationValidation'
-      ? 'Calculation Validation'
-      : 'Logic Validation';
-
-  const observationClass = viewer.getObservationClassName();
-  const contextInfo =
-    observationClass !== 'ObservationMakerViewer'
-      ? `\n*Observation Type:* ${observationClass}`
-      : '';
-
-  return `🔍 *${functionDisplayName} Results*${contextInfo}\n\n${summary}\n\n${formatted}`;
-}
-
-function formatFormOverviewResult(result: any): string {
-  if (!result || !result.response) {
-    return `❌ *Form Overview Error:* No data received`;
-  }
-
-  const data = result.response;
-  let formatted = `📋 *Form Overview*\n\n`;
-
-  // Basic form information
-  if (data.formId) {
-    formatted += `• *Form ID:* \`${data.formId}\`\n`;
-  }
-  if (data.url) {
-    formatted += `• *URL:* ${data.url}\n`;
-  }
-  if (data.version) {
-    formatted += `• *Version:* ${data.version}\n`;
-  }
-  if (data.submissions !== undefined) {
-    formatted += `• *Total Submissions:* ${data.submissions.toLocaleString()}\n`;
-  }
-  if (data.submissionsToday !== undefined) {
-    formatted += `• *Submissions Today:* ${data.submissionsToday.toLocaleString()}\n`;
-  }
-  if (data.fieldCount) {
-    formatted += `• *Field Count:* ${data.fieldCount}\n`;
-  }
-  if (data.isActive !== undefined) {
-    formatted += `• *Status:* ${data.isActive ? '✅ Active' : '❌ Inactive'}\n`;
-  }
-  if (data.encrypted !== undefined) {
-    formatted += `• *Encrypted:* ${data.encrypted ? 'Yes' : 'No'}\n`;
-  }
-  if (data.timezone) {
-    formatted += `• *Timezone:* ${data.timezone}\n`;
-  }
-  if (data.isOneQuestionAtATime !== undefined) {
-    formatted += `• *One Question at a Time:* ${data.isOneQuestionAtATime ? 'Yes' : 'No'}\n`;
-  }
-  if (data.hasApprovers !== undefined) {
-    formatted += `• *Has Approvers:* ${data.hasApprovers ? 'Yes' : 'No'}\n`;
-  }
-  if (data.isWorkflowForm !== undefined) {
-    formatted += `• *Workflow Form:* ${data.isWorkflowForm ? 'Yes' : 'No'}\n`;
-  }
-
-  // Submit Actions
-  if (data.submitActions && data.submitActions.length > 0) {
-    formatted += `\n*Submit Actions (${data.submitActions.length}):*\n`;
-    data.submitActions.forEach((action: any) => {
-      formatted += `• ${action.name || 'Unnamed Action'} (ID: \`${action.id}\`)\n`;
-    });
-  } else {
-    formatted += `\n*Submit Actions:* None configured\n`;
-  }
-
-  // Notification Emails
-  if (data.notificationEmails && data.notificationEmails.length > 0) {
-    formatted += `\n*Notification Emails (${data.notificationEmails.length}):*\n`;
-    data.notificationEmails.forEach((email: any) => {
-      const emailDisplay = email.name
-        ? `${email.name} (ID: \`${email.id}\`)`
-        : email.id
-          ? `ID: \`${email.id}\``
-          : email.email
-            ? email.email
-            : JSON.stringify(email);
-      formatted += `• ${emailDisplay}\n`;
-    });
-  } else {
-    formatted += `\n*Notification Emails:* None configured\n`;
-  }
-
-  // Confirmation Emails
-  if (data.confirmationEmails && data.confirmationEmails.length > 0) {
-    formatted += `\n*Confirmation Emails (${data.confirmationEmails.length}):*\n`;
-    data.confirmationEmails.forEach((email: any) => {
-      const emailDisplay = email.name
-        ? `${email.name} (ID: \`${email.id}\`)`
-        : email.id
-          ? `ID: \`${email.id}\``
-          : email.email
-            ? email.email
-            : JSON.stringify(email);
-      formatted += `• ${emailDisplay}\n`;
-    });
-  } else {
-    formatted += `\n*Confirmation Emails:* None configured\n`;
-  }
-
-  return formatted;
-}
-
-function formatSumoQueryResult(result: any): string {
-  if (!result || typeof result !== 'string') {
-    return `❌ *Sumo Logic Error:* Invalid result format`;
-  }
-
-  return `📊 *Sumo Logic Query Results*\n\n\`\`\`${result}\`\`\``;
-}
-
-function formatSsoResult(result: any): string {
-  if (!result || typeof result !== 'string') {
-    return `❌ *SSO Auto-fill Error:* Invalid result format`;
-  }
-
-  return `🔐 *SSO Auto-fill Analysis*\n\n${result}`;
-}
-
-function formatGenericResult(functionName: string, result: any): string {
-  const resultString =
-    typeof result === 'object'
-      ? JSON.stringify(result, null, 2)
-      : String(result);
-
-  return `🔧 *${functionName} Results*\n\n\`\`\`${resultString}\`\`\``;
-}
 
 /**
  * Slack-specific OpenAI Chat Robot implementation
@@ -596,8 +135,6 @@ IMPORTANT: Never use emojis, emoticons, or any graphical symbols in your respons
 
   // Store conversation history for context
   private conversationHistory: IConversationMessage[] = [];
-  private isActivelyListeningForResponse: boolean = false;
-  private activeMonitoringIntervals: Map<string, NodeJS.Timeout> = new Map();
   private toolStatus: {
     executing: string[];
     completed: string[];
@@ -605,10 +142,13 @@ IMPORTANT: Never use emojis, emoticons, or any graphical symbols in your respons
   } = { executing: [], completed: [], errors: [] };
   private readonly pollIntervalMs: number = 15000; // 15 seconds
   private readonly noToolsTimeoutMs: number = 30000; // 30 seconds timeout when no tools are called
-  private readMessageIds: Set<string> = new Set();
-  private lastToolResults: any[] = [];
   private currentCallback:
-    | ((response: TConversationTextMessageEnvelope) => void)
+    | ((
+        response: Pick<
+          IConversationMessage<TConversationMessageContentString>,
+          'content'
+        >,
+      ) => void)
     | null = null;
   private hasSentFinalResponse: boolean = false;
 
@@ -680,7 +220,9 @@ Need help? Just ask!`;
   private async executeToolCall(
     toolName: string,
     toolArgs: any,
-    onFullMessageReceived?: (content: string, contentType?: string) => void,
+    onFullMessageReceived?: (message: {
+      content: { payload: string; type: 'text/plain' };
+    }) => void,
   ): Promise<string> {
     this.logger.debug(`Executing tool: ${toolName}`, { toolArgs });
 
@@ -720,63 +262,10 @@ Need help? Just ask!`;
   }
 
   /**
-   * Execute all tool calls in parallel
-   */
-  private async executeToolAllCalls(toolCalls: any[]): Promise<any[]> {
-    const results = [];
-    for (const toolCall of toolCalls) {
-      try {
-        const toolName = toolCall.function?.name || '';
-        const toolArgs = JSON.parse(toolCall.function?.arguments || '{}');
-
-        // Log tool call and response for debugging (but don't send to Slack)
-        const toolCallMessage = `Calling tool: ${toolName} with arguments: ${JSON.stringify(toolArgs, null, 2)}`;
-        this.logger.log(toolCallMessage);
-
-        const result = await this.executeToolCall(toolName, toolArgs);
-
-        const toolResponseMessage = `Tool ${toolName} returned: ${JSON.stringify(result, null, 2)}`;
-        this.logger.log(toolResponseMessage);
-
-        results.push({
-          tool_call_id: toolCall.id,
-          role: 'tool' as const,
-          content: result,
-        });
-      } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : 'Unknown error';
-
-        // Send tool error message to Slack
-        const toolErrorMessage = `Tool ${toolCall.function?.name || 'unknown'} failed: ${errorMessage}`;
-        this.logger.log(toolErrorMessage);
-        if (this.currentCallback) {
-          this.currentCallback(this.createToolStatusResponse(toolErrorMessage));
-        }
-
-        results.push({
-          tool_call_id: toolCall.id,
-          role: 'tool' as const,
-          content: `Error executing tool: ${errorMessage}`,
-        });
-      }
-    }
-
-    // Store the results for final response generation
-    this.lastToolResults = results;
-    this.logger.log(`Stored ${results.length} tool results for final response`);
-    this.logger.log(
-      `Tool results content: ${JSON.stringify(results, null, 2)}`,
-    );
-
-    return results;
-  }
-
-  /**
    * Handle streaming response using OpenAI's streaming API
    */
   public async acceptMessageStreamResponse(
-    messageEnvelope: TConversationTextMessageEnvelope,
+    message: IConversationMessage<TConversationMessageContentString>,
     callbacks: IStreamingCallbacks,
     getHistory?: () => IConversationMessage[],
   ): Promise<void> {
@@ -786,13 +275,13 @@ Need help? Just ask!`;
       // Use getHistory callback if provided, otherwise fall back to internal conversationHistory
       const history = getHistory ? getHistory() : this.conversationHistory;
       const messages = this.buildOpenAIMessageHistory(
-        messageEnvelope.envelopePayload.content.payload,
+        message.content.payload as string,
         history,
       );
 
       // Call onStreamStart if provided
       if (callbacks.onStreamStart) {
-        callbacks.onStreamStart(messageEnvelope);
+        callbacks.onStreamStart(message);
       }
 
       const stream = await client.chat.completions.create({
@@ -881,7 +370,12 @@ Need help? Just ask!`;
             });
 
             if (callbacks.onFullMessageReceived) {
-              const startMessage = `Starting execution of ${functionName}...`;
+              const startMessage = {
+                content: {
+                  payload: `Starting execution of ${functionName}...`,
+                  type: 'text/plain' as const,
+                },
+              };
               this.logger.debug(
                 'Calling onFullMessageReceived for tool start',
                 {
@@ -889,7 +383,7 @@ Need help? Just ask!`;
                   message: startMessage,
                 },
               );
-              callbacks.onFullMessageReceived(startMessage, 'text/plain');
+              callbacks.onFullMessageReceived(startMessage);
             } else {
               this.logger.debug(
                 'onFullMessageReceived callback is not available',
@@ -913,7 +407,12 @@ Need help? Just ask!`;
 
             // Call onFullMessageReceived again to indicate tool execution is complete
             if (callbacks.onFullMessageReceived) {
-              const completeMessage = `Finished running ${functionName}. Analysis complete.`;
+              const completeMessage = {
+                content: {
+                  payload: `Finished running ${functionName}. Analysis complete.`,
+                  type: 'text/plain' as const,
+                },
+              };
               this.logger.debug(
                 'Calling onFullMessageReceived for tool completion',
                 {
@@ -921,7 +420,7 @@ Need help? Just ask!`;
                   message: completeMessage,
                 },
               );
-              callbacks.onFullMessageReceived(completeMessage, 'text/plain');
+              callbacks.onFullMessageReceived(completeMessage);
             } else {
               this.logger.debug(
                 'onFullMessageReceived callback is not available for completion',
@@ -945,7 +444,10 @@ Need help? Just ask!`;
 
       // Call onStreamFinished with minimal data
       if (typeof callbacks.onStreamFinished === 'function') {
-        callbacks.onStreamFinished(accumulatedContent, 'assistant');
+        // @ts-ignore
+        callbacks.onStreamFinished({
+          content: { payload: accumulatedContent, type: 'text/plain' },
+        });
       }
     } catch (error) {
       const errorMessage =
@@ -1006,408 +508,12 @@ Need help? Just ask!`;
   }
 
   /**
-   * Get current tool status for monitoring
-   */
-  private getToolStatus(): string | null {
-    if (this.toolStatus.executing.length > 0) {
-      return `Executing tools: ${this.toolStatus.executing.join(', ')}`;
-    }
-    if (this.toolStatus.completed.length > 0) {
-      return `Completed tools: ${this.toolStatus.completed.join(', ')}`;
-    }
-    if (this.toolStatus.errors.length > 0) {
-      return `Tool errors: ${this.toolStatus.errors.join(', ')}`;
-    }
-    return null;
-  }
-
-  /**
-   * Create tool status response envelope
-   */
-  private createToolStatusResponse(
-    status: string,
-  ): TConversationTextMessageEnvelope {
-    return {
-      messageId: `status-${Date.now()}`,
-      requestOrResponse: 'response',
-      envelopePayload: {
-        messageId: `status-msg-${Date.now()}`,
-        author_role: 'assistant',
-        content: {
-          type: 'text/plain',
-          payload: status,
-        },
-        created_at: new Date().toISOString(),
-        estimated_token_count: this.estimateTokens(status),
-      },
-    };
-  }
-
-  /**
-   * Check for new unread messages and return them
-   * Note: This is a simplified version since the robot doesn't have direct access to chatManagerService
-   * In a real implementation, this would need to be passed in or accessed differently
-   */
-  /**
-   * Get unread messages from the robot's conversation history
-   * TODO: Future enhancement - may want to add conversationId parameter for more sophisticated conversation management
-   */
-  private async getUnreadMessages(originalMessageId: string): Promise<any[]> {
-    try {
-      // For now, we'll use the conversation history we already have
-      // In a real implementation, this would query the chat manager service
-      const unreadMessages = this.conversationHistory.filter(
-        (msg: any) =>
-          !this.readMessageIds.has(msg.messageId) &&
-          msg.fromRole === 'customer' &&
-          msg.messageId !== originalMessageId,
-      );
-
-      // Mark these messages as read
-      unreadMessages.forEach((msg: any) => {
-        this.readMessageIds.add(msg.messageId);
-      });
-
-      return unreadMessages;
-    } catch (error) {
-      this.logger.error('Error getting unread messages:', error);
-      return [];
-    }
-  }
-
-  /**
-   * Start monitoring for responses and tool status updates
-   */
-  private startResponseMonitoring(
-    originalMessage: TConversationTextMessageEnvelope,
-    sendMessageToSlack: (response: TConversationTextMessageEnvelope) => void,
-  ): void {
-    const monitoringId = `monitor-${Date.now()}`;
-    const startTime = Date.now();
-    const timeoutMs = 3 * 60 * 1000; // 3 minutes
-    let hasSentFinalResponse = false;
-
-    this.isActivelyListeningForResponse = true;
-
-    const interval = setInterval(async () => {
-      try {
-        const elapsedTime = Date.now() - startTime;
-        const remainingTime = timeoutMs - elapsedTime;
-
-        // Check for new user messages using conversation history
-        const unreadMessages = await this.getUnreadMessages(
-          originalMessage.messageId,
-        );
-
-        this.logger.log(
-          `Checking for new messages. Found: ${unreadMessages.length}, conversation history length: ${this.conversationHistory.length}`,
-        );
-
-        if (unreadMessages.length > 0) {
-          this.logger.log(
-            `New user messages detected: ${unreadMessages.length} messages, stopping monitoring`,
-          );
-          clearInterval(interval);
-          this.activeMonitoringIntervals.delete(monitoringId);
-          this.isActivelyListeningForResponse = false;
-          return;
-        }
-
-        // Check timeout
-        if (elapsedTime > timeoutMs) {
-          this.logger.log('Monitoring timeout reached (3 minutes)');
-          clearInterval(interval);
-          this.activeMonitoringIntervals.delete(monitoringId);
-          this.isActivelyListeningForResponse = false;
-          return;
-        }
-
-        // Log debug message for monitoring (but don't send to Slack)
-        const debugMessage = `debug: no new messages found yet, polling time remaining: ${Math.round(remainingTime / 1000)}s (elapsed: ${Math.round(elapsedTime / 1000)}s)`;
-        this.logger.log(debugMessage);
-
-        // Check for tool status updates - only send once per tool completion
-        const toolStatus = this.getToolStatus();
-        if (toolStatus && !hasSentFinalResponse && !this.hasSentFinalResponse) {
-          this.logger.log(`Sending tool status update: ${toolStatus}`);
-          sendMessageToSlack(this.createToolStatusResponse(toolStatus));
-        }
-
-        // Check if we have final results (all tools completed or errored)
-        const totalTools =
-          this.toolStatus.executing.length +
-          this.toolStatus.completed.length +
-          this.toolStatus.errors.length;
-
-        // If we have tools and they're all done, OR if we've been polling for a while with no tools
-        const shouldSendFinalResponse =
-          (totalTools > 0 && this.toolStatus.executing.length === 0) ||
-          (totalTools === 0 && elapsedTime > this.noToolsTimeoutMs); // Use class member instead of hardcoded value
-
-        if (
-          shouldSendFinalResponse &&
-          !hasSentFinalResponse &&
-          !this.hasSentFinalResponse
-        ) {
-          // All tools have completed (success or error), or we've waited long enough with no tools
-          this.logger.log(
-            `Sending final response. Tools: ${totalTools}, elapsed: ${elapsedTime}ms`,
-          );
-          hasSentFinalResponse = true;
-          this.hasSentFinalResponse = true;
-
-          const finalResponse = await this.generateFinalResponse();
-          sendMessageToSlack(finalResponse);
-
-          // DON'T stop monitoring here - continue polling for new user messages
-          // Only stop on timeout or new user message
-        }
-      } catch (error) {
-        this.logger.error('Error in response monitoring:', error);
-        clearInterval(interval);
-        this.activeMonitoringIntervals.delete(monitoringId);
-        this.isActivelyListeningForResponse = false;
-      }
-    }, this.pollIntervalMs); // Poll every 15 seconds
-
-    this.activeMonitoringIntervals.set(monitoringId, interval);
-  }
-
-  /**
-   * Generate final response based on tool results
-   */
-  private async generateFinalResponse(): Promise<TConversationTextMessageEnvelope> {
-    const client = this.getClient();
-
-    // Calculate total tools
-    const totalTools =
-      this.toolStatus.executing.length +
-      this.toolStatus.completed.length +
-      this.toolStatus.errors.length;
-
-    // Create a summary request based on tool results
-    const summaryRequest: OpenAI.Chat.Completions.ChatCompletionCreateParams = {
-      model: this.LLModelName,
-      max_tokens: 1024,
-      messages: [
-        {
-          role: 'system' as const,
-          content: this.robotRole,
-        },
-        {
-          role: 'user' as const,
-          content:
-            totalTools > 0
-              ? `Based on the following tool execution results, provide a comprehensive summary and actionable insights:\n\n${JSON.stringify(this.lastToolResults, null, 2)}\n\nCompleted tools: ${this.toolStatus.completed.join(', ')}. Failed tools: ${this.toolStatus.errors.join(', ')}.`
-              : `Provide a helpful response to the user's request. No tools were executed, so provide general assistance or ask for more specific information.`,
-        },
-      ],
-    };
-
-    try {
-      // If we have tool results, use the fallback response method which handles errors properly
-      if (this.lastToolResults.length > 0) {
-        const responseText = this.createFallbackResponse(this.lastToolResults);
-        this.logger.log(`Generated fallback response: "${responseText}"`);
-        return {
-          messageId: `final-${Date.now()}`,
-          requestOrResponse: 'response',
-          envelopePayload: {
-            messageId: `final-msg-${Date.now()}`,
-            author_role: 'assistant',
-            content: {
-              type: 'text/plain',
-              payload: responseText,
-            },
-            created_at: new Date().toISOString(),
-            estimated_token_count: this.estimateTokens(responseText),
-          },
-        };
-      }
-
-      // Otherwise, generate a response using the AI
-      const response = await client.chat.completions.create(summaryRequest);
-      let responseText = '';
-
-      if ('choices' in response && response.choices[0]?.message) {
-        responseText = response.choices[0].message.content || '';
-      }
-
-      if (!responseText || responseText.trim() === '') {
-        responseText = this.createFallbackResponse(this.lastToolResults);
-      }
-
-      return {
-        messageId: `final-${Date.now()}`,
-        requestOrResponse: 'response',
-        envelopePayload: {
-          messageId: `final-msg-${Date.now()}`,
-          author_role: 'assistant',
-          content: {
-            type: 'text/plain',
-            payload: responseText,
-          },
-          created_at: new Date().toISOString(),
-          estimated_token_count: this.estimateTokens(responseText),
-        },
-      };
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error';
-      return {
-        messageId: `error-${Date.now()}`,
-        requestOrResponse: 'response',
-        envelopePayload: {
-          messageId: `error-msg-${Date.now()}`,
-          author_role: 'assistant',
-          content: {
-            type: 'text/plain',
-            payload: `I encountered an error generating the final response: ${errorMessage}`,
-          },
-          created_at: new Date().toISOString(),
-          estimated_token_count: this.estimateTokens(errorMessage),
-        },
-      };
-    }
-  }
-
-  /**
-   * Create a fallback response when the final API call fails or returns empty
-   */
-  private createFallbackResponse(toolResults: any[]): string {
-    // AI DO NOT REMOVE THIS COMMENT
-    // 'createFallbackResponse' is a product of an poor understanding of OpenAi API - I believe
-    // it's possible we need a fall back response but in vibe-coding AI uses as a crutch.
-    // We're going to look at 'events' which may remove the need to 'poll' which will
-    // remove the need for 'createFallbackResponse'
-    this.logger.log(
-      `createFallbackResponse called with ${toolResults.length} tool results`,
-    );
-    this.logger.log(
-      `Tool results for fallback: ${JSON.stringify(toolResults, null, 2)}`,
-    );
-
-    // Parse tool results - they come as strings but may contain JSON objects
-    const parsedResults = toolResults.map((result) => {
-      if (typeof result.content === 'string') {
-        try {
-          // Try to parse as JSON
-          const parsed = JSON.parse(result.content);
-          return { ...result, content: parsed };
-        } catch (e) {
-          // If not JSON, keep as string
-          return result;
-        }
-      }
-      return result;
-    });
-
-    this.logger.log('Parsed tool results:', {
-      parsedResults: parsedResults,
-    });
-
-    const errors = parsedResults
-      .filter(
-        (result) =>
-          result.content &&
-          typeof result.content === 'object' &&
-          result.content.errorItems,
-      )
-      .flatMap((result) => result.content.errorItems || []);
-
-    const successes = parsedResults.filter(
-      (result) =>
-        result.content &&
-        typeof result.content === 'object' &&
-        result.content.isSuccess === true,
-    );
-
-    // Debug logging to see what we're filtering
-    this.logger.log('Filtered tool results:', {
-      errors: errors,
-      successes: successes,
-      successCount: successes.length,
-    });
-
-    if (errors.length > 0) {
-      return `I attempted to process your request but encountered some issues:\n\n${errors.map((error) => `• ${error}`).join('\n')}\n\nPlease verify the form ID or try a different approach.`;
-    } else if (successes.length > 0) {
-      // Actually use the tool results to create a meaningful response
-      const successResult = successes[0];
-      this.logger.log('Processing success result:', {
-        successResult: successResult,
-        hasContent: !!successResult.content,
-        hasResponse: !!(
-          successResult.content && successResult.content.response
-        ),
-      });
-
-      if (successResult.content && successResult.content.response) {
-        const data = successResult.content.response;
-        this.logger.log('Processing response data:', {
-          data: data,
-          hasFormId: !!data.formId,
-          formId: data.formId,
-        });
-
-        // Create a comprehensive summary of the form data
-        let summary = `## Form Overview: ${data.formId}\n\n`;
-
-        if (data.url) {
-          summary += `**Form URL:** ${data.url}\n`;
-        }
-        if (data.submissions !== undefined) {
-          summary += `**Total Submissions:** ${data.submissions}\n`;
-        }
-        if (data.submissionsToday !== undefined) {
-          summary += `**Submissions Today:** ${data.submissionsToday}\n`;
-        }
-        if (data.version) {
-          summary += `**Version:** ${data.version}\n`;
-        }
-        if (data.fieldCount) {
-          summary += `**Field Count:** ${data.fieldCount}\n`;
-        }
-        if (data.isActive !== undefined) {
-          summary += `**Status:** ${data.isActive ? 'Active' : 'Inactive'}\n`;
-        }
-
-        if (data.submitActions && data.submitActions.length > 0) {
-          summary += `\n**Submit Actions (${data.submitActions.length}):**\n`;
-          data.submitActions.forEach((action: any) => {
-            summary += `• ${action.name} (ID: ${action.id})\n`;
-          });
-        }
-
-        if (data.notificationEmails && data.notificationEmails.length > 0) {
-          summary += `\n**Notification Emails (${data.notificationEmails.length}):**\n`;
-          data.notificationEmails.forEach((email: any) => {
-            summary += `• ${email.name} (ID: ${email.id})\n`;
-          });
-        }
-
-        if (data.confirmationEmails && data.confirmationEmails.length > 0) {
-          summary += `\n**Confirmation Emails (${data.confirmationEmails.length}):**\n`;
-          data.confirmationEmails.forEach((email: any) => {
-            summary += `• ${email.name} (ID: ${email.id})\n`;
-          });
-        }
-
-        return summary;
-      } else {
-        return `I've completed the requested analysis. The tools executed successfully and provided the requested information.`;
-      }
-    } else {
-      return `I processed your request but didn't receive the expected results. Please try again or provide more specific details about what you need.`;
-    }
-  }
-
-  /**
    * Convert conversation history to OpenAI message format
    */
   private buildOpenAIMessageHistory(
     currentMessage: string,
-    history: IConversationMessage[] = this.conversationHistory,
+    history: IConversationMessage<TConversationMessageContent>[] = this
+      .conversationHistory,
   ): OpenAI.Chat.Completions.ChatCompletionMessageParam[] {
     const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [];
 
@@ -1415,7 +521,7 @@ Need help? Just ask!`;
     this.logger.log('Building OpenAI message history:', {
       historyLength: history.length,
       historyRoles: history.map((msg) => {
-        const content = (msg.content as any).payload || msg.content;
+        const content = msg.content.payload;
         const contentStr =
           typeof content === 'string' ? content : String(content);
         return {
@@ -1431,7 +537,7 @@ Need help? Just ask!`;
       // Check if this is already in the new format (has role property)
       if ('role' in msg && typeof msg.role === 'string') {
         // Already in new format
-        const content = (msg.content as any).payload || msg.content;
+        const content = msg.content.payload;
         const contentStr =
           typeof content === 'string' ? content : String(content);
         this.logger.log(`Adding message with role: ${msg.role}`);
@@ -1444,7 +550,7 @@ Need help? Just ask!`;
         this.logger.log(`Processing message with role: ${msg.fromRole}`);
 
         if (msg.fromRole === UserRole.CUSTOMER) {
-          const content = (msg.content as any).payload || msg.content;
+          const content = msg.content.payload;
           const contentStr =
             typeof content === 'string' ? content : String(content);
           this.logger.log(
@@ -1455,7 +561,7 @@ Need help? Just ask!`;
             content: contentStr,
           });
         } else if (msg.fromRole === UserRole.ROBOT) {
-          const content = (msg.content as any).payload || msg.content;
+          const content = msg.content.payload;
           const contentStr =
             typeof content === 'string' ? content : String(content);
           this.logger.log(
@@ -1476,8 +582,7 @@ Need help? Just ask!`;
     // Only add current message if it's not already in the history
     const lastHistoryMessage = history[history.length - 1];
     const lastMessageContent = lastHistoryMessage
-      ? (lastHistoryMessage.content as any).payload ||
-        lastHistoryMessage.content
+      ? lastHistoryMessage.content.payload
       : null;
     const isCurrentMessageInHistory =
       lastHistoryMessage &&
@@ -1563,39 +668,36 @@ Need help? Just ask!`;
    * Handle immediate response using OpenAI's chat completions API
    */
   public async acceptMessageImmediateResponse(
-    messageEnvelope: TConversationTextMessageEnvelope,
-    getHistory?: () => IConversationMessage[],
-  ): Promise<TConversationTextMessageEnvelope> {
+    message: IConversationMessage<TConversationMessageContentString>,
+    getHistory?: () => IConversationMessage<TConversationMessageContent>[],
+  ): Promise<
+    Pick<IConversationMessage<TConversationMessageContentString>, 'content'>
+  > {
     try {
-      const userMessage = messageEnvelope.envelopePayload.content.payload;
+      const userMessage = message.content.payload;
 
       // Check for direct feedback commands first
-      const feedbackResponse =
-        await this.handleDirectFeedbackCommands(userMessage);
+      const feedbackResponse = await this.handleDirectFeedbackCommands(
+        userMessage as string,
+      );
       if (feedbackResponse) {
-        // we need to verify where/who/how messageId are generated.  Is it the responsibility of the robot? or conversation manager.
         return {
-          messageId: `feedback-${Date.now()}`,
-          requestOrResponse: 'response',
-          envelopePayload: {
-            messageId: `feedback-msg-${Date.now()}`,
-            author_role: 'assistant',
-            content: {
-              type: 'text/plain',
-              payload: feedbackResponse,
-            },
-            created_at: new Date().toISOString(),
-            estimated_token_count: this.estimateTokens(feedbackResponse),
+          content: {
+            type: 'text/plain',
+            payload: feedbackResponse,
           },
         };
       }
 
       // Use the streaming pattern to get the complete response
-      let finalResponse: TConversationTextMessageEnvelope | null = null;
+      let finalResponse: Pick<
+        IConversationMessage<TConversationMessageContentString>,
+        'content'
+      > | null = null;
       let accumulatedContent = '';
 
       await this.acceptMessageStreamResponse(
-        messageEnvelope,
+        message,
         {
           onStreamChunkReceived: (chunk: string) => {
             if (chunk !== null) {
@@ -1606,41 +708,25 @@ Need help? Just ask!`;
             // This callback is not directly used in the new acceptMessageStreamResponse
             // but can be used if needed for initial setup.
           },
-          onStreamFinished: (content: string, authorRole: string) => {
-            // Create a minimal message envelope for the callback
-            finalResponse = {
-              messageId: '', // Will be set by conversation manager
-              requestOrResponse: 'response',
-              envelopePayload: {
-                messageId: '', // Will be set by conversation manager
-                author_role: authorRole as any,
-                content: {
-                  type: 'text/plain',
-                  payload: content,
-                },
-                created_at: new Date().toISOString(),
-                estimated_token_count: this.estimateTokens(content),
-              },
-            };
+          onStreamFinished: (
+            message: Pick<
+              IConversationMessage<TConversationMessageContentString>,
+              'content'
+            >,
+          ) => {
+            // Create a minimal message for the callback
+            finalResponse = message;
           },
-          onFullMessageReceived: (content: string) => {
+          onFullMessageReceived: ({ content: string }) => {
             // Handle full message if needed
           },
           onError: (error) => {
             // This callback is now directly used in acceptMessageStreamResponse
             // to handle streaming errors.
             finalResponse = {
-              messageId: `error-${Date.now()}`,
-              requestOrResponse: 'response',
-              envelopePayload: {
-                messageId: `error-msg-${Date.now()}`,
-                author_role: 'assistant',
-                content: {
-                  type: 'text/plain',
-                  payload: `Error in streaming response: ${error.message}`,
-                },
-                created_at: new Date().toISOString(),
-                estimated_token_count: this.estimateTokens(error.message),
+              content: {
+                type: 'text/plain',
+                payload: `Error in streaming response: ${error.message}`,
               },
             };
           },
@@ -1648,45 +734,28 @@ Need help? Just ask!`;
         getHistory,
       );
 
-      // Create the final response envelope
+      // Create the final response
       if (finalResponse) {
         return finalResponse;
       } else {
         // Fallback if finalResponse is not set (should not happen with new logic)
         return {
-          messageId: `response-${Date.now()}`,
-          requestOrResponse: 'response',
-          envelopePayload: {
-            messageId: `msg-${Date.now()}`,
-            author_role: 'assistant',
-            content: {
-              type: 'text/plain',
-              payload: accumulatedContent,
-            },
-            created_at: new Date().toISOString(),
-            estimated_token_count: this.estimateTokens(accumulatedContent),
+          content: {
+            type: 'text/plain',
+            payload: accumulatedContent || 'No response generated',
           },
         };
       }
     } catch (error) {
       const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error';
-      const errorResponse: TConversationTextMessageEnvelope = {
-        messageId: `error-${Date.now()}`,
-        requestOrResponse: 'response',
-        envelopePayload: {
-          messageId: `error-msg-${Date.now()}`,
-          author_role: 'assistant',
-          content: {
-            type: 'text/plain',
-            payload: `I apologize, but I encountered an error: ${errorMessage}`,
-          },
-          created_at: new Date().toISOString(),
-          estimated_token_count: this.estimateTokens(errorMessage),
+        error instanceof Error ? error.message : 'Unknown error occurred';
+
+      return {
+        content: {
+          type: 'text/plain',
+          payload: `I apologize, but I encountered an error: ${errorMessage}`,
         },
       };
-
-      return errorResponse;
     }
   }
 
@@ -1695,19 +764,22 @@ Need help? Just ask!`;
    * Calls acceptMessageStreamResponse and sends immediate response, then promises to send second message when streaming completes
    */
   public async acceptMessageMultiPartResponse(
-    messageEnvelope: TConversationTextMessageEnvelope,
+    message: IConversationMessage<TConversationMessageContentString>,
     delayedMessageCallback: (
-      response: TConversationTextMessageEnvelope,
+      response: Pick<
+        IConversationMessage<TConversationMessageContentString>,
+        'content'
+      >,
     ) => void,
-    getHistory?: () => IConversationMessage[],
-  ): Promise<TConversationTextMessageEnvelope> {
+    getHistory?: () => IConversationMessage<TConversationMessageContentString>[],
+  ): Promise<TConversationMessageContentString> {
     // Send immediate response first
     const immediateResponse =
-      await this.acceptMessageImmediateResponse(messageEnvelope);
+      await this.acceptMessageImmediateResponse(message);
 
     // Start streaming in background and promise to send delayed message when complete
     this.acceptMessageStreamResponse(
-      messageEnvelope,
+      message,
       {
         onStreamChunkReceived: (chunk: string) => {
           // Handle chunks if needed
@@ -1715,28 +787,12 @@ Need help? Just ask!`;
         onStreamStart: (message) => {
           // Handle stream start if needed
         },
-        onStreamFinished: (content: string, authorRole: string) => {
-          this.logger.debug('onStreamFinished called', {
-            contentLength: content.length,
-            authorRole,
-            contentPreview: content.substring(0, 100) + '...',
-          });
-
-          // Create a minimal message envelope for the callback
-          const finishedMessage: TConversationTextMessageEnvelope = {
-            messageId: '', // Will be set by conversation manager
-            requestOrResponse: 'response',
-            envelopePayload: {
-              messageId: '', // Will be set by conversation manager
-              author_role: authorRole as any,
-              content: {
-                type: 'text/plain',
-                payload: content,
-              },
-              created_at: new Date().toISOString(),
-              estimated_token_count: this.estimateTokens(content),
-            },
-          };
+        onStreamFinished: (
+          message: Pick<
+            IConversationMessage<TConversationMessageContentString>,
+            'content'
+          >,
+        ) => {
           // Send the complete response as delayed message
           if (
             delayedMessageCallback &&
@@ -1745,38 +801,15 @@ Need help? Just ask!`;
             this.logger.debug(
               'Calling delayedMessageCallback with finished message',
             );
-            delayedMessageCallback(finishedMessage);
+            delayedMessageCallback(message);
           }
         },
         onFullMessageReceived: (
-          content: string,
-          contentType: string = 'text/plain',
+          message: Pick<
+            IConversationMessage<TConversationMessageContentString>,
+            'content'
+          >,
         ) => {
-          // Handle full message with content type
-          this.logger.debug(
-            'onFullMessageReceived called in multi-part response',
-            {
-              contentLength: content.length,
-              contentType,
-            },
-          );
-
-          // Create a message envelope for the intermediate message
-          const intermediateMessage: TConversationTextMessageEnvelope = {
-            messageId: '', // Will be set by conversation manager
-            requestOrResponse: 'response',
-            envelopePayload: {
-              messageId: '', // Will be set by conversation manager
-              author_role: 'assistant',
-              content: {
-                type: contentType as any,
-                payload: content,
-              },
-              created_at: new Date().toISOString(),
-              estimated_token_count: this.estimateTokens(content),
-            },
-          };
-
           // Send the intermediate message through the delayed message callback
           if (
             delayedMessageCallback &&
@@ -1785,213 +818,60 @@ Need help? Just ask!`;
             this.logger.debug(
               'Sending intermediate message via delayedMessageCallback',
               {
-                content: content.substring(0, 100) + '...',
-                contentType,
+                content: message.content.payload.substring(0, 100) + '...',
               },
             );
-            delayedMessageCallback(intermediateMessage);
+            delayedMessageCallback(message);
           }
         },
         onError: (error) => {
           // Handle error in delayed message
-          const errorMessage = createMessageEnvelopeWithContent(
-            messageEnvelope,
-            `Error in streaming response: ${error.message}`,
-          );
           if (
             delayedMessageCallback &&
             typeof delayedMessageCallback === 'function'
           ) {
-            delayedMessageCallback(errorMessage);
+            delayedMessageCallback({
+              content: {
+                type: 'text/plain',
+                payload: `Error in streaming response: ${error.message}`,
+              },
+            });
           }
         },
       },
       getHistory,
     ).catch((error) => {
       // Handle any errors in the streaming process
-      const errorMessage = createMessageEnvelopeWithContent(
-        messageEnvelope,
-        `Error in streaming response: ${error.message}`,
-      );
       if (
         delayedMessageCallback &&
         typeof delayedMessageCallback === 'function'
       ) {
-        delayedMessageCallback(errorMessage);
+        delayedMessageCallback({
+          content: {
+            type: 'text/plain',
+            payload: `Error in streaming response: ${error.message}`,
+          },
+        });
       }
     });
 
-    return immediateResponse;
-  }
-
-  /**
-   * Process the request asynchronously (this will trigger tool execution)
-   */
-  private async processRequestAsync(
-    messageEnvelope: TConversationTextMessageEnvelope,
-    getHistory?: () => IConversationMessage[],
-  ): Promise<void> {
-    try {
-      // Get conversation history
-      const history = getHistory ? getHistory() : this.conversationHistory;
-
-      // Build message history for OpenAI
-      const messages = this.buildOpenAIMessageHistory(
-        messageEnvelope.envelopePayload.content.payload,
-        history,
-      );
-
-      // Create the OpenAI request
-      const request: OpenAI.Chat.Completions.ChatCompletionCreateParams = {
-        model: this.LLModelName,
-        max_tokens: 1024,
-        messages,
-        tools: this.tools,
-        stream: false,
-      };
-
-      // Make the API call
-      const client = this.getClient();
-      const response = await client.chat.completions.create(request);
-
-      let responseText = '';
-      if ('choices' in response && response.choices[0]?.message) {
-        responseText = response.choices[0].message.content || '';
-      }
-
-      // Handle tool calls if any
-      if (response.choices[0]?.message?.tool_calls) {
-        const toolCalls = response.choices[0].message.tool_calls;
-        this.logger.log(`Tool calls found: ${toolCalls.length}`);
-
-        // Execute all tool calls
-        const toolResults = await this.executeToolAllCalls(toolCalls);
-
-        // Handle tool calls if any
-        if (toolResults.length > 0) {
-          // Check if any tools failed
-          const hasErrors = toolResults.some(
-            (result) =>
-              result.content &&
-              typeof result.content === 'object' &&
-              result.content.errorItems &&
-              result.content.errorItems.length > 0,
-          );
-
-          if (hasErrors) {
-            // Only use fallback for actual errors
-            responseText = this.createFallbackResponse(toolResults);
-          } else {
-            // Tools succeeded but AI didn't generate content - create meaningful response from tool data
-            const successResult = toolResults[0];
-            if (successResult.content && successResult.content.response) {
-              const data = successResult.content.response;
-
-              // Create a comprehensive summary of the form data
-              let summary = `## Form Overview: ${data.formId}\n\n`;
-
-              if (data.url) {
-                summary += `**Form URL:** ${data.url}\n`;
-              }
-              if (data.submissions !== undefined) {
-                summary += `**Total Submissions:** ${data.submissions}\n`;
-              }
-              if (data.submissionsToday !== undefined) {
-                summary += `**Submissions Today:** ${data.submissionsToday}\n`;
-              }
-              if (data.version) {
-                summary += `**Version:** ${data.version}\n`;
-              }
-              if (data.fieldCount) {
-                summary += `**Field Count:** ${data.fieldCount}\n`;
-              }
-              if (data.isActive !== undefined) {
-                summary += `**Status:** ${data.isActive ? 'Active' : 'Inactive'}\n`;
-              }
-
-              if (data.submitActions && data.submitActions.length > 0) {
-                summary += `\n**Submit Actions (${data.submitActions.length}):**\n`;
-                data.submitActions.forEach((action: any) => {
-                  summary += `• ${action.name} (ID: ${action.id})\n`;
-                });
-              }
-
-              if (
-                data.notificationEmails &&
-                data.notificationEmails.length > 0
-              ) {
-                summary += `\n**Notification Emails (${data.notificationEmails.length}):**\n`;
-                data.notificationEmails.forEach((email: any) => {
-                  summary += `• ${email.name} (ID: ${email.id})\n`;
-                });
-              }
-
-              if (
-                data.confirmationEmails &&
-                data.confirmationEmails.length > 0
-              ) {
-                summary += `\n**Confirmation Emails (${data.confirmationEmails.length}):**\n`;
-                data.confirmationEmails.forEach((email: any) => {
-                  summary += `• ${email.name} (ID: ${email.id})\n`;
-                });
-              }
-
-              responseText = summary;
-            }
-          }
-        }
-      }
-
-      // Create response envelope
-      const responseEnvelope: TConversationTextMessageEnvelope = {
-        messageId: `response-${Date.now()}`,
-        requestOrResponse: 'response',
-        envelopePayload: {
-          messageId: `response-msg-${Date.now()}`,
-          author_role: 'assistant',
-          content: {
-            type: 'text/plain',
-            payload:
-              responseText ||
-              'I processed your request but have no response to provide.',
-          },
-          created_at: new Date().toISOString(),
-          estimated_token_count: this.estimateTokens(responseText),
-        },
-      };
-
-      // Send the response to Slack if we have a callback
-      if (this.currentCallback) {
-        this.logger.log(
-          `Sending response to Slack: ${responseEnvelope.envelopePayload.content.payload}`,
-        );
-        this.currentCallback(responseEnvelope);
-        // Mark that we've sent a final response to prevent duplicate from monitoring
-        this.hasSentFinalResponse = true;
-      } else {
-        this.logger.warn('No callback available to send response to Slack');
-      }
-    } catch (error) {
-      this.logger.error('Error processing request asynchronously:', error);
-      // Update tool status to indicate error
-      this.updateToolStatus('request-processing', 'error');
-    }
+    return immediateResponse.content;
   }
 
   /**
    * Stop all active monitoring
    */
-  public stopMonitoring(): void {
-    this.isActivelyListeningForResponse = false;
-    this.activeMonitoringIntervals.forEach((interval) => {
-      clearInterval(interval);
-    });
-    this.activeMonitoringIntervals.clear();
-    this.toolStatus = { executing: [], completed: [], errors: [] };
-    this.readMessageIds.clear();
-    this.lastToolResults = [];
-    this.currentCallback = null;
-    this.hasSentFinalResponse = false;
-    this.logger.log('All monitoring stopped');
-  }
+  // public stopMonitoring(): void {
+  //   this.isActivelyListeningForResponse = false;
+  //   this.activeMonitoringIntervals.forEach((interval) => {
+  //     clearInterval(interval);
+  //   });
+  //   this.activeMonitoringIntervals.clear();
+  //   this.toolStatus = { executing: [], completed: [], errors: [] };
+  //   this.readMessageIds.clear();
+  //   this.lastToolResults = [];
+  //   this.currentCallback = null;
+  //   this.hasSentFinalResponse = false;
+  //   this.logger.log('All monitoring stopped');
+  // }
 }

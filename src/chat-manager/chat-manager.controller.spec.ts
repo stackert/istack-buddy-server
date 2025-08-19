@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ChatManagerController } from './chat-manager.controller';
 import { ChatManagerService } from './chat-manager.service';
-import { ConversationListSlackAppService } from '../ConversationLists/ConversationListSlackAppService';
+
 import { ChatConversationListService } from '../ConversationLists/ChatConversationListService';
 import {
   CreateMessageDto,
@@ -59,7 +59,7 @@ describe('ChatManagerController', () => {
           provide: AuthenticationService,
           useValue: mockAuthenticationService,
         },
-        ConversationListSlackAppService,
+
         ChatConversationListService,
       ],
     }).compile();
@@ -183,7 +183,7 @@ describe('ChatManagerController', () => {
           id: 'msg-1',
           content: 'Test message',
           conversationId: 'conv-123',
-          fromUserId: 'user-123',
+          authorUserId: 'user-123',
           fromRole: UserRole.CUSTOMER,
           toRole: UserRole.AGENT,
           messageType: MessageType.TEXT,
@@ -225,7 +225,7 @@ describe('ChatManagerController', () => {
           id: 'msg-1',
           content: 'Message 1',
           conversationId: 'conv-123',
-          fromUserId: 'user-123',
+          authorUserId: 'user-123',
           fromRole: UserRole.CUSTOMER,
           toRole: UserRole.AGENT,
           messageType: MessageType.TEXT,
@@ -236,7 +236,7 @@ describe('ChatManagerController', () => {
           id: 'msg-2',
           content: 'Message 2',
           conversationId: 'conv-123',
-          fromUserId: 'user-123',
+          authorUserId: 'user-123',
           fromRole: UserRole.CUSTOMER,
           toRole: UserRole.AGENT,
           messageType: MessageType.TEXT,

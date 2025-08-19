@@ -1,8 +1,6 @@
 import { AgentRobotParrot } from './AgentRobotParrot';
-import {
-  TConversationTextMessageEnvelope,
-  TConversationTextMessage,
-} from './types';
+import { IConversationMessage } from '../chat-manager/interfaces/message.interface';
+import { TConversationMessageContentString } from './types';
 
 describe('AgentRobotParrot', () => {
   let robot: AgentRobotParrot;
@@ -11,269 +9,240 @@ describe('AgentRobotParrot', () => {
     robot = new AgentRobotParrot();
   });
 
-  describe('Class Properties', () => {
-    it('should have correct name property', () => {
-      expect(robot.name).toBe('AgentRobotParrot');
+  describe('Basic Properties', () => {
+    it('should have correct robot class name', () => {
+      expect(robot.robotClass).toBe('AgentRobotParrot');
     });
 
-    it('should have correct version property', () => {
-      expect(robot.version).toBe('1.0.0');
-    });
-
-    it('should have correct LLModelName property', () => {
-      expect(robot.LLModelName).toBe('openAi.4.3');
-    });
-
-    it('should have correct LLModelVersion property', () => {
-      expect(robot.LLModelVersion).toBe('4.3');
-    });
-
-    it('should inherit getName method from AbstractRobot', () => {
+    it('should return correct name', () => {
       expect(robot.getName()).toBe('AgentRobotParrot');
     });
 
-    it('should inherit getVersion method from AbstractRobot', () => {
+    it('should return correct version', () => {
       expect(robot.getVersion()).toBe('1.0.0');
     });
 
-    it('should have correct robotClass property', () => {
-      expect(robot.robotClass).toBe('AgentRobotParrot');
-    });
-  });
-
-  describe('estimateTokens', () => {
-    it('should estimate tokens correctly', () => {
-      expect(robot.estimateTokens('hello world')).toBe(3); // 11 chars / 4 = 2.75 -> 3
-      expect(robot.estimateTokens('')).toBe(0);
-      expect(robot.estimateTokens('a')).toBe(1);
-    });
-  });
-
-  describe('acceptMessageImmediateResponse', () => {
-    let mockMessageEnvelope: TConversationTextMessageEnvelope;
-    let mockRobotMessage: TConversationTextMessage;
-
-    beforeEach(() => {
-      mockRobotMessage = {
-        messageId: 'agent-msg-123',
-        author_role: 'user',
-        content: {
-          type: 'text/plain',
-          payload: 'Test agent task',
-        },
-        created_at: '2024-01-01T10:00:00Z',
-        estimated_token_count: 10,
-      };
-
-      mockMessageEnvelope = {
-        messageId: 'agent-envelope-123',
-        requestOrResponse: 'request',
-        envelopePayload: mockRobotMessage,
-      };
+    it('should have correct abstract properties', () => {
+      expect(robot.contextWindowSizeInTokens).toBe(4096);
+      expect(robot.LLModelName).toBe('openAi.4.3');
+      expect(robot.LLModelVersion).toBe('4.3');
+      expect(robot.name).toBe('AgentRobotParrot');
+      expect(robot.version).toBe('1.0.0');
     });
 
-    it('should return a promise that resolves immediately', async () => {
-      const result =
-        await robot.acceptMessageImmediateResponse(mockMessageEnvelope);
-
-      expect(result).toBeDefined();
-      expect(result.messageId).toBeDefined();
-      expect(result.envelopePayload).toBeDefined();
-    });
-
-    it('should prefix the original message with a random number', async () => {
-      const result =
-        await robot.acceptMessageImmediateResponse(mockMessageEnvelope);
-
-      expect(result.envelopePayload.content.payload).toMatch(
-        /^\(\d+\) Test agent task$/,
+    it('should have correct static descriptions', () => {
+      expect(AgentRobotParrot.descriptionShort).toContain(
+        'agent robot that parrots task descriptions',
+      );
+      expect(AgentRobotParrot.descriptionLong).toContain(
+        'AgentRobotParrot is a testing and demonstration robot',
       );
     });
+  });
 
-    it('should preserve the message structure', async () => {
-      const result =
-        await robot.acceptMessageImmediateResponse(mockMessageEnvelope);
+  describe('Token Estimation', () => {
+    it('should estimate tokens correctly', () => {
+      expect(robot.estimateTokens('Hello world')).toBe(3); // 11 chars / 4 = 3
+      expect(robot.estimateTokens('')).toBe(0);
+      expect(
+        robot.estimateTokens('A very long message with many characters'),
+      ).toBe(10); // 40 chars / 4 = 10
+    });
+  });
 
-      expect(result.envelopePayload.author_role).toBe('user');
-      expect(result.envelopePayload.created_at).toBe('2024-01-01T10:00:00Z');
-      expect(result.envelopePayload.content.type).toBe('text/plain');
+  describe('Multi-part Response', () => {
+    it('should provide immediate response with random number', async () => {
+      const message: IConversationMessage<TConversationMessageContentString> = {
+        id: 'test-1',
+        content: { type: 'text/plain', payload: 'Test task' },
+        conversationId: 'conv-1',
+        authorUserId: 'user-1',
+        fromRole: 'cx-customer',
+        toRole: 'cx-agent',
+        messageType: 'text',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      const result = await robot.acceptMessageMultiPartResponse(
+        message,
+        () => {},
+      );
+
+      expect(result.type).toBe('text/plain');
+      expect(result.payload).toMatch(/^\(\d+\) Test task$/);
     });
 
-    it('should generate different random numbers for consecutive calls', async () => {
-      const envelope1 = JSON.parse(JSON.stringify(mockMessageEnvelope));
-      const envelope2 = JSON.parse(JSON.stringify(mockMessageEnvelope));
+    it('should call delayed callback with completion message', (done) => {
+      const message: IConversationMessage<TConversationMessageContentString> = {
+        id: 'test-1',
+        content: { type: 'text/plain', payload: 'Test task' },
+        conversationId: 'conv-1',
+        authorUserId: 'user-1',
+        fromRole: 'cx-customer',
+        toRole: 'cx-agent',
+        messageType: 'text',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
 
-      const result1 = await robot.acceptMessageImmediateResponse(envelope1);
-      const result2 = await robot.acceptMessageImmediateResponse(envelope2);
+      let delayedResponse: any = null;
+      const delayedCallback = (response: any) => {
+        delayedResponse = response;
+      };
 
-      const number1 =
-        result1.envelopePayload.content.payload.match(/^\((\d+)\)/)?.[1];
-      const number2 =
-        result2.envelopePayload.content.payload.match(/^\((\d+)\)/)?.[1];
+      robot.acceptMessageMultiPartResponse(message, delayedCallback);
+
+      // Wait for the delayed callback
+      setTimeout(() => {
+        expect(delayedResponse).toBeDefined();
+        expect(delayedResponse.content.type).toBe('text/plain');
+        expect(delayedResponse.content.payload).toMatch(
+          /^\(\d+\) - complete: Test task$/,
+        );
+        done();
+      }, 600);
+    });
+
+    it('should handle empty message content', async () => {
+      const message: IConversationMessage<TConversationMessageContentString> = {
+        id: 'test-1',
+        content: { type: 'text/plain', payload: '' },
+        conversationId: 'conv-1',
+        authorUserId: 'user-1',
+        fromRole: 'cx-customer',
+        toRole: 'cx-agent',
+        messageType: 'text',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      const result = await robot.acceptMessageMultiPartResponse(
+        message,
+        () => {},
+      );
+
+      expect(result.type).toBe('text/plain');
+      expect(result.payload).toMatch(/^\(\d+\) $/);
+    });
+
+    it('should handle long task descriptions', async () => {
+      const longTask =
+        'This is a very long task description that should be handled properly by the agent robot parrot implementation';
+      const message: IConversationMessage<TConversationMessageContentString> = {
+        id: 'test-1',
+        content: { type: 'text/plain', payload: longTask },
+        conversationId: 'conv-1',
+        authorUserId: 'user-1',
+        fromRole: 'cx-customer',
+        toRole: 'cx-agent',
+        messageType: 'text',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      const result = await robot.acceptMessageMultiPartResponse(
+        message,
+        () => {},
+      );
+
+      expect(result.type).toBe('text/plain');
+      expect(result.payload).toMatch(new RegExp(`^\\(\\d+\\) ${longTask}$`));
+    });
+
+    it('should work with history parameter', async () => {
+      const message: IConversationMessage<TConversationMessageContentString> = {
+        id: 'test-1',
+        content: { type: 'text/plain', payload: 'Test task' },
+        conversationId: 'conv-1',
+        authorUserId: 'user-1',
+        fromRole: 'cx-customer',
+        toRole: 'cx-agent',
+        messageType: 'text',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      const history = [
+        {
+          id: 'hist-1',
+          content: { type: 'text/plain', payload: 'Previous task' },
+          conversationId: 'conv-1',
+          authorUserId: 'user-1',
+          fromRole: 'cx-customer',
+          toRole: 'cx-agent',
+          messageType: 'text',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ];
+
+      const getHistory = () => history;
+
+      const result = await robot.acceptMessageMultiPartResponse(
+        message,
+        () => {},
+        getHistory,
+      );
+
+      expect(result.type).toBe('text/plain');
+      expect(result.payload).toMatch(/^\(\d+\) Test task$/);
+    });
+
+    it('should handle null delayed callback gracefully', async () => {
+      const message: IConversationMessage<TConversationMessageContentString> = {
+        id: 'test-1',
+        content: { type: 'text/plain', payload: 'Test task' },
+        conversationId: 'conv-1',
+        authorUserId: 'user-1',
+        fromRole: 'cx-customer',
+        toRole: 'cx-agent',
+        messageType: 'text',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      // Should not throw when callback is null
+      const result = await robot.acceptMessageMultiPartResponse(
+        message,
+        null as any,
+      );
+
+      expect(result.type).toBe('text/plain');
+      expect(result.payload).toMatch(/^\(\d+\) Test task$/);
+    });
+  });
+
+  describe('Random Number Generation', () => {
+    it('should generate different random numbers for different calls', async () => {
+      const message: IConversationMessage<TConversationMessageContentString> = {
+        id: 'test-1',
+        content: { type: 'text/plain', payload: 'Test task' },
+        conversationId: 'conv-1',
+        authorUserId: 'user-1',
+        fromRole: 'cx-customer',
+        toRole: 'cx-agent',
+        messageType: 'text',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      const result1 = await robot.acceptMessageMultiPartResponse(
+        message,
+        () => {},
+      );
+      const result2 = await robot.acceptMessageMultiPartResponse(
+        message,
+        () => {},
+      );
+
+      const number1 = result1.payload.match(/^\((\d+)\)/)?.[1];
+      const number2 = result2.payload.match(/^\((\d+)\)/)?.[1];
 
       expect(number1).toBeDefined();
       expect(number2).toBeDefined();
-    });
-
-    it('should handle empty message string', async () => {
-      mockMessageEnvelope.envelopePayload.content.payload = '';
-
-      const result =
-        await robot.acceptMessageImmediateResponse(mockMessageEnvelope);
-
-      expect(result.envelopePayload.content.payload).toMatch(/^\(\d+\) $/);
-    });
-
-    it('should handle messages with special characters', async () => {
-      mockMessageEnvelope.envelopePayload.content.payload =
-        'Special task: @#$%^&*()';
-
-      const result =
-        await robot.acceptMessageImmediateResponse(mockMessageEnvelope);
-
-      expect(result.envelopePayload.content.payload).toMatch(
-        /^\(\d+\) Special task: @#\$%\^\&\*\(\)$/,
-      );
-    });
-
-    it('should handle very long tasks', async () => {
-      const longTask = 'A'.repeat(1000);
-      mockMessageEnvelope.envelopePayload.content.payload = longTask;
-
-      const result =
-        await robot.acceptMessageImmediateResponse(mockMessageEnvelope);
-
-      expect(result.envelopePayload.content.payload).toMatch(
-        new RegExp(`^\\(\\d+\\) ${longTask}$`),
-      );
-    });
-  });
-
-  describe('acceptMessageMultiPartResponse', () => {
-    let mockMessageEnvelope: TConversationTextMessageEnvelope;
-    let mockRobotMessage: TConversationTextMessage;
-    let mockDelayedCallback: jest.Mock;
-
-    beforeEach(() => {
-      mockRobotMessage = {
-        messageId: 'multipart-agent-msg-123',
-        author_role: 'user',
-        content: {
-          type: 'text/plain',
-          payload: 'Test multipart agent task',
-        },
-        created_at: '2024-01-01T10:00:00Z',
-        estimated_token_count: 15,
-      };
-
-      mockMessageEnvelope = {
-        messageId: 'multipart-agent-envelope-123',
-        requestOrResponse: 'request',
-        envelopePayload: mockRobotMessage,
-      };
-
-      mockDelayedCallback = jest.fn();
-      jest.useFakeTimers();
-    });
-
-    afterEach(() => {
-      jest.useRealTimers();
-    });
-
-    it('should return an immediate response', async () => {
-      const result = await robot.acceptMessageMultiPartResponse(
-        mockMessageEnvelope,
-        mockDelayedCallback,
-      );
-
-      expect(result).toBeDefined();
-      expect(result.envelopePayload.content.payload).toMatch(
-        /^\(\d+\) Test multipart agent task$/,
-      );
-    });
-
-    it('should call delayed callback once after 500ms', async () => {
-      await robot.acceptMessageMultiPartResponse(
-        mockMessageEnvelope,
-        mockDelayedCallback,
-      );
-
-      // Initially no delayed callback
-      expect(mockDelayedCallback).not.toHaveBeenCalled();
-
-      // After 500ms, delayed callback should be called
-      jest.advanceTimersByTime(500);
-      expect(mockDelayedCallback).toHaveBeenCalledTimes(1);
-
-      // Verify the delayed response contains the original message
-      const delayedResponse = mockDelayedCallback.mock.calls[0][0];
-      expect(delayedResponse.envelopePayload.content.payload).toMatch(
-        /^\(\d+\) - complete: Test multipart agent task$/,
-      );
-    });
-
-    it('should handle empty task string in multipart response', async () => {
-      mockMessageEnvelope.envelopePayload.content.payload = '';
-
-      await robot.acceptMessageMultiPartResponse(
-        mockMessageEnvelope,
-        mockDelayedCallback,
-      );
-
-      jest.advanceTimersByTime(500); // Advance enough for callback
-
-      expect(mockDelayedCallback).toHaveBeenCalledTimes(1);
-
-      const delayedResponse = mockDelayedCallback.mock.calls[0][0];
-      expect(delayedResponse.envelopePayload.content.payload).toMatch(
-        /^\(\d+\) - complete: $/,
-      );
-    });
-
-    it('should handle callback errors gracefully', async () => {
-      const errorCallback = jest.fn().mockImplementation(() => {
-        throw new Error('Callback error');
-      });
-
-      // Should not throw even if callback throws
-      await expect(
-        robot.acceptMessageMultiPartResponse(
-          mockMessageEnvelope,
-          errorCallback,
-        ),
-      ).resolves.toBeDefined();
-
-      // The callback error should not prevent execution
-      expect(() => jest.advanceTimersByTime(500)).toThrow('Callback error');
-
-      // Should have attempted to call the callback once despite errors
-      expect(errorCallback).toHaveBeenCalledTimes(1);
-    });
-  });
-
-  describe('Inheritance and Type Checking', () => {
-    it('should be an instance of AgentRobotParrot', () => {
-      expect(robot).toBeInstanceOf(AgentRobotParrot);
-    });
-
-    it('should have the correct constructor name', () => {
-      expect(robot.constructor.name).toBe('AgentRobotParrot');
-    });
-  });
-
-  describe('Static Properties', () => {
-    it('should have static description properties', () => {
-      expect(AgentRobotParrot.descriptionShort).toBeDefined();
-      expect(AgentRobotParrot.descriptionLong).toBeDefined();
-      expect(typeof AgentRobotParrot.descriptionShort).toBe('string');
-      expect(typeof AgentRobotParrot.descriptionLong).toBe('string');
-    });
-
-    it('should have meaningful description content', () => {
-      expect(AgentRobotParrot.descriptionShort.length).toBeGreaterThan(10);
-      expect(AgentRobotParrot.descriptionLong.length).toBeGreaterThan(50);
-      expect(AgentRobotParrot.descriptionShort).toMatch(/agent/i);
-      expect(AgentRobotParrot.descriptionLong).toMatch(/autonomous/i);
+      // Note: There's a small chance these could be the same, but it's very unlikely
+      // In a real test, we might want to run this multiple times or mock Math.random
     });
   });
 });

@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AuthorizationPermissionsService } from './authorization-permissions.service';
 import { LoggerModule } from '../common/logger/logger.module';
+import { UserProfileModule } from '../user-profile/user-profile.module';
 import {
   evaluatePermission,
   getUserEffectivePermissionChain,
@@ -45,7 +46,7 @@ try {
 }
 
 @Module({
-  imports: [LoggerModule],
+  imports: [LoggerModule, UserProfileModule],
   providers: [
     AuthorizationPermissionsService,
     {

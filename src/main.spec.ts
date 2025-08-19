@@ -10,6 +10,7 @@ jest.mock('cookie-parser');
 jest.mock('dotenv');
 jest.mock('express', () => ({
   json: jest.fn(),
+  static: jest.fn().mockReturnValue(jest.fn()),
 }));
 jest.mock('./app.module', () => ({
   AppModule: class MockAppModule {},
@@ -33,6 +34,13 @@ describe('Main Bootstrap Function', () => {
       use: jest.fn(),
       enableCors: jest.fn(),
       listen: jest.fn().mockResolvedValue(undefined),
+      get: jest.fn().mockReturnValue({
+        log: jest.fn(),
+        error: jest.fn(),
+        warn: jest.fn(),
+        debug: jest.fn(),
+        verbose: jest.fn(),
+      }),
     };
 
     // Mock NestFactory
@@ -332,6 +340,10 @@ describe('Main Bootstrap Function', () => {
         'use',
         'enableCors',
         'use',
+        'use',
+        'use',
+        'use',
+        'use',
         'createDocument',
         'setup',
         'listen',
@@ -344,7 +356,7 @@ describe('Main Bootstrap Function', () => {
       // Verify all major bootstrap steps were called
       expect(mockNestFactory.create).toHaveBeenCalledTimes(1);
       expect(mockApp.enableCors).toHaveBeenCalledTimes(1);
-      expect(mockApp.use).toHaveBeenCalledTimes(2);
+      expect(mockApp.use).toHaveBeenCalledTimes(6);
       expect(mockSwaggerModule.createDocument).toHaveBeenCalledTimes(1);
       expect(mockSwaggerModule.setup).toHaveBeenCalledTimes(1);
       expect(mockApp.listen).toHaveBeenCalledTimes(1);
@@ -393,8 +405,8 @@ describe('Main Bootstrap Function', () => {
     it('should configure all required middleware', async () => {
       await bootstrap();
 
-      // Should have 2 middleware calls: Slack webhook + cookie parser
-      expect(mockApp.use).toHaveBeenCalledTimes(2);
+      // Should have 6 middleware calls: Slack webhook + cookie parser + 4 static file serving
+      expect(mockApp.use).toHaveBeenCalledTimes(6);
 
       // Check Slack webhook middleware
       const slackCall = mockApp.use.mock.calls.find(

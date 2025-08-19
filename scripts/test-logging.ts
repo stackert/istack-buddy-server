@@ -64,10 +64,7 @@ async function testLogging() {
   );
 
   console.log('\nLogging test completed!');
-  console.log('Check the following files:');
-  console.log('- logs/server.json (all logs in JSON format)');
-  console.log('- logs/error.json (error logs only)');
-  console.log('- Console output (colored in development)');
+  console.log('Check the console output for NestJS Logger messages.');
 }
 
 testLogging().catch(console.error);

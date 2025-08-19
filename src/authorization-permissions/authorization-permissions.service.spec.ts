@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { CustomLoggerService } from '../common/logger/custom-logger.service';
 import { AuthorizationPermissionsService } from './authorization-permissions.service';
+import { UserProfileService } from '../user-profile/user-profile.service';
 
 describe('AuthorizationPermissionsService', () => {
   let service: AuthorizationPermissionsService;
@@ -39,6 +40,23 @@ describe('AuthorizationPermissionsService', () => {
     user_group_memberships: {
       user1: ['admin-group'],
       user2: ['moderator-group'],
+    },
+  };
+
+  const mockUserProfilesData = {
+    users: {
+      user1: {
+        id: 'user1',
+        email: 'user1@example.com',
+        username: 'user1',
+        first_name: 'User',
+        last_name: 'One',
+        account_type_informal: 'STUDENT',
+        current_account_status: 'active',
+        is_email_verified: true,
+        created_at: '2024-01-01T00:00:00.000Z',
+        last_login: '2024-01-01T00:00:00.000Z',
+      },
     },
   };
 
@@ -82,6 +100,15 @@ describe('AuthorizationPermissionsService', () => {
           },
         },
         {
+          provide: UserProfileService,
+          useValue: {
+            addTemporaryUser: jest.fn(),
+            getUserProfileById: jest.fn(),
+            getUserProfileByEmail: jest.fn(),
+            updateUserProfile: jest.fn(),
+          },
+        },
+        {
           provide: 'PermissionEvaluator',
           useValue: {
             evaluatePermission: mockEvaluatePermission,
@@ -100,6 +127,10 @@ describe('AuthorizationPermissionsService', () => {
         {
           provide: 'UserGroupMembershipsData',
           useValue: mockUserGroupMembershipsData,
+        },
+        {
+          provide: 'UserProfilesData',
+          useValue: mockUserProfilesData,
         },
       ],
     }).compile();

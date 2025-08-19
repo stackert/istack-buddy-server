@@ -1,9 +1,14 @@
 import { AbstractRobot } from './AbstractRobot';
 import type {
-  TConversationTextMessageEnvelope,
   IStreamingCallbacks,
+  TConversationMessageContentString,
 } from './types';
-import type { IConversationMessage } from '../chat-manager/interfaces/message.interface';
+import type {
+  IConversationMessage,
+  IConversationMessageAnthropic,
+} from '../chat-manager/interfaces/message.interface';
+import type { TConversationMessageContent } from '../ConversationLists/types';
+import { UserRole } from '../chat-manager/dto/create-message.dto';
 
 /**
  * Abstract chat robot class that extends the base robot functionality
@@ -12,9 +17,9 @@ import type { IConversationMessage } from '../chat-manager/interfaces/message.in
 export abstract class AbstractRobotChat extends AbstractRobot {
   // streaming response
   public abstract acceptMessageStreamResponse(
-    messageEnvelope: TConversationTextMessageEnvelope,
+    message: IConversationMessage<TConversationMessageContentString>,
     callbacks: IStreamingCallbacks,
-    getHistory?: () => IConversationMessage[],
+    getHistory?: () => IConversationMessage<TConversationMessageContent>[],
   ): Promise<void>;
 
   // immediate response
@@ -22,7 +27,24 @@ export abstract class AbstractRobotChat extends AbstractRobot {
   // Some clients can't support streaming response.
   // so they will have to wait for completed response
   public abstract acceptMessageImmediateResponse(
-    messageEnvelope: TConversationTextMessageEnvelope,
-    getHistory?: () => IConversationMessage[],
-  ): Promise<TConversationTextMessageEnvelope>;
+    message: IConversationMessage<TConversationMessageContentString>,
+    getHistory?: () => IConversationMessage<TConversationMessageContent>[],
+  ): Promise<
+    Pick<IConversationMessage<TConversationMessageContentString>, 'content'>
+  >;
+
+  /**
+   * Override the transformer to use Anthropic format for all chat robots
+   */
+  public getGetFromRobotToConversationTransformer(): (
+    msg: IConversationMessage,
+  ) => IConversationMessageAnthropic {
+    return (msg) => ({
+      role:
+        msg.fromRole === UserRole.CUSTOMER || msg.fromRole === UserRole.AGENT
+          ? 'user'
+          : 'assistant',
+      content: (msg.content as any).payload,
+    });
+  }
 }

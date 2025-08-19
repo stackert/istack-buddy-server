@@ -50,8 +50,7 @@
     "reflect-metadata": "^0.2.0",
     "rxjs": "^7.8.1",
     "swagger-ui-express": "^5.0.1",
-    "uuid": "^11.1.0",
-    "winston": "^3.17.0"
+    "uuid": "^11.1.0"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.0.0",
@@ -96,7 +95,11 @@
       "dist",
       "coverage",
       ".spec.ts",
-      ".d.ts"
+      ".d.ts",
+      "src/robots/retired"
+    ],
+    "testPathIgnorePatterns": [
+      "src/robots/retired"
     ],
     "rootDir": "src",
     "testRegex": ".*\\.spec\\.ts$",
@@ -119,7 +122,8 @@
       "!**/*.spec.ts",
       "!**/*.d.ts",
       "!**/node_modules/**",
-      "!**/dist/**"
+      "!**/dist/**",
+      "!**/src/robots/retired/**"
     ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node",

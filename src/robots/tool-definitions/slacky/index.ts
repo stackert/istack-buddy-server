@@ -1,6 +1,8 @@
 import { slackyToolDefinitions } from './slackyToolDefinitions';
 import { performSlackyToolCall } from './performSlackyToolCall';
 import type { TAnthropicIstackToolSet } from './types';
+export { ObservationMakerViewer } from './ObservationMakerViewer';
+export * from './slack-formatters';
 
 // Export types
 export type {

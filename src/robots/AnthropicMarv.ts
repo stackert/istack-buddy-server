@@ -1,39 +1,28 @@
 import { AbstractRobotChat } from './AbstractRobotChat';
 import type {
-  TConversationTextMessageEnvelope,
   IStreamingCallbacks,
+  TConversationMessageContentString,
 } from './types';
 import {
   IConversationMessage,
   IConversationMessageAnthropic,
 } from '../chat-manager/interfaces/message.interface';
+import type { TConversationMessageContent } from '../ConversationLists/types';
 import { UserRole } from '../chat-manager/dto/create-message.dto';
 import Anthropic from '@anthropic-ai/sdk';
 import { marvToolSet } from './tool-definitions/marv';
+import { CustomLoggerService } from '../common/logger/custom-logger.service';
 
 // Helper functions for the streaming pattern
 const noOp = (...args: any[]) => {};
-
-// Factory for creating message envelope with updated content
-const createMessageEnvelopeWithContent = (
-  originalEnvelope: TConversationTextMessageEnvelope,
-  newContent: string,
-): TConversationTextMessageEnvelope => ({
-  ...originalEnvelope,
-  envelopePayload: {
-    ...originalEnvelope.envelopePayload,
-    content: {
-      ...originalEnvelope.envelopePayload.content,
-      payload: newContent,
-    },
-  },
-});
 
 /**
  * Anthropic Marv - Specialized Formstack API Robot
  * Focused on Formstack form management and field operations
  */
 export class AnthropicMarv extends AbstractRobotChat {
+  private readonly logger = new CustomLoggerService();
+
   // Required properties from AbstractRobot
   public readonly contextWindowSizeInTokens: number = 200000;
   public readonly LLModelName: string = 'claude-3-5-sonnet-20241022';
@@ -116,13 +105,13 @@ Your goal is to help users efficiently manage their Formstack forms through thes
   }
 
   /**
-   * Convert our message envelope to Anthropic format
+   * Convert our message to Anthropic format
    */
   private createAnthropicMessageRequest(
-    messageEnvelope: TConversationTextMessageEnvelope,
-    getHistory?: () => IConversationMessage[],
+    message: IConversationMessage<TConversationMessageContentString>,
+    getHistory?: () => IConversationMessage<TConversationMessageContent>[],
   ): Anthropic.Messages.MessageCreateParams {
-    const userMessage = messageEnvelope.envelopePayload.content.payload;
+    const userMessage = message.content.payload;
 
     // Build conversation history if provided
     const messages: Anthropic.Messages.MessageParam[] = [];
@@ -189,13 +178,12 @@ Your goal is to help users efficiently manage their Formstack forms through thes
 
       // If there's a chat response, send it as a full message with JSON content type
       if (chatResponse && onFullMessageReceived) {
-        console.log(
-          'Sending chat response to onFullMessageReceived:',
-          chatResponse.message.substring(0, 100) + '...',
+        this.logger.log(
+          `Sending chat response to onFullMessageReceived: ${chatResponse.message.substring(0, 100)}...`,
         );
         onFullMessageReceived(chatResponse.message, 'application/json');
       } else {
-        console.log(
+        this.logger.warn(
           'No chat response or onFullMessageReceived callback available',
         );
       }
@@ -213,9 +201,9 @@ Your goal is to help users efficiently manage their Formstack forms through thes
    * Handle streaming response using Anthropic's streaming API
    */
   public async acceptMessageStreamResponse(
-    messageEnvelope: TConversationTextMessageEnvelope,
+    message: IConversationMessage<TConversationMessageContentString>,
     callbacks: IStreamingCallbacks,
-    getHistory?: () => IConversationMessage[],
+    getHistory?: () => IConversationMessage<TConversationMessageContent>[],
   ): Promise<void> {
     try {
       // if (true && !process.env.DOES_NOT_EXIST) {
@@ -223,14 +211,11 @@ Your goal is to help users efficiently manage their Formstack forms through thes
       // }
 
       const client = this.getClient();
-      const request = this.createAnthropicMessageRequest(
-        messageEnvelope,
-        getHistory,
-      );
+      const request = this.createAnthropicMessageRequest(message, getHistory);
 
       // Call onStreamStart if provided
       if (callbacks.onStreamStart) {
-        callbacks.onStreamStart(messageEnvelope);
+        callbacks.onStreamStart(message);
       }
 
       const stream = await client.messages.create({
@@ -283,11 +268,7 @@ Your goal is to help users efficiently manage their Formstack forms through thes
               continue;
             }
           }
-          const toolResult = await this.executeToolCall(
-            toolUse.name,
-            toolArgs,
-            callbacks.onFullMessageReceived,
-          );
+          const toolResult = await this.executeToolCall(toolUse.name, toolArgs);
           callbacks.onStreamChunkReceived(`\n\n${toolResult}`);
           accumulatedContent += `\n\n${toolResult}`;
         } catch (error) {
@@ -300,7 +281,7 @@ Your goal is to help users efficiently manage their Formstack forms through thes
 
       // Call onStreamFinished with minimal data
       if (typeof callbacks.onStreamFinished === 'function') {
-        callbacks.onStreamFinished(accumulatedContent, 'assistant');
+        callbacks.onStreamFinished(message);
       }
     } catch (error) {
       const errorMessage =
@@ -324,30 +305,33 @@ Your goal is to help users efficiently manage their Formstack forms through thes
    * WARN - THESE CALL BACKS ARE STUBBED AND SERVE NO PURPOSE
    */
   public async acceptMessageImmediateResponse(
-    messageEnvelope: TConversationTextMessageEnvelope,
-    getHistory?: () => IConversationMessage[],
-  ): Promise<TConversationTextMessageEnvelope> {
+    message: IConversationMessage<TConversationMessageContentString>,
+    getHistory?: () => IConversationMessage<TConversationMessageContent>[],
+  ): Promise<
+    Pick<IConversationMessage<TConversationMessageContentString>, 'content'>
+  > {
     try {
       // Use the streaming pattern to get the complete response
-      let finalResponse: TConversationTextMessageEnvelope | null = null;
+      let finalContent: TConversationMessageContentString | null = null;
       let accumulatedContent = '';
 
       await this.acceptMessageStreamResponse(
-        messageEnvelope,
+        message,
         {
           onStreamChunkReceived: (chunk: string) => {
-            if (chunk !== null) {
-              accumulatedContent += chunk;
-            }
+            accumulatedContent += chunk;
           },
           onStreamStart: (message) => {
             // Handle stream start if needed
           },
-          onStreamFinished: (content: string, authorRole: string) => {
-            // Store the content for return
-            accumulatedContent = content;
+          onStreamFinished: (message) => {
+            // Create the final response
+            finalContent = {
+              type: 'text/plain',
+              payload: accumulatedContent,
+            };
           },
-          onFullMessageReceived: (content: string) => {
+          onFullMessageReceived: (message) => {
             // Handle full message if needed
           },
           onError: (error) => {
@@ -357,42 +341,24 @@ Your goal is to help users efficiently manage their Formstack forms through thes
         getHistory,
       );
 
-      // Create the final response envelope with minimal data
-      finalResponse = {
-        messageId: '', // Will be set by conversation manager
-        requestOrResponse: 'response',
-        envelopePayload: {
-          messageId: '', // Will be set by conversation manager
-          author_role: 'assistant',
-          content: {
-            type: 'text/plain',
-            payload: accumulatedContent,
-          },
-          created_at: new Date().toISOString(),
-          estimated_token_count: this.estimateTokens(accumulatedContent),
-        },
-      };
+      if (!finalContent) {
+        // Fallback to accumulated content if streaming didn't work
+        finalContent = {
+          type: 'text/plain',
+          payload: accumulatedContent || 'No response generated',
+        };
+      }
 
-      return finalResponse;
+      return { content: finalContent };
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
-      const errorResponse: TConversationTextMessageEnvelope = {
-        messageId: '', // Will be set by conversation manager
-        requestOrResponse: 'response',
-        envelopePayload: {
-          messageId: '', // Will be set by conversation manager
-          author_role: 'assistant',
-          content: {
-            type: 'text/plain',
-            payload: `Error: ${errorMessage}`,
-          },
-          created_at: new Date().toISOString(),
-          estimated_token_count: this.estimateTokens(errorMessage),
+      return {
+        content: {
+          type: 'text/plain',
+          payload: `Error: ${errorMessage}`,
         },
       };
-
-      return errorResponse;
     }
   }
 
@@ -401,21 +367,24 @@ Your goal is to help users efficiently manage their Formstack forms through thes
    * Calls acceptMessageStreamResponse and sends immediate response, then promises to send second message when streaming completes
    */
   public async acceptMessageMultiPartResponse(
-    messageEnvelope: TConversationTextMessageEnvelope,
+    message: IConversationMessage<TConversationMessageContentString>,
     delayedMessageCallback: (
-      response: TConversationTextMessageEnvelope,
+      response: Pick<
+        IConversationMessage<TConversationMessageContentString>,
+        'content'
+      >,
     ) => void,
-    getHistory?: () => IConversationMessage[],
-  ): Promise<TConversationTextMessageEnvelope> {
-    // Send immediate response first - TODO: Change to use acceptMessageStreamResponse directly
+    getHistory?: () => IConversationMessage<TConversationMessageContent>[],
+  ): Promise<TConversationMessageContentString> {
+    // Send immediate response first
     const immediateResponse = await this.acceptMessageImmediateResponse(
-      messageEnvelope,
+      message,
       getHistory,
     );
 
     // Start streaming in background and promise to send delayed message when complete
     this.acceptMessageStreamResponse(
-      messageEnvelope,
+      message,
       {
         onStreamChunkReceived: (chunk: string) => {
           // Handle chunks if needed
@@ -423,62 +392,57 @@ Your goal is to help users efficiently manage their Formstack forms through thes
         onStreamStart: (message) => {
           // Handle stream start if needed
         },
-        onStreamFinished: (content: string, authorRole: string) => {
-          // Create a minimal message envelope for the callback
-          const finishedMessage: TConversationTextMessageEnvelope = {
-            messageId: '', // Will be set by conversation manager
-            requestOrResponse: 'response',
-            envelopePayload: {
-              messageId: '', // Will be set by conversation manager
-              author_role: authorRole as any,
-              content: {
-                type: 'text/plain',
-                payload: content,
-              },
-              created_at: new Date().toISOString(),
-              estimated_token_count: this.estimateTokens(content),
-            },
-          };
+        onStreamFinished: (message) => {
           // Send the complete response as delayed message
           if (
             delayedMessageCallback &&
             typeof delayedMessageCallback === 'function'
           ) {
-            delayedMessageCallback(finishedMessage);
+            delayedMessageCallback(message);
           }
         },
-        onFullMessageReceived: (content: string) => {
+        onFullMessageReceived: (message) => {
           // Handle full message if needed
         },
         onError: (error) => {
           // Handle error in delayed message
-          const errorMessage = createMessageEnvelopeWithContent(
-            messageEnvelope,
-            `Error in streaming response: ${error.message}`,
-          );
+          const errorResponse: Pick<
+            IConversationMessage<TConversationMessageContentString>,
+            'content'
+          > = {
+            content: {
+              type: 'text/plain',
+              payload: `Error in streaming response: ${error.message}`,
+            },
+          };
           if (
             delayedMessageCallback &&
             typeof delayedMessageCallback === 'function'
           ) {
-            delayedMessageCallback(errorMessage);
+            delayedMessageCallback(errorResponse);
           }
         },
       },
       getHistory,
     ).catch((error) => {
       // Handle any errors in the streaming process
-      const errorMessage = createMessageEnvelopeWithContent(
-        messageEnvelope,
-        `Error in streaming response: ${error.message}`,
-      );
+      const errorResponse: Pick<
+        IConversationMessage<TConversationMessageContentString>,
+        'content'
+      > = {
+        content: {
+          type: 'text/plain',
+          payload: `Error in streaming response: ${error.message}`,
+        },
+      };
       if (
         delayedMessageCallback &&
         typeof delayedMessageCallback === 'function'
       ) {
-        delayedMessageCallback(errorMessage);
+        delayedMessageCallback(errorResponse);
       }
     });
 
-    return immediateResponse;
+    return immediateResponse.content;
   }
 }

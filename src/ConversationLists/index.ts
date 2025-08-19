@@ -1,17 +1,5 @@
 // Export the core services
-export { ConversationListService } from './ConversationListService';
-export { ConversationListSlackAppService } from './ConversationListSlackAppService';
-
-// Export the NestJS module
-export { ConversationListServiceModule } from './ConversationListService.module';
-
-// Export existing conversation list classes
-export {
-  ConversationListSlackApp,
-  // ConversationListItem,
-  // ConversationListFactory,
-  // ConversationMessageFactory,
-} from './ConversationListSlackApp';
+// export { ConversationListService } from './ConversationListService';
 
 // export { ConversationListCxGroup } from './ConversationListCxGroup.ts.hidden';
 

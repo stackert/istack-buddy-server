@@ -1,18 +1,8 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { AbstractRobot } from './AbstractRobot';
-import { ChatRobotParrot } from './ChatRobotParrot';
 import { AgentRobotParrot } from './AgentRobotParrot';
-import { RobotChatOpenAI } from './RobotChatOpenAI';
-import { RobotChatAnthropic } from './RobotChatAnthropic';
-import { SlackyAnthropicAgent } from './SlackyAnthropicAgent';
-import { MarvOpenAiAgent } from './MarvOpenAiAgent';
 import { SlackyOpenAiAgent } from './SlackyOpenAiAgent';
 import { AnthropicMarv } from './AnthropicMarv';
-// import { PseudoRobotRouter } from './PseudoRobotRouter.ts.hidden';
-// import { PseudoRobotRouterSuggestions } from './PseudoRobotRouterSuggestions.ts.hidden';
-// import { PseudoRobotDocumentationSuggestions } from './PseudoRobotDocumentationSuggestions.ts.hidden';
-import { SlackAgentCoreFormsParrot } from './SlackAgents/SlackAgentCoreFormsParrot';
-import { SlackAgentCoreFormsSsoAutofillParrot } from './SlackAgents/SlackAgentCoreFormsSsoAutofillParrot';
 
 @Injectable()
 export class RobotService implements OnModuleInit {
@@ -39,16 +29,9 @@ export class RobotService implements OnModuleInit {
 
       // Create AgentRobotParrot instances with the names of real robots
       const robotNames = [
-        'ChatRobotParrot',
         'AgentRobotParrot',
-        'RobotChatOpenAI',
-        'RobotChatAnthropic',
-        'SlackyAnthropicAgent',
-        'MarvOpenAiAgent',
         'SlackyOpenAiAgent',
         'AnthropicMarv',
-        'SlackAgentCoreFormsParrot',
-        'SlackAgentCoreFormsSsoAutofillParrot',
       ];
 
       robotNames.forEach((robotName) => {
@@ -61,19 +44,9 @@ export class RobotService implements OnModuleInit {
     } else {
       // Normal robot initialization - using real robots (not parrots)
       const robotInstances: AbstractRobot[] = [
-        new ChatRobotParrot(),
         new AgentRobotParrot(),
-        new RobotChatOpenAI(),
-        new RobotChatAnthropic(),
-        new SlackyAnthropicAgent(),
-        new MarvOpenAiAgent(),
         new SlackyOpenAiAgent(),
         new AnthropicMarv(),
-        // new PseudoRobotRouter(),
-        // new PseudoRobotRouterSuggestions(),
-        // new PseudoRobotDocumentationSuggestions(),
-        new SlackAgentCoreFormsParrot(),
-        new SlackAgentCoreFormsSsoAutofillParrot(),
       ];
 
       robotInstances.forEach((robot) => {

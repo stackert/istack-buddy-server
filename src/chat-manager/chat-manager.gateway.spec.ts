@@ -13,7 +13,7 @@ jest.mock('../common/logger/custom-logger.service', () => ({
 import { Test, TestingModule } from '@nestjs/testing';
 import { ChatManagerGateway } from './chat-manager.gateway';
 import { ChatManagerService } from './chat-manager.service';
-import { ConversationListSlackAppService } from '../ConversationLists/ConversationListSlackAppService';
+
 import { ChatConversationListService } from '../ConversationLists/ChatConversationListService';
 import {
   CreateMessageDto,
@@ -59,7 +59,7 @@ describe('ChatManagerGateway', () => {
           provide: RobotService,
           useValue: mockRobotService,
         },
-        ConversationListSlackAppService,
+
         ChatConversationListService,
       ],
     }).compile();

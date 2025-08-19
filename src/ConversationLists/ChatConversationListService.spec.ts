@@ -3,6 +3,7 @@ import { ChatConversationListService } from './ChatConversationListService';
 import { ChatConversationList } from './ChatConversationList';
 import { IConversationMessage } from '../chat-manager/interfaces/message.interface';
 import { MessageType, UserRole } from '../chat-manager/dto/create-message.dto';
+import { mockConversationMessages } from '../../test-data/mocks/conversation-messages';
 
 describe('ChatConversationListService', () => {
   let service: ChatConversationListService;
@@ -17,123 +18,137 @@ describe('ChatConversationListService', () => {
     );
   });
 
-  afterEach(() => {
-    service.clearAllConversations();
-  });
-
-  it('should be defined', () => {
-    expect(service).toBeDefined();
-  });
-
   describe('getConversationById', () => {
     it('should return undefined for non-existent conversation', () => {
-      const result = service.getConversationById('non-existent');
+      const result = service.getConversationById('non-existent-id');
       expect(result).toBeUndefined();
     });
 
     it('should return conversation when it exists', () => {
-      const conversation = service.getConversationOrCreate('test-conversation');
-      const result = service.getConversationById('test-conversation');
+      const conversationId = 'test-conversation';
+      const conversation = service.getConversationOrCreate(conversationId);
+
+      const result = service.getConversationById(conversationId);
       expect(result).toBe(conversation);
     });
   });
 
   describe('getConversationOrCreate', () => {
-    it('should create new conversation when it does not exist', () => {
-      const conversation = service.getConversationOrCreate('new-conversation');
-      expect(conversation).toBeInstanceOf(ChatConversationList);
-      expect(service.hasConversation('new-conversation')).toBe(true);
+    it('should return existing conversation', () => {
+      const conversationId = 'test-conversation';
+      const conversation1 = service.getConversationOrCreate(conversationId);
+      const conversation2 = service.getConversationOrCreate(conversationId);
+
+      expect(conversation1).toBe(conversation2);
     });
 
-    it('should return existing conversation when it exists', () => {
-      const firstCall = service.getConversationOrCreate('test-conversation');
-      const secondCall = service.getConversationOrCreate('test-conversation');
-      expect(firstCall).toBe(secondCall);
+    it('should create new conversation when it does not exist', () => {
+      const conversationId = 'new-conversation';
+      const conversation = service.getConversationOrCreate(conversationId);
+
+      expect(conversation).toBeInstanceOf(ChatConversationList);
+      expect(service.getConversationById(conversationId)).toBe(conversation);
     });
   });
 
   describe('hasConversation', () => {
     it('should return false for non-existent conversation', () => {
-      expect(service.hasConversation('non-existent')).toBe(false);
+      const result = service.hasConversation('non-existent-id');
+      expect(result).toBe(false);
     });
 
     it('should return true for existing conversation', () => {
-      service.getConversationOrCreate('test-conversation');
-      expect(service.hasConversation('test-conversation')).toBe(true);
+      const conversationId = 'test-conversation';
+      service.getConversationOrCreate(conversationId);
+
+      const result = service.hasConversation(conversationId);
+      expect(result).toBe(true);
     });
   });
 
   describe('removeConversation', () => {
     it('should return false when conversation does not exist', () => {
-      const result = service.removeConversation('non-existent');
+      const result = service.removeConversation('non-existent-id');
       expect(result).toBe(false);
     });
 
     it('should remove existing conversation and return true', () => {
-      service.getConversationOrCreate('test-conversation');
-      expect(service.hasConversation('test-conversation')).toBe(true);
+      const conversationId = 'test-conversation';
+      service.getConversationOrCreate(conversationId);
 
-      const result = service.removeConversation('test-conversation');
+      expect(service.hasConversation(conversationId)).toBe(true);
+
+      const result = service.removeConversation(conversationId);
       expect(result).toBe(true);
-      expect(service.hasConversation('test-conversation')).toBe(false);
+      expect(service.hasConversation(conversationId)).toBe(false);
     });
   });
 
   describe('getAllConversationIds', () => {
     it('should return empty array when no conversations exist', () => {
-      const ids = service.getAllConversationIds();
-      expect(ids).toEqual([]);
+      const result = service.getAllConversationIds();
+      expect(result).toEqual([]);
     });
 
     it('should return all conversation IDs', () => {
-      service.getConversationOrCreate('conv1');
-      service.getConversationOrCreate('conv2');
-      service.getConversationOrCreate('conv3');
+      const conversationId1 = 'conversation-1';
+      const conversationId2 = 'conversation-2';
 
-      const ids = service.getAllConversationIds();
-      expect(ids).toContain('conv1');
-      expect(ids).toContain('conv2');
-      expect(ids).toContain('conv3');
-      expect(ids).toHaveLength(3);
+      service.getConversationOrCreate(conversationId1);
+      service.getConversationOrCreate(conversationId2);
+
+      const result = service.getAllConversationIds();
+      expect(result).toContain(conversationId1);
+      expect(result).toContain(conversationId2);
+      expect(result).toHaveLength(2);
     });
   });
 
   describe('getAllConversations', () => {
     it('should return empty array when no conversations exist', () => {
-      const conversations = service.getAllConversations();
-      expect(conversations).toEqual([]);
+      const result = service.getAllConversations();
+      expect(result).toEqual([]);
     });
 
     it('should return all conversation instances', () => {
-      const conv1 = service.getConversationOrCreate('conv1');
-      const conv2 = service.getConversationOrCreate('conv2');
+      const conversationId1 = 'conversation-1';
+      const conversationId2 = 'conversation-2';
 
-      const conversations = service.getAllConversations();
-      expect(conversations).toContain(conv1);
-      expect(conversations).toContain(conv2);
-      expect(conversations).toHaveLength(2);
+      const conversation1 = service.getConversationOrCreate(conversationId1);
+      const conversation2 = service.getConversationOrCreate(conversationId2);
+
+      const result = service.getAllConversations();
+      expect(result).toContain(conversation1);
+      expect(result).toContain(conversation2);
+      expect(result).toHaveLength(2);
     });
   });
 
   describe('getConversationCount', () => {
     it('should return 0 when no conversations exist', () => {
-      expect(service.getConversationCount()).toBe(0);
+      const result = service.getConversationCount();
+      expect(result).toBe(0);
     });
 
     it('should return correct count of conversations', () => {
-      service.getConversationOrCreate('conv1');
-      service.getConversationOrCreate('conv2');
-      expect(service.getConversationCount()).toBe(2);
+      service.getConversationOrCreate('conversation-1');
+      service.getConversationOrCreate('conversation-2');
+      service.getConversationOrCreate('conversation-3');
+
+      const result = service.getConversationCount();
+      expect(result).toBe(3);
     });
   });
 
   describe('clearAllConversations', () => {
     it('should remove all conversations', () => {
-      service.getConversationOrCreate('conv1');
-      service.getConversationOrCreate('conv2');
+      service.getConversationOrCreate('conversation-1');
+      service.getConversationOrCreate('conversation-2');
+
       expect(service.getConversationCount()).toBe(2);
 
       service.clearAllConversations();
+
       expect(service.getConversationCount()).toBe(0);
       expect(service.getAllConversationIds()).toEqual([]);
     });
@@ -141,391 +156,314 @@ describe('ChatConversationListService', () => {
 
   describe('addMessageToConversation', () => {
     it('should add message to existing conversation', () => {
-      const message: IConversationMessage = {
-        id: 'msg1',
-        content: 'Test message',
-        conversationId: 'conv1',
-        fromUserId: 'user1',
-        fromRole: UserRole.CUSTOMER,
-        toRole: UserRole.AGENT,
-        messageType: MessageType.TEXT,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
+      const conversationId = 'test-conversation';
+      const message = mockConversationMessages.customerMessage('Hello');
 
-      const messageId = service.addMessageToConversation('conv1', message);
-      expect(messageId).toBe('msg1');
+      service.getConversationOrCreate(conversationId);
+      const messageId = service.addMessageToConversation(
+        conversationId,
+        message,
+      );
 
-      const conversation = service.getConversationById('conv1');
-      expect(conversation).toBeDefined();
+      expect(messageId).toBe(message.id);
+
+      const conversation = service.getConversationById(conversationId);
+      const messages = conversation!.getAllChatMessages();
+      expect(messages).toHaveLength(1);
+      expect(messages[0]).toBe(message);
     });
 
     it('should create conversation and add message if conversation does not exist', () => {
-      const message: IConversationMessage = {
-        id: 'msg1',
-        content: 'Test message',
-        conversationId: 'new-conv',
-        fromUserId: 'user1',
-        fromRole: UserRole.CUSTOMER,
-        toRole: UserRole.AGENT,
-        messageType: MessageType.TEXT,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
+      const conversationId = 'new-conversation';
+      const message = mockConversationMessages.customerMessage('Hello');
 
-      const messageId = service.addMessageToConversation('new-conv', message);
-      expect(messageId).toBe('msg1');
-      expect(service.hasConversation('new-conv')).toBe(true);
+      const messageId = service.addMessageToConversation(
+        conversationId,
+        message,
+      );
+
+      expect(messageId).toBe(message.id);
+      expect(service.hasConversation(conversationId)).toBe(true);
+
+      const conversation = service.getConversationById(conversationId);
+      const messages = conversation!.getAllChatMessages();
+      expect(messages).toHaveLength(1);
+      expect(messages[0]).toBe(message);
     });
   });
 
   describe('getFilteredMessages', () => {
     it('should return empty array for non-existent conversation', () => {
-      const messages = service.getFilteredMessages('non-existent', {});
-      expect(messages).toEqual([]);
+      const result = service.getFilteredMessages('non-existent', {});
+      expect(result).toEqual([]);
     });
 
-    it('should return filtered messages from existing conversation', () => {
-      const message1: IConversationMessage = {
-        id: 'msg1',
-        content: 'Message from user1',
-        conversationId: 'conv1',
-        fromUserId: 'user1',
-        fromRole: UserRole.CUSTOMER,
-        toRole: UserRole.AGENT,
-        messageType: MessageType.TEXT,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
+    it('should return filtered messages for existing conversation', () => {
+      const conversationId = 'test-conversation';
+      const message1 = mockConversationMessages.customerMessage('Hello');
+      const message2 = mockConversationMessages.agentMessage('Response');
+      message1.authorUserId = 'user1';
+      message2.authorUserId = 'user2';
 
-      const message2: IConversationMessage = {
-        id: 'msg2',
-        content: 'Message from user2',
-        conversationId: 'conv1',
-        fromUserId: 'user2',
-        fromRole: UserRole.AGENT,
-        toRole: UserRole.CUSTOMER,
-        messageType: MessageType.TEXT,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
+      service.addMessageToConversation(conversationId, message1);
+      service.addMessageToConversation(conversationId, message2);
 
-      service.addMessageToConversation('conv1', message1);
-      service.addMessageToConversation('conv1', message2);
-
-      const filteredMessages = service.getFilteredMessages('conv1', {
-        fromUserId: 'user1',
+      const result = service.getFilteredMessages(conversationId, {
+        authorUserId: 'user1',
       });
-      expect(filteredMessages).toHaveLength(1);
-      expect(filteredMessages[0].fromUserId).toBe('user1');
+      expect(result).toHaveLength(1);
+      expect(result[0]).toBe(message1);
     });
   });
 
   describe('getFilteredRobotMessages', () => {
     it('should return empty array for non-existent conversation', () => {
-      const messages = service.getFilteredRobotMessages('non-existent');
-      expect(messages).toEqual([]);
+      const result = service.getFilteredRobotMessages('non-existent');
+      expect(result).toEqual([]);
     });
 
-    it('should return robot messages from existing conversation', () => {
-      const message: IConversationMessage = {
-        id: 'msg1',
-        content: 'Robot message',
-        conversationId: 'conv1',
-        fromUserId: 'robot1',
-        fromRole: UserRole.AGENT,
-        toRole: UserRole.CUSTOMER,
-        messageType: MessageType.TEXT,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
+    it('should return robot messages for existing conversation', () => {
+      const conversationId = 'test-conversation';
+      const customerMessage = mockConversationMessages.customerMessage('Hello');
+      const robotMessage =
+        mockConversationMessages.robotMessage('Robot response');
+      robotMessage.fromRole = UserRole.ROBOT;
 
-      service.addMessageToConversation('conv1', message);
-      const robotMessages = service.getFilteredRobotMessages('conv1');
-      expect(robotMessages).toHaveLength(1);
+      service.addMessageToConversation(conversationId, customerMessage);
+      service.addMessageToConversation(conversationId, robotMessage);
+
+      const result = service.getFilteredRobotMessages(conversationId);
+      expect(result).toHaveLength(1);
+      expect(result[0]).toBe(robotMessage);
     });
   });
 
   describe('getMessagesVisibleToRole', () => {
     it('should return empty array for non-existent conversation', () => {
-      const messages = service.getMessagesVisibleToRole(
+      const result = service.getMessagesVisibleToRole(
         'non-existent',
         UserRole.CUSTOMER,
       );
-      expect(messages).toEqual([]);
+      expect(result).toEqual([]);
     });
 
-    it('should return messages visible to specified role', () => {
-      const message: IConversationMessage = {
-        id: 'msg1',
-        content: 'Test message',
-        conversationId: 'conv1',
-        fromUserId: 'user1',
-        fromRole: UserRole.CUSTOMER,
-        toRole: UserRole.AGENT,
-        messageType: MessageType.TEXT,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
+    it('should return messages visible to customer role', () => {
+      const conversationId = 'test-conversation';
+      const customerMessage = mockConversationMessages.customerMessage('Hello');
+      const agentMessage = mockConversationMessages.agentMessage('Response');
+      const robotMessage =
+        mockConversationMessages.robotMessage('Robot response');
 
-      service.addMessageToConversation('conv1', message);
-      const visibleMessages = service.getMessagesVisibleToRole(
-        'conv1',
+      service.addMessageToConversation(conversationId, customerMessage);
+      service.addMessageToConversation(conversationId, agentMessage);
+      service.addMessageToConversation(conversationId, robotMessage);
+
+      const result = service.getMessagesVisibleToRole(
+        conversationId,
         UserRole.CUSTOMER,
       );
-      expect(visibleMessages).toHaveLength(1);
+      expect(result).toHaveLength(2);
+      expect(result).toContain(customerMessage);
+      expect(result).toContain(agentMessage);
+      expect(result).not.toContain(robotMessage);
+    });
+
+    it('should return all messages for agent role', () => {
+      const conversationId = 'test-conversation';
+      const customerMessage = mockConversationMessages.customerMessage('Hello');
+      const agentMessage = mockConversationMessages.agentMessage('Response');
+      const robotMessage =
+        mockConversationMessages.robotMessage('Robot response');
+
+      service.addMessageToConversation(conversationId, customerMessage);
+      service.addMessageToConversation(conversationId, agentMessage);
+      service.addMessageToConversation(conversationId, robotMessage);
+
+      const result = service.getMessagesVisibleToRole(
+        conversationId,
+        UserRole.AGENT,
+      );
+      expect(result).toHaveLength(3);
+      expect(result).toContain(customerMessage);
+      expect(result).toContain(agentMessage);
+      expect(result).toContain(robotMessage);
     });
   });
 
   describe('getMessagesForRobotProcessing', () => {
     it('should return empty array for non-existent conversation', () => {
-      const messages = service.getMessagesForRobotProcessing('non-existent');
-      expect(messages).toEqual([]);
+      const result = service.getMessagesForRobotProcessing('non-existent');
+      expect(result).toEqual([]);
     });
 
-    it('should return messages for robot processing', () => {
-      const message: IConversationMessage = {
-        id: 'msg1',
-        content: 'Message for robot',
-        conversationId: 'conv1',
-        fromUserId: 'user1',
-        fromRole: UserRole.CUSTOMER,
-        toRole: UserRole.ROBOT,
-        messageType: MessageType.ROBOT,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
+    it('should return messages suitable for robot processing', () => {
+      const conversationId = 'test-conversation';
+      const customerMessage = mockConversationMessages.customerMessage('Hello');
+      const agentMessage = mockConversationMessages.agentMessage('Response');
+      const robotMessage =
+        mockConversationMessages.robotMessage('Robot response');
+      agentMessage.fromRole = UserRole.AGENT;
+      robotMessage.messageType = MessageType.ROBOT;
 
-      service.addMessageToConversation('conv1', message);
-      const robotMessages = service.getMessagesForRobotProcessing('conv1');
-      expect(robotMessages).toHaveLength(1);
+      service.addMessageToConversation(conversationId, customerMessage);
+      service.addMessageToConversation(conversationId, agentMessage);
+      service.addMessageToConversation(conversationId, robotMessage);
+
+      const result = service.getMessagesForRobotProcessing(conversationId);
+      expect(result).toHaveLength(2);
+      expect(result).toContain(agentMessage);
+      expect(result).toContain(robotMessage);
+      expect(result).not.toContain(customerMessage);
     });
   });
 
   describe('getRecentMessagesWithinTokenLimit', () => {
     it('should return empty array for non-existent conversation', () => {
-      const estimateTokens = jest.fn().mockReturnValue(10);
-      const messages = service.getRecentMessagesWithinTokenLimit(
+      const estimateTokens = (content: string) => content.length;
+      const result = service.getRecentMessagesWithinTokenLimit(
         'non-existent',
         100,
         estimateTokens,
       );
-      expect(messages).toEqual([]);
+      expect(result).toEqual([]);
     });
 
     it('should return messages within token limit', () => {
-      const message: IConversationMessage = {
-        id: 'msg1',
-        content: 'Short message',
-        conversationId: 'conv1',
-        fromUserId: 'user1',
-        fromRole: UserRole.CUSTOMER,
-        toRole: UserRole.AGENT,
-        messageType: MessageType.TEXT,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
+      const conversationId = 'test-conversation';
+      const message1 = mockConversationMessages.customerMessage('Hello');
+      const message2 = mockConversationMessages.agentMessage('Response');
 
-      service.addMessageToConversation('conv1', message);
-      const estimateTokens = jest.fn().mockReturnValue(10);
-      const messages = service.getRecentMessagesWithinTokenLimit(
-        'conv1',
-        100,
+      service.addMessageToConversation(conversationId, message1);
+      service.addMessageToConversation(conversationId, message2);
+
+      const estimateTokens = (content: string) => content.length;
+      const result = service.getRecentMessagesWithinTokenLimit(
+        conversationId,
+        20,
         estimateTokens,
       );
-      expect(messages).toHaveLength(1);
+
+      expect(result.length).toBeLessThanOrEqual(2);
     });
   });
 
   describe('getMessagesByUser', () => {
     it('should return empty array for non-existent conversation', () => {
-      const messages = service.getMessagesByUser('non-existent', 'user1');
-      expect(messages).toEqual([]);
+      const result = service.getMessagesByUser('non-existent', 'user1');
+      expect(result).toEqual([]);
     });
 
     it('should return messages from specific user', () => {
-      const message1: IConversationMessage = {
-        id: 'msg1',
-        content: 'Message from user1',
-        conversationId: 'conv1',
-        fromUserId: 'user1',
-        fromRole: UserRole.CUSTOMER,
-        toRole: UserRole.AGENT,
-        messageType: MessageType.TEXT,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
+      const conversationId = 'test-conversation';
+      const message1 = mockConversationMessages.customerMessage('Hello');
+      const message2 = mockConversationMessages.agentMessage('Response');
+      message1.authorUserId = 'user1';
+      message2.authorUserId = 'user2';
 
-      const message2: IConversationMessage = {
-        id: 'msg2',
-        content: 'Message from user2',
-        conversationId: 'conv1',
-        fromUserId: 'user2',
-        fromRole: UserRole.AGENT,
-        toRole: UserRole.CUSTOMER,
-        messageType: MessageType.TEXT,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
+      service.addMessageToConversation(conversationId, message1);
+      service.addMessageToConversation(conversationId, message2);
 
-      service.addMessageToConversation('conv1', message1);
-      service.addMessageToConversation('conv1', message2);
-
-      const userMessages = service.getMessagesByUser('conv1', 'user1');
-      expect(userMessages).toHaveLength(1);
-      expect(userMessages[0].fromUserId).toBe('user1');
+      const result = service.getMessagesByUser(conversationId, 'user1');
+      expect(result).toHaveLength(1);
+      expect(result[0]).toBe(message1);
     });
   });
 
   describe('getMessagesByType', () => {
     it('should return empty array for non-existent conversation', () => {
-      const messages = service.getMessagesByType(
+      const result = service.getMessagesByType(
         'non-existent',
         MessageType.TEXT,
       );
-      expect(messages).toEqual([]);
+      expect(result).toEqual([]);
     });
 
     it('should return messages of specific type', () => {
-      const message: IConversationMessage = {
-        id: 'msg1',
-        content: 'Text message',
-        conversationId: 'conv1',
-        fromUserId: 'user1',
-        fromRole: UserRole.CUSTOMER,
-        toRole: UserRole.AGENT,
-        messageType: MessageType.TEXT,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
+      const conversationId = 'test-conversation';
+      const message1 = mockConversationMessages.customerMessage('Hello');
+      const message2 = mockConversationMessages.robotMessage('Robot response');
+      message1.messageType = MessageType.TEXT;
+      message2.messageType = MessageType.ROBOT;
 
-      service.addMessageToConversation('conv1', message);
-      const textMessages = service.getMessagesByType('conv1', MessageType.TEXT);
-      expect(textMessages).toHaveLength(1);
-      expect(textMessages[0].messageType).toBe(MessageType.TEXT);
+      service.addMessageToConversation(conversationId, message1);
+      service.addMessageToConversation(conversationId, message2);
+
+      const result = service.getMessagesByType(
+        conversationId,
+        MessageType.ROBOT,
+      );
+      expect(result).toHaveLength(1);
+      expect(result[0]).toBe(message2);
     });
   });
 
   describe('getLatestMessage', () => {
     it('should return undefined for non-existent conversation', () => {
-      const message = service.getLatestMessage('non-existent');
-      expect(message).toBeUndefined();
+      const result = service.getLatestMessage('non-existent');
+      expect(result).toBeUndefined();
     });
 
-    it('should return the latest message from conversation', () => {
-      const message1: IConversationMessage = {
-        id: 'msg1',
-        content: 'First message',
-        conversationId: 'conv1',
-        fromUserId: 'user1',
-        fromRole: UserRole.CUSTOMER,
-        toRole: UserRole.AGENT,
-        messageType: MessageType.TEXT,
-        createdAt: new Date('2023-01-01T10:00:00Z'),
-        updatedAt: new Date('2023-01-01T10:00:00Z'),
-      };
+    it('should return the most recent message', () => {
+      const conversationId = 'test-conversation';
+      const message1 = mockConversationMessages.customerMessage('Hello');
+      const message2 = mockConversationMessages.agentMessage('Response');
+      message1.createdAt = new Date('2024-01-01T10:00:00Z');
+      message2.createdAt = new Date('2024-01-01T11:00:00Z');
 
-      const message2: IConversationMessage = {
-        id: 'msg2',
-        content: 'Second message',
-        conversationId: 'conv1',
-        fromUserId: 'user2',
-        fromRole: UserRole.AGENT,
-        toRole: UserRole.CUSTOMER,
-        messageType: MessageType.TEXT,
-        createdAt: new Date('2023-01-01T11:00:00Z'),
-        updatedAt: new Date('2023-01-01T11:00:00Z'),
-      };
+      service.addMessageToConversation(conversationId, message1);
+      service.addMessageToConversation(conversationId, message2);
 
-      service.addMessageToConversation('conv1', message1);
-      service.addMessageToConversation('conv1', message2);
-
-      const latestMessage = service.getLatestMessage('conv1');
-      expect(latestMessage?.id).toBe('msg2');
+      const result = service.getLatestMessage(conversationId);
+      expect(result).toBe(message2);
     });
   });
 
   describe('getMessageCountsByType', () => {
-    it('should return empty counts for non-existent conversation', () => {
-      const counts = service.getMessageCountsByType('non-existent');
-      expect(counts).toEqual({
-        [MessageType.TEXT]: 0,
-        [MessageType.SYSTEM]: 0,
-        [MessageType.ROBOT]: 0,
-      });
+    it('should return zero counts for non-existent conversation', () => {
+      const result = service.getMessageCountsByType('non-existent');
+      expect(result[MessageType.TEXT]).toBe(0);
+      expect(result[MessageType.ROBOT]).toBe(0);
+      expect(result[MessageType.SYSTEM]).toBe(0);
     });
 
-    it('should return correct message counts by type', () => {
-      const textMessage: IConversationMessage = {
-        id: 'msg1',
-        content: 'Text message',
-        conversationId: 'conv1',
-        fromUserId: 'user1',
-        fromRole: UserRole.CUSTOMER,
-        toRole: UserRole.AGENT,
-        messageType: MessageType.TEXT,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
+    it('should return correct counts for existing conversation', () => {
+      const conversationId = 'test-conversation';
+      const message1 = mockConversationMessages.customerMessage('Hello');
+      const message2 = mockConversationMessages.robotMessage('Robot response');
+      const message3 = mockConversationMessages.agentMessage('System message');
+      message1.messageType = MessageType.TEXT;
+      message2.messageType = MessageType.ROBOT;
+      message3.messageType = MessageType.SYSTEM;
 
-      const systemMessage: IConversationMessage = {
-        id: 'msg2',
-        content: 'System message',
-        conversationId: 'conv1',
-        fromUserId: 'system',
-        fromRole: UserRole.SYSTEM_DEBUG,
-        toRole: UserRole.CUSTOMER,
-        messageType: MessageType.SYSTEM,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
+      service.addMessageToConversation(conversationId, message1);
+      service.addMessageToConversation(conversationId, message2);
+      service.addMessageToConversation(conversationId, message3);
 
-      service.addMessageToConversation('conv1', textMessage);
-      service.addMessageToConversation('conv1', systemMessage);
-
-      const counts = service.getMessageCountsByType('conv1');
-      expect(counts[MessageType.TEXT]).toBe(1);
-      expect(counts[MessageType.SYSTEM]).toBe(1);
-      expect(counts[MessageType.ROBOT]).toBe(0);
+      const result = service.getMessageCountsByType(conversationId);
+      expect(result[MessageType.TEXT]).toBe(1);
+      expect(result[MessageType.ROBOT]).toBe(1);
+      expect(result[MessageType.SYSTEM]).toBe(1);
     });
   });
 
   describe('getMessageCount', () => {
     it('should return 0 for non-existent conversation', () => {
-      const count = service.getMessageCount('non-existent');
-      expect(count).toBe(0);
+      const result = service.getMessageCount('non-existent');
+      expect(result).toBe(0);
     });
 
-    it('should return correct message count', () => {
-      const message1: IConversationMessage = {
-        id: 'msg1',
-        content: 'First message',
-        conversationId: 'conv1',
-        fromUserId: 'user1',
-        fromRole: UserRole.CUSTOMER,
-        toRole: UserRole.AGENT,
-        messageType: MessageType.TEXT,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
+    it('should return correct message count for existing conversation', () => {
+      const conversationId = 'test-conversation';
+      const message1 = mockConversationMessages.customerMessage('Hello');
+      const message2 = mockConversationMessages.agentMessage('Response');
 
-      const message2: IConversationMessage = {
-        id: 'msg2',
-        content: 'Second message',
-        conversationId: 'conv1',
-        fromUserId: 'user2',
-        fromRole: UserRole.AGENT,
-        toRole: UserRole.CUSTOMER,
-        messageType: MessageType.TEXT,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
+      expect(service.getMessageCount(conversationId)).toBe(0);
 
-      service.addMessageToConversation('conv1', message1);
-      service.addMessageToConversation('conv1', message2);
+      service.addMessageToConversation(conversationId, message1);
+      service.addMessageToConversation(conversationId, message2);
 
-      const count = service.getMessageCount('conv1');
-      expect(count).toBe(2);
+      const result = service.getMessageCount(conversationId);
+      expect(result).toBe(2);
     });
   });
 });
