@@ -410,6 +410,16 @@ export class AuthorizationPermissionsService {
   }
 
   /**
+   * Get all active Form Marv sessions
+   * @returns Array of all active sessions
+   */
+  getAllFormMarvSessions(): IFormMarvSession[] {
+    // Clean up expired sessions first
+    this.cleanupExpiredSessions();
+    return Object.values(this.formMarvSessions);
+  }
+
+  /**
    * Get session statistics for debugging
    */
   getSessionStats(): { total: number; active: number } {

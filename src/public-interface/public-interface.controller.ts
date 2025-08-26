@@ -18,6 +18,7 @@ import { RequirePermissions } from '../common/decorators/require-permissions.dec
 import { AuthPermissionGuard } from '../common/guards/auth-permission.guard';
 import { RobotService } from '../robots/robot.service';
 import { UserProfileService } from '../user-profile/user-profile.service';
+import { fsApiClient } from '../robots/tool-definitions/marv/fsApiClient';
 
 @Controller('public')
 export class PublicInterfaceController {
@@ -65,6 +66,148 @@ export class PublicInterfaceController {
 
     res.setHeader('Content-Type', 'text/html');
     res.send(html);
+  }
+
+  /**
+   * Debug endpoint to create a test session
+   * Used for testing form-marv without going through Slack
+   */
+  @Get('/form-marv/debug-create')
+  async debugCreateSession(
+    @Query('formId') formId: string,
+    @Res() res: Response
+  ): Promise<void> {
+    try {
+      if (!formId) {
+        res.status(400).json({
+          error: 'Form ID is required',
+          message: 'Must provide formId as query parameter: /form-marv/debug-create?formId=YOUR_FORM_ID'
+        });
+        return;
+      }
+
+      console.log('Debug: Creating test session...');
+      
+      // Generate a unique session ID
+      const sessionId = require('uuid').v4();
+      
+      // Create the session using the same logic as slacky
+      const sessionResult = this.authPermissionsService.createTempUserAndSession(
+        sessionId,
+        formId,
+      );
+      
+      // Create a conversation for this session
+      await this.chatManagerService.getOrCreateExternalConversation(
+        sessionResult.sessionId,
+        'marv-debug-session',
+        'form-marv-session',
+      );
+      
+      // Set the formId in the conversation metadata
+      this.chatManagerService.setConversationFormId(
+        sessionResult.sessionId,
+        formId,
+      );
+      
+      // Generate the session URL
+      const baseUrl = this.getBaseUrl();
+      const sessionUrl = `${baseUrl}/public/form-marv/${sessionResult.sessionId}/${formId}?jwtToken=${sessionResult.jwtToken}`;
+      
+      // Return HTML response similar to what slacky sends to Slack
+      const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Form Marv Session Created</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; }
+        .success { color: #28a745; }
+        .info { background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .link { background: #007bff; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px; display: inline-block; margin: 10px 0; }
+        .link:hover { background: #0056b3; }
+    </style>
+</head>
+<body>
+    <h1 class="success">✅ Thank you!</h1>
+    <p>Your form session has been created successfully.</p>
+    
+    <div class="info">
+        <p><strong>Form ID:</strong> ${formId}</p>
+        <p><strong>Session ID:</strong> ${sessionResult.sessionId}</p>
+        <p><strong>Created:</strong> ${new Date().toLocaleString()}</p>
+    </div>
+    
+    <p>Click the link below to access your form session:</p>
+    <a href="${sessionUrl}" class="link" target="_blank">Open Form Session</a>
+    
+    <p><small>This session will remain active for several hours. You can bookmark this link for future testing.</small></p>
+</body>
+</html>`;
+
+      res.setHeader('Content-Type', 'text/html');
+      res.send(html);
+      
+    } catch (error) {
+      console.error('Error creating debug session:', error);
+      res.status(500).json({
+        error: 'Failed to create debug session',
+        message: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  }
+
+  /**
+   * Debug endpoint to get session information
+   * Used for inspecting session data during testing
+   */
+  @Get('/form-marv/:secretKey/debug-session')
+  async debugGetSession(
+    @Param('secretKey') secretKey: string,
+    @Res() res: Response,
+  ): Promise<void> {
+    try {
+      // Find the session by looking through all active sessions
+      const sessions = this.authPermissionsService.getAllFormMarvSessions();
+      const session = sessions.find(s => s.sessionId === secretKey);
+      
+      if (!session) {
+        res.status(404).json({
+          error: 'Session not found',
+          secretKey,
+          message: `No active session found with secret key: ${secretKey}`,
+          timestamp: new Date().toISOString(),
+        });
+        return;
+      }
+      
+      // Return session debug information
+      res.json({
+        secretKey,
+        sessionData: {
+          secretKey: session.sessionId,
+          formId: session.formId,
+          userId: session.userId,
+          jwtToken: session.jwtToken.substring(0, 20) + '...', // Truncate for security
+          createdAt: session.createdAt,
+          lastActivityAt: session.lastActivityAt,
+          expiresInMs: session.expiresInMs,
+          conversationId: session.conversationId,
+        },
+        timestamp: new Date().toISOString(),
+        note: 'This is debug information for testing purposes only',
+      });
+      
+    } catch (error) {
+      console.error('Error getting debug session:', error);
+      res.status(500).json({
+        error: 'Failed to get session debug info',
+        secretKey,
+        message: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
   }
 
   @Get('/form-marv')
@@ -275,6 +418,41 @@ export class PublicInterfaceController {
     } catch (error) {
       console.error('Error posting chat message:', error);
       return { success: false };
+    }
+  }
+
+  @Get('/form-marv/:conversationId/:formId/formJson')
+  @UseGuards(AuthPermissionGuard)
+  @RequirePermissions('cx-agent:form-marv:read')
+  async getFormJson(
+    @Param('conversationId') conversationId: string,
+    @Param('formId') formId: string,
+    @Req() req: any,
+  ): Promise<any> {
+    try {
+      // Validate that the conversation exists and has the correct formId
+      if (
+        !this.chatManagerService.validateConversationFormId(
+          conversationId,
+          formId,
+        )
+      ) {
+        throw new Error('Session not found or form ID does not match');
+      }
+
+      // Get form JSON using the fsApiClient
+      const formJsonResponse = await fsApiClient.getFormJson(formId);
+      
+      if (!formJsonResponse.isSuccess) {
+        throw new Error(
+          formJsonResponse.errorItems?.join(', ') || 'Failed to get form JSON',
+        );
+      }
+
+      return formJsonResponse.response;
+    } catch (error) {
+      console.error('Error getting form JSON:', error);
+      throw error;
     }
   }
 }
