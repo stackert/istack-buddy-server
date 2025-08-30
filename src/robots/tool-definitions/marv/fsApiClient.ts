@@ -7,11 +7,12 @@ import type {
 
 // Focused API client for Formstack operations - NO MOCKS
 export class FsApiClient {
-  private apiKey: string | null = null;
+  private apiKey: string;
   private static readonly API_ROOT = 'https://www.formstack.com/api/v2';
 
   constructor() {
-    // API key will be loaded lazily when first needed
+    // Read API key from environment on initialization
+    this.apiKey = process.env.CORE_FORMS_API_V2_KEY || '';
   }
 
   setApiKey(apiKey: string): FsApiClient {
@@ -25,25 +26,12 @@ export class FsApiClient {
     return this;
   }
 
-  // Lazily load API key from environment if not already set
-  private ensureApiKey(): void {
-    if (this.apiKey === null) {
-      this.apiKey = process.env.CORE_FORMS_API_V2_KEY || '';
-      if (!this.apiKey) {
-        throw new Error('Authentication failed: No API key provided (CORE_FORMS_API_V2_KEY environment variable not set)');
-      }
-    }
-  }
-
   private async makeRequest<T>(
     endpoint: string,
     method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET',
     body?: any,
   ): Promise<IMarvApiUniversalResponse<T>> {
     try {
-      // Ensure API key is loaded from environment
-      this.ensureApiKey();
-      
       const headers: Record<string, string> = {
         Authorization: `Bearer ${this.apiKey}`,
         'Content-Type': 'application/json',

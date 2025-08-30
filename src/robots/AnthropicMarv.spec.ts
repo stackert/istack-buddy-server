@@ -433,11 +433,11 @@ describe('AnthropicMarv', () => {
       );
 
       expect(result.type).toBe('text/plain');
-      expect(result.payload).toBe('Immediate response');
+      expect(result.payload).toBe('Processing...');
       expect(delayedCallback).toHaveBeenCalledWith({
         content: {
           type: 'text/plain',
-          payload: 'Error in streaming response: Streaming error',
+          payload: 'Error: Streaming error',
         },
       });
 
@@ -447,13 +447,6 @@ describe('AnthropicMarv', () => {
 
     it('should handle multi-part response with null delayed callback', async () => {
       const message = mockConversationMessages.customerMessage('Test message');
-
-      // Mock immediate response
-      const immediateSpy = jest
-        .spyOn(robot as any, 'acceptMessageImmediateResponse')
-        .mockResolvedValueOnce({
-          content: { type: 'text/plain', payload: 'Immediate response' },
-        });
 
       // Mock streaming response
       const streamingSpy = jest
@@ -468,22 +461,14 @@ describe('AnthropicMarv', () => {
       );
 
       expect(result.type).toBe('text/plain');
-      expect(result.payload).toBe('Immediate response');
+      expect(result.payload).toBe('Processing...');
 
-      immediateSpy.mockRestore();
       streamingSpy.mockRestore();
     });
 
     it('should handle multi-part response with streaming promise rejection', async () => {
       const message = mockConversationMessages.customerMessage('Test message');
       const delayedCallback = jest.fn();
-
-      // Mock immediate response
-      const immediateSpy = jest
-        .spyOn(robot as any, 'acceptMessageImmediateResponse')
-        .mockResolvedValueOnce({
-          content: { type: 'text/plain', payload: 'Immediate response' },
-        });
 
       // Mock streaming response to reject
       const streamingSpy = jest
@@ -496,15 +481,14 @@ describe('AnthropicMarv', () => {
       );
 
       expect(result.type).toBe('text/plain');
-      expect(result.payload).toBe('Immediate response');
+      expect(result.payload).toBe('Processing...');
       expect(delayedCallback).toHaveBeenCalledWith({
         content: {
           type: 'text/plain',
-          payload: 'Error in streaming response: Streaming promise rejected',
+          payload: 'Error: Streaming promise rejected',
         },
       });
 
-      immediateSpy.mockRestore();
       streamingSpy.mockRestore();
     });
   });
@@ -586,8 +570,13 @@ describe('AnthropicMarv', () => {
       );
 
       expect(result.type).toBe('text/plain');
-      expect(result.payload).toBe('Immediate response');
-      expect(delayedCallback).toHaveBeenCalledWith(message);
+      expect(result.payload).toBe('Processing...');
+      expect(delayedCallback).toHaveBeenCalledWith({
+        content: {
+          type: 'text/plain',
+          payload: '',
+        },
+      });
 
       immediateSpy.mockRestore();
       streamingSpy.mockRestore();

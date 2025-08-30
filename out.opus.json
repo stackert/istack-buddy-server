@@ -1,0 +1,93 @@
+[
+  {
+    "id": "msg_0114eFYyHmuqmopnv826C4Li",
+    "type": "message",
+    "role": "assistant",
+    "model": "claude-opus-4-1-20250805",
+    "content": [
+      {
+        "type": "text",
+        "text": "I'll get the time in Tokyo first, then get the temperature in Tokyo, and join the responses together."
+      },
+      {
+        "type": "tool_use",
+        "id": "toolu_015sQhHj2EDPKQN41kxwrk3n",
+        "name": "getTime",
+        "input": {
+          "city": "Tokyo"
+        }
+      }
+    ],
+    "stop_reason": "tool_use",
+    "stop_sequence": null,
+    "usage": {
+      "input_tokens": 858,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "cache_creation": {
+        "ephemeral_5m_input_tokens": 0,
+        "ephemeral_1h_input_tokens": 0
+      },
+      "output_tokens": 75,
+      "service_tier": "standard"
+    }
+  },
+  {
+    "id": "msg_01M6PB7zQTF15fWFB4aQk5bE",
+    "type": "message",
+    "role": "assistant",
+    "model": "claude-opus-4-1-20250805",
+    "content": [
+      {
+        "type": "text",
+        "text": "Now I'll get the temperature in Tokyo:"
+      },
+      {
+        "type": "tool_use",
+        "id": "toolu_01437AdjdreMvFqKLhtc2KGA",
+        "name": "getTemp",
+        "input": {
+          "city": "Tokyo"
+        }
+      }
+    ],
+    "stop_reason": "tool_use",
+    "stop_sequence": null,
+    "usage": {
+      "input_tokens": 957,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "cache_creation": {
+        "ephemeral_5m_input_tokens": 0,
+        "ephemeral_1h_input_tokens": 0
+      },
+      "output_tokens": 62,
+      "service_tier": "standard"
+    }
+  },
+  {
+    "id": "msg_01KDnYwo8qYtP7RVXBEqqAyx",
+    "type": "message",
+    "role": "assistant",
+    "model": "claude-opus-4-1-20250805",
+    "content": [
+      {
+        "type": "text",
+        "text": "Now let me join the responses together:\n\n**Tokyo's current conditions:**\n- Time: 23:23 \n- Temperature: -10°F (very cold)\n\nThe time in Tokyo is 23:23 and the temperature is -10°F, which is very cold!"
+      }
+    ],
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "usage": {
+      "input_tokens": 945,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "cache_creation": {
+        "ephemeral_5m_input_tokens": 0,
+        "ephemeral_1h_input_tokens": 0
+      },
+      "output_tokens": 64,
+      "service_tier": "standard"
+    }
+  }
+]

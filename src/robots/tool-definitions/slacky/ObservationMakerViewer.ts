@@ -47,28 +47,10 @@ export class ObservationMakerViewer extends ObservationMakers.AbstractObservatio
   ): ObservationMakerViewer {
     const viewer = new ObservationMakerViewer();
 
-    console.log('ObservationMakerViewer.fromObservationResults called with:', {
-      hasResult: !!observationMakerResult,
-      hasResponse: !!(
-        observationMakerResult && observationMakerResult.response
-      ),
-      resultType: typeof observationMakerResult,
-      responseType: observationMakerResult?.response
-        ? typeof observationMakerResult.response
-        : 'undefined',
-    });
-
     // Extract log items from the observation result
     if (observationMakerResult && observationMakerResult.response) {
       const logItems = viewer.extractLogItems(observationMakerResult.response);
       viewer.setLogItems(logItems);
-
-      console.log('Extracted log items:', {
-        count: logItems.length,
-        logItems: JSON.stringify(logItems.slice(0, 2), null, 2),
-      });
-    } else {
-      console.log('No valid observation maker result found');
     }
 
     return viewer;
@@ -77,50 +59,23 @@ export class ObservationMakerViewer extends ObservationMakers.AbstractObservatio
   private extractLogItems(response: any): any[] {
     const logItems = [] as any[];
 
-    console.log('extractLogItems called with:', {
-      responseType: typeof response,
-      isArray: Array.isArray(response),
-      hasLogItems: !!(response && response.logItems),
-      hasObservations: !!(response && response.observations),
-      hasData: !!(response && response.data),
-      responseKeys:
-        response && typeof response === 'object' ? Object.keys(response) : [],
-    });
-
     // Handle different response structures
     if (response && response.logItems && Array.isArray(response.logItems)) {
-      console.log(
-        'Extracting from response.logItems, length:',
-        response.logItems.length,
-      );
       logItems.push(...response.logItems);
     } else if (Array.isArray(response)) {
-      console.log('Extracting from array response, length:', response.length);
       logItems.push(...response);
     } else if (
       response &&
       response.observations &&
       Array.isArray(response.observations)
     ) {
-      console.log(
-        'Extracting from response.observations, length:',
-        response.observations.length,
-      );
       logItems.push(...response.observations);
     } else if (response && response.data && Array.isArray(response.data)) {
-      console.log(
-        'Extracting from response.data, length:',
-        response.data.length,
-      );
       logItems.push(...response.data);
     } else if (typeof response === 'object') {
-      console.log('Extracting single observation object');
       logItems.push(response);
-    } else {
-      console.log('No valid observation structure found');
     }
 
-    console.log('Final log items count:', logItems.length);
     return logItems;
   }
 

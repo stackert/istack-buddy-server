@@ -96,10 +96,12 @@
       "coverage",
       ".spec.ts",
       ".d.ts",
-      "src/robots/retired"
+      "src/robots/retired",
+      "docs-living"
     ],
     "testPathIgnorePatterns": [
-      "src/robots/retired"
+      "src/robots/retired",
+      "docs-living"
     ],
     "rootDir": "src",
     "testRegex": ".*\\.spec\\.ts$",
@@ -123,7 +125,8 @@
       "!**/*.d.ts",
       "!**/node_modules/**",
       "!**/dist/**",
-      "!**/src/robots/retired/**"
+      "!**/src/robots/retired/**",
+      "!**/docs-living/**"
     ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node",

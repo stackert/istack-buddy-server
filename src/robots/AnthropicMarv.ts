@@ -363,8 +363,8 @@ Your goal is to help users efficiently manage their Formstack forms through thes
   }
 
   /**
-   * @TMC_ New implementation using acceptMessageStreamResponse
-   * Calls acceptMessageStreamResponse and sends immediate response, then promises to send second message when streaming completes
+   * Multi-part response using direct streaming wrapper
+   * Sends immediate response, then streams additional content through callback
    */
   public async acceptMessageMultiPartResponse(
     message: IConversationMessage<TConversationMessageContentString>,
@@ -376,73 +376,73 @@ Your goal is to help users efficiently manage their Formstack forms through thes
     ) => void,
     getHistory?: () => IConversationMessage<TConversationMessageContent>[],
   ): Promise<TConversationMessageContentString> {
-    // Send immediate response first
-    const immediateResponse = await this.acceptMessageImmediateResponse(
-      message,
-      getHistory,
-    );
+    let accumulatedContent = '';
+    let hasSentImmediate = false;
 
-    // Start streaming in background and promise to send delayed message when complete
-    this.acceptMessageStreamResponse(
-      message,
-      {
-        onStreamChunkReceived: (chunk: string) => {
-          // Handle chunks if needed
+    try {
+      // Start streaming directly
+      await this.acceptMessageStreamResponse(
+        message,
+        {
+          onStreamChunkReceived: (chunk: string) => {
+            accumulatedContent += chunk;
+
+            // Send immediate response on first chunk if not sent yet
+            if (!hasSentImmediate) {
+              hasSentImmediate = true;
+              // Could trigger immediate response here if needed
+            }
+          },
+          onStreamStart: (message) => {
+            // Handle stream start if needed
+          },
+          onStreamFinished: (message) => {
+            // Send the complete response as delayed message
+            if (
+              delayedMessageCallback &&
+              typeof delayedMessageCallback === 'function'
+            ) {
+              delayedMessageCallback({
+                content: {
+                  type: 'text/plain',
+                  payload: accumulatedContent,
+                },
+              });
+            }
+          },
+          onFullMessageReceived: (message) => {
+            // Handle full message if needed
+          },
+          onError: (error) => {
+            // Handle error if needed
+            if (delayedMessageCallback) {
+              delayedMessageCallback({
+                content: {
+                  type: 'text/plain',
+                  payload: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                },
+              });
+            }
+          },
         },
-        onStreamStart: (message) => {
-          // Handle stream start if needed
-        },
-        onStreamFinished: (message) => {
-          // Send the complete response as delayed message
-          if (
-            delayedMessageCallback &&
-            typeof delayedMessageCallback === 'function'
-          ) {
-            delayedMessageCallback(message);
-          }
-        },
-        onFullMessageReceived: (message) => {
-          // Handle full message if needed
-        },
-        onError: (error) => {
-          // Handle error in delayed message
-          const errorResponse: Pick<
-            IConversationMessage<TConversationMessageContentString>,
-            'content'
-          > = {
-            content: {
-              type: 'text/plain',
-              payload: `Error in streaming response: ${error.message}`,
-            },
-          };
-          if (
-            delayedMessageCallback &&
-            typeof delayedMessageCallback === 'function'
-          ) {
-            delayedMessageCallback(errorResponse);
-          }
-        },
-      },
-      getHistory,
-    ).catch((error) => {
+        getHistory,
+      );
+    } catch (error) {
       // Handle any errors in the streaming process
-      const errorResponse: Pick<
-        IConversationMessage<TConversationMessageContentString>,
-        'content'
-      > = {
-        content: {
-          type: 'text/plain',
-          payload: `Error in streaming response: ${error.message}`,
-        },
-      };
-      if (
-        delayedMessageCallback &&
-        typeof delayedMessageCallback === 'function'
-      ) {
-        delayedMessageCallback(errorResponse);
+      if (delayedMessageCallback) {
+        delayedMessageCallback({
+          content: {
+            type: 'text/plain',
+            payload: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          },
+        });
       }
-    });
+    }
 
-    return immediateResponse.content;
+    // Return initial response (could be empty or first chunk)
+    return {
+      type: 'text/plain',
+      payload: accumulatedContent || 'Processing...',
+    };
   }
 }
