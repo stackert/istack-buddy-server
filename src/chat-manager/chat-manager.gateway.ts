@@ -266,12 +266,11 @@ export class ChatManagerGateway
 
   // Method to broadcast to specific conversation
   broadcastToConversation(conversationId: string, event: string, data: any) {
-    console.log(
-      `Gateway: Broadcasting ${event} to conversation ${conversationId}:`,
-      data,
+    this.logger.debug(
+      `Gateway: Broadcasting ${event} to conversation ${conversationId}`,
     );
     this.server.to(conversationId).emit(event, data);
-    console.log(`Gateway: Broadcast completed`);
+    this.logger.debug(`Gateway: Broadcast completed`);
   }
 
   // Method to broadcast to dashboard listeners

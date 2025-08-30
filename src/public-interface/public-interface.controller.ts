@@ -86,7 +86,7 @@ export class PublicInterfaceController {
         return;
       }
 
-      console.log('Debug: Creating test session...');
+      this.logger.debug('Creating test session...');
       
       // Generate a unique session ID
       const sessionId = require('uuid').v4();
@@ -151,7 +151,7 @@ export class PublicInterfaceController {
       res.send(html);
       
     } catch (error) {
-      console.error('Error creating debug session:', error);
+      this.logger.error('Error creating debug session:', error);
       res.status(500).json({
         error: 'Failed to create debug session',
         message: error instanceof Error ? error.message : 'Unknown error'
@@ -201,7 +201,7 @@ export class PublicInterfaceController {
       });
       
     } catch (error) {
-      console.error('Error getting debug session:', error);
+      this.logger.error('Error getting debug session:', error);
       res.status(500).json({
         error: 'Failed to get session debug info',
         secretKey,
@@ -267,7 +267,7 @@ export class PublicInterfaceController {
           res.redirect(`/public/form-marv/${conversationId}/${formId}`);
           return;
         } catch (error) {
-          console.error('JWT authentication error:', error);
+          this.logger.error('JWT authentication error:', error);
           res.status(401).send('Invalid JWT token');
           return;
         }
@@ -300,7 +300,7 @@ export class PublicInterfaceController {
           return;
         }
       } catch (error) {
-        console.error('JWT authentication error:', error);
+        this.logger.error('JWT authentication error:', error);
         res.status(401).send('Invalid JWT token in cookie');
         return;
       }
@@ -343,7 +343,7 @@ export class PublicInterfaceController {
         res.setHeader('Expires', '0');
         res.send(staticContent);
       } catch (error) {
-        console.error('Error serving static app:', error);
+        this.logger.error('Error serving static app:', error);
         res.status(500).send('Error loading application');
       }
     } catch (error) {
@@ -382,7 +382,7 @@ export class PublicInterfaceController {
 
       return messages;
     } catch (error) {
-      console.error('Error getting chat messages:', error);
+      this.logger.error('Error getting chat messages:', error);
       return [];
     }
   }
@@ -416,7 +416,7 @@ export class PublicInterfaceController {
 
       return { success: true, messageId: userMessage.id };
     } catch (error) {
-      console.error('Error posting chat message:', error);
+      this.logger.error('Error posting chat message:', error);
       return { success: false };
     }
   }
@@ -451,7 +451,7 @@ export class PublicInterfaceController {
 
       return formJsonResponse.response;
     } catch (error) {
-      console.error('Error getting form JSON:', error);
+      this.logger.error('Error getting form JSON:', error);
       throw error;
     }
   }
