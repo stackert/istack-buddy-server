@@ -490,8 +490,13 @@ describe('SlackyOpenAiAgent', () => {
       );
 
       expect(result.type).toBe('text/plain');
-      expect(result.payload).toBe('Immediate response');
-      expect(delayedCallback).toHaveBeenCalledWith(message);
+      expect(result.payload).toBe('Processing...');
+      expect(delayedCallback).toHaveBeenCalledWith({
+        content: {
+          type: 'text/plain',
+          payload: '',
+        },
+      });
 
       immediateSpy.mockRestore();
       streamingSpy.mockRestore();
@@ -521,11 +526,11 @@ describe('SlackyOpenAiAgent', () => {
       );
 
       expect(result.type).toBe('text/plain');
-      expect(result.payload).toBe('Immediate response');
+      expect(result.payload).toBe('Processing...');
       expect(delayedCallback).toHaveBeenCalledWith({
         content: {
           type: 'text/plain',
-          payload: 'Error in streaming response: Streaming error',
+          payload: 'Error: Streaming error',
         },
       });
 
@@ -556,9 +561,9 @@ describe('SlackyOpenAiAgent', () => {
       );
 
       expect(result.type).toBe('text/plain');
-      expect(result.payload).toBe('Immediate response');
+      expect(result.payload).toBe('Processing...');
 
-      immediateSpy.mockRestore();
+      streamingSpy.mockRestore();
       streamingSpy.mockRestore();
     });
   });
@@ -699,25 +704,18 @@ describe('SlackyOpenAiAgent', () => {
       );
 
       expect(result.type).toBe('text/plain');
-      expect(result.payload).toBe('Immediate response');
+      expect(result.payload).toBe('Processing...');
       expect(delayedCallback).toHaveBeenCalledWith({
         content: { payload: 'Intermediate message', type: 'text/plain' },
       });
 
-      immediateSpy.mockRestore();
+      streamingSpy.mockRestore();
       streamingSpy.mockRestore();
     });
 
     it('should handle streaming promise rejection in multi-part response', async () => {
       const message = mockConversationMessages.customerMessage('Test message');
       const delayedCallback = jest.fn();
-
-      // Mock immediate response
-      const immediateSpy = jest
-        .spyOn(robot, 'acceptMessageImmediateResponse')
-        .mockResolvedValue({
-          content: { type: 'text/plain', payload: 'Immediate response' },
-        });
 
       // Mock streaming response to reject
       const streamingSpy = jest
@@ -730,15 +728,14 @@ describe('SlackyOpenAiAgent', () => {
       );
 
       expect(result.type).toBe('text/plain');
-      expect(result.payload).toBe('Immediate response');
+      expect(result.payload).toBe('Processing...');
       expect(delayedCallback).toHaveBeenCalledWith({
         content: {
           type: 'text/plain',
-          payload: 'Error in streaming response: Streaming promise rejected',
+          payload: 'Error: Streaming promise rejected',
         },
       });
 
-      immediateSpy.mockRestore();
       streamingSpy.mockRestore();
     });
 

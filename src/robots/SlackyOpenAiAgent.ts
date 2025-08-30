@@ -773,89 +773,99 @@ Need help? Just ask!`;
     ) => void,
     getHistory?: () => IConversationMessage<TConversationMessageContentString>[],
   ): Promise<TConversationMessageContentString> {
-    // Send immediate response first
-    const immediateResponse =
-      await this.acceptMessageImmediateResponse(message);
+    let accumulatedContent = '';
+    let hasSentImmediate = false;
 
-    // Start streaming in background and promise to send delayed message when complete
-    this.acceptMessageStreamResponse(
-      message,
-      {
-        onStreamChunkReceived: (chunk: string) => {
-          // Handle chunks if needed
+    try {
+      // Start streaming directly
+      await this.acceptMessageStreamResponse(
+        message,
+        {
+          onStreamChunkReceived: (chunk: string) => {
+            accumulatedContent += chunk;
+
+            // Send immediate response on first chunk if not sent yet
+            if (!hasSentImmediate) {
+              hasSentImmediate = true;
+              // Could trigger immediate response here if needed
+            }
+          },
+          onStreamStart: (message) => {
+            // Handle stream start if needed
+          },
+          onStreamFinished: (
+            message: Pick<
+              IConversationMessage<TConversationMessageContentString>,
+              'content'
+            >,
+          ) => {
+            // Send the complete response as delayed message
+            if (
+              delayedMessageCallback &&
+              typeof delayedMessageCallback === 'function'
+            ) {
+              this.logger.debug(
+                'Calling delayedMessageCallback with finished message',
+              );
+              delayedMessageCallback({
+                content: {
+                  type: 'text/plain',
+                  payload: accumulatedContent,
+                },
+              });
+            }
+          },
+          onFullMessageReceived: (
+            message: Pick<
+              IConversationMessage<TConversationMessageContentString>,
+              'content'
+            >,
+          ) => {
+            // Send the intermediate message through the delayed message callback
+            if (
+              delayedMessageCallback &&
+              typeof delayedMessageCallback === 'function'
+            ) {
+              this.logger.debug(
+                'Sending intermediate message via delayedMessageCallback',
+                {
+                  content: message.content.payload.substring(0, 100) + '...',
+                },
+              );
+              delayedMessageCallback(message);
+            }
+          },
+          onError: (error) => {
+            // Handle error if needed
+            if (delayedMessageCallback) {
+              delayedMessageCallback({
+                content: {
+                  type: 'text/plain',
+                  payload: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                },
+              });
+            }
+          },
         },
-        onStreamStart: (message) => {
-          // Handle stream start if needed
-        },
-        onStreamFinished: (
-          message: Pick<
-            IConversationMessage<TConversationMessageContentString>,
-            'content'
-          >,
-        ) => {
-          // Send the complete response as delayed message
-          if (
-            delayedMessageCallback &&
-            typeof delayedMessageCallback === 'function'
-          ) {
-            this.logger.debug(
-              'Calling delayedMessageCallback with finished message',
-            );
-            delayedMessageCallback(message);
-          }
-        },
-        onFullMessageReceived: (
-          message: Pick<
-            IConversationMessage<TConversationMessageContentString>,
-            'content'
-          >,
-        ) => {
-          // Send the intermediate message through the delayed message callback
-          if (
-            delayedMessageCallback &&
-            typeof delayedMessageCallback === 'function'
-          ) {
-            this.logger.debug(
-              'Sending intermediate message via delayedMessageCallback',
-              {
-                content: message.content.payload.substring(0, 100) + '...',
-              },
-            );
-            delayedMessageCallback(message);
-          }
-        },
-        onError: (error) => {
-          // Handle error in delayed message
-          if (
-            delayedMessageCallback &&
-            typeof delayedMessageCallback === 'function'
-          ) {
-            delayedMessageCallback({
-              content: {
-                type: 'text/plain',
-                payload: `Error in streaming response: ${error.message}`,
-              },
-            });
-          }
-        },
-      },
-      getHistory,
-    ).catch((error) => {
+        getHistory,
+      );
+    } catch (error) {
       // Handle any errors in the streaming process
-      if (
-        delayedMessageCallback &&
-        typeof delayedMessageCallback === 'function'
-      ) {
+      if (delayedMessageCallback) {
         delayedMessageCallback({
           content: {
             type: 'text/plain',
-            payload: `Error in streaming response: ${error.message}`,
+            payload: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
           },
         });
       }
-    });
+    }
 
-    return immediateResponse.content;
+    // Return initial response (could be empty or first chunk)
+    return {
+      type: 'text/plain',
+      payload: accumulatedContent || 'Processing...',
+    };
   }
 
   /**
