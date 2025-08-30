@@ -16,6 +16,7 @@ import { AuthorizationPermissionsService } from '../authorization-permissions/au
 import { ChatManagerService } from '../chat-manager/chat-manager.service';
 import { RequirePermissions } from '../common/decorators/require-permissions.decorator';
 import { AuthPermissionGuard } from '../common/guards/auth-permission.guard';
+import { CustomLoggerService } from '../common/logger/custom-logger.service';
 import { RobotService } from '../robots/robot.service';
 import { UserProfileService } from '../user-profile/user-profile.service';
 import { fsApiClient } from '../robots/tool-definitions/marv/fsApiClient';
@@ -28,6 +29,7 @@ export class PublicInterfaceController {
     private readonly chatManagerService: ChatManagerService,
     private readonly robotService: RobotService,
     private readonly userProfileService: UserProfileService,
+    private readonly logger: CustomLoggerService,
   ) {}
 
   /**
@@ -233,59 +235,12 @@ export class PublicInterfaceController {
     @Res() res: Response,
     @Req() req: any,
   ): Promise<void> {
-    try {
-      // If JWT token is provided in query, authenticate and set it as a cookie
-      if (jwtToken) {
-        try {
-          // Decode JWT to get userId
-          const decoded = jwt.verify(
-            jwtToken,
-            'istack-buddy-secret-key-2024',
-          ) as any;
-          const userId = decoded.userId;
-
-          // Authenticate the user using the authentication service
-          const authResult = await this.authService.authenticateUser(
-            userId,
-            jwtToken,
-          );
-
-          if (!authResult.success) {
-            res.status(401).send('Invalid JWT token');
-            return;
-          }
-
-          // Set JWT token as cookie
-          res.cookie('jwtToken', jwtToken, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
-            maxAge: 24 * 60 * 60 * 1000, // 24 hours
-          });
-
-          // Redirect to the same URL without the jwtToken parameter
-          res.redirect(`/public/form-marv/${conversationId}/${formId}`);
-          return;
-        } catch (error) {
-          this.logger.error('JWT authentication error:', error);
-          res.status(401).send('Invalid JWT token');
-          return;
-        }
-      }
-
-      // Check if JWT token exists in cookie (required for authenticated access)
-      const cookieJwtToken = req.cookies?.jwtToken;
-      if (!cookieJwtToken) {
-        res
-          .status(401)
-          .send('Authentication required - JWT token not found in cookie');
-        return;
-      }
-
+    // If JWT token is provided in query, authenticate and set it as a cookie
+    if (jwtToken) {
       try {
-        // Verify JWT token from cookie
+        // Decode JWT to get userId
         const decoded = jwt.verify(
-          cookieJwtToken,
+          jwtToken,
           'istack-buddy-secret-key-2024',
         ) as any;
         const userId = decoded.userId;
@@ -293,61 +248,104 @@ export class PublicInterfaceController {
         // Authenticate the user using the authentication service
         const authResult = await this.authService.authenticateUser(
           userId,
-          cookieJwtToken,
+          jwtToken,
         );
+
         if (!authResult.success) {
-          res.status(401).send('Invalid JWT token in cookie');
+          res.status(401).send('Invalid JWT token');
           return;
         }
+
+        // Set JWT token as cookie
+        res.cookie('jwtToken', jwtToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'strict',
+          maxAge: 24 * 60 * 60 * 1000, // 24 hours
+        });
+
+        // Redirect to the same URL without the jwtToken parameter
+        res.redirect(`/public/form-marv/${conversationId}/${formId}`);
+        return;
       } catch (error) {
         this.logger.error('JWT authentication error:', error);
+        res.status(401).send('Invalid JWT token');
+        return;
+      }
+    }
+
+    // Check if JWT token exists in cookie (required for authenticated access)
+    const cookieJwtToken = req.cookies?.jwtToken;
+    if (!cookieJwtToken) {
+      res
+        .status(401)
+        .send('Authentication required - JWT token not found in cookie');
+      return;
+    }
+
+    try {
+      // Verify JWT token from cookie
+      const decoded = jwt.verify(
+        cookieJwtToken,
+        'istack-buddy-secret-key-2024',
+      ) as any;
+      const userId = decoded.userId;
+
+      // Authenticate the user using the authentication service
+      const authResult = await this.authService.authenticateUser(
+        userId,
+        cookieJwtToken,
+      );
+      if (!authResult.success) {
         res.status(401).send('Invalid JWT token in cookie');
         return;
       }
-
-      // Validate that the conversation exists (sessionId = conversationId)
-      const conversations = await this.chatManagerService.getConversations();
-      const conversation = conversations.find(
-        (conv) => conv.id === conversationId,
-      );
-      if (!conversation) {
-        res.status(404).send('Session not found');
-        return;
-      }
-
-      // Validate that the conversation has the correct formId
-      if (
-        !this.chatManagerService.validateConversationFormId(
-          conversationId,
-          formId,
-        )
-      ) {
-        res.status(400).json({ message: 'Session and formId mismatch' });
-        return;
-      }
-
-      // Serve the static Next.js app
-      const fs = require('fs');
-      const path = require('path');
-
-      try {
-        const staticFilePath = path.join(
-          __dirname,
-          '../../../public-content/form-marv/public/form-marv/[session-token]/[formId]/index.html',
-        );
-        const staticContent = fs.readFileSync(staticFilePath, 'utf8');
-
-        res.setHeader('Content-Type', 'text/html');
-        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-        res.setHeader('Pragma', 'no-cache');
-        res.setHeader('Expires', '0');
-        res.send(staticContent);
-      } catch (error) {
-        this.logger.error('Error serving static app:', error);
-        res.status(500).send('Error loading application');
-      }
     } catch (error) {
-      res.status(500).send('Internal Server Error');
+      this.logger.error('JWT authentication error:', error);
+      res.status(401).send('Invalid JWT token in cookie');
+      return;
+    }
+
+    // Validate that the conversation exists (sessionId = conversationId)
+    const conversations = await this.chatManagerService.getConversations();
+    const conversation = conversations.find(
+      (conv) => conv.id === conversationId,
+    );
+    if (!conversation) {
+      res.status(404).send('Session not found');
+      return;
+    }
+
+    // Validate that the conversation has the correct formId
+    if (
+      !this.chatManagerService.validateConversationFormId(
+        conversationId,
+        formId,
+      )
+    ) {
+      res.status(400).json({ message: 'Session and formId mismatch' });
+      return;
+    }
+
+    // Serve the static Next.js app
+    const fs = require('fs');
+    const path = require('path');
+
+    try {
+      const staticFilePath = path.join(
+        __dirname,
+        '../../../public-content/form-marv/public/form-marv/[session-token]/[formId]/index.html',
+      );
+      const staticContent = fs.readFileSync(staticFilePath, 'utf8');
+
+      res.setHeader('Content-Type', 'text/html');
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      res.send(staticContent);
+    } catch (error) {
+      this.logger.error('Error serving static app:', error);
+      res.status(500).send('Error loading application');
     }
   }
 
