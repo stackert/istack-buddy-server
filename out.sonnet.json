@@ -1,0 +1,93 @@
+[
+  {
+    "id": "msg_01GwycqWMBwbuyP7yp8pwWjV",
+    "type": "message",
+    "role": "assistant",
+    "model": "claude-3-5-sonnet-20241022",
+    "content": [
+      {
+        "type": "text",
+        "text": "I understand you want me to make serial (sequential) function calls since you specified \"then\" and emphasized calling them one after the other. I'll call getTime first for Tokyo, and then getTemp for Tokyo.\n\nLet me execute these calls in sequence:\n\n1. First, getting the time in Tokyo:"
+      },
+      {
+        "type": "tool_use",
+        "id": "toolu_01NCimayxST1LKkZm3WTCLQG",
+        "name": "getTime",
+        "input": {
+          "city": "Tokyo"
+        }
+      }
+    ],
+    "stop_reason": "tool_use",
+    "stop_sequence": null,
+    "usage": {
+      "input_tokens": 858,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "cache_creation": {
+        "ephemeral_5m_input_tokens": 0,
+        "ephemeral_1h_input_tokens": 0
+      },
+      "output_tokens": 117,
+      "service_tier": "standard"
+    }
+  },
+  {
+    "id": "msg_014xyegnx59GyVk4ugbXeBMx",
+    "type": "message",
+    "role": "assistant",
+    "model": "claude-3-5-sonnet-20241022",
+    "content": [
+      {
+        "type": "text",
+        "text": "2. Now, getting the temperature in Tokyo:"
+      },
+      {
+        "type": "tool_use",
+        "id": "toolu_01Q4nKFGQrXpJiW1QGbqzPtf",
+        "name": "getTemp",
+        "input": {
+          "city": "Tokyo"
+        }
+      }
+    ],
+    "stop_reason": "tool_use",
+    "stop_sequence": null,
+    "usage": {
+      "input_tokens": 998,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "cache_creation": {
+        "ephemeral_5m_input_tokens": 0,
+        "ephemeral_1h_input_tokens": 0
+      },
+      "output_tokens": 64,
+      "service_tier": "standard"
+    }
+  },
+  {
+    "id": "msg_01TaFiDtD328oUEfSEAKfoyS",
+    "type": "message",
+    "role": "assistant",
+    "model": "claude-3-5-sonnet-20241022",
+    "content": [
+      {
+        "type": "text",
+        "text": "The complete response is:\nTokyo time is 3:45 PM and the temperature there is 90°F (hot)."
+      }
+    ],
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "usage": {
+      "input_tokens": 945,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "cache_creation": {
+        "ephemeral_5m_input_tokens": 0,
+        "ephemeral_1h_input_tokens": 0
+      },
+      "output_tokens": 31,
+      "service_tier": "standard"
+    }
+  }
+]
