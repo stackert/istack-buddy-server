@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { IConversationMessage } from '../chat-manager/interfaces/message.interface';
+import { IConversationMessage } from 'src/chat-manager/interfaces/message.interface';
 import { TConversationMessageContentString } from '../ConversationLists/types';
 
 // Direct exports of ConversationLists types for robots
