@@ -278,8 +278,6 @@ export class ChatManagerService {
           updatedAt: new Date(),
         };
 
-
-
       // Get conversation history for context using the robot's transformer
       const getHistory = () => {
         try {
@@ -382,7 +380,6 @@ export class ChatManagerService {
     createMessageDto: CreateMessageDto,
     contentType: string = 'text',
   ): Promise<IConversationMessage> {
-
     const messageId = uuidv4();
     const now = new Date();
 
@@ -413,8 +410,6 @@ export class ChatManagerService {
       // against create time overwrite - if that turns out to a an issue
       updatedAt: now,
     };
-
-
 
     // Store the message in the chat conversation list service
     this.chatConversationListService.addMessageToConversation(
@@ -462,8 +457,6 @@ export class ChatManagerService {
       payload: string;
     }) => Promise<void>,
   ): Promise<IConversationMessage> {
-
-
     // Add the user message to the conversation
     const userMessage = await this.addUserMessage(
       conversationId,
@@ -472,8 +465,6 @@ export class ChatManagerService {
       UserRole.CUSTOMER,
       UserRole.AGENT,
     );
-
-
 
     // Trigger the robot response internally
     try {
@@ -501,8 +492,6 @@ export class ChatManagerService {
         updatedAt: new Date(),
       };
 
-
-
       // Create internal callback that handles robot responses
       const internalRobotCallback = async (
         response: Pick<
@@ -510,8 +499,6 @@ export class ChatManagerService {
           'content'
         >,
       ) => {
-
-
         // Defensive check to ensure response has the expected structure
         if (!response || !response.content || !response.content.payload) {
           console.error('Invalid robot response structure:', response);
@@ -562,7 +549,6 @@ export class ChatManagerService {
     conversationId: string,
     content: { type: 'text'; payload: string },
   ): Promise<IConversationMessage> {
-
     // Add the user message to the conversation
     const userMessage = await this.addUserMessage(
       conversationId,
@@ -572,14 +558,10 @@ export class ChatManagerService {
       UserRole.AGENT,
     );
 
-
-
     // Trigger the robot response internally
     try {
       // Create conversation callbacks for streaming
       const callbacks = this.createConversationCallbacks(conversationId);
-
-
 
       // Handle robot streaming response
       await this.handleRobotStreamingResponse(
@@ -601,7 +583,6 @@ export class ChatManagerService {
         error,
       );
     }
-
 
     return userMessage;
   }
@@ -629,7 +610,6 @@ export class ChatManagerService {
     content: string,
     robotName: string,
   ): Promise<IConversationMessage> {
-
     const result = await this.addMessage({
       conversationId,
       fromUserId: robotName,
@@ -638,7 +618,6 @@ export class ChatManagerService {
       fromRole: UserRole.ROBOT,
       toRole: UserRole.CUSTOMER,
     });
-
 
     return result;
   }
@@ -653,7 +632,6 @@ export class ChatManagerService {
     fromRole: UserRole = UserRole.CUSTOMER,
     toRole: UserRole = UserRole.AGENT,
   ): Promise<IConversationMessage> {
-
     const result = await this.addMessage({
       conversationId,
       fromUserId: userId,
@@ -662,7 +640,6 @@ export class ChatManagerService {
       fromRole,
       toRole,
     });
-
 
     return result;
   }
@@ -863,7 +840,6 @@ export class ChatManagerService {
     conversationId: string,
     joinRoomDto: JoinRoomDto,
   ): Promise<Participant> {
-
     const conversation = this.conversationMetadata[conversationId];
     if (!conversation) {
       throw new Error(`Conversation ${conversationId} not found`);
