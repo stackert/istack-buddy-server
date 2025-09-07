@@ -40,7 +40,7 @@ export function formatValidationResult(
 
   const observationClass = viewer.getObservationClassName();
   const contextInfo =
-    observationClass !== 'ObservationMakerViewer'
+    observationClass !== ('ObservationMakerViewer' as any)
       ? `\n*Observation Type:* ${observationClass}`
       : '';
 

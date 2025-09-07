@@ -596,9 +596,7 @@ export class MarvService {
       ...formData,
       fields: formData.fields || [],
     };
-    const formModel = new Models.FsModelForm(formDataWithFields, {
-      fieldModelVersion: 'v2',
-    });
+    const formModel = new Models.FsModelForm(formDataWithFields, {});
 
     // Create observation context
     const observationContext = {

@@ -168,3 +168,13 @@ export const resetAIClientMocks = () => {
   mockAnthropicClient.messages.create.mockClear();
   mockOpenAIClient.chat.completions.create.mockClear();
 };
+
+// Combined mock object for easy access
+export const mockAIClientMocks = {
+  anthropic: mockAnthropicClient,
+  openai: mockOpenAIClient,
+  streaming: mockStreamingResponses,
+  successful: mockSuccessfulResponses,
+  errors: mockErrorResponses,
+  reset: resetAIClientMocks,
+};

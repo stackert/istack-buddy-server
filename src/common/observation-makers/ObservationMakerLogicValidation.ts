@@ -2,6 +2,8 @@ import {
   ObservationMakers,
   TreeUtilities,
   EObservationSubjectType,
+  EObservationClass,
+  EObservationResource,
   ELogLevel,
   // LogLevel,
 } from 'istack-buddy-utilities';
@@ -35,6 +37,8 @@ const fieldTypes = '';
 class ObservationMakerLogicValidation extends ObservationMakers.AbstractObservationMaker {
   protected subjectType = EObservationSubjectType.FIELD;
   protected observationClass = this.constructor.name;
+  protected observationClassName =
+    'ObservationMakerLogicValidation' as EObservationClass;
   protected messagePrimary = 'Field Logic Validation Check';
   private otherCounts: Record<TOtherCountIndex, TCountRecord> = {} as Record<
     TOtherCountIndex,
@@ -55,8 +59,8 @@ class ObservationMakerLogicValidation extends ObservationMakers.AbstractObservat
     );
   }
 
-  getRequiredResources(): string[] {
-    return ['formModel'];
+  getRequiredResources(): EObservationResource[] {
+    return ['formModel' as EObservationResource];
   }
 
   /**
@@ -250,7 +254,7 @@ class ObservationMakerLogicValidation extends ObservationMakers.AbstractObservat
 
     // we need to add loging for this.otherCounts
 
-    return { isObservationTrue: logItems.length > 0, logItems };
+    return { logItems };
   }
 }
 export { ObservationMakerLogicValidation };

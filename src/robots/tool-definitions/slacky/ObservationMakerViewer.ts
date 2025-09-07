@@ -1,6 +1,8 @@
 import {
   ObservationMakers,
   EObservationSubjectType,
+  EObservationClass,
+  EObservationResource,
 } from 'istack-buddy-utilities';
 
 import type {
@@ -16,15 +18,17 @@ import type {
 export class ObservationMakerViewer extends ObservationMakers.AbstractObservationMaker {
   protected subjectType = EObservationSubjectType.FORM;
   protected observationClass = this.constructor.name;
+  protected observationClassName =
+    'ObservationMakerViewer' as EObservationClass;
   protected messagePrimary = 'Observation Viewer';
-  private logItems: IObservationLogItem[] = [];
+  protected logItems: IObservationLogItem[] = [];
 
   constructor() {
     super();
   }
 
-  public getRequiredResources(): string[] {
-    return ['formModel'];
+  public getRequiredResources(): EObservationResource[] {
+    return ['formModel' as EObservationResource];
   }
 
   public async makeObservation(
@@ -32,7 +36,7 @@ export class ObservationMakerViewer extends ObservationMakers.AbstractObservatio
   ): Promise<IObservationResult> {
     // This is a viewer class, not a real observation maker
     // It just displays existing observation results
-    return { isObservationTrue: true, logItems: this.logItems };
+    return { logItems: this.logItems };
   }
 
   public setLogItems(logItems: IObservationLogItem[]): void {
@@ -150,8 +154,8 @@ export class ObservationMakerViewer extends ObservationMakers.AbstractObservatio
   /**
    * Get the observation class name
    */
-  public getObservationClassName(): string {
-    return this.observationClass;
+  public getObservationClassName(): EObservationClass {
+    return this.observationClass as EObservationClass;
   }
 
   /**

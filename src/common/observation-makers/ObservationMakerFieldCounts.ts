@@ -2,6 +2,8 @@ import {
   ObservationMakers,
   TreeUtilities,
   EObservationSubjectType,
+  EObservationClass,
+  EObservationResource,
   ALL_KNOWN_FS_FIELD_TYPES,
   // LogLevel,
 } from 'istack-buddy-utilities';
@@ -39,6 +41,8 @@ const fieldTypes = '';
 class ObservationMakerFieldCounts extends ObservationMakers.AbstractObservationMaker {
   protected subjectType = EObservationSubjectType.FORM;
   protected observationClass = this.constructor.name;
+  protected observationClassName =
+    'ObservationMakerFieldCounts' as EObservationClass;
   protected messagePrimary = 'Field Counts Observation';
   private fieldByTypeCounts: Record<TFsFieldType, TCountRecord>;
   private otherCounts: Record<TOtherCountIndex, TCountRecord> = {} as Record<
@@ -72,8 +76,8 @@ class ObservationMakerFieldCounts extends ObservationMakers.AbstractObservationM
     );
   }
 
-  getRequiredResources(): string[] {
-    return ['formModel'];
+  getRequiredResources(): EObservationResource[] {
+    return ['formModel' as EObservationResource];
   }
 
   async makeObservation(
@@ -243,7 +247,7 @@ class ObservationMakerFieldCounts extends ObservationMakers.AbstractObservationM
     );
     logItems.push(allFieldCountLogItems);
 
-    return { isObservationTrue: true, logItems };
+    return { logItems };
   }
 }
 export { ObservationMakerFieldCounts };
