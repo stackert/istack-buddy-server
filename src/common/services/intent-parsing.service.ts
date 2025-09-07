@@ -154,6 +154,15 @@ HARVEST SUBJECTS (Extract entity IDs from user text):
 - **jira**: Extract JIRA tickets (format "FORM-3545", "TECH-1234")
 - **account**: Extract account IDs (numbers or "account 123456")
 - **authProvider**: Extract auth provider IDs (numbers or names)
+- **startDate**: Extract start dates (convert to YYYY-MM-DD format using intelligent parsing)
+- **endDate**: Extract end dates (convert to YYYY-MM-DD format using intelligent parsing)
+
+DEFAULT DATE RULES FOR REPORTS:
+- **MANDATORY**: If robot is KnobbyOpenAiSumoReport AND no explicit date range mentioned → ALWAYS add default dates
+- **MANDATORY**: Default range: startDate: "2025-09-01", endDate: "2025-09-07" 
+- **MANDATORY**: Apply this for ANY request to KnobbyOpenAiSumoReport without explicit time specification
+- **MANDATORY**: Keywords that trigger default dates: "show me", "get", "generate", "submissions", "logs", "report", "data"
+- **EXAMPLE**: "show me submissions for form 123" → MUST include startDate: "2025-09-01", endDate: "2025-09-07"
 
 ROBOT SELECTION LOGIC:
 1. **Log analysis, error investigation, integration issues** → KnobbyOpenAiSumoReport
@@ -180,12 +189,16 @@ SUBINTENT SELECTION RULES:
 - For "advice on calculations" → KnobbyOpenAiSearch with "recommendFormFieldCalculation"
 
 INTELLIGENT DATE PARSING:
-- Current year: 2025
+- Current year: 2025, Current month: September (09)
 - "july 5" → "2025-07-05" 
-- "from the 5th to 9th" → "2025-[current-month]-05" to "2025-[current-month]-09"
-- "since the 9th" → "2025-[current-month]-09" to "2025-[current-month]-[today]"
+- "from the 5th to 9th" → "2025-09-05" to "2025-09-09" (assume current month)
+- "since the 9th" → "2025-09-09" to "2025-09-07" (assume current month, today is 7th)
+- "past 7 days" → "2025-09-01" to "2025-09-07" (7 days back from today)
 - "last week" → calculate previous week dates
 - "yesterday" → yesterday's date in YYYY-MM-DD format
+- CRITICAL: If no month specified, assume current month (September 2025)
+- CRITICAL: If no year specified, assume current year (2025)
+- DEFAULT DATE RANGE: If no date range specified for reports/logs, assume "past 7 days" → "2025-09-01" to "2025-09-07"
 
 STRICT PARSING RULES:
 - If dates are ambiguous beyond intelligent parsing → return error

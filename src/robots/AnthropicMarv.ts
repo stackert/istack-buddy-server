@@ -269,7 +269,21 @@ Your goal is to help users efficiently manage their Formstack forms through thes
               continue;
             }
           }
-          const toolResult = await this.executeToolCall(toolUse.name, toolArgs);
+          // Create adapter for callback signature mismatch
+          const callbackAdapter = (content: string, contentType?: string) => {
+            callbacks.onFullMessageReceived({
+              content: {
+                payload: content,
+                type: (contentType as any) || 'text/plain'
+              }
+            });
+          };
+
+          const toolResult = await this.executeToolCall(
+            toolUse.name, 
+            toolArgs,
+            callbackAdapter // ← PASS THE ADAPTED CALLBACK!
+          );
           callbacks.onStreamChunkReceived(`\n\n${toolResult}`);
           accumulatedContent += `\n\n${toolResult}`;
         } catch (error) {

@@ -27,6 +27,15 @@ export interface TempUserAndSessionResult {
   jwtToken: string;
 }
 
+export interface IDevSession {
+  sessionId: string;
+  userId: string;
+  jwtToken: string;
+  createdAt: Date;
+  lastActivityAt: Date;
+  expiresInMs: number;
+}
+
 interface FileBasedUserPermissions {
   user_permissions: {
     [userId: string]: {
@@ -83,6 +92,7 @@ export class AuthorizationPermissionsService {
 
   // Session management
   private formMarvSessions: Record<string, IFormMarvSession> = {};
+  private devSessions: Record<string, IDevSession> = {};
 
   constructor(
     private readonly logger: CustomLoggerService,
@@ -322,6 +332,105 @@ export class AuthorizationPermissionsService {
       userId,
       jwtToken,
     };
+  }
+
+  /**
+   * Create a temporary dev user and session for robot router testing
+   * Based on marv-session pattern but for dev/debug purposes
+   * @returns Object containing sessionId, userId, and jwtToken
+   */
+  createDevUserAndSession(): TempUserAndSessionResult {
+    const sessionId = uuidv4();
+    const userId = sessionId;
+    const now = new Date();
+    const expiresInMs = 8 * 60 * 60 * 1000; // 8 hours (same as marv)
+
+    // Create a temporary user with dev permissions
+    this.addUser(
+      userId,
+      ['dev-debug:chat:read', 'dev-debug:chat:write', 'dev-debug:monitor:read'],
+      [],
+    );
+
+    // Create a temporary user profile
+    this.userProfileService.addTemporaryUser(userId, {
+      email: `dev-session-${Date.now()}@istackbuddy.com`,
+      username: userId,
+      account_type_informal: 'TEMPORARY_DEV',
+      first_name: 'Dev',
+      last_name: 'Session-' + sessionId.slice(0, 8),
+    });
+
+    // Create JWT token for the temporary user
+    const jwtSecret = process.env.ISTACK_BUDDY_INTERNAL_JWT_SECRET;
+    if (!jwtSecret) {
+      throw new Error(
+        'ISTACK_BUDDY_INTERNAL_JWT_SECRET environment variable is not set',
+      );
+    }
+
+    const jwtToken = jwt.sign(
+      {
+        userId,
+        email: `dev-session-${Date.now()}@istackbuddy.com`,
+        username: userId,
+        accountType: 'TEMPORARY_DEV',
+        sessionId,
+      },
+      jwtSecret,
+      { expiresIn: '8h' },
+    );
+
+    // Create and store the dev session
+    const session: IDevSession = {
+      sessionId,
+      userId,
+      jwtToken,
+      createdAt: now,
+      lastActivityAt: now,
+      expiresInMs,
+    };
+
+    this.devSessions[jwtToken] = session;
+
+    this.logger.logWithContext(
+      'log',
+      'Temporary dev user and session created',
+      'AuthorizationPermissionsService.createDevUserAndSession',
+      undefined,
+      { sessionId, userId },
+    );
+
+    return {
+      sessionId,
+      userId,
+      jwtToken,
+    };
+  }
+
+  /**
+   * Get a dev session by JWT token and update last activity
+   * @param jwtToken The JWT token to look up
+   * @returns The dev session if found and not expired, null otherwise
+   */
+  getDevSessionByJwtToken(jwtToken: string): IDevSession | null {
+    const session = this.devSessions[jwtToken];
+    if (!session) {
+      return null;
+    }
+
+    // Check if session has expired
+    const now = new Date();
+    if (now.getTime() - session.createdAt.getTime() > session.expiresInMs) {
+      delete this.devSessions[jwtToken];
+      return null;
+    }
+
+    // Update last activity
+    session.lastActivityAt = now;
+    this.devSessions[jwtToken] = session;
+
+    return session;
   }
 
   /**
