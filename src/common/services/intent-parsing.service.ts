@@ -122,22 +122,23 @@ AVAILABLE ROBOTS AND THEIR INTENTS:
 🔧 **AnthropicMarv** (robotName: "AnthropicMarv")
 - Intent: "manageForm"
 - Required: formId (always required for Marv tools)
-- SubIntents: ["validateLogic", "validateCalculations", "getOverview", "troubleshootWebhooks", "debugSubmissions", "checkIntegrations"]
-- Use when: troubleshoot form errors, validate logic, manage fields, debug calculations, webhook issues
-- Example subIntent selection: troubleshooting webhooks → "troubleshootWebhooks", form validation → "validateLogic"
+- SubIntents: ["checkFieldsLogic", "checkFieldsCalculation", "checkFieldsCommonIssue", "createForm", "createFormField", "createFormFieldUniqueSlug", "removeFormFieldUniqueSlug", "createFormLogicCalculationStash", "removeFormFieldsLogicCalculation", "restoreFormLogicCalculationStash", "removeFormLogicCalculationStash"]
+- Use when: troubleshoot form errors, validate logic, manage fields, debug calculations, form configuration
+- Example subIntent selection: logic issues → "checkFieldsLogic", calculation problems → "checkFieldsCalculation", form creation → "createForm"
 
 🔍 **KnobbyOpenAiSearch** (robotName: "KnobbyOpenAiSearch")
 - Intent: "searchKnowledge"
 - Required: query text
-- SubIntents: ["comprehensive", "semantic", "troubleshootingGuide", "documentation", "bestPractices"]
-- Use when: search documentation, find information, get troubleshooting guides, find solutions
-- Example subIntent selection: find docs → "documentation", need help → "troubleshootingGuide"
+- SubIntents: ["findContextDocumentHelpArticles", "findContextDocumentHelpArticleSaml", "findContextDocumentHelpArticleSso", "findContextDocumentHelpArticleForm", "findContextDocumentHelpArticleFormConfiguration", "findContextDocumentHelpArticleFormFieldConfiguration", "findContextDynamic", "findContextDynamicAccount", "findContextDynamicForm", "findContextDynamicAuthProvider", "findSlackConverationRelated", "findSlackConverationRelatedAnyChannel", "findSlackConverationRelatedSameChannel", "recommend", "recommendForm", "recommendFormField", "recommendFormFieldCalculation", "recommendFormFieldLogic"]
+- Use when: search documentation, find help articles, get context information, find troubleshooting guides, search conversation history, provide recommendations
+- Example subIntent selection: SAML help → "findContextDocumentHelpArticleSaml", form docs → "findContextDocumentHelpArticleForm", account info → "findContextDynamicAccount", best practices → "recommend", form suggestions → "recommendForm"
 
 📊 **KnobbyOpenAiSumoReport** (robotName: "KnobbyOpenAiSumoReport")  
 - Intent: "generateReport"
 - Required: queryName, subject
-- SubIntents: ["submitActionReport", "submissionCreatedReport", "authProviderMetrics", "jobManagement"]
-- Use when: analyze logs, generate reports, track submit actions, get submission metrics
+- SubIntents: ["searchSumoLogSubmissionErrors", "searchSumoLogSubmitActionErrors", "searchSumoLogIntegrationErrors", "searchSumoLogWebhookErrors", "searchSumoLogEmailErrors", "searchSumoLogEmailConfirmationErrors", "searchSumoLogEmailNotificationErrors", "searchSumoLogEmailConfigurationErrors", "searchSumoLogFormSubmissionLifeCycle", "searchSumoLogFormSubmissionSubmitActionRun"]
+- Use when: analyze logs, investigate errors, track submission problems, debug integrations, troubleshoot webhooks, email issues
+- Example subIntent selection: integration problems → "searchSumoLogIntegrationErrors", webhook failures → "searchSumoLogWebhookErrors", email issues → "searchSumoLogEmailErrors"
 
 🤖 **SlackyOpenAiAgent** (robotName: "SlackyOpenAiAgent") - CATCH-ALL ROBOT
 - Intent: "assistUser"
@@ -155,22 +156,28 @@ HARVEST SUBJECTS (Extract entity IDs from user text):
 - **authProvider**: Extract auth provider IDs (numbers or names)
 
 ROBOT SELECTION LOGIC:
-1. **Form troubleshooting + formId present** → AnthropicMarv
-   - Choose subIntents based on issue: webhooks → "troubleshootWebhooks", validation → "validateLogic"
-2. **Search/documentation requests** → KnobbyOpenAiSearch  
-   - Choose subIntents: documentation search → "documentation", troubleshooting help → "troubleshootingGuide"
-3. **Report/analytics/logs + specific data needed** → KnobbyOpenAiSumoReport
-   - Choose subIntents based on report type: submit actions → "submitActionReport"
+1. **Log analysis, error investigation, integration issues** → KnobbyOpenAiSumoReport
+   - Keywords: "not working", "errors", "failing", "issues", "problems", "logs", "intermittent"
+   - Choose subIntents: integration issues → "searchSumoLogIntegrationErrors", webhook problems → "searchSumoLogWebhookErrors", email issues → "searchSumoLogEmailErrors"
+2. **Documentation, help articles, context information, recommendations** → KnobbyOpenAiSearch  
+   - Keywords: "find", "documentation", "help", "how to", "setup", "guide", "SAML", "SSO", "recommend", "suggest", "best practices", "what should", "advice"
+   - Choose subIntents: SAML help → "findContextDocumentHelpArticleSaml", form docs → "findContextDocumentHelpArticleForm", account info → "findContextDynamicAccount", recommendations → "recommend", form advice → "recommendForm"
+3. **Form management, configuration, creation** → AnthropicMarv (requires formId)
+   - Keywords: "create", "configure", "setup form", "add field", "logic", "calculation"
+   - Choose subIntents: logic problems → "checkFieldsLogic", calculations → "checkFieldsCalculation", form creation → "createForm"
 4. **Everything else** → SlackyOpenAiAgent (catch-all)
    - Choose subIntents: follow-up → "handleFollowUp", unclear → "clarifyRequest"
 
 SUBINTENT SELECTION RULES:
 - ALWAYS include 1-2 relevant subIntents in the intentData
-- Choose subIntents that match the user's specific request  
-- For troubleshooting webhooks → use "troubleshootWebhooks" 
-- For general form issues → use "getOverview" 
-- For documentation searches → use "documentation"
-- When unclear → use "clarifyRequest" for SlackyOpenAiAgent
+- **Prioritize problem-solving context over entity presence**
+- For "not working" + formId → KnobbyOpenAiSumoReport with "searchSumoLogIntegrationErrors" 
+- For "create form" → AnthropicMarv with "createForm"
+- For "find SAML docs" → KnobbyOpenAiSearch with "findContextDocumentHelpArticleSaml"
+- For "email problems" → KnobbyOpenAiSumoReport with "searchSumoLogEmailErrors"
+- For "recommend best practices" → KnobbyOpenAiSearch with "recommend"
+- For "suggest form fields" → KnobbyOpenAiSearch with "recommendFormField"
+- For "advice on calculations" → KnobbyOpenAiSearch with "recommendFormFieldCalculation"
 
 INTELLIGENT DATE PARSING:
 - Current year: 2025

@@ -20,6 +20,6 @@ import { IntentParsingService } from '../common/services/intent-parsing.service'
     AuthPermissionGuard,
     IntentParsingService,
   ],
-  exports: [ChatManagerService, ChatConversationListService],
+  exports: [ChatManagerService, ChatConversationListService, IntentParsingService],
 })
 export class ChatManagerModule {}

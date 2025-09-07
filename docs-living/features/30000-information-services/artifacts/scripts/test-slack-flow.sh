@@ -23,9 +23,8 @@ echo ""
 
 # Test message - CHANGE THIS TO TEST DIFFERENT SCENARIOS
 TEST_MESSAGE=$(cat << 'EOF'
-formId: 1234
 
-Customer said they have integrations that don't always work. Can you help?
+Can you make a recommendation for logic strategy.
 
 EOF
 )
