@@ -8,6 +8,7 @@ import { ChatConversationListService } from '../ConversationLists/ChatConversati
 import { AuthenticationModule } from '../authentication/authentication.module';
 import { GuardsModule } from '../common/guards/guards.module';
 import { AuthPermissionGuard } from '../common/guards/auth-permission.guard';
+import { IntentParsingService } from '../common/services/intent-parsing.service';
 
 @Module({
   imports: [RobotModule, AuthenticationModule, GuardsModule],
@@ -17,6 +18,7 @@ import { AuthPermissionGuard } from '../common/guards/auth-permission.guard';
     ChatManagerService,
     ChatConversationListService,
     AuthPermissionGuard,
+    IntentParsingService,
   ],
   exports: [ChatManagerService, ChatConversationListService],
 })

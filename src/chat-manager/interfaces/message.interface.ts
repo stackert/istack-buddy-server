@@ -24,6 +24,7 @@ export interface Conversation {
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
+  currentRobot?: string; // Track which robot is currently handling the conversation
 }
 
 export interface Participant {

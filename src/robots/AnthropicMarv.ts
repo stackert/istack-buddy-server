@@ -1,4 +1,5 @@
 import { AbstractRobotChat } from './AbstractRobotChat';
+import type { IntentData } from '../common/types/intent-parsing.types';
 import type {
   IStreamingCallbacks,
   TConversationMessageContentString,
@@ -444,5 +445,18 @@ Your goal is to help users efficiently manage their Formstack forms through thes
     });
 
     return immediateResponse.content;
+  }
+
+  /**
+   * NEW universal method for intent-based processing
+   * Phase 1: Just use existing acceptMessageStreamResponse method
+   */
+  async handleIntentWithTools(
+    intentData: IntentData,
+    message: IConversationMessage<TConversationMessageContentString>,
+    callbacks: IStreamingCallbacks
+  ): Promise<void> {
+    // Phase 1: Just use existing method (ignore intent data for now)
+    return this.acceptMessageStreamResponse(message, callbacks);
   }
 }

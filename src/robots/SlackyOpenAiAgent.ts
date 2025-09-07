@@ -4,6 +4,7 @@ import { UserRole } from '../chat-manager/dto/create-message.dto';
 import { IConversationMessage } from '../chat-manager/interfaces/message.interface';
 import { CustomLoggerService } from '../common/logger/custom-logger.service';
 import { AbstractRobotChat } from './AbstractRobotChat';
+import type { IntentData } from '../common/types/intent-parsing.types';
 import {
   FsRestrictedApiRoutesEnum,
   marvToolDefinitions,
@@ -874,4 +875,17 @@ Need help? Just ask!`;
   //   this.hasSentFinalResponse = false;
   //   this.logger.log('All monitoring stopped');
   // }
+
+  /**
+   * NEW universal method for intent-based processing
+   * Phase 1: Just use existing acceptMessageStreamResponse method
+   */
+  async handleIntentWithTools(
+    intentData: IntentData,
+    message: IConversationMessage<TConversationMessageContentString>,
+    callbacks: IStreamingCallbacks
+  ): Promise<void> {
+    // Phase 1: Just use existing method (ignore intent data for now)
+    return this.acceptMessageStreamResponse(message, callbacks);
+  }
 }

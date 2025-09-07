@@ -24,6 +24,9 @@ import {
   IStreamingCallbacks,
   TStreamingCallbackMessageOnFullMessageReceived,
 } from '../robots/types';
+import { IntentParsingService } from '../common/services/intent-parsing.service';
+import type { IntentParsingResponse } from '../common/types/intent-parsing.types';
+import { isIntentParsingError } from '../common/types/intent-parsing.types';
 
 @Injectable()
 export class ChatManagerService {
@@ -36,6 +39,7 @@ export class ChatManagerService {
   constructor(
     private readonly chatConversationListService: ChatConversationListService,
     private readonly robotService: RobotService,
+    private readonly intentParsingService: IntentParsingService,
   ) {}
 
   /**
@@ -384,20 +388,26 @@ export class ChatManagerService {
 
       // Use the provided callbacks directly
 
-      // Call robot streaming response
-      if ('acceptMessageStreamResponse' in robot) {
-        console.log('=== handleRobotStreamingResponse CALLING ROBOT ===');
-        await (robot as any).acceptMessageStreamResponse(
+      // Parse intent for this robot call (simple case - just wrap the message)
+      const intentData = {
+        originalUserPrompt: userMessage,
+        subjects: {} // No subject extraction for this simple case
+      };
+
+      // Call robot using new universal method
+      if ('handleIntentWithTools' in robot) {
+        console.log('=== handleRobotStreamingResponse CALLING ROBOT (NEW METHOD) ===');
+        await (robot as any).handleIntentWithTools(
+          intentData,
           conversationMessage,
           callbacks,
-          getHistory,
         );
         console.log(
           '=== handleRobotStreamingResponse ROBOT CALL COMPLETED ===',
         );
       } else {
         throw new Error(
-          `Robot ${robotName} does not support streaming responses for conversation ${conversationId}`,
+          `Robot ${robotName} does not support handleIntentWithTools method for conversation ${conversationId}`,
         );
       }
     } catch (error) {
@@ -580,14 +590,6 @@ export class ChatManagerService {
       payload: string;
     }) => Promise<void>,
   ): Promise<IConversationMessage> {
-    console.log('=== CHAT MANAGER addMessageFromSlack ENTRY ===');
-    console.log('conversationId:', JSON.stringify(conversationId, null, 2));
-    console.log('content:', JSON.stringify(content, null, 2));
-    console.log(
-      'has slackResponseCallback:',
-      JSON.stringify(!!slackResponseCallback, null, 2),
-    );
-
     // Add the user message to the conversation
     const userMessage = await this.addUserMessage(
       conversationId,
@@ -597,12 +599,36 @@ export class ChatManagerService {
       UserRole.AGENT,
     );
 
-    console.log('=== CHAT MANAGER addMessageFromSlack USER MESSAGE ADDED ===');
-    console.log('userMessage:', JSON.stringify(userMessage, null, 2));
-
     // Trigger the robot response internally
     try {
-      const robot = this.robotService.getRobotByName('SlackyOpenAiAgent')!;
+      // Parse intent for robot selection (NEW - replaces hardcoded robot selection)
+      const conversationContext = { currentRobot: this.conversationMetadata[conversationId]?.currentRobot };
+      const intentResult = await this.intentParsingService.parseIntent(content.payload, conversationContext);
+      
+      let targetRobotName = 'SlackyOpenAiAgent'; // Default fallback
+      
+      if (!isIntentParsingError(intentResult)) {
+        targetRobotName = intentResult.robotName;
+        console.log('=== CHAT MANAGER Intent Parsing SUCCESS ===');
+        console.log(`Selected robot: ${targetRobotName}, Intent: ${intentResult.intent}`);
+        console.log('Full intent result:', JSON.stringify(intentResult, null, 2));
+        if (intentResult.intentData.subIntents) {
+          console.log(`SubIntents: ${JSON.stringify(intentResult.intentData.subIntents)}`);
+        }
+        if (intentResult.intentData.subjects) {
+          console.log(`Subjects extracted: ${JSON.stringify(intentResult.intentData.subjects)}`);
+        }
+      } else {
+        console.log('=== CHAT MANAGER Intent Parsing ERROR ===');
+        console.log(`Error: ${intentResult.error}, Reason: ${intentResult.reason}`);
+        console.log('Falling back to SlackyOpenAiAgent');
+      }
+      
+      // Update conversation robot tracking (NEW)
+      await this.updateConversationCurrentRobot(conversationId, targetRobotName);
+      
+      // Get the selected robot
+      const robot = this.robotService.getRobotByName(targetRobotName)!;
 
       // Get conversation history for context (using original format for robot callback)
       const conversationHistory = await this.getLastMessages(
@@ -625,11 +651,6 @@ export class ChatManagerService {
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-
-      console.log(
-        '=== CHAT MANAGER addMessageFromSlack ROBOT MESSAGE CREATED ===',
-      );
-      console.log('robot message:', JSON.stringify(message, null, 2));
 
       // Create internal callback that handles robot responses
       const internalRobotCallback = async (
@@ -663,9 +684,6 @@ export class ChatManagerService {
           responseContent &&
           responseContent.trim()
         ) {
-          console.log(
-            '=== CHAT MANAGER addMessageFromSlack CALLING SLACK CALLBACK ===',
-          );
           await slackResponseCallback({
             type: 'text',
             payload: responseContent,
@@ -673,21 +691,65 @@ export class ChatManagerService {
         }
       };
 
-      // Trigger robot response
-      console.log('=== CHAT MANAGER addMessageFromSlack TRIGGERING ROBOT ===');
-      await robot.acceptMessageMultiPartResponse(
+      // Prepare intent data for robot
+      const intentData = !isIntentParsingError(intentResult) ? intentResult.intentData : {
+        originalUserPrompt: content.payload,
+        subjects: {}
+      };
+      
+      // Create streaming callbacks object
+      const streamingCallbacks: IStreamingCallbacks = {
+        onStreamChunkReceived: (chunk: string, contentType: string = 'text/plain') => {
+          // For now, accumulate chunks - robot will handle the final response via onStreamFinished
+          // Future enhancement: could stream chunks to Slack in real-time
+        },
+        onStreamStart: (message: IConversationMessage<TConversationMessageContentString>) => {
+          console.log('=== CHAT MANAGER STREAMING STARTED ===');
+        },
+        onStreamFinished: async (finalMessage: IConversationMessage<TConversationMessageContentString>) => {
+          console.log('=== CHAT MANAGER STREAMING FINISHED ===');
+          console.log('Final message:', finalMessage);
+          
+          // Trigger the internal callback with the final response
+          await internalRobotCallback({
+            content: finalMessage.content,
+          });
+        },
+        onFullMessageReceived: async (message: TStreamingCallbackMessageOnFullMessageReceived) => {
+          console.log('=== CHAT MANAGER FULL MESSAGE RECEIVED ===');
+          
+          // Trigger the internal callback with the message
+          await internalRobotCallback({
+            content: message.content,
+          });
+        },
+        onError: async (error: Error) => {
+          console.error('=== CHAT MANAGER STREAMING ERROR ===', error);
+          
+          // Trigger callback with error response
+          await internalRobotCallback({
+            content: {
+              type: 'text/plain',
+              payload: `Error: ${error.message}`,
+            },
+          });
+        },
+      };
+
+      // Trigger robot response with intent data (NEW UNIVERSAL METHOD)
+      await (robot as any).handleIntentWithTools(
+        intentData,
         message,
-        internalRobotCallback,
-        () => conversationHistory,
+        streamingCallbacks,
       );
     } catch (error) {
+      // does this error need to use nestJs log?  are we supposed to be quietly dismissing it.
       console.error(
         `Error triggering robot response for conversation ${conversationId}:`,
         error,
       );
     }
 
-    console.log('=== CHAT MANAGER addMessageFromSlack EXIT ===');
     return userMessage;
   }
 
@@ -1366,6 +1428,35 @@ export class ChatManagerService {
           updatedAt: conversation.updatedAt,
         },
         timestamp: now.toISOString(),
+      });
+    }
+  }
+
+  /**
+   * Update the current robot for a conversation
+   * Used by intent parsing system to track which robot is handling the conversation
+   */
+  private async updateConversationCurrentRobot(
+    conversationId: string,
+    robotName: string,
+  ): Promise<void> {
+    const conversation = this.conversationMetadata[conversationId];
+    if (!conversation) {
+      return;
+    }
+
+    // Update currentRobot field for conversation
+    conversation.currentRobot = robotName;
+    conversation.updatedAt = new Date();
+
+    this.conversationMetadata[conversationId] = conversation;
+
+    // Optionally broadcast robot change to dashboard
+    if (this.gateway) {
+      this.gateway.broadcastToDashboard('conversation_robot_changed', {
+        conversationId,
+        currentRobot: robotName,
+        timestamp: new Date().toISOString(),
       });
     }
   }

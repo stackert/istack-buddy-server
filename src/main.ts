@@ -47,6 +47,18 @@ export async function bootstrap() {
 
   // Enable cookie parsing
   app.use(cookieParser());
+  
+  // Enable JSON body parsing globally (except for Slack webhook route which has custom parsing above)
+  app.use(json({ limit: '10mb' }));
+  
+  // Add validation pipe to catch validation issues
+  app.useGlobalPipes(new (require('@nestjs/common').ValidationPipe)({
+    whitelist: false, // Don't strip unknown properties
+    transform: false, // Don't transform types 
+    forbidNonWhitelisted: false, // Allow extra properties
+    skipMissingProperties: true, // Don't require all properties
+    disableErrorMessages: false, // Show validation errors
+  }));
 
   // Serve test data files statically
   app.use(

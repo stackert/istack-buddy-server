@@ -9,6 +9,7 @@ import type {
 } from '../chat-manager/interfaces/message.interface';
 import type { TConversationMessageContent } from '../ConversationLists/types';
 import { UserRole } from '../chat-manager/dto/create-message.dto';
+import type { IntentData } from '../common/types/intent-parsing.types';
 
 /**
  * Abstract chat robot class that extends the base robot functionality
@@ -32,6 +33,14 @@ export abstract class AbstractRobotChat extends AbstractRobot {
   ): Promise<
     Pick<IConversationMessage<TConversationMessageContentString>, 'content'>
   >;
+
+  // NEW universal method for intent-based processing
+  // ChatManager ONLY calls this method (not acceptMessage* methods)
+  public abstract handleIntentWithTools(
+    intentData: IntentData,
+    message: IConversationMessage<TConversationMessageContentString>,
+    callbacks: IStreamingCallbacks
+  ): Promise<void>;
 
   /**
    * Override the transformer to use Anthropic format for all chat robots
