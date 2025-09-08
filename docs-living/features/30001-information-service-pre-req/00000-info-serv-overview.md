@@ -49,7 +49,7 @@ We are going to create a second branch (off of main) istack-buddy-info-service-t
   - Bull Board dashboard service for monitoring
   - REST API endpoints for queue management
 
-### Configuration & Infrastructure Setup
+### Configuration & Infrastructure Setup (`100002`)
 
 - **Redis Configuration** (`config/redis.conf`) - Optimized Redis settings for job processing
 - **Docker Compose** (`docker-compose.yml`) - Redis container setup with health checks
@@ -67,6 +67,7 @@ We are going to create a second branch (off of main) istack-buddy-info-service-t
 - **Robot Service Updates** (`src/robots/robot.service.ts`) - Integration with new robots
 - **App Module Updates** (`src/app.module.ts`) - Integration of all new modules
 - **Personality Prompt** Each user facing prompt will include personality Prompt
+- **Observation Maker Sumo** Need to create ObservationMaker for each known sumo report and perhaps one generic
 
 # Things to remember
 
@@ -76,20 +77,20 @@ We are going to create a second branch (off of main) istack-buddy-info-service-t
 
 ### Information Services Features (Depend on prerequisites above)
 
-- **Intent Parsing Service** (`src/common/services/intent-parsing.service.ts`) - AI-powered request routing
+- **Intent Parsing Service** (`src/common/services/intent-parsing.service.ts`) - AI-powered request routing ((`10002`))
   - OpenAI GPT-4 powered intent analysis
   - Routes user requests to appropriate specialized robots
   - Extracts entity IDs (formId, submissionId, case numbers, etc.)
   - Handles conversation context and robot selection logic
   - Structured JSON response format for robot routing
 
-- **Information Service API Integration** (`src/istack-buddy-slack-api/`)
+- **Information Service API Integration** (`src/istack-buddy-slack-api/`) (`10003`)
   - IstackBuddySlackApiService - Main Slack integration service
   - KnowledgeBaseService - Knowledge base search integration
   - Slack conversation mapping and event handling
   - JWT token validation and user authentication
 
-- **Information Services Robots** (`src/robots/`)
+- **Information Services Robots** (`src/robots/`) (`10004`)
   - **KnobbyOpenAiSearch** - Knowledge base search across SLACK, CONTEXT-DOCUMENTS, CONTEXT-DYNAMIC
   - **KnobbyOpenAiSumoReport** - Sumo Logic reporting and log analysis workflows
   - Tool definitions and execution frameworks for each robot
