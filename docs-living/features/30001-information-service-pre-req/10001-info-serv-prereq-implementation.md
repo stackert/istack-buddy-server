@@ -88,10 +88,10 @@ metaDetails = fileManager.getMetaDetails(fileId);
   - `storage/temp/` - For STORAGE_CLASS.TEMP files
   - `storage/short-term/` - For STORAGE_CLASS.SHORT_TERM files
 - **File ID mapping**:
-  - FileId = `{storage_class}-{UUID}` (e.g., `temp-550e8400-e29b-41d4-a716-446655440000`)
+  - FileId = `{storage_class}-{UUID}.{extension}` (e.g., `temp-550e8400-e29b-41d4-a716-446655440000.csv`)
   - File path: `storage/{storage_class}/{fileId}`
   - Storage class extracted from fileId prefix/suffix
-- **File ID generation** - UUID v4 for unique identifiers
+- **File ID generation** - UUID v4 with file extension (e.g., `550e8400-e29b-41d4-a716-446655440000.csv`)
 - **Basic put/get operations** - Write/read files to/from disk
 - **Storage class handling** - Route files to appropriate directories
 - **Metadata extraction** - Read metadata from file content (not separate storage)
@@ -117,28 +117,31 @@ metaDetails = fileManager.getMetaDetails(fileId);
 **Content Type Structure**:
 
 ```typescript
-// Example: Dynamic Form Content
+// Example: Dynamic Form Content (structure may vary)
 {
   type: 'content/dynamic-form',
   payload: {
-    formRecord: {
-      formId: number;
-      activeAuthProviderName?: string;
-      protectionType?: 'SSO' | 'Password' | 'None';
-      submitActions?: Array<{...}>;
-      confirmationEmails?: Array<{...}>;
-      notificationEmails?: Array<{...}>;
-    }
+    formRecord: { /* form data structure */ }
   }
 }
 
-// Example: Sumo Search Report Content
+// Example: Sumo Search Report Content (may include originalQuery)
 {
   type: 'sumo-search/report',
   payload: {
     recordCount: number;
     firstRecord: any;
     results: any;
+    originalQuery?: string; // optional
+  }
+}
+
+// Example: Document Content (may include tokenCount)
+{
+  type: 'content/document',
+  payload: {
+    content: any;
+    tokenCount?: number; // optional
   }
 }
 ```

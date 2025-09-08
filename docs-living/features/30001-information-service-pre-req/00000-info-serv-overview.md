@@ -49,11 +49,6 @@ We are going to create a second branch (off of main) istack-buddy-info-service-t
   - Bull Board dashboard service for monitoring
   - REST API endpoints for queue management
 
-- **Enhanced Message Types** (`src/ConversationLists/types.ts`) - Richer conversation content
-  - Extended message content types for complex data
-  - Support for structured robot responses
-  - Enhanced conversation history management
-
 ### Configuration & Infrastructure Setup
 
 - **Redis Configuration** (`config/redis.conf`) - Optimized Redis settings for job processing
@@ -63,9 +58,15 @@ We are going to create a second branch (off of main) istack-buddy-info-service-t
 
 ### Core System Updates (Required for features to work)
 
+- **Enhanced Message Types** (`src/ConversationLists/types.ts`) - Richer conversation content
+  - Extended message content types for complex data
+  - Support for structured robot responses
+  - Enhanced conversation history management
+
 - **Enhanced Chat Manager** (`src/chat-manager/`) - Updated with new message types and robot integration
 - **Robot Service Updates** (`src/robots/robot.service.ts`) - Integration with new robots
 - **App Module Updates** (`src/app.module.ts`) - Integration of all new modules
+- **Personality Prompt** Each user facing prompt will include personality Prompt
 
 # Things to remember
 
@@ -75,18 +76,18 @@ We are going to create a second branch (off of main) istack-buddy-info-service-t
 
 ### Information Services Features (Depend on prerequisites above)
 
-- **Information Service API Integration** (`src/istack-buddy-slack-api/`)
-  - IstackBuddySlackApiService - Main Slack integration service
-  - KnowledgeBaseService - Knowledge base search integration
-  - Slack conversation mapping and event handling
-  - JWT token validation and user authentication
-
 - **Intent Parsing Service** (`src/common/services/intent-parsing.service.ts`) - AI-powered request routing
   - OpenAI GPT-4 powered intent analysis
   - Routes user requests to appropriate specialized robots
   - Extracts entity IDs (formId, submissionId, case numbers, etc.)
   - Handles conversation context and robot selection logic
   - Structured JSON response format for robot routing
+
+- **Information Service API Integration** (`src/istack-buddy-slack-api/`)
+  - IstackBuddySlackApiService - Main Slack integration service
+  - KnowledgeBaseService - Knowledge base search integration
+  - Slack conversation mapping and event handling
+  - JWT token validation and user authentication
 
 - **Information Services Robots** (`src/robots/`)
   - **KnobbyOpenAiSearch** - Knowledge base search across SLACK, CONTEXT-DOCUMENTS, CONTEXT-DYNAMIC
