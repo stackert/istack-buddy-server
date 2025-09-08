@@ -2,8 +2,6 @@ import {
   ObservationMakers,
   TreeUtilities,
   EObservationSubjectType,
-  EObservationClass,
-  EObservationResource,
   ALL_KNOWN_FS_FIELD_TYPES,
   ELogLevel,
 } from 'istack-buddy-utilities';
@@ -39,8 +37,6 @@ const fieldTypes = '';
 class ObservationMakerCalculationValidation extends ObservationMakers.AbstractObservationMaker {
   protected subjectType = EObservationSubjectType.FIELD;
   protected observationClass = this.constructor.name;
-  protected observationClassName =
-    'ObservationMakerCalculationValidation' as EObservationClass;
   protected messagePrimary = 'Field Calculation Validation';
   private otherCounts: Record<TOtherCountIndex, TCountRecord> = {} as Record<
     TOtherCountIndex,
@@ -61,8 +57,8 @@ class ObservationMakerCalculationValidation extends ObservationMakers.AbstractOb
     );
   }
 
-  getRequiredResources(): EObservationResource[] {
-    return ['formModel' as EObservationResource];
+  getRequiredResources(): string[] {
+    return ['formModel'];
   }
 
   async makeObservation(
@@ -178,7 +174,7 @@ class ObservationMakerCalculationValidation extends ObservationMakers.AbstractOb
     isObservationTrue =
       this.otherCounts['_FIELDS_WITH_CALCULATION_ERRORS_'].count > 0;
 
-    return { logItems };
+    return { isObservationTrue, logItems };
   }
 }
 export { ObservationMakerCalculationValidation };

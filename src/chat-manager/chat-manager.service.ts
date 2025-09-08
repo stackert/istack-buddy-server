@@ -92,7 +92,6 @@ export class ChatManagerService {
             toRole: UserRole.AGENT,
           });
 
-
           // Broadcast robot response and completion through gateway
           if (this.getGateway()) {
             this.getGateway()
@@ -107,7 +106,6 @@ export class ChatManagerService {
             );
           }
         }
-
       },
       onFullMessageReceived: async (
         message: TStreamingCallbackMessageOnFullMessageReceived,
@@ -189,7 +187,10 @@ export class ChatManagerService {
         // Tool response added to conversation
       },
       onError: async (error: any) => {
-        console.error('Robot streaming error:', error?.message || 'Unknown error');
+        console.error(
+          'Robot streaming error:',
+          error?.message || 'Unknown error',
+        );
 
         await this.addMessage({
           conversationId: conversationId,
@@ -223,7 +224,6 @@ export class ChatManagerService {
             },
           );
         }
-
       },
     };
   }
@@ -259,7 +259,6 @@ export class ChatManagerService {
     userMessage: string,
     callbacks: IStreamingCallbacks,
   ): Promise<void> {
-
     try {
       // Get the robot
       const robot = this.robotService.getRobotByName(robotName);
@@ -268,7 +267,6 @@ export class ChatManagerService {
           `Robot ${robotName} not found for conversation ${conversationId}`,
         );
       }
-
 
       // Create conversation message in the correct format
       const conversationMessage: IConversationMessage<TConversationMessageContentString> =
@@ -287,7 +285,6 @@ export class ChatManagerService {
           updatedAt: new Date(),
         };
 
-
       // Get conversation history for context using the robot's transformer
       const getHistory = () => {
         try {
@@ -302,13 +299,12 @@ export class ChatManagerService {
         }
       };
 
-
       // Use the provided callbacks directly
 
       // Parse intent for this robot call (simple case - just wrap the message)
       const intentData = {
         originalUserPrompt: userMessage,
-        subjects: {} // No subject extraction for this simple case
+        subjects: {}, // No subject extraction for this simple case
       };
 
       // Call robot using new universal method
@@ -324,7 +320,10 @@ export class ChatManagerService {
         );
       }
     } catch (error) {
-      console.error('Robot streaming error:', error?.message || 'Unknown error');
+      console.error(
+        'Robot streaming error:',
+        error?.message || 'Unknown error',
+      );
 
       console.error(
         `Error in handleRobotStreamingResponse for robot ${robotName} in conversation ${conversationId}:`,
@@ -332,7 +331,6 @@ export class ChatManagerService {
       );
       await callbacks.onError(error);
     }
-
   }
 
   // Method to set the gateway reference (called by the gateway)
@@ -400,7 +398,6 @@ export class ChatManagerService {
     createMessageDto: CreateMessageDto,
     contentType: string = 'text',
   ): Promise<IConversationMessage> {
-
     const messageId = uuidv4();
     const now = new Date();
 
@@ -431,7 +428,6 @@ export class ChatManagerService {
       // against create time overwrite - if that turns out to a an issue
       updatedAt: now,
     };
-
 
     // Store the message in the chat conversation list service
     this.chatConversationListService.addMessageToConversation(
@@ -491,29 +487,68 @@ export class ChatManagerService {
 
     // Trigger the robot response internally
     try {
+      console.log(
+        `[INTENT-PARSING] Starting intent parsing for message: "${content.payload.substring(0, 100)}${content.payload.length > 100 ? '...' : ''}"`,
+      );
+
       // Parse intent for robot selection (NEW - replaces hardcoded robot selection)
-      const conversationContext = { currentRobot: this.conversationMetadata[conversationId]?.currentRobot };
-      const intentResult = await this.intentParsingService.parseIntent(content.payload, conversationContext);
-      
+      const conversationContext = {
+        currentRobot: this.conversationMetadata[conversationId]?.currentRobot,
+      };
+      console.log(
+        `[INTENT-PARSING] Conversation context - current robot: ${conversationContext.currentRobot || 'none'}`,
+      );
+
+      const intentResult = await this.intentParsingService.parseIntent(
+        content.payload,
+        conversationContext,
+      );
+
       let targetRobotName = 'SlackyOpenAiAgent'; // Default fallback
-      
+
       if (!isIntentParsingError(intentResult)) {
         targetRobotName = intentResult.robotName;
-        // Intent parsing successful
+        console.log(
+          `[INTENT-PARSING] Intent parsing successful - routing to robot: ${targetRobotName}`,
+        );
+        console.log(
+          `[INTENT-PARSING] Intent data: ${JSON.stringify(intentResult.intentData, null, 2)}`,
+        );
       } else {
-        // Intent parsing failed - falling back to SlackyOpenAiAgent
+        console.warn(
+          `[INTENT-PARSING] Intent parsing failed - falling back to SlackyOpenAiAgent. Error: ${JSON.stringify(intentResult)}`,
+        );
       }
-      
+
       // Update conversation robot tracking (NEW)
-      await this.updateConversationCurrentRobot(conversationId, targetRobotName);
-      
+      await this.updateConversationCurrentRobot(
+        conversationId,
+        targetRobotName,
+      );
+      console.log(
+        `[ROBOT-ROUTING] Updated conversation ${conversationId} current robot to: ${targetRobotName}`,
+      );
+
       // Get the selected robot
-      const robot = this.robotService.getRobotByName(targetRobotName)!;
+      const robot = this.robotService.getRobotByName(targetRobotName);
+      if (!robot) {
+        console.error(
+          `[ROBOT-ROUTING] Robot '${targetRobotName}' not found! Available robots: ${this.robotService.getAvailableRobotNames().join(', ')}`,
+        );
+        throw new Error(`Robot '${targetRobotName}' not found`);
+      }
+
+      console.log(
+        `[ROBOT-ROUTING] Successfully retrieved robot: ${robot.name} (${robot.constructor.name})`,
+      );
 
       // Get conversation history for context (using original format for robot callback)
       const conversationHistory = await this.getLastMessages(
         conversationId,
         20,
+      );
+      console.log(
+        `[ROBOT-ROUTING] Retrieved ${conversationHistory.length} messages from conversation history`,
       );
 
       // Create message for robot
@@ -532,24 +567,39 @@ export class ChatManagerService {
         updatedAt: new Date(),
       };
 
-
       // Prepare intent data for robot
-      const intentData = !isIntentParsingError(intentResult) ? intentResult.intentData : {
-        originalUserPrompt: content.payload,
-        subjects: {}
-      };
-      
+      const intentData = !isIntentParsingError(intentResult)
+        ? intentResult.intentData
+        : {
+            originalUserPrompt: content.payload,
+            subjects: {},
+          };
+
+      console.log(
+        `[ROBOT-EXECUTION] Preparing to call handleIntentWithTools on robot: ${robot.name}`,
+      );
+      console.log(
+        `[ROBOT-EXECUTION] Intent data being passed: ${JSON.stringify(intentData, null, 2)}`,
+      );
+
       // Use the PROPER streaming callbacks that broadcast via WebSocket
-      const streamingCallbacks = this.createConversationCallbacks(conversationId);
-      
+      const streamingCallbacks =
+        this.createConversationCallbacks(conversationId);
+
       // Enhance the callbacks to also trigger Slack callback when robot completes
       const originalOnStreamFinished = streamingCallbacks.onStreamFinished;
-      const originalOnFullMessageReceived = streamingCallbacks.onFullMessageReceived;
-      
-      streamingCallbacks.onStreamFinished = async (finalMessage: IConversationMessage<TConversationMessageContentString>) => {
+      const originalOnFullMessageReceived =
+        streamingCallbacks.onFullMessageReceived;
+
+      streamingCallbacks.onStreamFinished = async (
+        finalMessage: IConversationMessage<TConversationMessageContentString>,
+      ) => {
+        console.log(
+          `[ROBOT-EXECUTION] Robot ${robot.name} completed execution - final message received`,
+        );
         // Call original callback (broadcasts via WebSocket)
         await originalOnStreamFinished(finalMessage);
-        
+
         // Also trigger Slack callback if provided
         if (slackResponseCallback && finalMessage.content?.payload) {
           await slackResponseCallback({
@@ -558,11 +608,16 @@ export class ChatManagerService {
           });
         }
       };
-      
-      streamingCallbacks.onFullMessageReceived = async (message: TStreamingCallbackMessageOnFullMessageReceived) => {
-        // Call original callback (broadcasts via WebSocket) 
+
+      streamingCallbacks.onFullMessageReceived = async (
+        message: TStreamingCallbackMessageOnFullMessageReceived,
+      ) => {
+        console.log(
+          `[ROBOT-EXECUTION] Robot ${robot.name} streaming message received`,
+        );
+        // Call original callback (broadcasts via WebSocket)
         await originalOnFullMessageReceived(message);
-        
+
         // Also trigger Slack callback if provided
         if (slackResponseCallback && message.content?.payload) {
           await slackResponseCallback({
@@ -573,10 +628,16 @@ export class ChatManagerService {
       };
 
       // Trigger robot response with intent data (NEW UNIVERSAL METHOD)
+      console.log(
+        `[ROBOT-EXECUTION] Calling handleIntentWithTools on robot: ${robot.name}`,
+      );
       await (robot as any).handleIntentWithTools(
         intentData,
         message,
         streamingCallbacks,
+      );
+      console.log(
+        `[ROBOT-EXECUTION] handleIntentWithTools completed for robot: ${robot.name}`,
       );
     } catch (error) {
       // does this error need to use nestJs log?  are we supposed to be quietly dismissing it.
@@ -597,7 +658,6 @@ export class ChatManagerService {
     conversationId: string,
     content: { type: 'text'; payload: string },
   ): Promise<IConversationMessage> {
-
     // Add the user message to the conversation
     const userMessage = await this.addUserMessage(
       conversationId,
@@ -607,12 +667,10 @@ export class ChatManagerService {
       UserRole.AGENT,
     );
 
-
     // Trigger the robot response internally
     try {
       // Create conversation callbacks for streaming
       const callbacks = this.createConversationCallbacks(conversationId);
-
 
       // Handle robot streaming response
       await this.handleRobotStreamingResponse(
@@ -621,7 +679,6 @@ export class ChatManagerService {
         content.payload,
         callbacks,
       );
-
 
       // Broadcast completion via WebSocket
       if (this.gateway) {
@@ -662,7 +719,6 @@ export class ChatManagerService {
     content: string,
     robotName: string,
   ): Promise<IConversationMessage> {
-
     const result = await this.addMessage({
       conversationId,
       fromUserId: robotName,
@@ -685,7 +741,6 @@ export class ChatManagerService {
     fromRole: UserRole = UserRole.CUSTOMER,
     toRole: UserRole = UserRole.AGENT,
   ): Promise<IConversationMessage> {
-
     const result = await this.addMessage({
       conversationId,
       fromUserId: userId,

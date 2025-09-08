@@ -1,0 +1,24 @@
+# Redis Environment Configuration for BullMQ Job Queue
+# Add these variables to your .env.live file
+
+# Redis Configuration for BullMQ Job Queue
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=
+REDIS_DB=0
+
+# BullMQ Configuration
+BULLMQ_REDIS_HOST=localhost
+BULLMQ_REDIS_PORT=6379
+BULLMQ_REDIS_PASSWORD=
+BULLMQ_REDIS_DB=1
+
+# Job Queue Configuration
+JOB_QUEUE_CONCURRENCY=5
+JOB_QUEUE_ATTEMPTS=3
+JOB_QUEUE_BACKOFF_DELAY=2000
+JOB_QUEUE_BACKOFF_TYPE=exponential
+
+# Job Monitoring Dashboard
+BULL_BOARD_PORT=3001
+BULL_BOARD_BASE_PATH=/admin/queues

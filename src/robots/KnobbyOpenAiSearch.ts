@@ -60,6 +60,11 @@ CRITICAL RULES:
 2. Follow the user's exact instructions. If they ask for document counts, IDs, confidence scores, or specific formats - provide exactly what they request from the tool results.
 3. For JSON intent parsing requests: NEVER make assumptions. If a value is unclear or missing, leave it blank or return an error as instructed.
 
+ERROR HANDLING:
+- If tool execution fails with connection errors, include the server URL in your response to help with debugging
+- Show the full error message from tool results, including server addresses and connection details
+- Do not hide technical error information - it's needed for troubleshooting
+
 INTENT PARSING MODE:
 When the user asks you to parse intent or return JSON:
 - Follow their exact parsing instructions
@@ -122,13 +127,14 @@ Do not add your own instructions. Use the user's exact prompt and provide exactl
     getHistory?: () => IConversationMessage<TConversationMessageContent>[],
   ): OpenAI.Chat.Completions.ChatCompletionCreateParams {
     // Ensure we have a valid string message
-    const userMessage = typeof message.content.payload === 'string' 
-      ? message.content.payload 
-      : String(message.content.payload || 'Empty message');
+    const userMessage =
+      typeof message.content.payload === 'string'
+        ? message.content.payload
+        : String(message.content.payload || 'Empty message');
 
-    this.logger.debug('Processing user message:', { 
+    this.logger.debug('Processing user message:', {
       originalPayload: message.content.payload,
-      processedMessage: userMessage 
+      processedMessage: userMessage,
     });
 
     const messages = [
@@ -185,8 +191,12 @@ Do not add your own instructions. Use the user's exact prompt and provide exactl
 
         results.push(`Tool: ${toolName}\nResult: ${result}`);
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        this.logger.error('KnobbyOpenAiSearch', `Tool execution error: ${errorMessage}`);
+        const errorMessage =
+          error instanceof Error ? error.message : 'Unknown error';
+        this.logger.error(
+          'KnobbyOpenAiSearch',
+          `Tool execution error: ${errorMessage}`,
+        );
         results.push(`Tool error: ${errorMessage}`);
       }
     }
@@ -202,11 +212,16 @@ Do not add your own instructions. Use the user's exact prompt and provide exactl
     callbacks: IStreamingCallbacks,
     getHistory?: () => IConversationMessage<TConversationMessageContent>[],
   ): Promise<void> {
-    this.logger.debug('=== KNOBBY SEARCH acceptMessageStreamResponse START ===');
+    this.logger.debug(
+      '=== KNOBBY SEARCH acceptMessageStreamResponse START ===',
+    );
 
     try {
       const client = this.getClient();
-      const requestParams = this.createOpenAIMessageRequest(message, getHistory);
+      const requestParams = this.createOpenAIMessageRequest(
+        message,
+        getHistory,
+      );
 
       const stream = await client.chat.completions.create({
         ...requestParams,
@@ -220,7 +235,7 @@ Do not add your own instructions. Use the user's exact prompt and provide exactl
       for await (const chunk of stream) {
         if (chunk.choices && chunk.choices.length > 0) {
           const choice = chunk.choices[0];
-          
+
           if (choice.delta?.content) {
             accumulatedContent += choice.delta.content;
             callbacks.onStreamChunkReceived(choice.delta.content);
@@ -234,16 +249,17 @@ Do not add your own instructions. Use the user's exact prompt and provide exactl
                   toolCalls[toolCallDelta.index] = {
                     id: toolCallDelta.id || '',
                     type: 'function',
-                    function: { name: '', arguments: '' }
+                    function: { name: '', arguments: '' },
                   };
                 }
                 currentToolCall = toolCalls[toolCallDelta.index];
-                
+
                 if (toolCallDelta.function?.name) {
                   currentToolCall.function.name += toolCallDelta.function.name;
                 }
                 if (toolCallDelta.function?.arguments) {
-                  currentToolCall.function.arguments += toolCallDelta.function.arguments;
+                  currentToolCall.function.arguments +=
+                    toolCallDelta.function.arguments;
                 }
               }
             }
@@ -255,18 +271,23 @@ Do not add your own instructions. Use the user's exact prompt and provide exactl
       if (toolCalls.length > 0) {
         callbacks.onStreamChunkReceived('\n\nExecuting search...\n');
         const toolResults = await this.executeToolCalls(toolCalls);
-        
+
         // Now send the tool results back to OpenAI for processing
-        const conversationMessages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
-          { role: 'system', content: this.robotRole },
-          { role: 'user', content: message.content.payload },
-          { role: 'assistant', content: accumulatedContent, tool_calls: toolCalls },
-          ...toolResults.map((result, index) => ({
-            role: 'tool' as const,
-            content: result,
-            tool_call_id: toolCalls[index]?.id || `call_${index}`
-          }))
-        ];
+        const conversationMessages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] =
+          [
+            { role: 'system', content: this.robotRole },
+            { role: 'user', content: message.content.payload },
+            {
+              role: 'assistant',
+              content: accumulatedContent,
+              tool_calls: toolCalls,
+            },
+            ...toolResults.map((result, index) => ({
+              role: 'tool' as const,
+              content: result,
+              tool_call_id: toolCalls[index]?.id || `call_${index}`,
+            })),
+          ];
 
         // Get OpenAI's conversational response to the tool results
         const followUpStream = await client.chat.completions.create({
@@ -274,7 +295,7 @@ Do not add your own instructions. Use the user's exact prompt and provide exactl
           messages: conversationMessages,
           stream: true,
           temperature: 0.1,
-          max_tokens: 4000
+          max_tokens: 4000,
         });
 
         let finalResponse = '';
@@ -287,17 +308,23 @@ Do not add your own instructions. Use the user's exact prompt and provide exactl
         }
 
         callbacks.onFullMessageReceived({
-          content: { payload: finalResponse, type: 'text/plain' }
+          content: { payload: finalResponse, type: 'text/plain' },
         });
       } else {
         callbacks.onFullMessageReceived({
-          content: { payload: accumulatedContent, type: 'text/plain' }
+          content: { payload: accumulatedContent, type: 'text/plain' },
         });
       }
     } catch (error) {
-      this.logger.error('KnobbyOpenAiSearch', `Error in acceptMessageStreamResponse: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      callbacks.onError?.(new Error(`KnobbyOpenAiSearch error: ${errorMessage}`));
+      this.logger.error(
+        'KnobbyOpenAiSearch',
+        `Error in acceptMessageStreamResponse: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error occurred';
+      callbacks.onError?.(
+        new Error(`KnobbyOpenAiSearch error: ${errorMessage}`),
+      );
     }
 
     this.logger.debug('=== KNOBBY SEARCH acceptMessageStreamResponse END ===');
@@ -309,33 +336,47 @@ Do not add your own instructions. Use the user's exact prompt and provide exactl
   public async acceptMessageImmediateResponse(
     message: IConversationMessage<TConversationMessageContentString>,
     getHistory?: () => IConversationMessage<TConversationMessageContent>[],
-  ): Promise<Pick<IConversationMessage<TConversationMessageContentString>, 'content'>> {
-    this.logger.debug('=== KNOBBY SEARCH acceptMessageImmediateResponse START ===');
+  ): Promise<
+    Pick<IConversationMessage<TConversationMessageContentString>, 'content'>
+  > {
+    this.logger.debug(
+      '=== KNOBBY SEARCH acceptMessageImmediateResponse START ===',
+    );
 
     try {
       const client = this.getClient();
-      const requestParams = this.createOpenAIMessageRequest(message, getHistory);
+      const requestParams = this.createOpenAIMessageRequest(
+        message,
+        getHistory,
+      );
 
       // Check if this is a JSON intent parsing request
-      const isJsonRequest = message.content.payload.toLowerCase().includes('return') && 
-                            message.content.payload.toLowerCase().includes('json') &&
-                            (message.content.payload.toLowerCase().includes('intent') || 
-                             message.content.payload.toLowerCase().includes('object'));
+      const isJsonRequest =
+        message.content.payload.toLowerCase().includes('return') &&
+        message.content.payload.toLowerCase().includes('json') &&
+        (message.content.payload.toLowerCase().includes('intent') ||
+          message.content.payload.toLowerCase().includes('object'));
 
       const completionConfig = { ...requestParams };
 
       // Force JSON response for intent parsing requests
       if (isJsonRequest) {
-        completionConfig.response_format = { type: "json_object" };
-        this.logger.debug('Using JSON response format for intent parsing request (immediate)');
+        completionConfig.response_format = { type: 'json_object' };
+        this.logger.debug(
+          'Using JSON response format for intent parsing request (immediate)',
+        );
       }
 
       const completion = await client.chat.completions.create(completionConfig);
 
       let responseContent = '';
-      
+
       // Type guard to ensure we have a ChatCompletion response (not streaming)
-      if ('choices' in completion && completion.choices && completion.choices.length > 0) {
+      if (
+        'choices' in completion &&
+        completion.choices &&
+        completion.choices.length > 0
+      ) {
         const choice = completion.choices[0];
 
         if (choice.message.content) {
@@ -345,29 +386,40 @@ Do not add your own instructions. Use the user's exact prompt and provide exactl
         // Handle tool calls if present
         if (choice.message.tool_calls && choice.message.tool_calls.length > 0) {
           this.logger.debug('Executing tool calls for immediate response');
-          const toolResults = await this.executeToolCalls(choice.message.tool_calls);
-          
+          const toolResults = await this.executeToolCalls(
+            choice.message.tool_calls,
+          );
+
           // Send tool results back to OpenAI for processing into conversational response
-          const conversationMessages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
-            { role: 'system', content: this.robotRole },
-            { role: 'user', content: message.content.payload },
-            { role: 'assistant', content: responseContent, tool_calls: choice.message.tool_calls },
-            ...toolResults.map((result, index) => ({
-              role: 'tool' as const,
-              content: result,
-              tool_call_id: choice.message.tool_calls![index]?.id || `call_${index}`
-            }))
-          ];
+          const conversationMessages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] =
+            [
+              { role: 'system', content: this.robotRole },
+              { role: 'user', content: message.content.payload },
+              {
+                role: 'assistant',
+                content: responseContent,
+                tool_calls: choice.message.tool_calls,
+              },
+              ...toolResults.map((result, index) => ({
+                role: 'tool' as const,
+                content: result,
+                tool_call_id:
+                  choice.message.tool_calls![index]?.id || `call_${index}`,
+              })),
+            ];
 
           // Get OpenAI's conversational response to the tool results
           const followUpCompletion = await client.chat.completions.create({
             model: this.LLModelName,
             messages: conversationMessages,
             temperature: 0.1,
-            max_tokens: 4000
+            max_tokens: 4000,
           });
 
-          if ('choices' in followUpCompletion && followUpCompletion.choices[0]?.message?.content) {
+          if (
+            'choices' in followUpCompletion &&
+            followUpCompletion.choices[0]?.message?.content
+          ) {
             responseContent = followUpCompletion.choices[0].message.content;
           }
         }
@@ -380,12 +432,18 @@ Do not add your own instructions. Use the user's exact prompt and provide exactl
         },
       };
 
-      this.logger.debug('=== KNOBBY SEARCH acceptMessageImmediateResponse END ===');
+      this.logger.debug(
+        '=== KNOBBY SEARCH acceptMessageImmediateResponse END ===',
+      );
       return result;
     } catch (error) {
-      this.logger.error('KnobbyOpenAiSearch', `Error in acceptMessageImmediateResponse: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      
+      this.logger.error(
+        'KnobbyOpenAiSearch',
+        `Error in acceptMessageImmediateResponse: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error occurred';
+
       return {
         content: {
           type: 'text/plain' as const,
@@ -410,25 +468,32 @@ Do not add your own instructions. Use the user's exact prompt and provide exactl
   ): Promise<TConversationMessageContentString> {
     try {
       // Get the immediate response
-      const response = await this.acceptMessageImmediateResponse(message, getHistory);
-      
+      const response = await this.acceptMessageImmediateResponse(
+        message,
+        getHistory,
+      );
+
       // Call the delayed callback with the response
       delayedMessageCallback(response);
-      
+
       // Return the content for the return value
       return response.content;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      this.logger.error('KnobbyOpenAiSearch', `Error in acceptMessageMultiPartResponse: ${errorMessage}`);
-      
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error occurred';
+      this.logger.error(
+        'KnobbyOpenAiSearch',
+        `Error in acceptMessageMultiPartResponse: ${errorMessage}`,
+      );
+
       const errorContent = {
         type: 'text/plain' as const,
         payload: `KnobbyOpenAiSearch encountered an error: ${errorMessage}`,
       };
-      
+
       // Call the delayed callback with error response
       delayedMessageCallback({ content: errorContent });
-      
+
       return errorContent;
     }
   }
@@ -447,9 +512,22 @@ Do not add your own instructions. Use the user's exact prompt and provide exactl
   async handleIntentWithTools(
     intentData: IntentData,
     message: IConversationMessage<TConversationMessageContentString>,
-    callbacks: IStreamingCallbacks
+    callbacks: IStreamingCallbacks,
   ): Promise<void> {
+    this.logger.log(
+      `[KNOBBY-SEARCH] handleIntentWithTools called with intent: ${intentData.originalUserPrompt}`,
+    );
+    this.logger.log(
+      `[KNOBBY-SEARCH] Intent data: ${JSON.stringify(intentData, null, 2)}`,
+    );
+    this.logger.log(
+      `[KNOBBY-SEARCH] Message content: ${message.content.payload}`,
+    );
+
     // Phase 1: Just use existing method (ignore intent data for now)
+    this.logger.log(
+      `[KNOBBY-SEARCH] Delegating to acceptMessageStreamResponse`,
+    );
     return this.acceptMessageStreamResponse(message, callbacks);
   }
 }

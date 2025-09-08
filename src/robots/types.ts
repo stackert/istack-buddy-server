@@ -24,7 +24,10 @@ export type { TAnthropicIstackToolSet };
  */
 
 export type TStreamingCallbackMessageOnFullMessageReceived = {
-  content: { payload: string; type: 'text/plain' };
+  content: {
+    payload: string | any;
+    type: 'text/plain' | 'sumo-search/report' | 'application/json';
+  };
 };
 
 export interface IStreamingCallbacks {

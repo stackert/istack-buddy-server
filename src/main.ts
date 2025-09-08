@@ -5,6 +5,9 @@ import * as cookieParser from 'cookie-parser';
 import * as dotenv from 'dotenv';
 import { json } from 'express';
 import { CustomLoggerService } from './common/logger/custom-logger.service';
+import { BullBoardService } from './job-queue/bull-board.service';
+import { InjectQueue } from '@nestjs/bull';
+import { Queue } from 'bullmq';
 
 // Load environment variables from .env.live file (real keys for development/production)
 dotenv.config({ path: '.env.live' });
@@ -47,18 +50,20 @@ export async function bootstrap() {
 
   // Enable cookie parsing
   app.use(cookieParser());
-  
+
   // Enable JSON body parsing globally (except for Slack webhook route which has custom parsing above)
   app.use(json({ limit: '10mb' }));
-  
+
   // Add validation pipe to catch validation issues
-  app.useGlobalPipes(new (require('@nestjs/common').ValidationPipe)({
-    whitelist: false, // Don't strip unknown properties
-    transform: false, // Don't transform types 
-    forbidNonWhitelisted: false, // Allow extra properties
-    skipMissingProperties: true, // Don't require all properties
-    disableErrorMessages: false, // Show validation errors
-  }));
+  app.useGlobalPipes(
+    new (require('@nestjs/common').ValidationPipe)({
+      whitelist: false, // Don't strip unknown properties
+      transform: false, // Don't transform types
+      forbidNonWhitelisted: false, // Allow extra properties
+      skipMissingProperties: true, // Don't require all properties
+      disableErrorMessages: false, // Show validation errors
+    }),
+  );
 
   // Serve test data files statically
   app.use(
@@ -117,11 +122,37 @@ export async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
 
+  // Setup Bull Board dashboard for job monitoring
+  try {
+    const bullBoardService = app.get(BullBoardService);
+    const messageQueue = app.get('BullQueue_message-queue') as Queue;
+    const fileProcessingQueue = app.get('BullQueue_file-processing') as Queue;
+    const notificationQueue = app.get('BullQueue_notifications') as Queue;
+
+    bullBoardService.registerQueues([
+      messageQueue,
+      fileProcessingQueue,
+      notificationQueue,
+    ]);
+
+    const serverAdapter = bullBoardService.getServerAdapter();
+    app.use('/admin/queues', serverAdapter.getRouter());
+
+    logger.log(
+      `Bull Board dashboard available at: http://localhost:${process.env.ISTACK_BUDDY_BACKEND_SERVER_HOST_PORT || 3500}/admin/queues`,
+    );
+  } catch (error) {
+    logger.warn(`Failed to setup Bull Board dashboard: ${error.message}`);
+  }
+
   const port = process.env.ISTACK_BUDDY_BACKEND_SERVER_HOST_PORT || 3500;
   await app.listen(port);
 
   logger.log(`iStack Buddy Server running on: http://localhost:${port}`);
   logger.log(`API Documentation available at: http://localhost:${port}/api`);
+  logger.log(
+    `Job Queue Dashboard available at: http://localhost:${port}/admin/queues`,
+  );
   logger.warn(`CORS enabled for ALL origins (temporary)`);
 }
 
