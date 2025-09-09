@@ -8,6 +8,12 @@ import {
   IStreamingCallbacks,
   TStreamingCallbackMessageOnFullMessageReceived,
 } from '../robots/types';
+import { IntentParsingService } from '../common/services/intent-parsing.service';
+import {
+  IntentParsingResult,
+  IntentParsingResponse,
+  IntentParsingError,
+} from '../common/types/intent-parsing.types';
 import {
   CreateMessageDto,
   MessageType,
@@ -32,11 +38,14 @@ export class ChatManagerService {
   private participants: Map<string, Participant[]> = new Map();
   private conversationFormIds: Map<string, string> = new Map(); // Store formId associations
   private gateway: any; // Will be set by the gateway
+  private readonly intentParsingService: IntentParsingService;
 
   constructor(
     private readonly chatConversationListService: ChatConversationListService,
     private readonly robotService: RobotService,
-  ) {}
+  ) {
+    this.intentParsingService = new IntentParsingService();
+  }
 
   /**
    * Create conversation callbacks for streaming responses
@@ -228,18 +237,65 @@ export class ChatManagerService {
   async handleRobotMessage(createMessageDto: CreateMessageDto): Promise<void> {
     const conversationId = createMessageDto.conversationId;
     const userMessage = createMessageDto.content;
-    const robotName = 'AnthropicMarv';
 
     // Create callbacks that handle both debug messages and broadcasting
     const callbacks = this.createConversationCallbacks(conversationId);
 
-    // Handle the robot streaming response
-    await this.handleRobotStreamingResponse(
-      conversationId,
-      robotName,
-      userMessage,
-      callbacks,
-    );
+    try {
+      // Step 1: Parse intent to determine appropriate robot
+      const intentResult = await this.intentParsingService.parsePromptIntent(
+        userMessage,
+        { currentRobot: undefined }, // Could be enhanced with conversation context
+      );
+
+      // Step 2: Determine robot name from intent parsing result
+      let robotName: string;
+      let intentData: any = null;
+
+      if ('error' in intentResult) {
+        // Intent parsing failed, fallback to existing behavior
+        console.warn(
+          `Intent parsing failed: ${intentResult.error}. Falling back to AnthropicMarv`,
+        );
+        robotName = 'AnthropicMarv';
+      } else {
+        // Intent parsing succeeded, use the suggested robot
+        robotName = (intentResult as IntentParsingResponse).robotName;
+        intentData = (intentResult as IntentParsingResponse).intentData;
+        console.log(
+          `Intent parsing selected robot: ${robotName} with intent: ${(intentResult as IntentParsingResponse).intent}`,
+        );
+      }
+
+      // Step 3: Get the robot
+      const robot = this.robotService.getRobotByName(robotName);
+      if (!robot) {
+        console.warn(
+          `Robot ${robotName} not found, falling back to AnthropicMarv`,
+        );
+        robotName = 'AnthropicMarv';
+      }
+
+      // Step 4: Handle the robot streaming response (existing flow)
+      await this.handleRobotStreamingResponse(
+        conversationId,
+        robotName,
+        userMessage,
+        callbacks,
+      );
+    } catch (error) {
+      console.error(
+        `Error in handleRobotMessage: ${error.message}. Falling back to AnthropicMarv`,
+      );
+
+      // Fallback to existing behavior on any error
+      await this.handleRobotStreamingResponse(
+        conversationId,
+        'AnthropicMarv',
+        userMessage,
+        callbacks,
+      );
+    }
   }
 
   /**

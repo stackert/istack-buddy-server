@@ -136,3 +136,27 @@ This document defines the required implementation for Information Services robot
 - **Unit Tests**: Tool execution, intent handling, error scenarios, response formatting
 - **Coverage**: 90%+ required
 - **Focus**: Mock API responses, various intent data, timeout handling
+
+# Reminders
+
+#### About Testing
+
+When writing test - TRY TO AVOID OVER MOCKING.
+We using a mock check in test-data/mocks first to see if the mock exists.
+If it does exist - use it. If it does not exist create it, and store it in test-data/mocks
+
+### About Logging{}
+
+WE NEVER USE EMOJI IN LOGS
+Avoid writing several log statements when one will do. Concat strings or log message, be reasonable, make sure the message are related
+
+```bad
+log({fileSize})
+log({fileName})
+log({fileLocation})
+```
+
+```Good
+log({fileSize, fileName, fileLocation})
+
+```

@@ -9,6 +9,7 @@ import type {
 } from '../chat-manager/interfaces/message.interface';
 import type { TConversationMessageContent } from '../ConversationLists/types';
 import { UserRole } from '../chat-manager/dto/create-message.dto';
+import { IntentData } from '../common/types/intent-parsing.types';
 
 /**
  * Abstract chat robot class that extends the base robot functionality
@@ -47,4 +48,14 @@ export abstract class AbstractRobotChat extends AbstractRobot {
       content: (msg.content as any).payload,
     });
   }
+
+  /**
+   * Execute an intent with the provided intent data and callbacks
+   * Must work with existing acceptMessage*Response pattern
+   * Maintains streaming support for real-time responses
+   */
+  public abstract executeIntent(
+    intentData: IntentData,
+    callbacks: IStreamingCallbacks,
+  ): Promise<void>;
 }

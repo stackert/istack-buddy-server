@@ -12,6 +12,8 @@ import { UserRole } from '../chat-manager/dto/create-message.dto';
 import Anthropic from '@anthropic-ai/sdk';
 import { marvToolSet } from './tool-definitions/marv';
 import { CustomLoggerService } from '../common/logger/custom-logger.service';
+import { IntentData } from '../common/types/intent-parsing.types';
+import { MessageType } from '../chat-manager/dto/create-message.dto';
 
 // Helper functions for the streaming pattern
 const noOp = (...args: any[]) => {};
@@ -444,5 +446,36 @@ Your goal is to help users efficiently manage their Formstack forms through thes
       type: 'text/plain',
       payload: accumulatedContent || 'Processing...',
     };
+  }
+
+  /**
+   * Execute an intent - Simple pass-through to existing Marv functionality
+   * No new functionality - just route to existing Marv behavior
+   */
+  async executeIntent(
+    intentData: IntentData,
+    callbacks: IStreamingCallbacks,
+  ): Promise<void> {
+    this.logger.debug(
+      `Marv executeIntent called with intent data: ${JSON.stringify({ intent: intentData.originalUserPrompt?.substring(0, 50) })}`,
+    );
+
+    // Simple pass-through to existing Marv functionality
+    const message: IConversationMessage<TConversationMessageContentString> = {
+      id: 'intent-execution-' + Date.now(),
+      content: {
+        type: 'text/plain',
+        payload: intentData.originalUserPrompt,
+      },
+      conversationId: 'intent-conversation',
+      authorUserId: null,
+      fromRole: UserRole.CUSTOMER,
+      toRole: UserRole.ROBOT,
+      messageType: MessageType.TEXT,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    return this.acceptMessageStreamResponse(message, callbacks);
   }
 }

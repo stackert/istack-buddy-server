@@ -474,3 +474,27 @@ interface SumoJobSubmissionResponse {
   statusUrl: string;
 }
 ```
+
+# Reminders
+
+#### About Testing
+
+When writing test - TRY TO AVOID OVER MOCKING.
+We using a mock check in test-data/mocks first to see if the mock exists.
+If it does exist - use it. If it does not exist create it, and store it in test-data/mocks
+
+### About Logging{}
+
+WE NEVER USE EMOJI IN LOGS
+Avoid writing several log statements when one will do. Concat strings or log message, be reasonable, make sure the message are related
+
+```bad
+log({fileSize})
+log({fileName})
+log({fileLocation})
+```
+
+```Good
+log({fileSize, fileName, fileLocation})
+
+```

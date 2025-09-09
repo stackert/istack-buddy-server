@@ -15,6 +15,12 @@ import type {
   IStreamingCallbacks,
   TConversationMessageContentString,
 } from './types';
+import {
+  IntentParsingResult,
+  IntentData,
+} from '../common/types/intent-parsing.types';
+import { IntentParsingService } from '../common/services/intent-parsing.service';
+import { MessageType } from '../chat-manager/dto/create-message.dto';
 
 // Helper functions for the streaming pattern
 const noOp = (...args: any[]) => {};
@@ -32,10 +38,12 @@ import { slackyToolResultFormatter } from './tool-definitions/slacky/slack-forma
  */
 export class SlackyOpenAiAgent extends AbstractRobotChat {
   private readonly logger = new CustomLoggerService();
+  private readonly intentParsingService: IntentParsingService;
 
   constructor() {
     super();
     this.logger.log('SlackyOpenAiAgent constructor called - class loaded');
+    this.intentParsingService = new IntentParsingService();
   }
 
   // Required properties from AbstractRobot
@@ -884,4 +892,53 @@ Need help? Just ask!`;
   //   this.hasSentFinalResponse = false;
   //   this.logger.log('All monitoring stopped');
   // }
+
+  /**
+   * Parse user prompt to determine intent and extract entities
+   * Integration point for intent-based routing system
+   */
+  async parsePromptIntent(
+    messageText: string,
+    conversationContext?: { currentRobot?: string },
+  ): Promise<IntentParsingResult> {
+    this.logger.debug(
+      `Parsing intent for message: ${messageText.substring(0, 50)}...`,
+    );
+
+    return this.intentParsingService.parsePromptIntent(
+      messageText,
+      conversationContext,
+    );
+  }
+
+  /**
+   * Execute an intent with the provided intent data and callbacks
+   * Routes to existing acceptMessageStreamResponse with intent data
+   */
+  async executeIntent(
+    intentData: IntentData,
+    callbacks: IStreamingCallbacks,
+  ): Promise<void> {
+    this.logger.debug(
+      `SlackyOpenAiAgent executeIntent called with intent data: ${JSON.stringify({ intent: intentData.originalUserPrompt?.substring(0, 50) })}`,
+    );
+
+    // Convert intent data to message format and route to existing functionality
+    const message: IConversationMessage<TConversationMessageContentString> = {
+      id: 'intent-execution-' + Date.now(),
+      content: {
+        type: 'text/plain',
+        payload: intentData.originalUserPrompt,
+      },
+      conversationId: 'intent-conversation',
+      authorUserId: null,
+      fromRole: UserRole.CUSTOMER,
+      toRole: UserRole.ROBOT,
+      messageType: MessageType.TEXT,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    return this.acceptMessageStreamResponse(message, callbacks);
+  }
 }
