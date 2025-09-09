@@ -4,7 +4,16 @@ type TConversationMessageContentMediaTypes =
   | 'image/gif'
   | 'image/*'
   | 'application/octet-stream'
-  | 'application/json';
+  | 'application/json'
+  // Information Services Content Types
+  | 'content/dynamic'
+  | 'content/dynamic-account'
+  | 'content/dynamic-form'
+  | 'content/dynamic-auth-provider'
+  | 'content/document'
+  | 'sumo-search/report'
+  | 'sumo-syntax/query'
+  | 'sumo-syntax/validation';
 
 type TConversationMessageContentTypes<
   MEDIA_TYPE extends TConversationMessageContentMediaTypes,
@@ -30,11 +39,95 @@ type TConversationMessageContentFileBuffer = TConversationMessageContentTypes<
   Buffer
 >;
 
+// Information Services Content Types
+type TConversationMessageContentDynamic = TConversationMessageContentTypes<
+  'content/dynamic',
+  string
+>;
+
+type TConversationMessageContentDynamicAccount =
+  TConversationMessageContentTypes<
+    'content/dynamic-account',
+    {
+      accountRecord: any;
+      [key: string]: any;
+    }
+  >;
+
+type TConversationMessageContentDynamicForm = TConversationMessageContentTypes<
+  'content/dynamic-form',
+  {
+    formRecord: any;
+    submitActionIds?: string[];
+    emails?: string[];
+    [key: string]: any;
+  }
+>;
+
+type TConversationMessageContentDynamicAuthProvider =
+  TConversationMessageContentTypes<
+    'content/dynamic-auth-provider',
+    {
+      authProviderRecord: any;
+      [key: string]: any;
+    }
+  >;
+
+type TConversationMessageContentDocument = TConversationMessageContentTypes<
+  'content/document',
+  {
+    content: any;
+    tokenCount?: number;
+    [key: string]: any;
+  }
+>;
+
+type TConversationMessageContentSumoSearchReport =
+  TConversationMessageContentTypes<
+    'sumo-search/report',
+    {
+      recordCount: number;
+      firstRecord: any;
+      results: any;
+      originalQuery?: string;
+      [key: string]: any;
+    }
+  >;
+
+type TConversationMessageContentSumoSyntaxQuery =
+  TConversationMessageContentTypes<
+    'sumo-syntax/query',
+    {
+      query: string;
+      isValid?: boolean;
+      [key: string]: any;
+    }
+  >;
+
+type TConversationMessageContentSumoSyntaxValidation =
+  TConversationMessageContentTypes<
+    'sumo-syntax/validation',
+    {
+      query: string;
+      isValid: boolean;
+      errors?: string[];
+      [key: string]: any;
+    }
+  >;
+
 // Union type for all possible content types
 type TConversationMessageContent =
   | TConversationMessageContentString
   | TConversationMessageContentImageBuffer
-  | TConversationMessageContentFileBuffer;
+  | TConversationMessageContentFileBuffer
+  | TConversationMessageContentDynamic
+  | TConversationMessageContentDynamicAccount
+  | TConversationMessageContentDynamicForm
+  | TConversationMessageContentDynamicAuthProvider
+  | TConversationMessageContentDocument
+  | TConversationMessageContentSumoSearchReport
+  | TConversationMessageContentSumoSyntaxQuery
+  | TConversationMessageContentSumoSyntaxValidation;
 
 // Base message structure - T can be any content type
 type TConversationListMessage<T = TConversationMessageContent> = {
@@ -62,6 +155,15 @@ export type {
   TConversationMessageContentString,
   TConversationMessageContentImageBuffer,
   TConversationMessageContentFileBuffer,
+  // Information Services Content Types
+  TConversationMessageContentDynamic,
+  TConversationMessageContentDynamicAccount,
+  TConversationMessageContentDynamicForm,
+  TConversationMessageContentDynamicAuthProvider,
+  TConversationMessageContentDocument,
+  TConversationMessageContentSumoSearchReport,
+  TConversationMessageContentSumoSyntaxQuery,
+  TConversationMessageContentSumoSyntaxValidation,
 
   // Message types
   TConversationListMessage,

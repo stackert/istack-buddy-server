@@ -1,5 +1,5 @@
 # Add directories or file patterns to ignore during indexing (e.g. foo/ or *.csv)
 # docs-living/debug
-# docs-living/external-project-links
+docs-living/external-project-links
 # docs-living/features
-docs-living
+# docs-living

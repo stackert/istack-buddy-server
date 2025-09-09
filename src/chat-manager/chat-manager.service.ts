@@ -1,21 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { createHash } from 'crypto';
-import {
-  CreateMessageDto,
-  MessageType,
-  UserRole,
-} from './dto/create-message.dto';
-import { JoinRoomDto } from './dto/join-room.dto';
-import { GetMessagesDto } from './dto/get-messages.dto';
-import { StartConversationDto } from './dto/start-conversation.dto';
-import {
-  IConversationMessage,
-  Conversation,
-  Participant,
-  DashboardStats,
-  IConversationMessageAnthropic,
-  IConversationMessageOpenAI,
-} from './interfaces/message.interface';
 import { v4 as uuidv4 } from 'uuid';
 import { ChatConversationListService } from '../ConversationLists/ChatConversationListService';
 import { TConversationMessageContentString } from '../ConversationLists/types';
@@ -24,6 +8,22 @@ import {
   IStreamingCallbacks,
   TStreamingCallbackMessageOnFullMessageReceived,
 } from '../robots/types';
+import {
+  CreateMessageDto,
+  MessageType,
+  UserRole,
+} from './dto/create-message.dto';
+import { GetMessagesDto } from './dto/get-messages.dto';
+import { JoinRoomDto } from './dto/join-room.dto';
+import { StartConversationDto } from './dto/start-conversation.dto';
+import {
+  Conversation,
+  DashboardStats,
+  IConversationMessage,
+  IConversationMessageAnthropic,
+  IConversationMessageOpenAI,
+  Participant,
+} from './interfaces/message.interface';
 
 @Injectable()
 export class ChatManagerService {

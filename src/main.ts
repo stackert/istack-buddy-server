@@ -105,6 +105,18 @@ export async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
 
+  // Set up Bull Board dashboard
+  try {
+    const bullBoardService = app.get('BullBoardService');
+    const serverAdapter = bullBoardService.getServerAdapter();
+    app.use(serverAdapter.getRouter());
+    logger.log(
+      `Bull Board dashboard available at: http://localhost:${process.env.ISTACK_BUDDY_BACKEND_SERVER_HOST_PORT || 3500}/admin/queues`,
+    );
+  } catch (error) {
+    logger.warn(`Bull Board dashboard not available: ${error.message}`);
+  }
+
   const port = process.env.ISTACK_BUDDY_BACKEND_SERVER_HOST_PORT || 3500;
   await app.listen(port);
 

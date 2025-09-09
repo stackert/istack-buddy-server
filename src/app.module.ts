@@ -15,6 +15,8 @@ import { ChatManagerModule } from './chat-manager/chat-manager.module';
 import { IstackBuddySlackApiModule } from './istack-buddy-slack-api/istack-buddy-slack-api.module';
 import { RobotModule } from './robots/robot.module';
 import { PublicInterfaceModule } from './public-interface/public-interface.module';
+import { FileManagerModule } from './file-manager/file-manager.module';
+import { JobQueueModule } from './job-queue/job-queue.module';
 
 @Module({
   imports: [
@@ -27,6 +29,8 @@ import { PublicInterfaceModule } from './public-interface/public-interface.modul
     IstackBuddySlackApiModule,
     RobotModule,
     PublicInterfaceModule,
+    FileManagerModule,
+    JobQueueModule,
   ],
   controllers: [AppController],
   providers: [
