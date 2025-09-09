@@ -43,16 +43,11 @@ export class IStackInfoService implements OnModuleDestroy {
   private readonly redis: Redis;
 
   constructor(redisClient: Redis) {
-    this.apiKey = process.env.ISTACK_INFO_SERVICE_API_KEY || '';
+    this.apiKey =
+      process.env.ISTACK_INFO_SERVICE_API_KEY || 'istack-buddy-dev-token-2024';
     this.baseUrl =
-      process.env.ISTACK_INFO_SERVICE_BASE_URL || 'https://api.istackbuddy.com';
+      process.env.ISTACK_INFO_SERVICE_BASE_URL || 'http://192.168.1.3:3505';
     this.redis = redisClient;
-
-    if (!this.apiKey) {
-      throw new Error(
-        'ISTACK_INFO_SERVICE_API_KEY environment variable is required',
-      );
-    }
 
     // Create axios instance with default configuration
     this.httpClient = axios.create({

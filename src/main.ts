@@ -5,6 +5,7 @@ import * as cookieParser from 'cookie-parser';
 import * as dotenv from 'dotenv';
 import { json } from 'express';
 import { CustomLoggerService } from './common/logger/custom-logger.service';
+import { BullBoardService } from './job-queue/bull-board.service';
 
 // Load environment variables from .env.live file (real keys for development/production)
 dotenv.config({ path: '.env.live' });
@@ -107,7 +108,7 @@ export async function bootstrap() {
 
   // Set up Bull Board dashboard
   try {
-    const bullBoardService = app.get('BullBoardService');
+    const bullBoardService = app.get(BullBoardService);
     const serverAdapter = bullBoardService.getServerAdapter();
     app.use(serverAdapter.getRouter());
     logger.log(

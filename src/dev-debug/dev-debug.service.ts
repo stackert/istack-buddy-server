@@ -4,6 +4,10 @@ import { UserDetailsDto } from './dto/user-details.dto';
 import { CustomLoggerService } from '../common/logger/custom-logger.service';
 import { AuthenticationService } from '../authentication/authentication.service';
 import { IStackInfoService } from '../istack-buddy-slack-api/istack-info.service';
+import {
+  FileManagerService,
+  STORAGE_CLASS,
+} from '../file-manager/file-manager.service';
 
 @Injectable()
 export class DevDebugService {
@@ -11,6 +15,7 @@ export class DevDebugService {
     private readonly logger: CustomLoggerService,
     private readonly authService: AuthenticationService,
     private readonly iStackInfoService: IStackInfoService,
+    private readonly fileManagerService: FileManagerService,
   ) {}
   /**
    * Debug authentication endpoint
@@ -204,6 +209,7 @@ export class DevDebugService {
     status?: string;
     recordCount?: number;
     fileId?: string;
+    localFileId?: string;
     results?: unknown;
     message: string;
     timestamp: string;
@@ -294,7 +300,99 @@ export class DevDebugService {
       const resultsResponse =
         await this.iStackInfoService.sumoReport.jobs.getResults(jobId);
 
-      // Step 4: Submit intent 'debugPrintToLog'
+      // Step 4: ALWAYS try to fetch file - try multiple approaches
+      let localFileId: string | undefined;
+
+      this.logger.logWithContext(
+        'log',
+        `Attempting to fetch file for job: ${jobId}`,
+        'DevDebugService.runSumoReport',
+        undefined,
+        { jobId, hasFileId: !!resultsResponse.fileId },
+      );
+
+      // Try different approaches to get the file
+      let fileContent: string;
+      let contentType = 'application/json';
+
+      if (resultsResponse.fileId) {
+        // Approach 1: Use fileId from results
+        try {
+          this.logger.logWithContext(
+            'log',
+            `Fetching file using fileId: ${resultsResponse.fileId}`,
+            'DevDebugService.runSumoReport',
+          );
+
+          const fileResponse =
+            await this.iStackInfoService.sumoReport.files.get(
+              resultsResponse.fileId,
+            );
+
+          if (fileResponse.downloadUrl) {
+            const response = await fetch(fileResponse.downloadUrl);
+            fileContent = await response.text();
+            contentType = fileResponse.contentType || 'text/plain';
+          } else {
+            fileContent = JSON.stringify(fileResponse);
+          }
+        } catch (error) {
+          this.logger.logWithContext(
+            'log',
+            `Failed to fetch via fileId, trying jobId approach: ${error.message}`,
+            'DevDebugService.runSumoReport',
+          );
+          fileContent = JSON.stringify(resultsResponse);
+        }
+      } else {
+        // Approach 2: Try using jobId directly as fileId
+        try {
+          this.logger.logWithContext(
+            'log',
+            `No fileId in results, trying to fetch file using jobId: ${jobId}`,
+            'DevDebugService.runSumoReport',
+          );
+
+          const fileResponse =
+            await this.iStackInfoService.sumoReport.files.get(jobId);
+
+          if (fileResponse.downloadUrl) {
+            const response = await fetch(fileResponse.downloadUrl);
+            fileContent = await response.text();
+            contentType = fileResponse.contentType || 'text/plain';
+          } else {
+            fileContent = JSON.stringify(fileResponse);
+          }
+        } catch (error) {
+          this.logger.logWithContext(
+            'log',
+            `Failed to fetch via jobId, storing results as file: ${error.message}`,
+            'DevDebugService.runSumoReport',
+          );
+          // Fallback: Store the results themselves as a file
+          fileContent = JSON.stringify(resultsResponse, null, 2);
+          contentType = 'application/json';
+        }
+      }
+
+      // ALWAYS store something as a file
+      localFileId = await this.fileManagerService.put(
+        {
+          content: fileContent,
+          contentType,
+        },
+        STORAGE_CLASS.TEMP,
+      );
+
+      this.logger.logWithContext(
+        'log',
+        `File stored in temporary storage: ${localFileId}`,
+        'DevDebugService.runSumoReport',
+        undefined,
+        { jobId, localFileId, contentLength: fileContent.length },
+      );
+
+      // Step 5: Submit intent 'debugPrintToLog'
       this.logger.logWithContext(
         'log',
         'Sumo report results received - debugPrintToLog intent',
@@ -304,6 +402,7 @@ export class DevDebugService {
           jobId,
           recordCount: resultsResponse.recordCount || 0,
           fileId: resultsResponse.fileId,
+          localFileId,
           results: resultsResponse.results,
         },
       );
@@ -314,6 +413,7 @@ export class DevDebugService {
         status: 'completed',
         recordCount: resultsResponse.recordCount || 0,
         fileId: resultsResponse.fileId,
+        localFileId,
         results: resultsResponse.results,
         message: 'Sumo report workflow completed successfully',
         timestamp: new Date().toISOString(),

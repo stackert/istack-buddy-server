@@ -1,9 +1,9 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bull';
 import { createBullBoard } from '@bull-board/api';
-import { BullMQAdapter } from '@bull-board/api/bullMQAdapter';
+import { BullAdapter } from '@bull-board/api/bullAdapter';
 import { ExpressAdapter } from '@bull-board/express';
-import { Queue } from 'bullmq';
+import { Queue } from 'bull';
 
 @Injectable()
 export class BullBoardService implements OnModuleInit {
@@ -29,9 +29,9 @@ export class BullBoardService implements OnModuleInit {
       // Create Bull Board with all queues
       createBullBoard({
         queues: [
-          new BullMQAdapter(this.messageQueue, { readOnlyMode: false }),
-          new BullMQAdapter(this.fileProcessingQueue, { readOnlyMode: false }),
-          new BullMQAdapter(this.notificationQueue, { readOnlyMode: false }),
+          new BullAdapter(this.messageQueue, { readOnlyMode: false }),
+          new BullAdapter(this.fileProcessingQueue, { readOnlyMode: false }),
+          new BullAdapter(this.notificationQueue, { readOnlyMode: false }),
         ],
         serverAdapter: this.serverAdapter,
       });

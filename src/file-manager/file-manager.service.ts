@@ -34,14 +34,17 @@ export class FileManagerService {
 
   constructor() {
     this.basePath = process.env.FILE_STORAGE_BASE_PATH || './storage';
-    this.tempPath =
-      process.env.FILE_STORAGE_TEMP_PATH || join(this.basePath, 'temp');
-    this.shortTermPath = process.env.FILE_STORAGE_SHORT_TERM_PATH
-      ? join(
-          this.basePath,
-          process.env.FILE_STORAGE_SHORT_TERM_PATH.replace(/^\//, ''),
-        )
-      : join(this.basePath, 'short-term');
+
+    // All paths are relative to basePath
+    const tempSubPath = process.env.FILE_STORAGE_TEMP_PATH || 'temp';
+    const shortTermSubPath =
+      process.env.FILE_STORAGE_SHORT_TERM_PATH || 'short-term';
+
+    this.tempPath = join(this.basePath, tempSubPath.replace(/^\//, ''));
+    this.shortTermPath = join(
+      this.basePath,
+      shortTermSubPath.replace(/^\//, ''),
+    );
 
     // Initialize directories synchronously - die hard if this fails
     this.initializeDirectories();
