@@ -252,7 +252,7 @@ export class IStackInfoServiceExamples {
     try {
       // This will likely fail due to invalid form ID
       await this.iStackInfoService.contextDynamic.getForm('invalid-form-id');
-    } catch (error: unknown) {
+    } catch (error: any) {
       if (error.statusCode === 404) {
         console.log('Form not found - this is expected');
       } else if (error.statusCode === 401) {

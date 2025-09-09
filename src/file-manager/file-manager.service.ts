@@ -36,9 +36,12 @@ export class FileManagerService {
     this.basePath = process.env.FILE_STORAGE_BASE_PATH || './storage';
     this.tempPath =
       process.env.FILE_STORAGE_TEMP_PATH || join(this.basePath, 'temp');
-    this.shortTermPath =
-      process.env.FILE_STORAGE_SHORT_TERM_PATH ||
-      join(this.basePath, 'short-term');
+    this.shortTermPath = process.env.FILE_STORAGE_SHORT_TERM_PATH
+      ? join(
+          this.basePath,
+          process.env.FILE_STORAGE_SHORT_TERM_PATH.replace(/^\//, ''),
+        )
+      : join(this.basePath, 'short-term');
 
     // Initialize directories synchronously - die hard if this fails
     this.initializeDirectories();

@@ -32,10 +32,3 @@ export interface QueueStats {
   delayed: number;
   paused: boolean;
 }
-
-export type {
-  MessageQueueJobData,
-  FileProcessingJobData,
-  NotificationJobData,
-  QueueStats,
-};

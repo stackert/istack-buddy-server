@@ -140,7 +140,7 @@ export interface SumoJobStatusResponse {
 export interface SumoJobResultsResponse {
   jobId: string;
   status: string;
-  results: unknown;
+  results: any;
   fileId?: string;
   recordCount?: number;
 }
