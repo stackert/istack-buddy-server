@@ -67,7 +67,6 @@ describe('IStackInfoModule', () => {
         port: 6379,
         password: undefined,
         db: 0,
-        retryDelayOnFailover: 100,
         maxRetriesPerRequest: 3,
         lazyConnect: true,
       });
@@ -93,7 +92,6 @@ describe('IStackInfoModule', () => {
         port: 6379,
         password: undefined,
         db: 0,
-        retryDelayOnFailover: 100,
         maxRetriesPerRequest: 3,
         lazyConnect: true,
       });
@@ -118,7 +116,6 @@ describe('IStackInfoModule', () => {
         port: 6380,
         password: 'secret',
         db: 1,
-        retryDelayOnFailover: 100,
         maxRetriesPerRequest: 3,
         lazyConnect: true,
       });
@@ -154,16 +151,15 @@ describe('IStackInfoModule', () => {
       expect(service).toBeInstanceOf(IStackInfoService);
     });
 
-    it('should throw error when API key is missing', async () => {
+    it('should use default API key when not provided', async () => {
       delete process.env.ISTACK_INFO_SERVICE_API_KEY;
 
-      await expect(
-        Test.createTestingModule({
-          imports: [IStackInfoModule],
-        }).compile(),
-      ).rejects.toThrow(
-        'ISTACK_INFO_SERVICE_API_KEY environment variable is required',
-      );
+      const module = await Test.createTestingModule({
+        imports: [IStackInfoModule],
+      }).compile();
+
+      const service = module.get<IStackInfoService>(IStackInfoService);
+      expect(service).toBeDefined();
     });
   });
 

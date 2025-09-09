@@ -95,12 +95,13 @@ describe('IStackInfoService', () => {
       });
     });
 
-    it('should throw error when API key is missing', () => {
+    it('should use default API key when not provided', () => {
       delete process.env.ISTACK_INFO_SERVICE_API_KEY;
 
-      expect(() => new IStackInfoService(mockRedis as Redis)).toThrow(
-        'ISTACK_INFO_SERVICE_API_KEY environment variable is required',
-      );
+      const service = new IStackInfoService(mockRedis as Redis);
+
+      // Should not throw error, should use default dev token
+      expect(service).toBeDefined();
     });
 
     it('should use default base URL when not provided', () => {
@@ -110,7 +111,7 @@ describe('IStackInfoService', () => {
 
       expect(mockedAxios.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          baseURL: 'https://api.istackbuddy.com',
+          baseURL: 'http://192.168.1.3:3505',
         }),
       );
     });

@@ -8,8 +8,8 @@ jest.mock('@bull-board/api', () => ({
   createBullBoard: jest.fn(),
 }));
 
-jest.mock('@bull-board/api/bullMQAdapter', () => ({
-  BullMQAdapter: jest.fn().mockImplementation(() => ({})),
+jest.mock('@bull-board/api/bullAdapter', () => ({
+  BullAdapter: jest.fn().mockImplementation(() => ({})),
 }));
 
 jest.mock('@bull-board/express', () => ({
@@ -82,7 +82,7 @@ describe('BullBoardService', () => {
   describe('initializeBullBoard', () => {
     it('should initialize Bull Board successfully', async () => {
       const { createBullBoard } = require('@bull-board/api');
-      const { BullMQAdapter } = require('@bull-board/api/bullMQAdapter');
+      const { BullAdapter } = require('@bull-board/api/bullAdapter');
       const { ExpressAdapter } = require('@bull-board/express');
 
       const mockAdapter = {
@@ -94,7 +94,7 @@ describe('BullBoardService', () => {
 
       expect(ExpressAdapter).toHaveBeenCalled();
       expect(mockAdapter.setBasePath).toHaveBeenCalledWith('/admin/queues');
-      expect(BullMQAdapter).toHaveBeenCalledTimes(3);
+      expect(BullAdapter).toHaveBeenCalledTimes(3);
       expect(createBullBoard).toHaveBeenCalledWith({
         queues: expect.arrayContaining([
           expect.objectContaining({}),
@@ -158,7 +158,7 @@ describe('BullBoardService', () => {
 
   describe('queue configuration', () => {
     it('should configure all queues with correct settings', async () => {
-      const { BullMQAdapter } = require('@bull-board/api/bullMQAdapter');
+      const { BullAdapter } = require('@bull-board/api/bullAdapter');
       const { createBullBoard } = require('@bull-board/api');
       const { ExpressAdapter } = require('@bull-board/express');
 
@@ -170,14 +170,14 @@ describe('BullBoardService', () => {
 
       await (service as any).initializeBullBoard();
 
-      // Verify that BullMQAdapter was called with correct parameters
-      expect(BullMQAdapter).toHaveBeenCalledWith(mockMessageQueue, {
+      // Verify that BullAdapter was called with correct parameters
+      expect(BullAdapter).toHaveBeenCalledWith(mockMessageQueue, {
         readOnlyMode: false,
       });
-      expect(BullMQAdapter).toHaveBeenCalledWith(mockFileProcessingQueue, {
+      expect(BullAdapter).toHaveBeenCalledWith(mockFileProcessingQueue, {
         readOnlyMode: false,
       });
-      expect(BullMQAdapter).toHaveBeenCalledWith(mockNotificationQueue, {
+      expect(BullAdapter).toHaveBeenCalledWith(mockNotificationQueue, {
         readOnlyMode: false,
       });
     });

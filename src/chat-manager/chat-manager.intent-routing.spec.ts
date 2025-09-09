@@ -3,6 +3,7 @@ import { ChatManagerService } from './chat-manager.service';
 import { ChatConversationListService } from '../ConversationLists/ChatConversationListService';
 import { RobotService } from '../robots/robot.service';
 import { IntentParsingService } from '../common/services/intent-parsing.service';
+import { IntentRouterService } from '../common/services/intent-router.service';
 import {
   CreateMessageDto,
   MessageType,
@@ -55,6 +56,12 @@ const mockSlackyAgent = {
   getGetFromRobotToConversationTransformer: jest.fn(),
 };
 
+const mockIntentRouterService = {
+  routeIntent: jest.fn(),
+  registerHandler: jest.fn(),
+  getRegisteredIntents: jest.fn().mockReturnValue([]),
+};
+
 describe('ChatManagerService - Intent Routing Integration', () => {
   let service: ChatManagerService;
 
@@ -72,6 +79,10 @@ describe('ChatManagerService - Intent Routing Integration', () => {
         {
           provide: RobotService,
           useValue: mockRobotService,
+        },
+        {
+          provide: IntentRouterService,
+          useValue: mockIntentRouterService,
         },
       ],
     }).compile();
@@ -145,10 +156,10 @@ describe('ChatManagerService - Intent Routing Integration', () => {
         'Debug form 123',
         { currentRobot: undefined },
       );
-      expect(mockRobotService.getRobotByName).toHaveBeenCalledWith(
-        'AnthropicMarv',
+      expect(mockIntentRouterService.routeIntent).toHaveBeenCalledWith(
+        intentResult,
+        expect.any(Object),
       );
-      expect(mockAnthropicMarv.acceptMessageStreamResponse).toHaveBeenCalled();
     });
 
     it('should use intent parsing to select SlackyOpenAiAgent robot', async () => {
@@ -185,10 +196,10 @@ describe('ChatManagerService - Intent Routing Integration', () => {
         'Help me with general assistance',
         { currentRobot: undefined },
       );
-      expect(mockRobotService.getRobotByName).toHaveBeenCalledWith(
-        'SlackyOpenAiAgent',
+      expect(mockIntentRouterService.routeIntent).toHaveBeenCalledWith(
+        intentResult,
+        expect.any(Object),
       );
-      expect(mockSlackyAgent.acceptMessageStreamResponse).toHaveBeenCalled();
     });
 
     it('should fallback to AnthropicMarv when intent parsing fails', async () => {
@@ -268,18 +279,10 @@ describe('ChatManagerService - Intent Routing Integration', () => {
 
       await service.handleRobotMessage(createMessageDto);
 
-      expect(mockRobotService.getRobotByName).toHaveBeenCalledWith(
-        'NonExistentRobot',
+      expect(mockIntentRouterService.routeIntent).toHaveBeenCalledWith(
+        intentResult,
+        expect.any(Object),
       );
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining(
-          'Robot NonExistentRobot not found, falling back to AnthropicMarv',
-        ),
-      );
-      expect(mockRobotService.getRobotByName).toHaveBeenCalledWith(
-        'AnthropicMarv',
-      );
-      expect(mockAnthropicMarv.acceptMessageStreamResponse).toHaveBeenCalled();
 
       consoleSpy.mockRestore();
     });
@@ -394,21 +397,12 @@ describe('ChatManagerService - Intent Routing Integration', () => {
       // Mock the getHistory method
       jest.spyOn(service, 'getHistory').mockReturnValue([]);
 
-      // Spy on handleRobotStreamingResponse to verify parameters
-      const handleRobotStreamingResponseSpy = jest
-        .spyOn(service, 'handleRobotStreamingResponse')
-        .mockResolvedValue();
-
       await service.handleRobotMessage(createMessageDto);
 
-      expect(handleRobotStreamingResponseSpy).toHaveBeenCalledWith(
-        'specific-conversation',
-        'AnthropicMarv',
-        'Specific test message',
+      expect(mockIntentRouterService.routeIntent).toHaveBeenCalledWith(
+        intentResult,
         expect.any(Object), // callbacks
       );
-
-      handleRobotStreamingResponseSpy.mockRestore();
     });
 
     it('should maintain backward compatibility when intent parsing is disabled', async () => {

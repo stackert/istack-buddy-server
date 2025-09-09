@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ChatManagerService } from './chat-manager.service';
 import { ChatConversationListService } from '../ConversationLists/ChatConversationListService';
 import { RobotService } from '../robots/robot.service';
+import { IntentRouterService } from '../common/services/intent-router.service';
 import {
   CreateMessageDto,
   MessageType,
@@ -60,6 +61,12 @@ describe('ChatManagerService', () => {
       },
     };
 
+    const mockIntentRouterService = {
+      routeIntent: jest.fn(),
+      registerHandler: jest.fn(),
+      getRegisteredIntents: jest.fn().mockReturnValue([]),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ChatManagerService,
@@ -70,6 +77,10 @@ describe('ChatManagerService', () => {
         {
           provide: RobotService,
           useValue: mockRobotService,
+        },
+        {
+          provide: IntentRouterService,
+          useValue: mockIntentRouterService,
         },
       ],
     }).compile();

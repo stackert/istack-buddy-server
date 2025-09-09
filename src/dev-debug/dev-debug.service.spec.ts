@@ -2,6 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { DevDebugService } from './dev-debug.service';
 import { CustomLoggerService } from '../common/logger/custom-logger.service';
 import { AuthenticationService } from '../authentication/authentication.service';
+import { IStackInfoService } from '../istack-buddy-slack-api/istack-info.service';
+import { FileManagerService } from '../file-manager/file-manager.service';
 
 describe('DevDebugService', () => {
   let service: DevDebugService;
@@ -21,6 +23,25 @@ describe('DevDebugService', () => {
       getUserPermissionSet: jest.fn(),
     };
 
+    const mockIStackInfoService = {
+      sumoReport: {
+        submitQuery: jest.fn(),
+        jobs: {
+          getStatus: jest.fn(),
+          getResults: jest.fn(),
+        },
+        files: {
+          get: jest.fn(),
+          list: jest.fn(),
+        },
+      },
+    };
+
+    const mockFileManagerService = {
+      put: jest.fn(),
+      get: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         DevDebugService,
@@ -31,6 +52,14 @@ describe('DevDebugService', () => {
         {
           provide: AuthenticationService,
           useValue: mockAuth,
+        },
+        {
+          provide: IStackInfoService,
+          useValue: mockIStackInfoService,
+        },
+        {
+          provide: FileManagerService,
+          useValue: mockFileManagerService,
         },
       ],
     }).compile();

@@ -9,6 +9,7 @@ import {
   TStreamingCallbackMessageOnFullMessageReceived,
 } from '../robots/types';
 import { IntentParsingService } from '../common/services/intent-parsing.service';
+import { IntentRouterService } from '../common/services/intent-router.service';
 import {
   IntentParsingResult,
   IntentParsingResponse,
@@ -43,6 +44,7 @@ export class ChatManagerService {
   constructor(
     private readonly chatConversationListService: ChatConversationListService,
     private readonly robotService: RobotService,
+    private readonly intentRouterService: IntentRouterService,
   ) {
     this.intentParsingService = new IntentParsingService();
   }
@@ -267,22 +269,19 @@ export class ChatManagerService {
         );
       }
 
-      // Step 3: Get the robot
-      const robot = this.robotService.getRobotByName(robotName);
-      if (!robot) {
-        console.warn(
-          `Robot ${robotName} not found, falling back to AnthropicMarv`,
+      // Step 3: Route intent through intent router
+      if ('error' in intentResult) {
+        // Fallback to existing robot behavior for errors
+        await this.handleRobotStreamingResponse(
+          conversationId,
+          'AnthropicMarv',
+          userMessage,
+          callbacks,
         );
-        robotName = 'AnthropicMarv';
+      } else {
+        // Route through intent router (handles both intent handlers and robots)
+        await this.intentRouterService.routeIntent(intentResult, callbacks);
       }
-
-      // Step 4: Handle the robot streaming response (existing flow)
-      await this.handleRobotStreamingResponse(
-        conversationId,
-        robotName,
-        userMessage,
-        callbacks,
-      );
     } catch (error) {
       console.error(
         `Error in handleRobotMessage: ${error.message}. Falling back to AnthropicMarv`,

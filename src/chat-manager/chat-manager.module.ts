@@ -3,6 +3,9 @@ import { ChatManagerService } from './chat-manager.service';
 import { ChatManagerGateway } from './chat-manager.gateway';
 import { ChatManagerController } from './chat-manager.controller';
 import { RobotModule } from '../robots/robot.module';
+import { IntentHandlersModule } from '../intent-handlers/intent-handlers.module';
+import { IntentRouterService } from '../common/services/intent-router.service';
+import { IntentHandlerRegistryService } from '../common/services/intent-handler-registry.service';
 
 import { ChatConversationListService } from '../ConversationLists/ChatConversationListService';
 import { AuthenticationModule } from '../authentication/authentication.module';
@@ -10,13 +13,20 @@ import { GuardsModule } from '../common/guards/guards.module';
 import { AuthPermissionGuard } from '../common/guards/auth-permission.guard';
 
 @Module({
-  imports: [RobotModule, AuthenticationModule, GuardsModule],
+  imports: [
+    RobotModule,
+    AuthenticationModule,
+    GuardsModule,
+    IntentHandlersModule,
+  ],
   controllers: [ChatManagerController],
   providers: [
     ChatManagerGateway,
     ChatManagerService,
     ChatConversationListService,
     AuthPermissionGuard,
+    IntentRouterService,
+    IntentHandlerRegistryService,
   ],
   exports: [ChatManagerService, ChatConversationListService],
 })
