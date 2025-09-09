@@ -54,4 +54,14 @@ export class DevDebugController {
   ) {
     return this.devDebugService.testAuthenticationStatus(userId, token);
   }
+
+  /**
+   * POST /dev-debug/run-sumo-report
+   * Run complete Sumo report workflow - submit, poll, get results
+   */
+  @Post('run-sumo-report')
+  @HttpCode(HttpStatus.OK)
+  async runSumoReport() {
+    return this.devDebugService.runSumoReport();
+  }
 }

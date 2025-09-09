@@ -3,12 +3,14 @@ import { AuthDto, AuthResponseDto } from './dto/auth.dto';
 import { UserDetailsDto } from './dto/user-details.dto';
 import { CustomLoggerService } from '../common/logger/custom-logger.service';
 import { AuthenticationService } from '../authentication/authentication.service';
+import { IStackInfoService } from '../istack-buddy-slack-api/istack-info.service';
 
 @Injectable()
 export class DevDebugService {
   constructor(
     private readonly logger: CustomLoggerService,
     private readonly authService: AuthenticationService,
+    private readonly iStackInfoService: IStackInfoService,
   ) {}
   /**
    * Debug authentication endpoint
@@ -191,5 +193,150 @@ export class DevDebugService {
         status: 'active',
       },
     ];
+  }
+
+  /**
+   * Run complete Sumo report workflow - submit, poll, get results
+   */
+  async runSumoReport(): Promise<{
+    success: boolean;
+    jobId?: string;
+    status?: string;
+    recordCount?: number;
+    fileId?: string;
+    results?: unknown;
+    message: string;
+    timestamp: string;
+    error?: string;
+  }> {
+    this.logger.logWithContext(
+      'log',
+      'Starting Sumo report workflow',
+      'DevDebugService.runSumoReport',
+    );
+
+    try {
+      // Step 1: Submit the query
+      const submissionRequest = {
+        queryName: 'submissionCreatedForForm',
+        subject: {
+          formId: '6276978',
+          startDate: '2025-09-01',
+          endDate: '2025-09-04',
+        },
+      };
+
+      this.logger.logWithContext(
+        'log',
+        'Submitting Sumo query',
+        'DevDebugService.runSumoReport',
+        undefined,
+        { request: submissionRequest },
+      );
+
+      const submissionResponse =
+        await this.iStackInfoService.sumoReport.submitQuery(submissionRequest);
+      const jobId = submissionResponse.jobId;
+
+      this.logger.logWithContext(
+        'log',
+        `Job submitted with ID: ${jobId}`,
+        'DevDebugService.runSumoReport',
+        undefined,
+        { jobId, status: submissionResponse.status },
+      );
+
+      // Step 2: Poll until done
+      let status = 'pending';
+      let attempts = 0;
+      const maxAttempts = 30; // 5 minutes max (10 second intervals)
+
+      while (
+        status !== 'completed' &&
+        status !== 'failed' &&
+        attempts < maxAttempts
+      ) {
+        await this.sleep(10000); // Wait 10 seconds
+        attempts++;
+
+        const statusResponse =
+          await this.iStackInfoService.sumoReport.jobs.getStatus(jobId);
+        status = statusResponse.status;
+
+        this.logger.logWithContext(
+          'log',
+          `Job status check ${attempts}/${maxAttempts}: ${status}`,
+          'DevDebugService.runSumoReport',
+          undefined,
+          { jobId, status, attempt: attempts },
+        );
+
+        if (status === 'failed') {
+          throw new Error(
+            `Job failed: ${statusResponse.error || 'Unknown error'}`,
+          );
+        }
+      }
+
+      if (status !== 'completed') {
+        throw new Error(`Job timed out after ${maxAttempts} attempts`);
+      }
+
+      // Step 3: Get results
+      this.logger.logWithContext(
+        'log',
+        'Job completed, fetching results',
+        'DevDebugService.runSumoReport',
+        undefined,
+        { jobId },
+      );
+
+      const resultsResponse =
+        await this.iStackInfoService.sumoReport.jobs.getResults(jobId);
+
+      // Step 4: Submit intent 'debugPrintToLog'
+      this.logger.logWithContext(
+        'log',
+        'Sumo report results received - debugPrintToLog intent',
+        'DevDebugService.runSumoReport',
+        undefined,
+        {
+          jobId,
+          recordCount: resultsResponse.recordCount || 0,
+          fileId: resultsResponse.fileId,
+          results: resultsResponse.results,
+        },
+      );
+
+      return {
+        success: true,
+        jobId,
+        status: 'completed',
+        recordCount: resultsResponse.recordCount || 0,
+        fileId: resultsResponse.fileId,
+        results: resultsResponse.results,
+        message: 'Sumo report workflow completed successfully',
+        timestamp: new Date().toISOString(),
+      };
+    } catch (error) {
+      this.logger.logWithContext(
+        'error',
+        'Sumo report workflow failed',
+        'DevDebugService.runSumoReport',
+        undefined,
+        { error: error instanceof Error ? error.message : 'Unknown error' },
+      );
+
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        message: 'Sumo report workflow failed',
+        timestamp: new Date().toISOString(),
+      };
+    }
+  }
+
+  private sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }
