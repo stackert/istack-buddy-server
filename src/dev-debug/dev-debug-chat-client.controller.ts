@@ -282,6 +282,9 @@ export class DevDebugChatClientController {
       const callbacks =
         this.chatManagerService.createConversationCallbacks(conversationId);
 
+      // Add conversation ID to callbacks so intent handler can access it
+      (callbacks as any).conversationId = conversationId;
+
       // Route through intent router (EXACT same call as working code)
       await this.intentRouterService.routeIntent(intentResult, callbacks);
 
@@ -562,8 +565,12 @@ export class DevDebugChatClientController {
         .debug-input-section { flex: 1; }
         .input-box { width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 4px; resize: vertical; min-height: 60px; }
         .intent-input-box { width: 100%; padding: 12px; border: 2px solid #ffc107; border-radius: 4px; resize: vertical; min-height: 100px; background: #fff3cd; }
-        .send-btn { background: #28a745; color: white; border: none; padding: 12px 24px; border-radius: 4px; cursor: pointer; margin-top: 10px; }
-        .intent-btn { background: #ffc107; color: #212529; border: none; padding: 12px 24px; border-radius: 4px; cursor: pointer; margin-top: 10px; }
+        .send-btn { background: #28a745; color: white; border: none; padding: 12px 24px; border-radius: 4px; cursor: pointer; margin-top: 10px; transition: all 0.2s; }
+        .send-btn:hover { background: #218838; transform: translateY(-1px); }
+        .send-btn:active { background: #1e7e34; transform: translateY(0px); }
+        .intent-btn { background: #ffc107; color: #212529; border: none; padding: 12px 24px; border-radius: 4px; cursor: pointer; margin-top: 10px; transition: all 0.2s; }
+        .intent-btn:hover { background: #e0a800; transform: translateY(-1px); }
+        .intent-btn:active { background: #d39e00; transform: translateY(0px); }
         .debug-item { background: #f8f9fa; padding: 10px; border-radius: 4px; margin-bottom: 10px; font-size: 14px; }
         .robot-switch { color: #dc3545; font-weight: bold; }
         .robot-processing { background: #fff3cd; border-left: 3px solid #ffc107; }

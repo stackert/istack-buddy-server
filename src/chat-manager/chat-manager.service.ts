@@ -93,7 +93,10 @@ export class ChatManagerService {
           const robotMessage = await this.createMessage({
             conversationId: conversationId,
             fromUserId: 'anthropic-marv-robot',
-            content: accumulatedContent,
+            content: {
+              type: 'text/plain',
+              payload: accumulatedContent,
+            },
             messageType: MessageType.ROBOT,
             fromRole: UserRole.ROBOT,
             toRole: UserRole.AGENT,
@@ -122,42 +125,42 @@ export class ChatManagerService {
         // if they subscribe to both they will get duplicate messages (same messageId)
 
         // Add tool response to conversation database
-        await this.addMessage(
-          {
-            conversationId: conversationId,
-            fromUserId: 'anthropic-marv-robot',
-            content: message.content.payload,
-            messageType: MessageType.TEXT,
-            fromRole: UserRole.ROBOT,
-            toRole: UserRole.CUSTOMER,
+        await this.addMessage({
+          conversationId: conversationId,
+          fromUserId: 'anthropic-marv-robot',
+          content: {
+            type: 'text/plain',
+            payload: message.content.payload,
           },
-          message.content.type,
-        );
+          messageType: MessageType.TEXT,
+          fromRole: UserRole.ROBOT,
+          toRole: UserRole.CUSTOMER,
+        });
 
         // Create message and broadcast through gateway like onError does
-        const fullMessage = await this.createMessage(
-          {
-            conversationId: conversationId,
-            fromUserId: 'anthropic-marv-robot',
+        const fullMessage = await this.createMessage({
+          conversationId: conversationId,
+          fromUserId: 'anthropic-marv-robot',
 
-            // from public-interface.controller.ts
-            messageType: MessageType.TEXT,
-            fromRole: UserRole.ROBOT,
-            toRole: UserRole.CUSTOMER,
+          // from public-interface.controller.ts
+          messageType: MessageType.TEXT,
+          fromRole: UserRole.ROBOT,
+          toRole: UserRole.CUSTOMER,
 
-            // from above
-            // messageType: MessageType.ROBOT,
-            // fromRole: UserRole.ROBOT,
-            // toRole: UserRole.AGENT,
+          // from above
+          // messageType: MessageType.ROBOT,
+          // fromRole: UserRole.ROBOT,
+          // toRole: UserRole.AGENT,
 
-            // original
-            // messageType: MessageType.TEXT,
-            // fromRole: UserRole.AGENT,
-            // toRole: UserRole.CUSTOMER,
-            content: message.content.payload,
+          // original
+          // messageType: MessageType.TEXT,
+          // fromRole: UserRole.AGENT,
+          // toRole: UserRole.CUSTOMER,
+          content: {
+            type: 'text/plain',
+            payload: message.content.payload,
           },
-          message.content.type,
-        );
+        });
 
         `
 
@@ -199,7 +202,10 @@ export class ChatManagerService {
         await this.addMessage({
           conversationId: conversationId,
           fromUserId: 'AnthropicMarv',
-          content: 'DEBUG onError',
+          content: {
+            type: 'text/plain',
+            payload: 'DEBUG onError',
+          },
           messageType: MessageType.TEXT,
           fromRole: UserRole.ROBOT,
           toRole: UserRole.CUSTOMER,
@@ -209,7 +215,10 @@ export class ChatManagerService {
         const errorMessage = await this.createMessage({
           conversationId: conversationId,
           fromUserId: 'anthropic-marv-robot',
-          content: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          content: {
+            type: 'text/plain',
+            payload: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          },
           messageType: MessageType.TEXT,
           fromRole: UserRole.AGENT,
           toRole: UserRole.CUSTOMER,
@@ -238,7 +247,9 @@ export class ChatManagerService {
    */
   async handleRobotMessage(createMessageDto: CreateMessageDto): Promise<void> {
     const conversationId = createMessageDto.conversationId;
-    const userMessage = createMessageDto.content;
+    const userMessage = String(
+      createMessageDto.content.payload || 'No content',
+    );
 
     // Create callbacks that handle both debug messages and broadcasting
     const callbacks = this.createConversationCallbacks(conversationId);
@@ -275,7 +286,7 @@ export class ChatManagerService {
         await this.handleRobotStreamingResponse(
           conversationId,
           'AnthropicMarv',
-          userMessage,
+          userMessage, // userMessage is already the payload string
           callbacks,
         );
       } else {
@@ -291,7 +302,7 @@ export class ChatManagerService {
       await this.handleRobotStreamingResponse(
         conversationId,
         'AnthropicMarv',
-        userMessage,
+        userMessage, // userMessage is already the payload string
         callbacks,
       );
     }
@@ -433,7 +444,6 @@ export class ChatManagerService {
    */
   async addMessage(
     createMessageDto: CreateMessageDto,
-    contentType: string = 'text',
   ): Promise<IConversationMessage> {
     const messageId = uuidv4();
     const now = new Date();
@@ -449,10 +459,7 @@ export class ChatManagerService {
 
     const message: IConversationMessage = {
       id: messageId,
-      content: {
-        type: contentType === 'text' ? 'text/plain' : contentType,
-        payload: createMessageDto.content,
-      } as TConversationMessageContentString,
+      content: createMessageDto.content, // Content is already properly structured
       conversationId: createMessageDto.conversationId,
       authorUserId: createMessageDto.fromUserId,
       fromRole: createMessageDto.fromRole,
@@ -495,9 +502,8 @@ export class ChatManagerService {
    */
   async createMessage(
     createMessageDto: CreateMessageDto,
-    contentType: string = 'text',
   ): Promise<IConversationMessage> {
-    return this.addMessage(createMessageDto, contentType);
+    return this.addMessage(createMessageDto);
   }
 
   /**
@@ -668,7 +674,10 @@ export class ChatManagerService {
     const result = await this.addMessage({
       conversationId,
       fromUserId: robotName,
-      content,
+      content: {
+        type: 'text/plain',
+        payload: content,
+      },
       messageType: MessageType.ROBOT,
       fromRole: UserRole.ROBOT,
       toRole: UserRole.CUSTOMER,
@@ -690,7 +699,10 @@ export class ChatManagerService {
     const result = await this.addMessage({
       conversationId,
       fromUserId: userId,
-      content,
+      content: {
+        type: 'text/plain',
+        payload: content,
+      },
       messageType: MessageType.TEXT,
       fromRole,
       toRole,

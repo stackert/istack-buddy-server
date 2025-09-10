@@ -1,4 +1,13 @@
-import { IsString, IsNotEmpty, IsOptional, IsEnum } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsEnum,
+  ValidateNested,
+  IsObject,
+} from 'class-validator';
+import { Type } from 'class-transformer';
+import { TConversationMessageContent } from '../../ConversationLists/types';
 
 export enum MessageType {
   TEXT = 'text',
@@ -15,9 +24,10 @@ export enum UserRole {
 }
 
 export class CreateMessageDto {
-  @IsString()
-  @IsNotEmpty()
-  content: string;
+  @IsObject()
+  @ValidateNested()
+  @Type(() => Object)
+  content: TConversationMessageContent;
 
   @IsString()
   @IsNotEmpty()

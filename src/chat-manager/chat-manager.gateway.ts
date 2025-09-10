@@ -134,8 +134,13 @@ export class ChatManagerGateway
       toRole: createMessageDto.toRole,
       messageType: createMessageDto.messageType,
       content:
-        createMessageDto.content?.substring(0, 100) +
-        (createMessageDto.content?.length > 100 ? '...' : ''),
+        String(createMessageDto.content?.payload || 'No content').substring(
+          0,
+          100,
+        ) +
+        (String(createMessageDto.content?.payload || '').length > 100
+          ? '...'
+          : ''),
       clientId: client.id,
     });
 

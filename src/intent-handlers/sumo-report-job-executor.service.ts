@@ -8,6 +8,8 @@ import {
   STORAGE_CLASS,
 } from '../file-manager/file-manager.service';
 import { RobotService } from '../robots/robot.service';
+import { ChatManagerService } from '../chat-manager/chat-manager.service';
+import { UserRole, MessageType } from '../chat-manager/dto/create-message.dto';
 
 @Injectable()
 export class SumoReportJobExecutor implements IntentHandler {
@@ -17,6 +19,7 @@ export class SumoReportJobExecutor implements IntentHandler {
     private readonly iStackInfoService: IStackInfoService,
     private readonly fileManagerService: FileManagerService,
     private readonly robotService: RobotService,
+    private readonly chatManagerService: ChatManagerService,
   ) {}
 
   getSupportedIntents(): RobotIntent[] {
@@ -45,6 +48,11 @@ export class SumoReportJobExecutor implements IntentHandler {
   ): Promise<void> {
     this.logger.log('Starting Sumo report job execution workflow');
     this.logger.log('Intent data:', intentData);
+
+    // Extract conversation ID from the callbacks context
+    const conversationId =
+      (callbacks as any).conversationId || 'unknown-conversation';
+    this.logger.log(`Using conversation ID: ${conversationId}`);
     try {
       // 1. Parse query parameters from intent data
       const queryParams = this.parseQueryParameters(intentData);
@@ -54,6 +62,24 @@ export class SumoReportJobExecutor implements IntentHandler {
 
       // 3. Process data with your code
       const processedData = await this.processJobData(fileId);
+
+      // 3.5. Send processed data to chat using proper ChatManagerService
+      await this.chatManagerService.addMessage({
+        content: {
+          type: 'sumo-search/report',
+          payload: {
+            recordCount: processedData.recordCount,
+            firstRecord: null, // Could add first record if needed
+            results: processedData,
+            originalQuery: `Form ${intentData.subjects?.formId?.[0]} submission errors`,
+          },
+        },
+        conversationId: conversationId,
+        fromUserId: 'sumo-executor',
+        fromRole: UserRole.ROBOT,
+        toRole: UserRole.CUSTOMER,
+        messageType: MessageType.TEXT,
+      });
 
       // 4. Maybe create externally available file
       const externalFileId = await this.maybeCreateExternalFile(processedData);
