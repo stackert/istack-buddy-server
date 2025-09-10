@@ -83,6 +83,7 @@ export class AuthorizationPermissionsService {
 
   // Session management
   private formMarvSessions: Record<string, IFormMarvSession> = {};
+  private devSessions: Record<string, any> = {};
 
   constructor(
     private readonly logger: CustomLoggerService,
@@ -322,6 +323,113 @@ export class AuthorizationPermissionsService {
       userId,
       jwtToken,
     };
+  }
+
+  /**
+   * Create a temporary dev user and session for debugging
+   * @returns Object containing sessionId, userId, and jwtToken
+   */
+  createDevUserAndSession(): TempUserAndSessionResult {
+    const sessionId = uuidv4();
+    const userId = `dev-user-${sessionId}`;
+    const now = new Date();
+
+    // Create a temporary dev user with full permissions
+    this.addUser(
+      userId,
+      [
+        'read:chat',
+        'write:chat',
+        'cx-agent:form-marv:read',
+        'cx-agent:form-marv:write',
+        'admin:system',
+      ],
+      [],
+    );
+
+    // Create a temporary user profile
+    this.userProfileService.addTemporaryUser(userId, {
+      email: `dev-session-${Date.now()}@istackbuddy.com`,
+      username: userId,
+      account_type_informal: 'DEV_DEBUG',
+      first_name: 'Dev',
+      last_name: 'Debug-' + sessionId.slice(0, 8),
+    });
+
+    // Create JWT token for the dev user
+    const jwtSecret = process.env.ISTACK_BUDDY_INTERNAL_JWT_SECRET;
+    if (!jwtSecret) {
+      throw new Error(
+        'ISTACK_BUDDY_INTERNAL_JWT_SECRET environment variable is not set',
+      );
+    }
+
+    const jwtToken = jwt.sign(
+      {
+        userId,
+        email: `dev-session-${Date.now()}@istackbuddy.com`,
+        username: userId,
+        accountType: 'DEV_DEBUG',
+        sessionId,
+        isDev: true,
+      },
+      jwtSecret,
+      { expiresIn: '8h' },
+    );
+
+    // Create and store the dev session
+    const session = {
+      sessionId,
+      userId,
+      jwtToken,
+      createdAt: now,
+      lastActivityAt: now,
+      expiresInMs: 8 * 60 * 60 * 1000, // 8 hours
+      isDev: true,
+    };
+
+    this.devSessions[jwtToken] = session;
+
+    this.logger.logWithContext(
+      'log',
+      'Dev user and session created',
+      'AuthorizationPermissionsService.createDevUserAndSession',
+      undefined,
+      { sessionId, userId },
+    );
+
+    return {
+      sessionId,
+      userId,
+      jwtToken,
+    };
+  }
+
+  /**
+   * Get a dev session by JWT token
+   * @param jwtToken The JWT token to look up
+   * @returns The dev session if found and not expired, null otherwise
+   */
+  getDevSessionByJwtToken(jwtToken: string): any | null {
+    const session = this.devSessions[jwtToken];
+
+    if (!session) {
+      return null;
+    }
+
+    const now = new Date();
+    const sessionAge = now.getTime() - session.createdAt.getTime();
+
+    if (sessionAge > session.expiresInMs) {
+      // Session expired, remove it
+      delete this.devSessions[jwtToken];
+      return null;
+    }
+
+    // Update last activity
+    session.lastActivityAt = now;
+
+    return session;
   }
 
   /**

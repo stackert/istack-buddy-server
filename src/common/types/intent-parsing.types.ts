@@ -29,6 +29,15 @@ export interface IntentParsingError {
 
 export type IntentParsingResult = IntentParsingResponse | IntentParsingError;
 
+/**
+ * Type guard to check if an IntentParsingResult is an error
+ */
+export function isIntentParsingError(
+  result: IntentParsingResult,
+): result is IntentParsingError {
+  return 'error' in result;
+}
+
 // Robot Intent Registry Types
 export interface RobotIntent {
   intent: string;
