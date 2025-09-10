@@ -1,0 +1,21 @@
+{
+  "name": "istack-buddy-mock-servers",
+  "version": "1.0.0",
+  "description": "Mock servers for iStack Buddy development",
+  "main": "information-services-mock.js",
+  "scripts": {
+    "start": "node information-services-mock.js",
+    "start:info": "node information-services-mock.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5"
+  },
+  "keywords": [
+    "mock",
+    "server",
+    "development"
+  ],
+  "author": "iStack Buddy Team",
+  "license": "MIT"
+}

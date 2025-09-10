@@ -1,0 +1,50 @@
+{
+  "messageCount": 42,
+  "timeRange": {
+    "from": "2025-09-09T00:00:00Z",
+    "to": "2025-09-10T23:59:59Z"
+  },
+  "records": [
+    {
+      "timestamp": "2025-09-10T10:30:00Z",
+      "formId": "12345",
+      "submissionId": "sub_67890",
+      "level": "INFO",
+      "message": "Form submission received",
+      "metadata": {
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "ipAddress": "192.168.1.100",
+        "sessionId": "sess_abc123"
+      }
+    },
+    {
+      "timestamp": "2025-09-10T10:31:15Z",
+      "formId": "12345",
+      "submissionId": "sub_67890",
+      "level": "INFO",
+      "message": "Validation completed successfully",
+      "metadata": {
+        "validationTime": "150ms",
+        "rulesApplied": 5
+      }
+    },
+    {
+      "timestamp": "2025-09-10T10:32:00Z",
+      "formId": "12345",
+      "submissionId": "sub_67890",
+      "level": "INFO",
+      "message": "Submit action executed",
+      "metadata": {
+        "actionType": "email",
+        "executionTime": "300ms",
+        "status": "success"
+      }
+    }
+  ],
+  "summary": {
+    "totalSubmissions": 42,
+    "successfulSubmissions": 40,
+    "failedSubmissions": 2,
+    "averageProcessingTime": "225ms"
+  }
+}

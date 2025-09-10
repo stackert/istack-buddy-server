@@ -9,13 +9,13 @@ set -e
 BASE_URL="http://localhost:3500"
 ENDPOINT="/dev-debug/run-sumo-report"
 
-echo "Testing Sumo Report Workflow"
-echo "============================"
+echo "Testing Sumo Report Workflow via Intent Router"
+echo "=============================================="
 echo "Endpoint: POST $BASE_URL$ENDPOINT"
 echo ""
 
-# Call the endpoint
-echo "Starting Sumo report workflow..."
+# Call the dev-debug endpoint (now routes through intent system)
+echo "Starting Sumo report workflow via intent router..."
 echo "Calling: curl -X POST $BASE_URL$ENDPOINT"
 echo ""
 

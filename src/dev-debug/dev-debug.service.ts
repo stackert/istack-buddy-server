@@ -8,6 +8,8 @@ import {
   FileManagerService,
   STORAGE_CLASS,
 } from '../file-manager/file-manager.service';
+import { IntentRouterService } from '../common/services/intent-router.service';
+import { IntentParsingResponse } from '../common/types/intent-parsing.types';
 
 @Injectable()
 export class DevDebugService {
@@ -16,6 +18,7 @@ export class DevDebugService {
     private readonly authService: AuthenticationService,
     private readonly iStackInfoService: IStackInfoService,
     private readonly fileManagerService: FileManagerService,
+    private readonly intentRouterService: IntentRouterService,
   ) {}
   /**
    * Debug authentication endpoint
@@ -201,16 +204,10 @@ export class DevDebugService {
   }
 
   /**
-   * Run complete Sumo report workflow - submit, poll, get results
+   * Test intent router with Sumo report intent
    */
   async runSumoReport(): Promise<{
     success: boolean;
-    jobId?: string;
-    status?: string;
-    recordCount?: number;
-    fileId?: string;
-    localFileId?: string;
-    results?: unknown;
     message: string;
     timestamp: string;
     error?: string;
@@ -222,200 +219,53 @@ export class DevDebugService {
     );
 
     try {
-      // Step 1: Submit the query
-      const submissionRequest = {
-        queryName: 'submissionCreatedForForm',
-        subject: {
-          formId: '6276978',
-          startDate: '2025-09-01',
-          endDate: '2025-09-04',
+      // Create intent data for Sumo report
+      const intentResult: IntentParsingResponse = {
+        robotName: 'SumoReportJobExecutor',
+        intent: 'generateSumoReport',
+        intentData: {
+          originalUserPrompt:
+            'Generate Sumo report for form 6276978 from Sept 1-4',
+          subIntents: ['searchSumoLogSubmissionErrors'],
+          subjects: {
+            formId: ['6276978'],
+            startDate: ['2025-09-01'],
+            endDate: ['2025-09-04'],
+          },
+        },
+      };
+
+      // NoOp callbacks
+      const noOpCallbacks = {
+        onStreamChunkReceived: () => {},
+        onStreamStart: () => {},
+        onStreamFinished: () => {},
+        onFullMessageReceived: () => {},
+        onError: (error: any) => {
+          this.logger.logWithContext(
+            'error',
+            'Intent router error',
+            'DevDebugService.runSumoReport',
+            undefined,
+            { error: error.message },
+          );
         },
       };
 
       this.logger.logWithContext(
         'log',
-        'Submitting Sumo query',
+        'Testing intent router with Sumo report intent',
         'DevDebugService.runSumoReport',
         undefined,
-        { request: submissionRequest },
+        { intent: intentResult.intent },
       );
 
-      const submissionResponse =
-        await this.iStackInfoService.sumoReport.submitQuery(submissionRequest);
-      const jobId = submissionResponse.jobId;
-
-      this.logger.logWithContext(
-        'log',
-        `Job submitted with ID: ${jobId}`,
-        'DevDebugService.runSumoReport',
-        undefined,
-        { jobId, status: submissionResponse.status },
-      );
-
-      // Step 2: Poll until done
-      let status = 'pending';
-      let attempts = 0;
-      const maxAttempts = 30; // 5 minutes max (10 second intervals)
-
-      while (
-        status !== 'completed' &&
-        status !== 'failed' &&
-        attempts < maxAttempts
-      ) {
-        await this.sleep(10000); // Wait 10 seconds
-        attempts++;
-
-        const statusResponse =
-          await this.iStackInfoService.sumoReport.jobs.getStatus(jobId);
-        status = statusResponse.status;
-
-        this.logger.logWithContext(
-          'log',
-          `Job status check ${attempts}/${maxAttempts}: ${status}`,
-          'DevDebugService.runSumoReport',
-          undefined,
-          { jobId, status, attempt: attempts },
-        );
-
-        if (status === 'failed') {
-          throw new Error(
-            `Job failed: ${statusResponse.error || 'Unknown error'}`,
-          );
-        }
-      }
-
-      if (status !== 'completed') {
-        throw new Error(`Job timed out after ${maxAttempts} attempts`);
-      }
-
-      // Step 3: Get results
-      this.logger.logWithContext(
-        'log',
-        'Job completed, fetching results',
-        'DevDebugService.runSumoReport',
-        undefined,
-        { jobId },
-      );
-
-      const resultsResponse =
-        await this.iStackInfoService.sumoReport.jobs.getResults(jobId);
-
-      // Step 4: ALWAYS try to fetch file - try multiple approaches
-      let localFileId: string | undefined;
-
-      this.logger.logWithContext(
-        'log',
-        `Attempting to fetch file for job: ${jobId}`,
-        'DevDebugService.runSumoReport',
-        undefined,
-        { jobId, hasFileId: !!resultsResponse.fileId },
-      );
-
-      // Try different approaches to get the file
-      let fileContent: string;
-      let contentType = 'application/json';
-
-      if (resultsResponse.fileId) {
-        // Approach 1: Use fileId from results
-        try {
-          this.logger.logWithContext(
-            'log',
-            `Fetching file using fileId: ${resultsResponse.fileId}`,
-            'DevDebugService.runSumoReport',
-          );
-
-          const fileResponse =
-            await this.iStackInfoService.sumoReport.files.get(
-              resultsResponse.fileId,
-            );
-
-          if (fileResponse.downloadUrl) {
-            const response = await fetch(fileResponse.downloadUrl);
-            fileContent = await response.text();
-            contentType = fileResponse.contentType || 'text/plain';
-          } else {
-            fileContent = JSON.stringify(fileResponse);
-          }
-        } catch (error) {
-          this.logger.logWithContext(
-            'log',
-            `Failed to fetch via fileId, trying jobId approach: ${error.message}`,
-            'DevDebugService.runSumoReport',
-          );
-          fileContent = JSON.stringify(resultsResponse);
-        }
-      } else {
-        // Approach 2: Try using jobId directly as fileId
-        try {
-          this.logger.logWithContext(
-            'log',
-            `No fileId in results, trying to fetch file using jobId: ${jobId}`,
-            'DevDebugService.runSumoReport',
-          );
-
-          const fileResponse =
-            await this.iStackInfoService.sumoReport.files.get(jobId);
-
-          if (fileResponse.downloadUrl) {
-            const response = await fetch(fileResponse.downloadUrl);
-            fileContent = await response.text();
-            contentType = fileResponse.contentType || 'text/plain';
-          } else {
-            fileContent = JSON.stringify(fileResponse);
-          }
-        } catch (error) {
-          this.logger.logWithContext(
-            'log',
-            `Failed to fetch via jobId, storing results as file: ${error.message}`,
-            'DevDebugService.runSumoReport',
-          );
-          // Fallback: Store the results themselves as a file
-          fileContent = JSON.stringify(resultsResponse, null, 2);
-          contentType = 'application/json';
-        }
-      }
-
-      // ALWAYS store something as a file
-      localFileId = await this.fileManagerService.put(
-        {
-          content: fileContent,
-          contentType,
-        },
-        STORAGE_CLASS.TEMP,
-      );
-
-      this.logger.logWithContext(
-        'log',
-        `File stored in temporary storage: ${localFileId}`,
-        'DevDebugService.runSumoReport',
-        undefined,
-        { jobId, localFileId, contentLength: fileContent.length },
-      );
-
-      // Step 5: Submit intent 'debugPrintToLog'
-      this.logger.logWithContext(
-        'log',
-        'Sumo report results received - debugPrintToLog intent',
-        'DevDebugService.runSumoReport',
-        undefined,
-        {
-          jobId,
-          recordCount: resultsResponse.recordCount || 0,
-          fileId: resultsResponse.fileId,
-          localFileId,
-          results: resultsResponse.results,
-        },
-      );
+      // Route through intent router (should call SumoReportJobExecutor)
+      await this.intentRouterService.routeIntent(intentResult, noOpCallbacks);
 
       return {
         success: true,
-        jobId,
-        status: 'completed',
-        recordCount: resultsResponse.recordCount || 0,
-        fileId: resultsResponse.fileId,
-        localFileId,
-        results: resultsResponse.results,
-        message: 'Sumo report workflow completed successfully',
+        message: 'Sumo report intent routed successfully',
         timestamp: new Date().toISOString(),
       };
     } catch (error) {
@@ -434,9 +284,5 @@ export class DevDebugService {
         timestamp: new Date().toISOString(),
       };
     }
-  }
-
-  private sleep(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }

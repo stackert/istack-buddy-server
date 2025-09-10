@@ -37,41 +37,70 @@ import {
 @Injectable()
 export class IStackInfoService implements OnModuleDestroy {
   private readonly logger = new Logger(IStackInfoService.name);
-  private readonly apiKey: string;
-  private readonly baseUrl: string;
-  private readonly httpClient: AxiosInstance;
+  private apiKey: string;
+  private baseUrl: string;
+  private httpClient: AxiosInstance;
   private readonly redis: Redis;
+  private isInitialized = false;
 
   constructor(redisClient: Redis) {
-    this.apiKey =
-      process.env.ISTACK_INFO_SERVICE_API_KEY || 'istack-buddy-dev-token-2024';
-    this.baseUrl =
-      process.env.ISTACK_INFO_SERVICE_BASE_URL || 'http://192.168.1.3:3505';
     this.redis = redisClient;
+    this.initialize();
+  }
 
-    // Create axios instance with default configuration
-    this.httpClient = axios.create({
-      baseURL: this.baseUrl,
-      timeout: 30000, // 30 seconds
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${this.apiKey}`,
-      },
-    });
+  private initialize(): void {
+    if (this.isInitialized) {
+      return;
+    }
 
-    // Add response interceptor for error handling
-    this.httpClient.interceptors.response.use(
-      (response) => response,
-      (error) => {
-        this.logger.error(
-          `API request failed: ${error.message}`,
-          error.response?.data,
+    try {
+      // WE NEVER USE FALL BACKS FOR CONFIG
+      this.apiKey = process.env.ISTACK_INFO_SERVICE_API_KEY as string;
+      this.baseUrl = process.env.ISTACK_INFO_SERVICE_BASE_URL as string;
+
+      if (!this.apiKey) {
+        throw new Error(
+          'ISTACK_INFO_SERVICE_API_KEY environment variable is required',
         );
-        throw this.transformError(error);
-      },
-    );
+      }
 
-    this.logger.log('IStackInfoService initialized');
+      if (!this.baseUrl) {
+        throw new Error(
+          'ISTACK_INFO_SERVICE_BASE_URL environment variable is required',
+        );
+      }
+
+      // Create axios instance with default configuration
+      this.httpClient = axios.create({
+        baseURL: this.baseUrl,
+        timeout: 30000, // 30 seconds
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${this.apiKey}`,
+        },
+      });
+
+      // Add response interceptor for error handling
+      this.httpClient.interceptors.response.use(
+        (response) => response,
+        (error) => {
+          this.logger.error(
+            `API request failed: ${error.message}`,
+            error.response?.data,
+          );
+          throw this.transformError(error);
+        },
+      );
+
+      this.isInitialized = true;
+      this.logger.log('IStackInfoService initialized');
+    } catch (error) {
+      this.logger.error(
+        'Failed to initialize IStackInfoService:',
+        error.message,
+      );
+      throw error;
+    }
   }
 
   onModuleDestroy() {

@@ -1,0 +1,330 @@
+const express = require('express');
+const cors = require('cors');
+const fs = require('fs');
+const path = require('path');
+
+const app = express();
+const PORT = process.env.PORT || 3001;
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+
+// In-memory storage for mock data
+const jobs = new Map();
+const files = new Map();
+let jobIdCounter = 1;
+let fileIdCounter = 1;
+
+// Sample results data - use the realistic fake response
+const fakeResponsePath = path.join(
+  __dirname,
+  'fake-responses',
+  'fake-sumo-submissin-report.json',
+);
+const sampleResults = JSON.parse(fs.readFileSync(fakeResponsePath, 'utf8'));
+
+// Helper function to generate job IDs
+function generateJobId() {
+  return `job_${jobIdCounter++}`;
+}
+
+// Helper function to generate file IDs
+function generateFileId() {
+  return `file_${fileIdCounter++}`;
+}
+
+// Helper function to simulate processing delay
+function simulateDelay(ms = 1000) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// POST /information-services/context-sumo-report/query/submit
+app.post(
+  '/information-services/context-sumo-report/query/submit',
+  async (req, res) => {
+    console.log('📥 Received job submission:', req.body);
+
+    const jobId = generateJobId();
+    const job = {
+      jobId,
+      queryName: req.body.queryName || 'submissionCreatedForForm',
+      subject: req.body.subject || {},
+      status: 'pending',
+      progress: 0,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    jobs.set(jobId, job);
+
+    // Simulate job progression in background
+    setTimeout(async () => {
+      // Update to running
+      job.status = 'running';
+      job.progress = 25;
+      job.updatedAt = new Date().toISOString();
+      console.log(`🔄 Job ${jobId} is now running`);
+
+      // Simulate more progress
+      setTimeout(() => {
+        job.progress = 75;
+        job.updatedAt = new Date().toISOString();
+        console.log(`🔄 Job ${jobId} is 75% complete`);
+
+        // Complete the job and create a file
+        setTimeout(() => {
+          job.status = 'completed';
+          job.progress = 100;
+          job.updatedAt = new Date().toISOString();
+
+          // Create a file for the results
+          const fileId = generateFileId();
+          const file = {
+            fileId,
+            fileName: 'results.json',
+            fileSize: JSON.stringify(sampleResults).length,
+            contentType: 'application/json',
+            createdAt: new Date().toISOString(),
+            jobId: jobId,
+            downloadUrl: `http://localhost:${PORT}/information-services/context-sumo-report/files/${fileId}/download`,
+          };
+
+          files.set(fileId, file);
+          job.fileId = fileId;
+
+          console.log(`✅ Job ${jobId} completed with file ${fileId}`);
+        }, 2000);
+      }, 1500);
+    }, 1000);
+
+    res.status(201).json({
+      jobId,
+      status: 'queued',
+      estimatedDuration: '2-5 minutes',
+      statusUrl: `/information-services/context-sumo-report/query/${jobId}/status`,
+    });
+  },
+);
+
+// GET /information-services/context-sumo-report/query/{jobId}/status
+app.get(
+  '/information-services/context-sumo-report/query/:jobId/status',
+  (req, res) => {
+    const { jobId } = req.params;
+    const job = jobs.get(jobId);
+
+    if (!job) {
+      return res.status(404).json({
+        error: 'Job not found',
+        message: `Job with ID ${jobId} does not exist`,
+        statusCode: 404,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    console.log(
+      `📊 Status check for job ${jobId}: ${job.status} (${job.progress}%)`,
+    );
+
+    res.json({
+      jobId: job.jobId,
+      status: job.status,
+      progress: job.progress,
+      createdAt: job.createdAt,
+      updatedAt: job.updatedAt,
+      ...(job.error && { error: job.error }),
+      ...(job.fileId && { fileId: job.fileId }),
+    });
+  },
+);
+
+// GET /information-services/context-sumo-report/query/{jobId}/results
+app.get(
+  '/information-services/context-sumo-report/query/:jobId/results',
+  (req, res) => {
+    const { jobId } = req.params;
+    const job = jobs.get(jobId);
+
+    if (!job) {
+      return res.status(404).json({
+        error: 'Job not found',
+        message: `Job with ID ${jobId} does not exist`,
+        statusCode: 404,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    if (job.status !== 'completed') {
+      return res.status(400).json({
+        error: 'Job not completed',
+        message: `Job ${jobId} is still ${job.status}`,
+        statusCode: 400,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    console.log(`📋 Results requested for job ${jobId}`);
+
+    res.json({
+      jobId: job.jobId,
+      status: job.status,
+      results: sampleResults,
+      fileId: job.fileId,
+    });
+  },
+);
+
+// GET /information-services/context-sumo-report/files/{fileId}
+app.get(
+  '/information-services/context-sumo-report/files/:fileId',
+  (req, res) => {
+    const { fileId } = req.params;
+    const file = files.get(fileId);
+
+    if (!file) {
+      return res.status(404).json({
+        error: 'File not found',
+        message: `File with ID ${fileId} does not exist`,
+        statusCode: 404,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    console.log(`📁 File info requested for ${fileId}: ${file.fileName}`);
+
+    res.json({
+      fileId: file.fileId,
+      fileName: file.fileName,
+      fileSize: file.fileSize,
+      contentType: file.contentType,
+      createdAt: file.createdAt,
+      downloadUrl: file.downloadUrl,
+    });
+  },
+);
+
+// GET /information-services/context-sumo-report/files/{fileId}/download
+app.get(
+  '/information-services/context-sumo-report/files/:fileId/download',
+  (req, res) => {
+    const { fileId } = req.params;
+    const file = files.get(fileId);
+
+    if (!file) {
+      return res.status(404).json({
+        error: 'File not found',
+        message: `File with ID ${fileId} does not exist`,
+        statusCode: 404,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    console.log(`⬇️ File download requested for ${fileId}: ${file.fileName}`);
+
+    res.setHeader('Content-Type', file.contentType);
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${file.fileName}"`,
+    );
+    res.json(sampleResults);
+  },
+);
+
+// GET /information-services/context-sumo-report/files (list files)
+app.get('/information-services/context-sumo-report/files', (req, res) => {
+  console.log('📂 Files list requested');
+
+  const filesList = Array.from(files.values()).map((file) => ({
+    fileId: file.fileId,
+    fileName: file.fileName,
+    fileSize: file.fileSize,
+    createdAt: file.createdAt,
+    jobId: file.jobId,
+  }));
+
+  res.json({
+    files: filesList,
+  });
+});
+
+// Health check endpoint
+app.get('/information-services/health', (req, res) => {
+  res.json({
+    status: 'healthy',
+    version: '1.0.0-mock',
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString(),
+  });
+});
+
+// Root endpoint with API info
+app.get('/', (req, res) => {
+  res.json({
+    name: 'iStack Buddy Information Services Mock Server',
+    version: '1.0.0',
+    endpoints: {
+      'POST /information-services/context-sumo-report/query/submit':
+        'Submit a Sumo query job',
+      'GET /information-services/context-sumo-report/query/{jobId}/status':
+        'Check job status',
+      'GET /information-services/context-sumo-report/query/{jobId}/results':
+        'Get job results',
+      'GET /information-services/context-sumo-report/files/{fileId}':
+        'Get file metadata',
+      'GET /information-services/context-sumo-report/files/{fileId}/download':
+        'Download file',
+      'GET /information-services/context-sumo-report/files': 'List all files',
+      'GET /information-services/health': 'Health check',
+    },
+    note: 'This mock server simulates the information services API for development purposes',
+  });
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error('❌ Error:', err);
+  res.status(500).json({
+    error: 'Internal Server Error',
+    message: err.message,
+    statusCode: 500,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({
+    error: 'Not Found',
+    message: `Endpoint ${req.method} ${req.path} not found`,
+    statusCode: 404,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+app.listen(PORT, () => {
+  console.log('🚀 iStack Buddy Information Services Mock Server');
+  console.log(`📡 Server running on http://localhost:${PORT}`);
+  console.log('📋 Available endpoints:');
+  console.log('   POST /information-services/context-sumo-report/query/submit');
+  console.log(
+    '   GET  /information-services/context-sumo-report/query/{jobId}/status',
+  );
+  console.log(
+    '   GET  /information-services/context-sumo-report/query/{jobId}/results',
+  );
+  console.log(
+    '   GET  /information-services/context-sumo-report/files/{fileId}',
+  );
+  console.log(
+    '   GET  /information-services/context-sumo-report/files/{fileId}/download',
+  );
+  console.log('   GET  /information-services/context-sumo-report/files');
+  console.log('   GET  /information-services/health');
+  console.log('');
+  console.log(
+    '🔄 Jobs will automatically progress: pending → running → completed',
+  );
+  console.log('📁 Files are created when jobs complete');
+  console.log('💾 All data is stored in memory (resets on restart)');
+});
