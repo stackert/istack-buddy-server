@@ -44,7 +44,7 @@ export class SumoReportJobExecutor implements IntentHandler {
     callbacks: IStreamingCallbacks,
   ): Promise<void> {
     this.logger.log('Starting Sumo report job execution workflow');
-
+    this.logger.log('Intent data:', intentData);
     try {
       // 1. Parse query parameters from intent data
       const queryParams = this.parseQueryParameters(intentData);
@@ -59,9 +59,9 @@ export class SumoReportJobExecutor implements IntentHandler {
       const externalFileId = await this.maybeCreateExternalFile(processedData);
 
       // 5. Send processed data to robot
-      const robot = this.robotService.getRobotByName('KnobbyOpenAiSumoReport');
+      const robot = this.robotService.getRobotByName('AnthropicMarv');
       if (!robot) {
-        throw new Error('KnobbyOpenAiSumoReport robot not found');
+        throw new Error('AnthropicMarv robot not found');
       }
 
       const robotIntentData = {

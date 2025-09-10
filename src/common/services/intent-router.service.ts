@@ -28,14 +28,24 @@ export class IntentRouterService {
   ): Promise<void> {
     const { intent, intentData, robotName } = intentResult;
 
+    this.logger.log(`=== INTENT ROUTER: Processing intent '${intent}' ===`);
+    this.logger.log(
+      `Available handlers: [${Array.from(this.intentHandlers.keys()).join(', ')}]`,
+    );
+    this.logger.log(`Intent data: ${JSON.stringify(intentData, null, 2)}`);
+
     // Check if we have a specialized intent handler
     const handler = this.intentHandlers.get(intent);
 
     if (handler) {
-      this.logger.debug(`Routing intent '${intent}' to intent handler`);
+      this.logger.log(
+        `✅ FOUND INTENT HANDLER: Routing intent '${intent}' to intent handler`,
+      );
       await handler.executeIntent(intentData, callbacks);
     } else {
-      this.logger.debug(`Routing intent '${intent}' to robot: ${robotName}`);
+      this.logger.log(
+        `❌ NO INTENT HANDLER: Routing intent '${intent}' to robot: ${robotName}`,
+      );
       // Fallback to robot (existing behavior)
       const robot = this.robotService.getRobotByName(robotName);
       if (!robot) {

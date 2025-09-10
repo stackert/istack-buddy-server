@@ -15,6 +15,7 @@ import { Request, Response } from 'express';
 import { AuthorizationPermissionsService } from '../authorization-permissions/authorization-permissions.service';
 import { ChatManagerService } from '../chat-manager/chat-manager.service';
 import { IntentParsingService } from '../common/services/intent-parsing.service';
+import { IntentRouterService } from '../common/services/intent-router.service';
 import {
   isIntentParsingError,
   IntentParsingResponse,
@@ -30,6 +31,7 @@ export class DevDebugChatClientController {
     private readonly authPermissionsService: AuthorizationPermissionsService,
     private readonly chatManagerService: ChatManagerService,
     private readonly intentParsingService: IntentParsingService,
+    private readonly intentRouterService: IntentRouterService,
   ) {}
 
   /**
@@ -228,6 +230,75 @@ export class DevDebugChatClientController {
       };
     } catch (error) {
       return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * API: Send raw intent directly to intent router
+   * POST /dev-debug/api/conversation/:id/send-intent
+   */
+  @Post('api/conversation/:id/send-intent')
+  @HttpCode(HttpStatus.OK)
+  async sendIntent(
+    @Param('id') conversationId: string,
+    @Body() body: any,
+    @Req() req: Request,
+  ): Promise<any> {
+    this.logger.log('=== DEV DEBUG SEND INTENT ENDPOINT HIT ===');
+    this.logger.log(`Conversation ID: ${conversationId}`);
+    this.logger.log(`Request body: ${JSON.stringify(body, null, 2)}`);
+
+    try {
+      const session = this.validateDevSession(req);
+
+      if (!body || typeof body !== 'object') {
+        this.logger.error('Invalid body received:', body);
+        return { success: false, error: 'Intent data is required' };
+      }
+
+      // COPY THE EXACT WORKING CODE FROM DevDebugService.runSumoReport()
+      const intentResult: IntentParsingResponse = {
+        robotName: 'SumoReportJobExecutor',
+        intent: 'generateSumoReport',
+        intentData: {
+          originalUserPrompt:
+            body.originalUserPrompt ||
+            'Direct intent execution for Sumo report',
+          subIntents: body.subIntents || ['searchSumoLogSubmissionErrors'],
+          subjects: body.subjects || {
+            formId: ['12345'],
+            startDate: ['2025-09-09'],
+            endDate: ['2025-09-10'],
+          },
+        },
+      };
+
+      this.logger.log('=== USING EXACT WORKING CODE ===');
+      this.logger.log(
+        `Intent result: ${JSON.stringify(intentResult, null, 2)}`,
+      );
+
+      // Create streaming callbacks for the conversation
+      const callbacks =
+        this.chatManagerService.createConversationCallbacks(conversationId);
+
+      // Route through intent router (EXACT same call as working code)
+      await this.intentRouterService.routeIntent(intentResult, callbacks);
+
+      return {
+        success: true,
+        conversationId,
+        intentData: intentResult.intentData,
+        message: 'Intent routed directly to handler',
+        timestamp: new Date().toISOString(),
+      };
+    } catch (error) {
+      this.logger.error('Error sending intent:', error);
+      return {
+        success: false,
+        error: error.message,
+        timestamp: new Date().toISOString(),
+      };
     }
   }
 
@@ -431,8 +502,9 @@ export class DevDebugChatClientController {
         
         async function createNewConversation() {
             try {
-                const title = prompt('Conversation title (optional):') || 'New Test Conversation';
-                const description = prompt('Description (optional):') || 'Dev client test conversation';
+                const now = new Date();
+                const title = now.toLocaleString(); // Current time with seconds
+                const description = 'Dev debug conversation';
                 
                 const response = await fetch('/dev-debug/chat-manager/start-conversation', {
                     method: 'POST',
@@ -474,18 +546,24 @@ export class DevDebugChatClientController {
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
         .header { background: #007bff; color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
-        .chat-container { display: flex; gap: 20px; height: 70vh; }
+        .chat-container { display: flex; gap: 20px; height: 60vh; }
         .messages-panel { flex: 2; background: white; border-radius: 8px; padding: 20px; overflow-y: auto; }
-        .debug-panel { flex: 1; background: white; border-radius: 8px; padding: 20px; overflow-y: auto; }
+        .right-panel { flex: 1; display: flex; flex-direction: column; gap: 20px; }
+        .intent-panel { background: white; border-radius: 8px; padding: 20px; height: 40%; }
+        .debug-panel { background: white; border-radius: 8px; padding: 20px; overflow-y: auto; height: 60%; }
         .message { margin-bottom: 15px; padding: 10px; border-radius: 8px; }
         .user-message { background: #e3f2fd; }
         .robot-message { background: #f3e5f5; }
         .streaming { border-left: 3px solid #28a745; animation: pulse 1.5s infinite; }
         @keyframes pulse { 0%, 100% { opacity: 0.8; } 50% { opacity: 1; } }
         .message-header { font-weight: bold; font-size: 12px; color: #666; margin-bottom: 5px; }
-        .input-area { background: white; border-radius: 8px; padding: 20px; margin-top: 20px; }
+        .input-area { background: white; border-radius: 8px; padding: 20px; margin-top: 20px; display: flex; gap: 20px; }
+        .chat-input-section { flex: 2; }
+        .debug-input-section { flex: 1; }
         .input-box { width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 4px; resize: vertical; min-height: 60px; }
+        .intent-input-box { width: 100%; padding: 12px; border: 2px solid #ffc107; border-radius: 4px; resize: vertical; min-height: 100px; background: #fff3cd; }
         .send-btn { background: #28a745; color: white; border: none; padding: 12px 24px; border-radius: 4px; cursor: pointer; margin-top: 10px; }
+        .intent-btn { background: #ffc107; color: #212529; border: none; padding: 12px 24px; border-radius: 4px; cursor: pointer; margin-top: 10px; }
         .debug-item { background: #f8f9fa; padding: 10px; border-radius: 4px; margin-bottom: 10px; font-size: 14px; }
         .robot-switch { color: #dc3545; font-weight: bold; }
         .robot-processing { background: #fff3cd; border-left: 3px solid #ffc107; }
@@ -513,18 +591,44 @@ export class DevDebugChatClientController {
             </div>
         </div>
         
-        <div class="debug-panel">
-            <h3>🔍 Debug Info</h3>
-            <div id="debug-info">
-                <p>Send a message to see intent parsing results...</p>
+        <div class="right-panel">
+            <div class="intent-panel">
+                <h3>🎯 Intent Input</h3>
+                <textarea id="intent-input" class="intent-input-box" placeholder="Raw Intent JSON...">{
+  "intent": "generateSumoReport",
+  "subIntents": ["searchSumoLogSubmissionErrors"],
+  "subjects": {
+    "formId": ["12345"],
+    "startDate": ["2025-09-09"],
+    "endDate": ["2025-09-10"]
+  },
+  "originalUserPrompt": "Direct intent execution for Sumo report"
+}</textarea>
+                <button class="intent-btn" onclick="sendIntent()">Send Intent</button>
+            </div>
+            
+            <div class="debug-panel">
+                <h3>🔍 Debug Info</h3>
+                <div id="debug-info">
+                    <p>Send a message or intent to see parsing results...</p>
+                </div>
             </div>
         </div>
     </div>
     
     <div class="input-area">
-        <h3>Send Message</h3>
-        <textarea id="message-input" class="input-box" placeholder="Type your message here..."></textarea>
-        <button class="send-btn" onclick="sendMessage()">Send</button>
+        <div class="chat-input-section">
+            <h3>Send Message</h3>
+            <textarea id="message-input" class="input-box" placeholder="Type your message here..."></textarea>
+            <button class="send-btn" onclick="sendMessage()">Send Message</button>
+        </div>
+        
+        <div class="debug-input-section">
+            <h3>🔍 Latest Result</h3>
+            <div id="debug-info-bottom" style="background: #f8f9fa; padding: 15px; border-radius: 4px; min-height: 120px; overflow-y: auto; font-size: 12px;">
+                <p>Latest intent/message result appears here...</p>
+            </div>
+        </div>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
@@ -753,17 +857,83 @@ export class DevDebugChatClientController {
             }
         }
         
+        async function sendIntent() {
+            const input = document.getElementById('intent-input');
+            const intentText = input.value.trim();
+            
+            if (!intentText) return;
+            
+            try {
+                input.disabled = true;
+                
+                let intentData;
+                try {
+                    // Parse as JSON intent object
+                    intentData = JSON.parse(intentText);
+                } catch (e) {
+                    alert('Invalid JSON format. Please provide a valid intent JSON object.');
+                    return;
+                }
+                
+                // Send to the direct intent endpoint (bypasses message parsing)
+                const response = await fetch('/dev-debug/api/conversation/' + conversationId + '/send-intent', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(intentData)
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Display intent results
+                    addDebugInfo('DIRECT INTENT SENT', \`
+                        <pre style="font-size: 11px; max-height: 200px; overflow-y: auto;">\${JSON.stringify(intentData, null, 2)}</pre>
+                    \`);
+                    
+                    addDebugInfo('INTENT ROUTER RESULT', \`
+                        <pre style="font-size: 11px; max-height: 200px; overflow-y: auto;">\${JSON.stringify(data, null, 2)}</pre>
+                    \`);
+                    
+                    // Show robot processing indicator
+                    addDebugInfo('Intent Status', 'Intent sent directly to router... 🎯⚡', 'robot-processing');
+                } else {
+                    alert('Error sending intent: ' + data.error);
+                }
+                
+            } catch (error) {
+                alert('Error: ' + error.message);
+            } finally {
+                input.disabled = false;
+                input.focus();
+            }
+        }
+        
         function addDebugInfo(title, content, className = '') {
+            // Add to main debug panel (top right)
             const debugContainer = document.getElementById('debug-info');
-            const debugItem = document.createElement('div');
-            debugItem.className = 'debug-item ' + className;
-            debugItem.innerHTML = \`
-                <strong>\${title}:</strong><br>
-                <div>\${content}</div>
-                <small>\${new Date().toLocaleTimeString()}</small>
-            \`;
-            debugContainer.appendChild(debugItem);
-            debugContainer.scrollTop = debugContainer.scrollHeight;
+            if (debugContainer) {
+                const debugItem = document.createElement('div');
+                debugItem.className = 'debug-item ' + className;
+                debugItem.innerHTML = \`
+                    <strong>\${title}:</strong><br>
+                    <div>\${content}</div>
+                    <small>\${new Date().toLocaleTimeString()}</small>
+                \`;
+                debugContainer.appendChild(debugItem);
+                debugContainer.scrollTop = debugContainer.scrollHeight;
+            }
+            
+            // Show latest result in live panel (bottom right)
+            const liveContainer = document.getElementById('debug-info-bottom');
+            if (liveContainer && (title.includes('INTENT') || title.includes('MESSAGE'))) {
+                liveContainer.innerHTML = \`
+                    <strong>Latest: \${title}</strong><br>
+                    <div style="margin-top: 8px;">\${content}</div>
+                    <small style="opacity: 0.7;">\${new Date().toLocaleTimeString()}</small>
+                \`;
+            }
         }
         
         // Enter key to send message
@@ -771,6 +941,14 @@ export class DevDebugChatClientController {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
                 sendMessage();
+            }
+        });
+        
+        // Ctrl+Enter to send intent
+        document.getElementById('intent-input').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && e.ctrlKey) {
+                e.preventDefault();
+                sendIntent();
             }
         });
     </script>
