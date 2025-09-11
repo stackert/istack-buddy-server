@@ -4,16 +4,8 @@ import { IStackInfoModule } from '../istack-buddy-slack-api/istack-info.module';
 import { FileManagerModule } from '../file-manager/file-manager.module';
 import { RobotModule } from '../robots/robot.module';
 import { LoggerModule } from '../common/logger/logger.module';
-import { ChatManagerModule } from '../chat-manager/chat-manager.module';
-
 @Module({
-  imports: [
-    IStackInfoModule,
-    FileManagerModule,
-    RobotModule,
-    LoggerModule,
-    ChatManagerModule,
-  ],
+  imports: [IStackInfoModule, FileManagerModule, RobotModule, LoggerModule],
   providers: [SumoReportJobExecutor],
   exports: [SumoReportJobExecutor],
 })

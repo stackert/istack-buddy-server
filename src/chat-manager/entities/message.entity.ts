@@ -7,7 +7,6 @@ export class MessageEntity {
   fromUserId: string | null;
   fromRole: UserRole;
   toRole: UserRole;
-  messageType: MessageType;
   threadId?: string;
   originalMessageId?: string;
   createdAt: Date;

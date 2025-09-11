@@ -1,10 +1,14 @@
-// ========================================
-// SECURITY: Load ONLY .env.jest (contains FAKE keys)
-// NEVER load .env.live (contains real keys)
-// ========================================
+// SET ENVIRONMENT VARIABLES IMMEDIATELY - BEFORE ANYTHING ELSE
+process.env.ISTACK_INFO_SERVICE_BASE_URL = 'http://localhost:3001';
+process.env.ISTACK_INFO_SERVICE_API_KEY = '_THE_FAKE_INFO_SERVICE_KEY_';
+process.env.ANTHROPIC_API_KEY = '_FAKE_ANTHROPIC_API_KEY_FOR_JEST';
+process.env.OPENAI_API_KEY = '_FAKE_OPENAI_KEY_';
+process.env.ISTACK_BUDDY_INTERNAL_JWT_SECRET = 'istack-buddy-secret-key-2024';
+process.env.NODE_ENV = 'test';
+process.env.LOG_LEVEL = 'error';
 
-// Load .env.jest which contains FAKE keys for testing
-require('dotenv').config({ path: '.env.jest' });
+// Load reflect-metadata for class-validator decorators
+require('reflect-metadata');
 
 // Global Jest setup for performance optimizations
 
@@ -122,3 +126,4 @@ jest.mock('pg', () => {
 beforeEach(() => {
   jest.clearAllMocks();
 });
+console.log('JEST ENV LOADED:', process.env.ISTACK_INFO_SERVICE_API_KEY);

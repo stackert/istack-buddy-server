@@ -213,7 +213,7 @@ export class IstackBuddySlackApiService implements OnModuleDestroy {
 
         const conversation = await this.chatManagerService.startConversation({
           createdBy: event.user,
-          createdByRole: UserRole.CUSTOMER,
+          createdByRole: UserRole.USER,
           title: 'Slack Thread Conversation',
           description: `Slack conversation from existing thread`,
           initialParticipants: [event.user],
@@ -481,7 +481,7 @@ export class IstackBuddySlackApiService implements OnModuleDestroy {
       // Create new conversation
       const conversation = await this.chatManagerService.startConversation({
         createdBy: event.user,
-        createdByRole: UserRole.CUSTOMER,
+        createdByRole: UserRole.USER,
         title: 'Slack Channel Conversation',
         description: `Slack conversation from channel mention`,
         initialParticipants: [event.user],
@@ -515,7 +515,7 @@ export class IstackBuddySlackApiService implements OnModuleDestroy {
 
         const conversation = await this.chatManagerService.startConversation({
           createdBy: event.user,
-          createdByRole: UserRole.CUSTOMER,
+          createdByRole: UserRole.USER,
           title: 'Slack Thread Conversation',
           description: 'Slack conversation from existing thread',
           initialParticipants: [event.user],

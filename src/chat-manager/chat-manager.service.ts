@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { createHash } from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
 import { ChatConversationListService } from '../ConversationLists/ChatConversationListService';
@@ -34,6 +34,8 @@ import {
 
 @Injectable()
 export class ChatManagerService {
+  private readonly logger = new Logger(ChatManagerService.name);
+
   // In-memory storage for conversation metadata and participants
   private conversationMetadata: Record<string, Conversation> = {};
   private participants: Map<string, Participant[]> = new Map();
@@ -97,9 +99,8 @@ export class ChatManagerService {
               type: 'text/plain',
               payload: accumulatedContent,
             },
-            messageType: MessageType.ROBOT,
             fromRole: UserRole.ROBOT,
-            toRole: UserRole.AGENT,
+            toRole: UserRole.USER,
           });
 
           // Broadcast robot response and completion through gateway
@@ -132,9 +133,8 @@ export class ChatManagerService {
             type: 'text/plain',
             payload: message.content.payload,
           },
-          messageType: MessageType.TEXT,
           fromRole: UserRole.ROBOT,
-          toRole: UserRole.CUSTOMER,
+          toRole: UserRole.USER,
         });
 
         // Create message and broadcast through gateway like onError does
@@ -143,19 +143,18 @@ export class ChatManagerService {
           fromUserId: 'anthropic-marv-robot',
 
           // from public-interface.controller.ts
-          messageType: MessageType.TEXT,
           fromRole: UserRole.ROBOT,
-          toRole: UserRole.CUSTOMER,
+          toRole: UserRole.USER,
 
           // from above
           // messageType: MessageType.ROBOT,
           // fromRole: UserRole.ROBOT,
-          // toRole: UserRole.AGENT,
+          // toRole: UserRole.USER,
 
           // original
           // messageType: MessageType.TEXT,
-          // fromRole: UserRole.AGENT,
-          // toRole: UserRole.CUSTOMER,
+          // fromRole: UserRole.USER,
+          // toRole: UserRole.USER,
           content: {
             type: 'text/plain',
             payload: message.content.payload,
@@ -167,9 +166,8 @@ export class ChatManagerService {
          // from public-interface.controller.ts
            conversationId: conversationId,
           fromUserId: 'anthropic-marv-robot',
-          messageType: MessageType.TEXT,
           fromRole: UserRole.ROBOT,
-          toRole: UserRole.CUSTOMER,
+          toRole: UserRole.USER,
           content: 'DEBUG - Conversation Message II',
 
 
@@ -177,9 +175,8 @@ export class ChatManagerService {
         // from above somewhere
             conversationId: conversationId,
             fromUserId: 'anthropic-marv-robot',
-            messageType: MessageType.ROBOT,
             fromRole: UserRole.ROBOT,
-            toRole: UserRole.AGENT,
+            toRole: UserRole.USER,
             content: accumulatedContent,
 
 `;
@@ -206,9 +203,8 @@ export class ChatManagerService {
             type: 'text/plain',
             payload: 'DEBUG onError',
           },
-          messageType: MessageType.TEXT,
           fromRole: UserRole.ROBOT,
-          toRole: UserRole.CUSTOMER,
+          toRole: UserRole.USER,
         });
 
         // Create error message and broadcast through gateway
@@ -219,9 +215,8 @@ export class ChatManagerService {
             type: 'text/plain',
             payload: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
           },
-          messageType: MessageType.TEXT,
-          fromRole: UserRole.AGENT,
-          toRole: UserRole.CUSTOMER,
+          fromRole: UserRole.USER,
+          toRole: UserRole.USER,
         });
 
         // Broadcast error message and completion through gateway
@@ -267,7 +262,7 @@ export class ChatManagerService {
 
       if ('error' in intentResult) {
         // Intent parsing failed, fallback to existing behavior
-        console.warn(
+        this.logger.warn(
           `Intent parsing failed: ${intentResult.error}. Falling back to AnthropicMarv`,
         );
         robotName = 'AnthropicMarv';
@@ -275,7 +270,7 @@ export class ChatManagerService {
         // Intent parsing succeeded, use the suggested robot
         robotName = (intentResult as IntentParsingResponse).robotName;
         intentData = (intentResult as IntentParsingResponse).intentData;
-        console.log(
+        this.logger.log(
           `Intent parsing selected robot: ${robotName} with intent: ${(intentResult as IntentParsingResponse).intent}`,
         );
       }
@@ -294,7 +289,7 @@ export class ChatManagerService {
         await this.intentRouterService.routeIntent(intentResult, callbacks);
       }
     } catch (error) {
-      console.error(
+      this.logger.error(
         `Error in handleRobotMessage: ${error.message}. Falling back to AnthropicMarv`,
       );
 
@@ -337,9 +332,8 @@ export class ChatManagerService {
           },
           conversationId: conversationId,
           authorUserId: 'form-marv-user',
-          fromRole: UserRole.CUSTOMER,
-          toRole: UserRole.AGENT,
-          messageType: MessageType.TEXT,
+          fromRole: UserRole.USER,
+          toRole: UserRole.USER,
           createdAt: new Date(),
           updatedAt: new Date(),
         };
@@ -353,7 +347,7 @@ export class ChatManagerService {
             robot.getGetFromRobotToConversationTransformer(),
           );
         } catch (error) {
-          console.error('Error loading history:', error);
+          this.logger.error('Error loading history:', error);
           return [];
         }
       };
@@ -373,7 +367,7 @@ export class ChatManagerService {
         );
       }
     } catch (error) {
-      console.error(
+      this.logger.error(
         `Error in handleRobotStreamingResponse for robot ${robotName} in conversation ${conversationId}:`,
         error,
       );
@@ -430,7 +424,6 @@ export class ChatManagerService {
       fromUserId: createMessageDto.fromUserId,
       fromRole: createMessageDto.fromRole,
       toRole: createMessageDto.toRole,
-      messageType: createMessageDto.messageType,
     };
 
     return createHash('md5')
@@ -464,7 +457,6 @@ export class ChatManagerService {
       authorUserId: createMessageDto.fromUserId,
       fromRole: createMessageDto.fromRole,
       toRole: createMessageDto.toRole,
-      messageType: createMessageDto.messageType || MessageType.TEXT,
       threadId: createMessageDto.threadId,
       originalMessageId: createMessageDto.originalMessageId,
       createdAt: now, // this is 'our' time - the message may have a different creation time
@@ -523,8 +515,8 @@ export class ChatManagerService {
       conversationId,
       content.payload,
       'cx-slack-robot',
-      UserRole.CUSTOMER,
-      UserRole.AGENT,
+      UserRole.USER,
+      UserRole.USER,
     );
 
     // Trigger the robot response internally
@@ -546,9 +538,8 @@ export class ChatManagerService {
           payload: content.payload,
         },
         authorUserId: 'cx-slack-robot',
-        fromRole: UserRole.CUSTOMER,
-        toRole: UserRole.AGENT,
-        messageType: MessageType.TEXT,
+        fromRole: UserRole.USER,
+        toRole: UserRole.USER,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -562,7 +553,7 @@ export class ChatManagerService {
       ) => {
         // Defensive check to ensure response has the expected structure
         if (!response || !response.content || !response.content.payload) {
-          console.error('Invalid robot response structure:', response);
+          this.logger.error('Invalid robot response structure:', response);
           return;
         }
 
@@ -594,7 +585,7 @@ export class ChatManagerService {
         () => conversationHistory,
       );
     } catch (error) {
-      console.error(
+      this.logger.error(
         `Error triggering robot response for conversation ${conversationId}:`,
         error,
       );
@@ -615,8 +606,8 @@ export class ChatManagerService {
       conversationId,
       content.payload,
       'form-marv-user',
-      UserRole.CUSTOMER,
-      UserRole.AGENT,
+      UserRole.USER,
+      UserRole.USER,
     );
 
     // Trigger the robot response internally
@@ -639,7 +630,7 @@ export class ChatManagerService {
         });
       }
     } catch (error) {
-      console.error(
+      this.logger.error(
         `Error triggering robot response for Marv session in conversation ${conversationId}:`,
         error,
       );
@@ -678,9 +669,8 @@ export class ChatManagerService {
         type: 'text/plain',
         payload: content,
       },
-      messageType: MessageType.ROBOT,
       fromRole: UserRole.ROBOT,
-      toRole: UserRole.CUSTOMER,
+      toRole: UserRole.USER,
     });
 
     return result;
@@ -693,8 +683,8 @@ export class ChatManagerService {
     conversationId: string,
     content: string,
     userId: string,
-    fromRole: UserRole = UserRole.CUSTOMER,
-    toRole: UserRole = UserRole.AGENT,
+    fromRole: UserRole = UserRole.USER,
+    toRole: UserRole = UserRole.USER,
   ): Promise<IConversationMessage> {
     const result = await this.addMessage({
       conversationId,
@@ -703,7 +693,6 @@ export class ChatManagerService {
         type: 'text/plain',
         payload: content,
       },
-      messageType: MessageType.TEXT,
       fromRole,
       toRole,
     });
@@ -764,9 +753,7 @@ export class ChatManagerService {
 
     if (query.userId) {
       filteredMessages = filteredMessages.filter(
-        (msg) =>
-          msg.authorUserId === query.userId ||
-          this.isMessageVisibleToUser(msg, query.userId!),
+        (msg) => msg.authorUserId === query.userId,
       );
     }
 
@@ -850,10 +837,7 @@ export class ChatManagerService {
     count: number = 50,
   ): IConversationMessageAnthropic[] {
     return this.getHistory(conversationId, count, (msg) => ({
-      role:
-        msg.fromRole === UserRole.CUSTOMER || msg.fromRole === UserRole.AGENT
-          ? 'user'
-          : 'assistant',
+      role: msg.fromRole === UserRole.USER ? 'user' : 'assistant',
       content: (msg.content as TConversationMessageContentString).payload,
     }));
   }
@@ -867,10 +851,7 @@ export class ChatManagerService {
     count: number = 50,
   ): IConversationMessageOpenAI[] {
     return this.getHistory(conversationId, count, (msg) => ({
-      role:
-        msg.fromRole === UserRole.CUSTOMER || msg.fromRole === UserRole.AGENT
-          ? 'user'
-          : 'assistant',
+      role: msg.fromRole === UserRole.USER ? 'user' : 'assistant',
       content: (msg.content as TConversationMessageContentString).payload,
     }));
   }
@@ -1110,7 +1091,7 @@ export class ChatManagerService {
       displayName,
       `External conversation from ${source}`,
       createdBy,
-      UserRole.CUSTOMER, // External users start as customers
+      UserRole.USER, // External users start as customers
     );
 
     // Get the created conversation metadata
@@ -1172,7 +1153,7 @@ export class ChatManagerService {
         for (const participantId of initialParticipants) {
           if (participantId !== createdBy) {
             conversation.participantIds.push(participantId);
-            conversation.participantRoles.push(UserRole.CUSTOMER);
+            conversation.participantRoles.push(UserRole.USER);
           }
         }
 
@@ -1180,7 +1161,7 @@ export class ChatManagerService {
         const participantList = [
           {
             userId: createdBy,
-            userRole: createdByRole || UserRole.CUSTOMER,
+            userRole: createdByRole || UserRole.USER,
             joinedAt: now,
           },
         ];
@@ -1189,7 +1170,7 @@ export class ChatManagerService {
           if (participantId !== createdBy) {
             participantList.push({
               userId: participantId,
-              userRole: UserRole.CUSTOMER,
+              userRole: UserRole.USER,
               joinedAt: now,
             });
           }
@@ -1201,7 +1182,7 @@ export class ChatManagerService {
         this.participants.set(conversationId, [
           {
             userId: createdBy,
-            userRole: createdByRole || UserRole.CUSTOMER,
+            userRole: createdByRole || UserRole.USER,
             joinedAt: new Date(),
           },
         ]);
@@ -1250,8 +1231,8 @@ export class ChatManagerService {
     // Simple visibility logic - can be enhanced based on your requirements
     return (
       message.authorUserId === userId ||
-      message.toRole === UserRole.CUSTOMER ||
-      message.fromRole === UserRole.CUSTOMER
+      message.toRole === UserRole.USER ||
+      message.fromRole === UserRole.USER
     );
   }
 }

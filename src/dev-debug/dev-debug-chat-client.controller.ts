@@ -218,7 +218,7 @@ export class DevDebugChatClientController {
           authorUserId: msg.authorUserId,
           fromRole: msg.fromRole,
           toRole: msg.toRole,
-          messageType: msg.messageType,
+          // messageType removed - using roles instead
           createdAt: msg.createdAt,
           // Add debug info for content types
           _debug: {

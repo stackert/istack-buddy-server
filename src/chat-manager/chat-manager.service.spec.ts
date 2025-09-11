@@ -28,13 +28,9 @@ describe('ChatManagerService', () => {
       getAllConversationIds: jest.fn(),
       getFilteredMessages: jest.fn(),
       getFilteredRobotMessages: jest.fn(),
-      getMessagesVisibleToRole: jest.fn(),
-      getMessagesForRobotProcessing: jest.fn(),
       getRecentMessagesWithinTokenLimit: jest.fn(),
       getMessagesByUser: jest.fn(),
-      getMessagesByType: jest.fn(),
       getLatestMessage: jest.fn(),
-      getMessageCountsByType: jest.fn(),
       getMessageCount: jest.fn(),
       hasConversation: jest.fn(),
       removeConversation: jest.fn(),
@@ -196,9 +192,11 @@ describe('ChatManagerService', () => {
       const createMessageDto: CreateMessageDto = {
         conversationId: 'test-conversation',
         fromUserId: 'test-user',
-        content: 'Hello robot',
-        messageType: MessageType.TEXT,
-        fromRole: UserRole.CUSTOMER,
+        content: {
+          type: 'text/plain',
+          payload: 'Hello robot',
+        },
+        fromRole: UserRole.USER,
         toRole: UserRole.ROBOT,
       };
 
@@ -226,9 +224,11 @@ describe('ChatManagerService', () => {
       const createMessageDto: CreateMessageDto = {
         conversationId: 'test-conversation',
         fromUserId: 'test-user',
-        content: 'Hello robot',
-        messageType: MessageType.TEXT,
-        fromRole: UserRole.CUSTOMER,
+        content: {
+          type: 'text/plain',
+          payload: 'Hello robot',
+        },
+        fromRole: UserRole.USER,
         toRole: UserRole.ROBOT,
         robotName: 'SlackyOpenAiAgent', // Add robotName to the DTO
       };
@@ -263,10 +263,12 @@ describe('ChatManagerService', () => {
       const createMessageDto: CreateMessageDto = {
         conversationId: 'test-conversation',
         fromUserId: 'test-user',
-        content: 'Hello world',
-        messageType: MessageType.TEXT,
-        fromRole: UserRole.CUSTOMER,
-        toRole: UserRole.AGENT,
+        content: {
+          type: 'text/plain',
+          payload: 'Hello world',
+        },
+        fromRole: UserRole.USER,
+        toRole: UserRole.USER,
       };
 
       const result = await service.addMessage(createMessageDto);
@@ -279,11 +281,7 @@ describe('ChatManagerService', () => {
         createMessageDto.conversationId,
         expect.objectContaining({
           conversationId: createMessageDto.conversationId,
-          content: expect.objectContaining({
-            type: 'text/plain',
-            payload: createMessageDto.content,
-          }),
-          messageType: createMessageDto.messageType,
+          content: createMessageDto.content,
         }),
       );
     });
@@ -292,9 +290,11 @@ describe('ChatManagerService', () => {
       const createMessageDto: CreateMessageDto = {
         conversationId: 'test-conversation',
         fromUserId: 'test-user',
-        content: 'Hello robot',
-        messageType: MessageType.TEXT,
-        fromRole: UserRole.CUSTOMER,
+        content: {
+          type: 'text/plain',
+          payload: 'Hello robot',
+        },
+        fromRole: UserRole.USER,
         toRole: UserRole.ROBOT,
       };
 
@@ -320,10 +320,12 @@ describe('ChatManagerService', () => {
       const createMessageDto: CreateMessageDto = {
         conversationId: 'test-conversation',
         fromUserId: 'test-user',
-        content: 'Hello world',
-        messageType: MessageType.TEXT,
-        fromRole: UserRole.CUSTOMER,
-        toRole: UserRole.AGENT,
+        content: {
+          type: 'text/plain',
+          payload: 'Hello world',
+        },
+        fromRole: UserRole.USER,
+        toRole: UserRole.USER,
       };
 
       const expectedMessage =
@@ -333,17 +335,19 @@ describe('ChatManagerService', () => {
       const result = await service.createMessage(createMessageDto);
 
       expect(result).toBe(expectedMessage);
-      expect(service.addMessage).toHaveBeenCalledWith(createMessageDto, 'text');
+      expect(service.addMessage).toHaveBeenCalledWith(createMessageDto);
     });
 
     it('should create message with custom content type', async () => {
       const createMessageDto: CreateMessageDto = {
         conversationId: 'test-conversation',
         fromUserId: 'test-user',
-        content: 'Hello world',
-        messageType: MessageType.TEXT,
-        fromRole: UserRole.CUSTOMER,
-        toRole: UserRole.AGENT,
+        content: {
+          type: 'text/plain',
+          payload: 'Hello world',
+        },
+        fromRole: UserRole.USER,
+        toRole: UserRole.USER,
       };
 
       const expectedMessage =
@@ -356,10 +360,7 @@ describe('ChatManagerService', () => {
       );
 
       expect(result).toBe(expectedMessage);
-      expect(service.addMessage).toHaveBeenCalledWith(
-        createMessageDto,
-        'application/json',
-      );
+      expect(service.addMessage).toHaveBeenCalledWith(createMessageDto);
     });
   });
 
@@ -391,8 +392,8 @@ describe('ChatManagerService', () => {
         conversationId,
         content.payload,
         'cx-slack-robot',
-        UserRole.CUSTOMER,
-        UserRole.AGENT,
+        UserRole.USER,
+        UserRole.USER,
       );
       expect(mockRobotService.getRobotByName).toHaveBeenCalledWith(
         'SlackyOpenAiAgent',
@@ -428,44 +429,11 @@ describe('ChatManagerService', () => {
         conversationId,
         content.payload,
         'form-marv-user',
-        UserRole.CUSTOMER,
-        UserRole.AGENT,
+        UserRole.USER,
+        UserRole.USER,
       );
       expect(mockRobotService.getRobotByName).toHaveBeenCalledWith(
         'AnthropicMarv',
-      );
-    });
-  });
-
-  describe('addUserMessage', () => {
-    it('should add user message successfully', async () => {
-      const conversationId = 'test-conversation';
-      const content = 'Hello world';
-      const fromUserId = 'test-user';
-      const fromRole = UserRole.CUSTOMER;
-      const toRole = UserRole.AGENT;
-
-      const expectedMessage = mockConversationMessages.customerMessage(content);
-      jest.spyOn(service, 'addMessage').mockResolvedValue(expectedMessage);
-
-      const result = await service.addUserMessage(
-        conversationId,
-        content,
-        fromUserId,
-        fromRole,
-        toRole,
-      );
-
-      expect(result).toBe(expectedMessage);
-      expect(service.addMessage).toHaveBeenCalledWith(
-        expect.objectContaining({
-          conversationId,
-          fromUserId,
-          content,
-          messageType: MessageType.TEXT,
-          fromRole,
-          toRole,
-        }),
       );
     });
   });
@@ -637,7 +605,7 @@ describe('ChatManagerService', () => {
       const conversationId = 'test-conversation';
       const joinRoomDto: JoinRoomDto = {
         userId: 'test-user',
-        userRole: UserRole.CUSTOMER,
+        userRole: UserRole.USER,
       };
 
       const mockConversation = {
@@ -676,19 +644,19 @@ describe('ChatManagerService', () => {
       const conversationId = 'test-conversation';
       const joinRoomDto: JoinRoomDto = {
         userId: 'test-user',
-        userRole: UserRole.CUSTOMER,
+        userRole: UserRole.USER,
       };
 
       const existingParticipant = {
         userId: 'test-user',
-        userRole: UserRole.CUSTOMER,
+        userRole: UserRole.USER,
         joinedAt: new Date(),
       };
 
       const mockConversation = {
         id: conversationId,
         participantIds: ['test-user'],
-        participantRoles: [UserRole.CUSTOMER],
+        participantRoles: [UserRole.USER],
       };
 
       // Mock the conversation metadata
@@ -713,7 +681,7 @@ describe('ChatManagerService', () => {
       const conversationId = 'non-existent';
       const joinRoomDto: JoinRoomDto = {
         userId: 'test-user',
-        userRole: UserRole.CUSTOMER,
+        userRole: UserRole.USER,
       };
 
       await expect(
@@ -726,7 +694,7 @@ describe('ChatManagerService', () => {
     it('should return participants for conversation', async () => {
       const conversationId = 'test-conversation';
       const mockParticipants = [
-        { userId: 'user1', userRole: UserRole.CUSTOMER, joinedAt: new Date() },
+        { userId: 'user1', userRole: UserRole.USER, joinedAt: new Date() },
       ];
 
       // Mock the participants map
@@ -757,14 +725,14 @@ describe('ChatManagerService', () => {
       const userId = 'test-user';
 
       const mockParticipants = [
-        { userId: 'user1', userRole: UserRole.CUSTOMER, joinedAt: new Date() },
-        { userId: 'test-user', userRole: UserRole.AGENT, joinedAt: new Date() },
+        { userId: 'user1', userRole: UserRole.USER, joinedAt: new Date() },
+        { userId: 'test-user', userRole: UserRole.USER, joinedAt: new Date() },
       ];
 
       const mockConversation = {
         id: conversationId,
         participantIds: ['user1', 'test-user'],
-        participantRoles: [UserRole.CUSTOMER, UserRole.AGENT],
+        participantRoles: [UserRole.USER, UserRole.USER],
       };
 
       // Mock the conversation metadata
@@ -794,7 +762,7 @@ describe('ChatManagerService', () => {
       const userId = 'non-existent';
 
       const mockParticipants = [
-        { userId: 'user1', userRole: UserRole.CUSTOMER, joinedAt: new Date() },
+        { userId: 'user1', userRole: UserRole.USER, joinedAt: new Date() },
       ];
 
       // Mock the participants map
@@ -850,7 +818,7 @@ describe('ChatManagerService', () => {
     it('should start new conversation successfully', async () => {
       const startConversationDto: StartConversationDto = {
         createdBy: 'test-user',
-        createdByRole: UserRole.CUSTOMER,
+        createdByRole: UserRole.USER,
         initialParticipants: ['user1', 'user2'],
       };
 
@@ -1234,7 +1202,7 @@ describe('ChatManagerService', () => {
           ...mockConversationMessages.robotMessage('World'),
           authorUserId: 'user-456',
           fromRole: UserRole.ROBOT,
-          toRole: UserRole.AGENT,
+          toRole: UserRole.USER,
         },
       ];
 

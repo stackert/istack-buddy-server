@@ -131,11 +131,7 @@ Your goal is to help users efficiently manage their Formstack forms through thes
         } else {
           // Convert from old format
           messages.push({
-            role:
-              msg.fromRole === UserRole.CUSTOMER ||
-              msg.fromRole === UserRole.AGENT
-                ? 'user'
-                : 'assistant',
+            role: msg.fromRole === UserRole.USER ? 'user' : 'assistant',
             content: (msg.content as any).payload || msg.content,
           });
         }
@@ -469,9 +465,8 @@ Your goal is to help users efficiently manage their Formstack forms through thes
       },
       conversationId: 'intent-conversation',
       authorUserId: null,
-      fromRole: UserRole.CUSTOMER,
+      fromRole: UserRole.USER,
       toRole: UserRole.ROBOT,
-      messageType: MessageType.TEXT,
       createdAt: new Date(),
       updatedAt: new Date(),
     };

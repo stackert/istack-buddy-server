@@ -41,10 +41,7 @@ export abstract class AbstractRobotChat extends AbstractRobot {
     msg: IConversationMessage,
   ) => IConversationMessageAnthropic {
     return (msg) => ({
-      role:
-        msg.fromRole === UserRole.CUSTOMER || msg.fromRole === UserRole.AGENT
-          ? 'user'
-          : 'assistant',
+      role: msg.fromRole === UserRole.USER ? 'user' : 'assistant',
       content: (msg.content as any).payload,
     });
   }

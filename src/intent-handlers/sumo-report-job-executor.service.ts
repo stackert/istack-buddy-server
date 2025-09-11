@@ -8,8 +8,7 @@ import {
   STORAGE_CLASS,
 } from '../file-manager/file-manager.service';
 import { RobotService } from '../robots/robot.service';
-import { ChatManagerService } from '../chat-manager/chat-manager.service';
-import { UserRole, MessageType } from '../chat-manager/dto/create-message.dto';
+import { UserRole } from '../chat-manager/dto/create-message.dto';
 
 @Injectable()
 export class SumoReportJobExecutor implements IntentHandler {
@@ -19,7 +18,6 @@ export class SumoReportJobExecutor implements IntentHandler {
     private readonly iStackInfoService: IStackInfoService,
     private readonly fileManagerService: FileManagerService,
     private readonly robotService: RobotService,
-    private readonly chatManagerService: ChatManagerService,
   ) {}
 
   getSupportedIntents(): RobotIntent[] {
@@ -63,23 +61,27 @@ export class SumoReportJobExecutor implements IntentHandler {
       // 3. Process data with your code
       const processedData = await this.processJobData(fileId);
 
-      // 3.5. Send processed data to chat using proper ChatManagerService
-      await this.chatManagerService.addMessage({
-        content: {
-          type: 'sumo-search/report',
-          payload: {
-            recordCount: processedData.recordCount,
-            firstRecord: null, // Could add first record if needed
-            results: processedData,
-            originalQuery: `Form ${intentData.subjects?.formId?.[0]} submission errors`,
+      // 3.5. Send processed data to chat via callbacks
+      if (callbacks.onFullMessageReceived) {
+        await callbacks.onFullMessageReceived({
+          id: 'temp-id', // This will be replaced by chat manager
+          content: {
+            type: 'sumo-search/report',
+            payload: {
+              recordCount: processedData.recordCount,
+              firstRecord: null,
+              results: processedData,
+              originalQuery: intentData.originalUserPrompt,
+            },
           },
-        },
-        conversationId: conversationId,
-        fromUserId: 'sumo-executor',
-        fromRole: UserRole.ROBOT,
-        toRole: UserRole.CUSTOMER,
-        messageType: MessageType.TEXT,
-      });
+          conversationId: conversationId,
+          authorUserId: 'sumo-executor',
+          fromRole: UserRole.ROBOT,
+          toRole: UserRole.USER,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+      }
 
       // 4. Maybe create externally available file
       const externalFileId = await this.maybeCreateExternalFile(processedData);

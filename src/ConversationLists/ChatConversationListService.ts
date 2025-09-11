@@ -145,40 +145,6 @@ export class ChatConversationListService {
   }
 
   /**
-   * Get messages visible to a specific user role
-   * @param conversationId The conversation ID
-   * @param role The user role to filter for
-   * @returns Array of messages visible to the specified role
-   */
-  getMessagesVisibleToRole(
-    conversationId: string,
-    role: UserRole,
-  ): IConversationMessage[] {
-    const conversation = this.getConversationById(conversationId);
-    if (!conversation) {
-      return [];
-    }
-
-    return conversation.getMessagesVisibleToRole(role);
-  }
-
-  /**
-   * Get messages for robot processing from a conversation
-   * @param conversationId The conversation ID
-   * @returns Array of messages suitable for robot processing
-   */
-  getMessagesForRobotProcessing(
-    conversationId: string,
-  ): IConversationMessage[] {
-    const conversation = this.getConversationById(conversationId);
-    if (!conversation) {
-      return [];
-    }
-
-    return conversation.getMessagesForRobotProcessing();
-  }
-
-  /**
    * Get recent messages within a token limit
    * @param conversationId The conversation ID
    * @param maxTokens Maximum number of tokens allowed
@@ -220,24 +186,6 @@ export class ChatConversationListService {
   }
 
   /**
-   * Get messages by type from a conversation
-   * @param conversationId The conversation ID
-   * @param messageType The message type to filter by
-   * @returns Array of messages of the specified type
-   */
-  getMessagesByType(
-    conversationId: string,
-    messageType: MessageType,
-  ): IConversationMessage[] {
-    const conversation = this.getConversationById(conversationId);
-    if (!conversation) {
-      return [];
-    }
-
-    return conversation.getMessagesByType(messageType);
-  }
-
-  /**
    * Get the latest message from a conversation
    * @param conversationId The conversation ID
    * @returns The most recent message or undefined if no messages exist
@@ -249,24 +197,6 @@ export class ChatConversationListService {
     }
 
     return conversation.getLatestMessage();
-  }
-
-  /**
-   * Get message counts by type for a conversation
-   * @param conversationId The conversation ID
-   * @returns Object with counts for each message type
-   */
-  getMessageCountsByType(conversationId: string): Record<MessageType, number> {
-    const conversation = this.getConversationById(conversationId);
-    if (!conversation) {
-      return {
-        [MessageType.TEXT]: 0,
-        [MessageType.SYSTEM]: 0,
-        [MessageType.ROBOT]: 0,
-      };
-    }
-
-    return conversation.getMessageCountsByType();
   }
 
   /**

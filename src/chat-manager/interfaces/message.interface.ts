@@ -8,7 +8,6 @@ export interface IConversationMessage<T = TConversationMessageContent> {
   authorUserId: string | null;
   fromRole: UserRole;
   toRole: UserRole;
-  messageType: MessageType;
   threadId?: string;
   originalMessageId?: string;
   createdAt: Date;

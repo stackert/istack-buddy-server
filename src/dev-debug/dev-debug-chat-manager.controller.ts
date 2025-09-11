@@ -39,7 +39,7 @@ export class DevDebugChatManagerController {
       // Create a test conversation
       const conversation = await this.chatManagerService.startConversation({
         createdBy: 'dev-test-user',
-        createdByRole: UserRole.CUSTOMER,
+        createdByRole: UserRole.USER,
         title: title,
         description: description,
         initialParticipants: ['dev-test-user'],
@@ -216,7 +216,7 @@ export class DevDebugChatManagerController {
       // Create a test conversation
       const conversation = await this.chatManagerService.startConversation({
         createdBy: 'dev-test-user',
-        createdByRole: UserRole.CUSTOMER,
+        createdByRole: UserRole.USER,
         title: 'Test Slack Flow Conversation',
         description: 'Dev/Debug test conversation for simulating Slack flow',
         initialParticipants: ['dev-test-user'],

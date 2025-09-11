@@ -72,7 +72,7 @@ export class ChatManagerGateway
         // Use defaults - prioritize getting shit working over perfect structure
         joinData = {
           userId: data.userId || `anonymous_${client.id}`, // Use socket ID as fallback
-          userRole: data.userRole || (UserRole.CUSTOMER as any), // Default to customer
+          userRole: data.userRole || (UserRole.USER as any), // Default to customer
         };
         this.logger.debug('Applied default joinData', { joinData });
       }
@@ -132,7 +132,6 @@ export class ChatManagerGateway
       fromUserId: createMessageDto.fromUserId,
       fromRole: createMessageDto.fromRole,
       toRole: createMessageDto.toRole,
-      messageType: createMessageDto.messageType,
       content:
         String(createMessageDto.content?.payload || 'No content').substring(
           0,

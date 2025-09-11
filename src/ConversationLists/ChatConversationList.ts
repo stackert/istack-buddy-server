@@ -39,15 +39,7 @@ export class ChatConversationList {
    */
   getFilteredRobotMessages(): IConversationMessage[] {
     return this.getAllChatMessages().filter((msg: IConversationMessage) => {
-      const isRobotRole =
-        msg.fromRole === UserRole.ROBOT || msg.toRole === UserRole.ROBOT;
-      const isRobotType = msg.messageType === MessageType.ROBOT;
-      const isKnownRobotUserId =
-        msg.authorUserId &&
-        (msg.authorUserId.includes('robot') ||
-          msg.authorUserId === 'cx-slack-robot');
-
-      return isRobotRole || isRobotType || isKnownRobotUserId;
+      return msg.fromRole === UserRole.ROBOT;
     });
   }
 
@@ -64,56 +56,6 @@ export class ChatConversationList {
         if (value === undefined) return true;
         return msg[key as keyof IConversationMessage] === value;
       });
-    });
-  }
-
-  /**
-   * Get messages visible to a specific user role based on visibility rules
-   * @param role - The user role to filter for
-   * @returns Array of messages visible to the specified role
-   */
-  getMessagesVisibleToRole(role: UserRole): IConversationMessage[] {
-    const messages = this.getAllChatMessages();
-
-    switch (role) {
-      case UserRole.CUSTOMER:
-        // Customers see their own messages and shared messages from agents
-        // Robot messages are never directly visible to customers
-        return messages.filter(
-          (msg: IConversationMessage) =>
-            msg.fromRole === UserRole.CUSTOMER ||
-            (msg.fromRole === UserRole.AGENT &&
-              msg.messageType !== MessageType.ROBOT),
-        );
-
-      case UserRole.AGENT:
-      case UserRole.SUPERVISOR:
-        // Agents and supervisors see all messages
-        return messages;
-
-      default:
-        return [];
-    }
-  }
-
-  /**
-   * Get messages that should be sent to robots for processing
-   * Robots need context from previous robot responses and messages from agents/supervisors
-   * @returns Array of messages suitable for robot processing
-   */
-  getMessagesForRobotProcessing(): IConversationMessage[] {
-    return this.getAllChatMessages().filter((msg: IConversationMessage) => {
-      // Include robot messages for context
-      if (msg.messageType === MessageType.ROBOT) {
-        return true;
-      }
-
-      // Include messages from roles that can interact with robots
-      if ([UserRole.AGENT, UserRole.SUPERVISOR].includes(msg.fromRole)) {
-        return true;
-      }
-
-      return false;
     });
   }
 
@@ -160,17 +102,6 @@ export class ChatConversationList {
   }
 
   /**
-   * Get messages of a specific type
-   * @param messageType - The message type to filter by
-   * @returns Array of messages of the specified type
-   */
-  getMessagesByType(messageType: MessageType): IConversationMessage[] {
-    return this.getAllChatMessages().filter(
-      (msg: IConversationMessage) => msg.messageType === messageType,
-    );
-  }
-
-  /**
    * Get messages within a date range
    * @param startDate - Start date for filtering
    * @param endDate - End date for filtering
@@ -200,25 +131,6 @@ export class ChatConversationList {
       (latest: IConversationMessage, current: IConversationMessage) =>
         current.createdAt > latest.createdAt ? current : latest,
     );
-  }
-
-  /**
-   * Count messages by type
-   * @returns Object with counts for each message type
-   */
-  getMessageCountsByType(): Record<MessageType, number> {
-    const messages = this.getAllChatMessages();
-    const counts = {
-      [MessageType.TEXT]: 0,
-      [MessageType.SYSTEM]: 0,
-      [MessageType.ROBOT]: 0,
-    };
-
-    messages.forEach((msg: IConversationMessage) => {
-      counts[msg.messageType]++;
-    });
-
-    return counts;
   }
 
   /**

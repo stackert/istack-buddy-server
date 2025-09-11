@@ -290,13 +290,15 @@ describe('SlackyOpenAiAgent', () => {
         history,
       );
 
-      expect(messages).toHaveLength(3);
+      expect(messages).toHaveLength(4);
       expect(messages[0].role).toBe('user');
       expect(messages[0].content).toBe('First message');
       expect(messages[1].role).toBe('user');
-      expect(messages[1].content).toBe('Second message');
+      expect(messages[1].content).toBe('First response');
       expect(messages[2].role).toBe('user');
-      expect(messages[2].content).toBe('Current message');
+      expect(messages[2].content).toBe('Second message');
+      expect(messages[3].role).toBe('user');
+      expect(messages[3].content).toBe('Current message');
     });
 
     it('should handle empty history', () => {

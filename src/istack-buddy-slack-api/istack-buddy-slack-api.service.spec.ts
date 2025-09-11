@@ -194,7 +194,7 @@ describe('IstackBuddySlackApiService', () => {
       chatManagerService.startConversation.mockResolvedValue({
         id: 'test-conversation-id',
         createdBy: 'test-user',
-        createdByRole: 'cx-customer',
+        createdByRole: 'user',
         title: 'Slack Channel Conversation',
         description: 'Slack conversation from channel mention',
         initialParticipants: ['test-user'],
@@ -353,7 +353,7 @@ describe('IstackBuddySlackApiService', () => {
       chatManagerService.startConversation.mockResolvedValue({
         id: 'new-conversation-id',
         createdBy: 'test-user',
-        createdByRole: 'cx-customer',
+        createdByRole: 'user',
         title: 'Slack Thread Conversation',
         description: 'Slack conversation from existing thread',
         initialParticipants: ['test-user'],
@@ -374,7 +374,7 @@ describe('IstackBuddySlackApiService', () => {
       expect(res.json).toHaveBeenCalledWith({ status: 'ok' });
       expect(chatManagerService.startConversation).toHaveBeenCalledWith({
         createdBy: 'test-user',
-        createdByRole: 'cx-customer',
+        createdByRole: 'user',
         title: 'Slack Thread Conversation',
         description: 'Slack conversation from existing thread',
         initialParticipants: ['test-user'],
@@ -437,7 +437,7 @@ describe('IstackBuddySlackApiService', () => {
       chatManagerService.startConversation.mockResolvedValue({
         id: 'test-conversation-id',
         createdBy: 'test-user',
-        createdByRole: 'cx-customer',
+        createdByRole: 'user',
         title: 'Slack Channel Conversation',
         description: 'Slack conversation from channel mention',
         initialParticipants: ['test-user'],

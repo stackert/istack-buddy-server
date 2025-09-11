@@ -135,7 +135,7 @@ describe('AnthropicMarv', () => {
       expect(request.messages).toHaveLength(3);
       expect(request.messages[0].role).toBe('user');
       expect(request.messages[0].content).toBe('First message');
-      expect(request.messages[1].role).toBe('user'); // Agent messages become 'user' in Anthropic format
+      expect(request.messages[1].role).toBe('user'); // User messages become 'user' in Anthropic format
       expect(request.messages[2].role).toBe('user');
       expect(request.messages[2].content).toBe('Current message');
     });
@@ -499,7 +499,7 @@ describe('AnthropicMarv', () => {
       const transformer = robot.getGetFromRobotToConversationTransformer();
       const result = transformer(message);
 
-      expect(result.role).toBe('user');
+      expect(result.role).toBe('user'); // User messages become 'user' in Anthropic
       expect(result.content).toBe('Hello');
     });
 

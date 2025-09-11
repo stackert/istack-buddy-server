@@ -557,7 +557,7 @@ Need help? Just ask!`;
         // Convert from old format
         this.logger.log(`Processing message with role: ${msg.fromRole}`);
 
-        if (msg.fromRole === UserRole.CUSTOMER) {
+        if (msg.fromRole === UserRole.USER) {
           const content = msg.content.payload;
           const contentStr =
             typeof content === 'string' ? content : String(content);
@@ -594,7 +594,7 @@ Need help? Just ask!`;
       : null;
     const isCurrentMessageInHistory =
       lastHistoryMessage &&
-      lastHistoryMessage.fromRole === UserRole.CUSTOMER &&
+      lastHistoryMessage.fromRole === UserRole.USER &&
       lastMessageContent === currentMessage;
 
     if (!isCurrentMessageInHistory) {
@@ -932,9 +932,8 @@ Need help? Just ask!`;
       },
       conversationId: 'intent-conversation',
       authorUserId: null,
-      fromRole: UserRole.CUSTOMER,
+      fromRole: UserRole.USER,
       toRole: UserRole.ROBOT,
-      messageType: MessageType.TEXT,
       createdAt: new Date(),
       updatedAt: new Date(),
     };

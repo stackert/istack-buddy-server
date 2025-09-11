@@ -16,11 +16,9 @@ export enum MessageType {
 }
 
 export enum UserRole {
-  CUSTOMER = 'cx-customer',
-  AGENT = 'cx-agent',
-  SUPERVISOR = 'cx-supervisor',
-  ROBOT = 'robot',
-  SYSTEM_DEBUG = 'system:debug',
+  USER = 'user', // Replaces CUSTOMER, AGENT, SUPERVISOR
+  ROBOT = 'robot', // Unchanged
+  SYSTEM = 'system', // Replaces SYSTEM_DEBUG
 }
 
 export class CreateMessageDto {
@@ -42,10 +40,6 @@ export class CreateMessageDto {
 
   @IsEnum(UserRole)
   toRole: UserRole;
-
-  @IsEnum(MessageType)
-  @IsOptional()
-  messageType?: MessageType = MessageType.TEXT;
 
   @IsString()
   @IsOptional()
