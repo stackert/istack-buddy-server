@@ -354,6 +354,105 @@ app.post('/information-services/knowledge-bases/top-results', (req, res) => {
   }
 });
 
+// POST /information-services/context-dynamic/form
+app.post('/information-services/context-dynamic/form', (req, res) => {
+  console.log('📥 Received context-dynamic form request:', req.body);
+
+  const { formId } = req.body;
+
+  if (!formId) {
+    return res.status(400).json({
+      error: 'Bad Request',
+      message: 'formId is required',
+    });
+  }
+
+  // Generate mock form context data with random IDs but realistic structure
+  const mockFormContext = {
+    form: {
+      formId: formId,
+      activeAuthProviderName: 'SAML Provider',
+      protectionType: 'SSO',
+      submitActions: [
+        {
+          submitActionId: Math.floor(Math.random() * 1000000) + 100000,
+          name: 'Webhook to CRM',
+          type: 'webhook',
+          isActive: true,
+          hasLogic: false,
+        },
+        {
+          submitActionId: Math.floor(Math.random() * 1000000) + 100000,
+          name: 'Salesforce Integration',
+          type: 'salesforce',
+          isActive: true,
+          hasLogic: true,
+        },
+        {
+          submitActionId: Math.floor(Math.random() * 1000000) + 100000,
+          name: 'Email Notification',
+          type: 'email',
+          isActive: false,
+          hasLogic: false,
+        },
+      ],
+      confirmationEmails: [
+        {
+          confirmationEmailId: Math.floor(Math.random() * 1000000) + 200000,
+          name: 'Thank You Email',
+          payloadType: 'html',
+          hasLogic: true,
+        },
+      ],
+      notificationEmails: [
+        {
+          notificationEmailId: Math.floor(Math.random() * 1000000) + 300000,
+          name: 'Admin Notification',
+          payloadType: 'text',
+          hasLogic: false,
+        },
+        {
+          notificationEmailId: Math.floor(Math.random() * 1000000) + 300000,
+          name: 'Manager Alert',
+          payloadType: 'html',
+          hasLogic: true,
+        },
+      ],
+      formPlugins: [
+        {
+          formPluginId: Math.floor(Math.random() * 1000000) + 400000,
+          type: 'analytics',
+          isActive: true,
+        },
+        {
+          formPluginId: Math.floor(Math.random() * 1000000) + 400000,
+          type: 'captcha',
+          isActive: false,
+        },
+      ],
+      smartLists: [
+        {
+          smartListId: Math.floor(Math.random() * 1000000) + 500000,
+          name: 'US States',
+          fieldIds: [101, 102],
+          useSeparateValues: true,
+          useImages: false,
+        },
+        {
+          smartListId: Math.floor(Math.random() * 1000000) + 500000,
+          name: 'Countries',
+          fieldIds: [103],
+          useSeparateValues: false,
+          useImages: true,
+        },
+      ],
+    },
+  };
+
+  console.log(`📋 Returning mock form context for formId: ${formId}`);
+  res.json(mockFormContext);
+});
+
 // Health check endpoint
 app.get('/information-services/health', (req, res) => {
   res.json({
@@ -385,6 +484,7 @@ app.get('/', (req, res) => {
         'Knowledge base preQuery',
       'POST /information-services/knowledge-bases/top-results':
         'Knowledge base search',
+      'POST /information-services/context-dynamic/form': 'Get form context',
       'GET /information-services/health': 'Health check',
     },
     note: 'This mock server simulates the information services API for development purposes',
@@ -432,6 +532,7 @@ app.listen(PORT, () => {
   console.log('   GET  /information-services/context-sumo-report/files');
   console.log('   POST /information-services/knowledge-bases/preQuery');
   console.log('   POST /information-services/knowledge-bases/top-results');
+  console.log('   POST /information-services/context-dynamic/form');
   console.log('   GET  /information-services/health');
   console.log('');
   console.log(

@@ -601,20 +601,19 @@ export class DevDebugChatClientController {
             <div class="intent-panel">
                 <h3>🎯 Intent Input</h3>
                 <select id="intent-preset" onchange="loadIntentPreset()" style="margin-bottom: 10px; padding: 8px; width: 100%;">
+                    <option value="contextDynamic">Context Dynamic - Form</option>
                     <option value="knowledgeBase">Knowledge Base Search</option>
                     <option value="submissionCreated">Form Submission Tracking</option>
                     <option value="submitAction">Submit Action Analysis</option>
                     <option value="authProvider">Auth Provider Metrics</option>
                 </select>
                 <textarea id="intent-input" class="intent-input-box" placeholder="Raw Intent JSON...">{
-  "intent": "searchKnowledgeBase",
-  "subIntents": ["topResults"],
+  "intent": "getContextDynamic",
+  "subIntents": ["getFormContext"],
   "subjects": {
-    "query": ["form"],
-    "minConfidence": ["0.7"],
-    "pageSize": ["10"]
+    "formId": ["12345"]
   },
-  "originalUserPrompt": "Search knowledge base for information about forms"
+  "originalUserPrompt": "Get live form context for form 12345 including submit actions, emails, and configurations"
 }</textarea>
                 <button class="intent-btn" onclick="sendIntent()">Send Intent</button>
             </div>
@@ -976,6 +975,14 @@ export class DevDebugChatClientController {
                         pageSize: ["10"]
                     },
                     originalUserPrompt: "Customer is raised concern that they are unable restored to previously deleted fields.  What can we do? What do we check? Is there anything we can do on our end? What to tell the customer?"
+                },
+                contextDynamic: {
+                    intent: "getContextDynamic",
+                    subIntents: ["getFormContext"],
+                    subjects: {
+                        formId: ["12345"]
+                    },
+                    originalUserPrompt: "Get live form context for form 12345 including submit actions, emails, and configurations"
                 }
             };
             

@@ -1,6 +1,7 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { SumoReportJobExecutor } from './sumo-report-job-executor.service';
 import { KnowledgeBaseJobExecutor } from './knowledge-base-job-executor.service';
+import { ContextDynamicJobExecutor } from './context-dynamic-job-executor.service';
 import { IStackInfoModule } from '../istack-buddy-slack-api/istack-info.module';
 import { FileManagerModule } from '../file-manager/file-manager.module';
 import { RobotModule } from '../robots/robot.module';
@@ -14,7 +15,15 @@ import { LoggerModule } from '../common/logger/logger.module';
     forwardRef(() => ChatManagerModule),
     LoggerModule,
   ],
-  providers: [SumoReportJobExecutor, KnowledgeBaseJobExecutor],
-  exports: [SumoReportJobExecutor, KnowledgeBaseJobExecutor],
+  providers: [
+    SumoReportJobExecutor,
+    KnowledgeBaseJobExecutor,
+    ContextDynamicJobExecutor,
+  ],
+  exports: [
+    SumoReportJobExecutor,
+    KnowledgeBaseJobExecutor,
+    ContextDynamicJobExecutor,
+  ],
 })
 export class IntentHandlersModule {}
