@@ -5,6 +5,7 @@ import { IStreamingCallbacks } from '../robots/types';
 import { ChatManagerService } from '../chat-manager/chat-manager.service';
 import { UserRole } from '../chat-manager/dto/create-message.dto';
 import { RobotService } from '../robots/robot.service';
+import { AbstractRobotChat } from '../robots/AbstractRobotChat';
 
 @Injectable()
 export class KnowledgeBaseJobExecutor implements IntentHandler {
@@ -78,14 +79,27 @@ export class KnowledgeBaseJobExecutor implements IntentHandler {
         throw new Error('KnobbyOpenAiSearch robot not found');
       }
 
-      // Create robot callbacks for the response
-      const robotCallbacks: IStreamingCallbacks = {
+      // Create message for the robot with the structured prompt
+      const robotMessage = {
+        id: `kb-search-${Date.now()}`,
         conversationId: conversationId,
-        onStreamStart: () => {},
-        onStreamChunkReceived: () => {},
-        onStreamFinished: () => {},
+        content: {
+          type: 'text/plain' as const,
+          payload: robotPrompt,
+        },
+        authorUserId: null,
+        fromRole: UserRole.USER,
+        toRole: UserRole.ROBOT,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      // Enhanced callbacks that stream to user AND save final message
+      const enhancedCallbacks: IStreamingCallbacks = {
+        ...callbacks,
+        conversationId: conversationId,
         onFullMessageReceived: async (message) => {
-          // Robot response will be sent directly to conversation
+          // Save the final robot response to conversation
           await this.chatManagerService.addMessage({
             content: message.content,
             conversationId: conversationId,
@@ -93,21 +107,14 @@ export class KnowledgeBaseJobExecutor implements IntentHandler {
             fromRole: UserRole.ROBOT,
             toRole: UserRole.USER,
           });
-          this.logger.log('KnobbyOpenAiSearch response sent to conversation');
-        },
-        onError: (error) => {
-          this.logger.error('KnobbyOpenAiSearch error:', error);
+          this.logger.log('KnobbyOpenAiSearch response saved to conversation');
         },
       };
 
-      // Send the prompt to the robot using handleIntentWithTools
-      await (knobbyRobot as any).handleIntentWithTools(
-        {
-          intent: 'searchKnowledgeBase',
-          originalUserPrompt: robotPrompt,
-          subjects: intentData.subjects,
-        },
-        robotCallbacks,
+      // Call the robot directly with streaming response
+      await (knobbyRobot as AbstractRobotChat).acceptMessageStreamResponse(
+        robotMessage,
+        enhancedCallbacks,
       );
     } catch (error) {
       this.logger.error(`Knowledge base search failed: ${error.message}`);
