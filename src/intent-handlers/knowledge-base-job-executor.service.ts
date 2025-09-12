@@ -4,47 +4,15 @@ import { RobotIntent } from '../common/types/intent-parsing.types';
 import { IStreamingCallbacks } from '../robots/types';
 import { ChatManagerService } from '../chat-manager/chat-manager.service';
 import { UserRole } from '../chat-manager/dto/create-message.dto';
-import { OpenAI } from 'openai';
+import { RobotService } from '../robots/robot.service';
 
 @Injectable()
 export class KnowledgeBaseJobExecutor implements IntentHandler {
   private readonly logger = new Logger(KnowledgeBaseJobExecutor.name);
-  constructor(private readonly chatManagerService: ChatManagerService) {}
-
-  private async devDebugCallOpenAI(prompt: string): Promise<string> {
-    try {
-      const apiKey = process.env.OPENAI_API_KEY;
-
-      if (!apiKey || apiKey === '_OPEN_AI_KEY_') {
-        throw new Error(
-          'OPENAI_API_KEY environment variable is required but not set',
-        );
-      }
-
-      const client = new OpenAI({
-        apiKey: apiKey,
-      });
-
-      const completion = await client.chat.completions.create({
-        model: 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'user',
-            content: prompt,
-          },
-        ],
-        max_tokens: 1500,
-        temperature: 0.7,
-      });
-
-      return (
-        completion.choices[0]?.message?.content || 'No response from OpenAI'
-      );
-    } catch (error) {
-      this.logger.error('Error calling OpenAI API:', error);
-      return `Error calling OpenAI: ${error.message}`;
-    }
-  }
+  constructor(
+    private readonly chatManagerService: ChatManagerService,
+    private readonly robotService: RobotService,
+  ) {}
 
   getSupportedIntents(): RobotIntent[] {
     return [
@@ -89,20 +57,57 @@ export class KnowledgeBaseJobExecutor implements IntentHandler {
       );
       this.logger.log('Robot prompt prepared (noOp for now):', robotPrompt);
 
-      // 4. Send prompt to OpenAI for dev debug
-      this.logger.log(
-        'Robot prompt prepared, calling OpenAI:',
-        robotPrompt.substring(0, 100) + '...',
-      );
+      // 4. Send structured prompt as robot-only message
+      await this.chatManagerService.addMessage({
+        content: {
+          type: 'content/document',
+          payload: robotPrompt,
+        },
+        conversationId: conversationId,
+        fromUserId: null,
+        fromRole: UserRole.SYSTEM,
+        toRole: UserRole.ROBOT, // Robot sees but user doesn't
+      });
 
-      const openAIResponse = await this.devDebugCallOpenAI(robotPrompt);
-      this.logger.log('OpenAI Response:', openAIResponse);
+      this.logger.log('Sent structured knowledge base prompt to robot');
 
-      // For now: Send search results directly to conversation
-      await this.sendSearchResultsToConversation(
-        searchResults,
-        conversationId,
-        intentData.originalUserPrompt,
+      // 5. Use KnobbyOpenAiSearch robot to process the prompt
+      const knobbyRobot =
+        this.robotService.getRobotByName('KnobbyOpenAiSearch');
+      if (!knobbyRobot) {
+        throw new Error('KnobbyOpenAiSearch robot not found');
+      }
+
+      // Create robot callbacks for the response
+      const robotCallbacks: IStreamingCallbacks = {
+        conversationId: conversationId,
+        onStreamStart: () => {},
+        onStreamChunkReceived: () => {},
+        onStreamFinished: () => {},
+        onFullMessageReceived: async (message) => {
+          // Robot response will be sent directly to conversation
+          await this.chatManagerService.addMessage({
+            content: message.content,
+            conversationId: conversationId,
+            fromUserId: null,
+            fromRole: UserRole.ROBOT,
+            toRole: UserRole.USER,
+          });
+          this.logger.log('KnobbyOpenAiSearch response sent to conversation');
+        },
+        onError: (error) => {
+          this.logger.error('KnobbyOpenAiSearch error:', error);
+        },
+      };
+
+      // Send the prompt to the robot using handleIntentWithTools
+      await (knobbyRobot as any).handleIntentWithTools(
+        {
+          intent: 'searchKnowledgeBase',
+          originalUserPrompt: robotPrompt,
+          subjects: intentData.subjects,
+        },
+        robotCallbacks,
       );
     } catch (error) {
       this.logger.error(`Knowledge base search failed: ${error.message}`);

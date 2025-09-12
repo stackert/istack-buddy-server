@@ -3,6 +3,7 @@ import { AbstractRobot } from './AbstractRobot';
 import { AgentRobotParrot } from './AgentRobotParrot';
 import { SlackyOpenAiAgent } from './SlackyOpenAiAgent';
 import { AnthropicMarv } from './AnthropicMarv';
+import { KnobbyOpenAiSearch } from './KnobbyOpenAiSearch';
 
 @Injectable()
 export class RobotService implements OnModuleInit {
@@ -32,6 +33,7 @@ export class RobotService implements OnModuleInit {
         'AgentRobotParrot',
         'SlackyOpenAiAgent',
         'AnthropicMarv',
+        'KnobbyOpenAiSearch',
       ];
 
       robotNames.forEach((robotName) => {
@@ -47,6 +49,7 @@ export class RobotService implements OnModuleInit {
         new AgentRobotParrot(),
         new SlackyOpenAiAgent(),
         new AnthropicMarv(),
+        new KnobbyOpenAiSearch(),
       ];
 
       robotInstances.forEach((robot) => {

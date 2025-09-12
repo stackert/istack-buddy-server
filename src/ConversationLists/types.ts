@@ -11,6 +11,7 @@ type TConversationMessageContentMediaTypes =
   | 'content/dynamic-form'
   | 'content/dynamic-auth-provider'
   | 'content/document' // when toRole = 'robot' visible to robot only, when toRole = 'user' visible to user AND robot, content always visible to robot
+  | 'content/knowledge-base-prompt' // structured robot prompt for knowledge base searches
   | 'sumo-search/report'
   | 'sumo-syntax/query'
   | 'sumo-syntax/validation';
