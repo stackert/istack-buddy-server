@@ -6,6 +6,8 @@ import { ChatManagerService } from '../chat-manager/chat-manager.service';
 import { UserRole } from '../chat-manager/dto/create-message.dto';
 import { RobotService } from '../robots/robot.service';
 import { AbstractRobotChat } from '../robots/AbstractRobotChat';
+import { IStackInfoService } from '../istack-buddy-slack-api/istack-info.service';
+import { TConversationMessageContentString } from '../ConversationLists/types';
 
 @Injectable()
 export class KnowledgeBaseJobExecutor implements IntentHandler {
@@ -13,6 +15,7 @@ export class KnowledgeBaseJobExecutor implements IntentHandler {
   constructor(
     private readonly chatManagerService: ChatManagerService,
     private readonly robotService: RobotService,
+    private readonly iStackInfoService: IStackInfoService,
   ) {}
 
   getSupportedIntents(): RobotIntent[] {
@@ -45,8 +48,13 @@ export class KnowledgeBaseJobExecutor implements IntentHandler {
     }
 
     try {
-      // 1. Fetch preQuery from mock server
-      const preQuery = await this.fetchPreQuery(intentData);
+      // 1. Fetch preQuery using service wrapper
+      const query = intentData.originalUserPrompt;
+      if (!query) {
+        throw new Error('originalUserPrompt is required but was not provided');
+      }
+      const preQuery =
+        await this.iStackInfoService.knowledgeBase.preQuery(query);
 
       // 2. Fetch search results from mock server using preQuery
       const searchResults = await this.fetchSearchResults(preQuery);
@@ -79,21 +87,6 @@ export class KnowledgeBaseJobExecutor implements IntentHandler {
         throw new Error('KnobbyOpenAiSearch robot not found');
       }
 
-      // Create message for the robot with the structured prompt
-      const robotMessage = {
-        id: `kb-search-${Date.now()}`,
-        conversationId: conversationId,
-        content: {
-          type: 'text/plain' as const,
-          payload: robotPrompt,
-        },
-        authorUserId: null,
-        fromRole: UserRole.USER,
-        toRole: UserRole.ROBOT,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-
       // Enhanced callbacks that stream to user AND save final message
       const enhancedCallbacks: IStreamingCallbacks = {
         ...callbacks,
@@ -111,6 +104,21 @@ export class KnowledgeBaseJobExecutor implements IntentHandler {
         },
       };
 
+      // Create message for the robot with the structured prompt
+      const robotMessage =
+        await this.chatManagerService.createMessage<TConversationMessageContentString>(
+          {
+            conversationId: conversationId,
+            content: {
+              type: 'text/plain',
+              payload: robotPrompt,
+            },
+            fromUserId: null,
+            fromRole: UserRole.USER,
+            toRole: UserRole.ROBOT,
+          },
+        );
+
       // Call the robot directly with streaming response
       await (knobbyRobot as AbstractRobotChat).acceptMessageStreamResponse(
         robotMessage,
@@ -122,88 +130,11 @@ export class KnowledgeBaseJobExecutor implements IntentHandler {
     }
   }
 
-  private async fetchPreQuery(intentData: any): Promise<any> {
-    const subjects = intentData.subjects || {};
-    const baseUrl = process.env.ISTACK_INFO_SERVICE_BASE_URL;
-    const apiKey = process.env.ISTACK_INFO_SERVICE_API_KEY;
-
-    const preQueryPayload = {
-      query: subjects.query?.[0] || intentData.originalUserPrompt || 'form',
-      minConfidence: subjects.minConfidence?.[0] || 0.7,
-      pageSize: subjects.pageSize?.[0] || 10,
-    };
-
-    this.logger.log(`Fetching preQuery: ${JSON.stringify(preQueryPayload)}`);
-
-    const response = await fetch(
-      `${baseUrl}/information-services/knowledge-bases/preQuery`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify(preQueryPayload),
-      },
-    );
-
-    if (!response.ok) {
-      throw new Error(
-        `PreQuery failed: ${response.status} ${response.statusText}`,
-      );
-    }
-
-    return await response.json();
-  }
-
-  private mapSubIntentToSearchType(subIntent: string): string {
-    const mapping: Record<string, string> = {
-      semanticSearch: 'semantic-search',
-      keywordSearch: 'keyword-search',
-      nounSearch: 'noun-search',
-      properNounSearch: 'proper-noun-search',
-      domainSearch: 'domain-search',
-      freeTextSearch: 'free-text-search',
-      topResults: 'top-results',
-    };
-
-    const searchType = mapping[subIntent];
-    if (!searchType) {
-      throw new Error(
-        `Unsupported knowledge base search subIntent: ${subIntent}`,
-      );
-    }
-
-    return searchType;
-  }
-
   private async fetchSearchResults(preQuery: any): Promise<any> {
-    const baseUrl =
-      process.env.ISTACK_INFO_SERVICE_BASE_URL || 'http://localhost:3001';
-    const apiKey =
-      process.env.ISTACK_INFO_SERVICE_API_KEY || '_THE_FAKE_INFO_SERVICE_KEY_';
-
     this.logger.log(`Fetching search results using preQuery data`);
 
-    const response = await fetch(
-      `${baseUrl}/information-services/knowledge-bases/top-results`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify(preQuery),
-      },
-    );
-
-    if (!response.ok) {
-      throw new Error(
-        `Search results failed: ${response.status} ${response.statusText}`,
-      );
-    }
-
-    return await response.json();
+    // The /top-results endpoint expects the FULL PreQueryDto object as input
+    return await this.iStackInfoService.knowledgeBase.topResults(preQuery);
   }
 
   private formatSearchResultsIntoRobotPrompt(
@@ -282,76 +213,5 @@ __USER_NORMALIZED_QUERY_END__
 `;
 
     return prompt;
-  }
-
-  private async sendSearchResultsToConversation(
-    searchResults: any,
-    conversationId: string,
-    originalPrompt: string,
-  ): Promise<void> {
-    // Generate analysis of search results
-    const analysisText = this.generateSearchAnalysis(
-      searchResults,
-      originalPrompt,
-    );
-
-    // Send results directly to conversation
-    await this.chatManagerService.addMessage({
-      content: {
-        type: 'content/document',
-        payload: analysisText,
-      },
-      conversationId,
-      fromUserId: null,
-      fromRole: UserRole.SYSTEM,
-      toRole: UserRole.USER,
-    });
-
-    this.logger.log(
-      `Sent knowledge base search results to conversation ${conversationId}`,
-    );
-  }
-
-  private generateSearchAnalysis(
-    searchResults: any,
-    originalPrompt: string,
-  ): string {
-    const searchTypesExecuted = searchResults.searchTypesExecuted || [];
-    const totalSearchTypes = searchResults.totalSearchTypes || 0;
-
-    let analysis = `Knowledge Base Search Results for: "${originalPrompt}"
-
-Search Types Executed: ${totalSearchTypes}
-Types: ${searchTypesExecuted.join(', ')}
-
-`;
-
-    // Analyze each search type
-    for (const searchType of searchTypesExecuted) {
-      const results = searchResults[searchType];
-      if (results) {
-        analysis += `\n${searchType}:\n`;
-
-        Object.keys(results).forEach((knowledgeBase) => {
-          const kbResults = results[knowledgeBase];
-          if (Array.isArray(kbResults) && kbResults.length > 0) {
-            analysis += `  ${knowledgeBase}: ${kbResults.length} results\n`;
-
-            // Show first result summary
-            const firstResult = kbResults[0];
-            if (firstResult.confidence) {
-              analysis += `    Top result confidence: ${firstResult.confidence}\n`;
-            }
-            if (firstResult.channelId) {
-              analysis += `    Channel: ${firstResult.channelId}\n`;
-            }
-          }
-        });
-      }
-    }
-
-    analysis += `\nKnowledge base search completed successfully.`;
-
-    return analysis;
   }
 }

@@ -44,14 +44,9 @@ export class IStackInfoServiceExamples {
         await this.iStackInfoService.knowledgeBase.preQuery(userQuery);
       console.log('Pre-query analysis:', preQuery);
 
-      // Step 2: Perform top search using the extracted data
+      // Step 2: Perform top results search using the full preQuery data
       const searchResults =
-        await this.iStackInfoService.knowledgeBase.topSearch({
-          query: userQuery,
-          knowledgeBases: ['SLACK', 'CONTEXT-DOCUMENTS'],
-          maxResults: 10,
-          domains: preQuery.domains,
-        });
+        await this.iStackInfoService.knowledgeBase.topResults(preQuery);
 
       console.log('Search Results:', searchResults);
 
@@ -60,8 +55,7 @@ export class IStackInfoServiceExamples {
         const keywordResults =
           await this.iStackInfoService.knowledgeBase.keywordSearch({
             keywords: preQuery.keywords,
-            knowledgeBases: ['CONTEXT-DOCUMENTS'],
-            maxResults: 5,
+            limit: 5,
           });
         console.log('Keyword Search Results:', keywordResults);
       }
@@ -206,42 +200,33 @@ export class IStackInfoServiceExamples {
   }
 
   /**
-   * Example 7: Search Paging Strategy
+   * Example 7: Specific Search Types
    */
-  async demonstrateSearchPaging(): Promise<void> {
+  async demonstrateSpecificSearches(): Promise<void> {
     try {
-      const query = 'authentication issues';
+      const userQuery = 'authentication issues';
 
-      // First page - don't set maxConfidence
-      const firstPage = await this.iStackInfoService.knowledgeBase.topSearch({
-        query,
-        knowledgeBases: ['SLACK'],
-        maxResults: 5,
-      });
+      // Get preQuery data first
+      const preQuery =
+        await this.iStackInfoService.knowledgeBase.preQuery(userQuery);
 
-      console.log('First page results:', firstPage);
+      // Use specific search types with data from preQuery
+      const keywordResults =
+        await this.iStackInfoService.knowledgeBase.keywordSearch({
+          keywords: preQuery.keywords,
+          limit: 5,
+        });
 
-      // Get the lowest confidence from first page for paging
-      const firstPageResults = firstPage['SLACK'] || [];
-      if (firstPageResults.length > 0) {
-        const lowestConfidence = Math.min(
-          ...firstPageResults.map((r) => parseFloat(r.confidence)),
-        );
+      const semanticResults =
+        await this.iStackInfoService.knowledgeBase.semanticSearch({
+          userPromptText: preQuery.userPromptText,
+          limit: 5,
+        });
 
-        // Second page - use lowest confidence from previous page
-        const secondPage = await this.iStackInfoService.knowledgeBase.topSearch(
-          {
-            query,
-            knowledgeBases: ['SLACK'],
-            maxResults: 5,
-            maxConfidence: lowestConfidence,
-          },
-        );
-
-        console.log('Second page results:', secondPage);
-      }
+      console.log('Keyword results:', keywordResults);
+      console.log('Semantic results:', semanticResults);
     } catch (error) {
-      console.error('Search paging failed:', error);
+      console.error('Specific searches failed:', error);
     }
   }
 
@@ -280,11 +265,8 @@ export class ExampleController {
     const preQuery = await this.iStackInfoService.knowledgeBase.preQuery(query);
 
     // Search with AI technical observation for context
-    const results = await this.iStackInfoService.knowledgeBase.topSearch({
-      query,
-      knowledgeBases: ['SLACK', 'CONTEXT-DOCUMENTS'],
-      maxResults: 10,
-    });
+    const results =
+      await this.iStackInfoService.knowledgeBase.topResults(preQuery);
 
     return {
       query,
@@ -304,9 +286,8 @@ export class ExampleController {
 
     // Search for related issues
     const issues = await this.iStackInfoService.knowledgeBase.semanticSearch({
-      query: `form issues ${formContext.data.formName}`,
-      knowledgeBases: ['SLACK'],
-      maxResults: 5,
+      userPromptText: `form issues ${formContext.data.formName}`,
+      limit: 5,
     });
 
     return {

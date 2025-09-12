@@ -4,12 +4,16 @@ import { RobotIntent } from '../common/types/intent-parsing.types';
 import { IStreamingCallbacks } from '../robots/types';
 import { ChatManagerService } from '../chat-manager/chat-manager.service';
 import { UserRole } from '../chat-manager/dto/create-message.dto';
+import { IStackInfoService } from '../istack-buddy-slack-api/istack-info.service';
 
 @Injectable()
 export class ContextDynamicJobExecutor implements IntentHandler {
   private readonly logger = new Logger(ContextDynamicJobExecutor.name);
 
-  constructor(private readonly chatManagerService: ChatManagerService) {}
+  constructor(
+    private readonly chatManagerService: ChatManagerService,
+    private readonly iStackInfoService: IStackInfoService,
+  ) {}
 
   getSupportedIntents(): RobotIntent[] {
     return [
@@ -48,8 +52,9 @@ export class ContextDynamicJobExecutor implements IntentHandler {
         `Fetching context-dynamic form data for formId: ${formId}`,
       );
 
-      // 1. Fetch form context from mock server
-      const formContext = await this.fetchFormContext(formId);
+      // 1. Fetch form context using service wrapper
+      const formContext =
+        await this.iStackInfoService.contextDynamic.getForm(formId);
 
       // 2. Send form context directly to conversation
       await this.sendFormContextToConversation(
@@ -64,50 +69,13 @@ export class ContextDynamicJobExecutor implements IntentHandler {
     }
   }
 
-  private async fetchFormContext(formId: string): Promise<any> {
-    const baseUrl = process.env.ISTACK_INFO_SERVICE_BASE_URL;
-    const apiKey = process.env.ISTACK_INFO_SERVICE_API_KEY;
-
-    if (!baseUrl || !apiKey) {
-      throw new Error(
-        'ISTACK_INFO_SERVICE_BASE_URL and ISTACK_INFO_SERVICE_API_KEY are required',
-      );
-    }
-
-    const requestPayload = {
-      formId: parseInt(formId, 10),
-    };
-
-    this.logger.log(`Calling context-dynamic/form API for formId: ${formId}`);
-
-    const response = await fetch(
-      `${baseUrl}/information-services/context-dynamic/form`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify(requestPayload),
-      },
-    );
-
-    if (!response.ok) {
-      throw new Error(
-        `Context-dynamic API error: ${response.status} ${response.statusText}`,
-      );
-    }
-
-    return await response.json();
-  }
-
   private async sendFormContextToConversation(
     formContext: any,
     conversationId: string,
     originalPrompt: string,
     formId: string,
   ): Promise<void> {
-    const form = formContext.form;
+    const form = formContext.data || formContext.form;
 
     if (!form) {
       await this.chatManagerService.addMessage({

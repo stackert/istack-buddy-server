@@ -6,9 +6,13 @@ import {
   PreQueryInputDto,
   PreQueryResponse,
   KeywordSearchInput,
+  NounSearchInput,
+  ProperNounSearchInput,
+  DomainSearchInput,
+  FreeTextSearchInput,
   SemanticSearchInput,
-  TopSearchInput,
   SearchResults,
+  TopResultsResponse,
   KnowledgeBasesResponse,
   ChannelsResponse,
   DomainsResponse,
@@ -140,22 +144,59 @@ export class IStackInfoService implements OnModuleDestroy {
       );
     },
 
-    semanticSearch: async (
-      input: SemanticSearchInput,
-    ): Promise<SearchResults> => {
-      this.logger.debug(`Semantic search: ${input.query.substring(0, 100)}`);
+    nounSearch: async (input: NounSearchInput): Promise<SearchResults> => {
+      this.logger.debug(`Noun search with ${input.nouns.length} nouns`);
       return this.makeRequest<SearchResults>(
         'POST',
-        '/information-services/knowledge-bases/semantic-search',
+        '/information-services/knowledge-bases/noun-search',
         input,
       );
     },
 
-    topSearch: async (input: TopSearchInput): Promise<SearchResults> => {
-      this.logger.debug(`Top search: ${input.query.substring(0, 100)}`);
+    properNounSearch: async (
+      input: ProperNounSearchInput,
+    ): Promise<SearchResults> => {
+      this.logger.debug(
+        `Proper noun search with ${input.properNouns.length} proper nouns`,
+      );
       return this.makeRequest<SearchResults>(
         'POST',
-        '/information-services/knowledge-bases/top-search',
+        '/information-services/knowledge-bases/proper-noun-search',
+        input,
+      );
+    },
+
+    domainSearch: async (input: DomainSearchInput): Promise<SearchResults> => {
+      this.logger.debug(`Domain search with ${input.domains.length} domains`);
+      return this.makeRequest<SearchResults>(
+        'POST',
+        '/information-services/knowledge-bases/domain-search',
+        input,
+      );
+    },
+
+    freeTextSearch: async (
+      input: FreeTextSearchInput,
+    ): Promise<SearchResults> => {
+      this.logger.debug(
+        `Free text search with ${input.freeText?.length || 0} terms`,
+      );
+      return this.makeRequest<SearchResults>(
+        'POST',
+        '/information-services/knowledge-bases/free-text-search',
+        input,
+      );
+    },
+
+    semanticSearch: async (
+      input: SemanticSearchInput,
+    ): Promise<SearchResults> => {
+      this.logger.debug(
+        `Semantic search: ${input.userPromptText.substring(0, 100)}`,
+      );
+      return this.makeRequest<SearchResults>(
+        'POST',
+        '/information-services/knowledge-bases/semantic-search',
         input,
       );
     },
@@ -168,6 +209,17 @@ export class IStackInfoService implements OnModuleDestroy {
 
     listDomains: (): Promise<DomainsResponse> =>
       this.getCachedMetaData<DomainsResponse>('listDomains'),
+
+    topResults: async (
+      preQueryDto: PreQueryResponse,
+    ): Promise<TopResultsResponse> => {
+      this.logger.debug('Executing top-results with full preQuery object');
+      return this.makeRequest<TopResultsResponse>(
+        'POST',
+        '/information-services/knowledge-bases/top-results',
+        preQueryDto,
+      );
+    },
   };
 
   // Context dynamic methods

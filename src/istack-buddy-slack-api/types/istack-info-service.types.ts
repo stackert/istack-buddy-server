@@ -11,46 +11,103 @@ export interface PreQueryInputDto {
 }
 
 export interface PreQueryResponse {
+  query: string;
+  minConfidence: number;
+  pageSize: number;
+  originalText: string;
+  normalizedText: string;
+  aiTechnicalObservation: string;
+  keywords: string[];
   nouns: string[];
   properNouns: string[];
   domains: string[];
-  keywords: string[];
-  aiTechnicalObservation: string;
-}
-
-export interface KeywordSearchInput {
-  keywords: string[];
-  knowledgeBases?: string[];
-  maxResults?: number;
+  isWordSearch: boolean;
+  applicableKnowledgeBase: string[];
+  subjects: any;
+  userPromptText: string;
+  freeText?: string[];
+  channelIds?: string[];
   maxConfidence?: number;
-  channels?: string[];
-  domains?: string[];
-}
-
-export interface SemanticSearchInput {
-  query: string;
-  knowledgeBases?: string[];
-  maxResults?: number;
-  maxConfidence?: number;
-  channels?: string[];
-  domains?: string[];
-}
-
-export interface TopSearchInput {
-  query: string;
-  knowledgeBases?: string[];
-  maxResults?: number;
-  maxConfidence?: number; // Paging: use lowest confidence from previous page
-  channels?: string[];
-  domains?: string[];
-}
-
-export interface SearchResults {
-  [knowledgeBase: string]: Array<{
-    confidence: string;
-    content: string;
-    [key: string]: any;
+  limit?: number;
+  chunks: Array<{
+    index: number;
+    chunk_text: string;
+    chunk_embedding: number[];
   }>;
+}
+
+// Base search parameters that all searches can use
+type BaseSearchParams = Pick<
+  PreQueryResponse,
+  'channelIds' | 'maxConfidence' | 'limit'
+>;
+
+// All search input types derived from PreQueryResponse
+export interface KeywordSearchInput extends BaseSearchParams {
+  keywords: PreQueryResponse['keywords'];
+}
+
+export interface NounSearchInput extends BaseSearchParams {
+  nouns: PreQueryResponse['nouns'];
+}
+
+export interface ProperNounSearchInput extends BaseSearchParams {
+  properNouns: PreQueryResponse['properNouns'];
+}
+
+export interface DomainSearchInput extends BaseSearchParams {
+  domains: PreQueryResponse['domains'];
+}
+
+export interface FreeTextSearchInput extends BaseSearchParams {
+  freeText: PreQueryResponse['freeText'];
+}
+
+export interface SemanticSearchInput extends BaseSearchParams {
+  userPromptText: PreQueryResponse['userPromptText'];
+}
+
+export interface KnowledgeBaseResultItem {
+  conversation_id?: string;
+  conversationText?: string;
+  conversationTextNormalized?: string;
+  context_document_id?: string;
+  contextDocumentText?: string;
+  contextDocumentTextNormalized?: string;
+  title?: string;
+  filePath?: string;
+  aiTechnicalObservation?: string;
+  confidence: string;
+  channelId: string;
+  keywords: string[];
+  nouns: string[];
+  properNouns: string[];
+  domains: string[];
+  subjects: any;
+  citations: {
+    text: string;
+    link?: string;
+  };
+}
+
+// Base type for knowledge base search results
+export type KnowledgeBaseResults = {
+  [knowledgeBase: string]: Array<KnowledgeBaseResultItem>;
+};
+
+// Individual search methods return this simple structure
+export interface SearchResults extends KnowledgeBaseResults {}
+
+// Top-results returns comprehensive structure with multiple search types
+export interface TopResultsResponse {
+  searchSemantic?: KnowledgeBaseResults;
+  searchKeywords?: KnowledgeBaseResults;
+  searchNouns?: KnowledgeBaseResults;
+  searchProperNouns?: KnowledgeBaseResults;
+  searchDomains?: KnowledgeBaseResults;
+  searchFreeText?: KnowledgeBaseResults;
+  searchTypesExecuted: string[];
+  totalSearchTypes: number;
 }
 
 export interface KnowledgeBasesResponse {

@@ -2,7 +2,10 @@ import { Injectable, Logger } from '@nestjs/common';
 import { createHash } from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
 import { ChatConversationListService } from '../ConversationLists/ChatConversationListService';
-import { TConversationMessageContentString } from '../ConversationLists/types';
+import {
+  TConversationMessageContentString,
+  TConversationMessageContent,
+} from '../ConversationLists/types';
 import { RobotService } from '../robots/robot.service';
 import {
   IStreamingCallbacks,
@@ -433,9 +436,9 @@ export class ChatManagerService {
    * Add a message to a conversation
    * This is the core method - all messages go through here
    */
-  async addMessage(
-    createMessageDto: CreateMessageDto,
-  ): Promise<IConversationMessage> {
+  async addMessage<
+    T extends TConversationMessageContent = TConversationMessageContent,
+  >(createMessageDto: CreateMessageDto): Promise<IConversationMessage<T>> {
     const messageId = uuidv4();
     const now = new Date();
 
@@ -448,9 +451,9 @@ export class ChatManagerService {
       createMessageDto.fromRole,
     );
 
-    const message: IConversationMessage = {
+    const message: IConversationMessage<T> = {
       id: messageId,
-      content: createMessageDto.content, // Content is already properly structured
+      content: createMessageDto.content as T, // Content is already properly structured
       conversationId: createMessageDto.conversationId,
       authorUserId: createMessageDto.fromUserId,
       fromRole: createMessageDto.fromRole,
@@ -490,10 +493,10 @@ export class ChatManagerService {
    * Legacy method for backward compatibility
    * Redirects to addMessage
    */
-  async createMessage(
-    createMessageDto: CreateMessageDto,
-  ): Promise<IConversationMessage> {
-    return this.addMessage(createMessageDto);
+  async createMessage<
+    T extends TConversationMessageContent = TConversationMessageContent,
+  >(createMessageDto: CreateMessageDto): Promise<IConversationMessage<T>> {
+    return this.addMessage<T>(createMessageDto);
   }
 
   /**
