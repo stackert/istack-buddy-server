@@ -601,19 +601,20 @@ export class DevDebugChatClientController {
             <div class="intent-panel">
                 <h3>🎯 Intent Input</h3>
                 <select id="intent-preset" onchange="loadIntentPreset()" style="margin-bottom: 10px; padding: 8px; width: 100%;">
+                    <option value="knowledgeBase">Knowledge Base Search</option>
                     <option value="submissionCreated">Form Submission Tracking</option>
                     <option value="submitAction">Submit Action Analysis</option>
                     <option value="authProvider">Auth Provider Metrics</option>
                 </select>
                 <textarea id="intent-input" class="intent-input-box" placeholder="Raw Intent JSON...">{
-  "intent": "generateSumoReport",
-  "subIntents": ["submissionCreatedForForm"],
+  "intent": "searchKnowledgeBase",
+  "subIntents": ["topResults"],
   "subjects": {
-    "formId": ["12345"],
-    "startDate": ["2025-09-09"],
-    "endDate": ["2025-09-10"]
+    "query": ["form"],
+    "minConfidence": ["0.7"],
+    "pageSize": ["10"]
   },
-  "originalUserPrompt": "Generate Sumo report for form submission tracking"
+  "originalUserPrompt": "Search knowledge base for information about forms"
 }</textarea>
                 <button class="intent-btn" onclick="sendIntent()">Send Intent</button>
             </div>
@@ -965,6 +966,16 @@ export class DevDebugChatClientController {
                         endDate: ["2025-09-10"]
                     },
                     originalUserPrompt: "Generate Sumo report for auth provider metrics"
+                },
+                knowledgeBase: {
+                    intent: "searchKnowledgeBase",
+                    subIntents: ["topResults"],
+                    subjects: {
+                        query: ["form"],
+                        minConfidence: ["0.7"],
+                        pageSize: ["10"]
+                    },
+                    originalUserPrompt: "Search knowledge base for information about forms"
                 }
             };
             

@@ -266,6 +266,65 @@ app.get('/information-services/context-sumo-report/files', (req, res) => {
   });
 });
 
+// POST /information-services/knowledge-bases/preQuery
+app.post('/information-services/knowledge-bases/preQuery', (req, res) => {
+  console.log('📥 Received knowledge base preQuery:', req.body);
+
+  // Return the same data we pass in, simulating preQuery processing
+  const preQueryResponse = {
+    query: req.body.query || 'form',
+    minConfidence: req.body.minConfidence || 0.7,
+    pageSize: req.body.pageSize || 10,
+    // Add typical preQuery fields
+    keywords: ['form', 'configuration', 'functionality'],
+    nouns: ['customer', 'platform', 'form', 'setup'],
+    properNouns: ['Formstack'],
+    domains: ['BACKEND:SUBMIT-ACTIONS'],
+    userPromptText: req.body.query || 'form',
+    originalText: req.body.query || 'form',
+  };
+
+  res.json(preQueryResponse);
+});
+
+// POST /information-services/knowledge-bases/top-results
+app.post('/information-services/knowledge-bases/top-results', (req, res) => {
+  console.log('📥 Received knowledge base top-results search:', req.body);
+
+  // Load the real knowledge base search data
+  try {
+    const kbDataPath = path.join(
+      __dirname,
+      'fake-responses',
+      'fake-knowledge-base-search-form.json',
+    );
+
+    if (fs.existsSync(kbDataPath)) {
+      const kbData = JSON.parse(fs.readFileSync(kbDataPath, 'utf8'));
+      console.log('📋 Returning real knowledge base search data');
+      res.json(kbData);
+    } else {
+      console.log(
+        '⚠️ Knowledge base mock data not found, returning minimal response',
+      );
+      res.json({
+        searchKeywords: {
+          SLACK: [],
+          'CONTEXT-DOCUMENTS': [],
+        },
+        searchTypesExecuted: ['searchKeywords'],
+        totalSearchTypes: 1,
+      });
+    }
+  } catch (error) {
+    console.error('❌ Error loading knowledge base data:', error.message);
+    res.status(500).json({
+      error: 'Failed to load knowledge base data',
+      message: error.message,
+    });
+  }
+});
+
 // Health check endpoint
 app.get('/information-services/health', (req, res) => {
   res.json({
@@ -293,6 +352,10 @@ app.get('/', (req, res) => {
       'GET /information-services/context-sumo-report/files/{fileId}/download':
         'Download file',
       'GET /information-services/context-sumo-report/files': 'List all files',
+      'POST /information-services/knowledge-bases/preQuery':
+        'Knowledge base preQuery',
+      'POST /information-services/knowledge-bases/top-results':
+        'Knowledge base search',
       'GET /information-services/health': 'Health check',
     },
     note: 'This mock server simulates the information services API for development purposes',
@@ -338,6 +401,8 @@ app.listen(PORT, () => {
     '   GET  /information-services/context-sumo-report/files/{fileId}/download',
   );
   console.log('   GET  /information-services/context-sumo-report/files');
+  console.log('   POST /information-services/knowledge-bases/preQuery');
+  console.log('   POST /information-services/knowledge-bases/top-results');
   console.log('   GET  /information-services/health');
   console.log('');
   console.log(

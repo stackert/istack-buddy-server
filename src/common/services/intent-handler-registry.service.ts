@@ -1,6 +1,7 @@
 import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
 import { IntentRouterService } from './intent-router.service';
 import { SumoReportJobExecutor } from '../../intent-handlers/sumo-report-job-executor.service';
+import { KnowledgeBaseJobExecutor } from '../../intent-handlers/knowledge-base-job-executor.service';
 import { IntentHandler } from '../interfaces/intent-handler.interface';
 
 @Injectable()
@@ -10,11 +11,13 @@ export class IntentHandlerRegistryService implements OnModuleInit {
   constructor(
     private readonly intentRouter: IntentRouterService,
     private readonly sumoReportExecutor: SumoReportJobExecutor,
+    private readonly knowledgeBaseExecutor: KnowledgeBaseJobExecutor,
   ) {}
 
   onModuleInit() {
     this.logger.log('Registering intent handlers...');
     this.registerHandler(this.sumoReportExecutor);
+    this.registerHandler(this.knowledgeBaseExecutor);
     this.logger.log('Intent handler registration completed');
   }
 
