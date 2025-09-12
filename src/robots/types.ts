@@ -28,6 +28,7 @@ export type TStreamingCallbackMessageOnFullMessageReceived = {
 };
 
 export interface IStreamingCallbacks {
+  conversationId: string;
   onStreamChunkReceived: (chunk: string, contentType?: string) => void;
   onStreamStart: (
     message: IConversationMessage<TConversationMessageContentString>,

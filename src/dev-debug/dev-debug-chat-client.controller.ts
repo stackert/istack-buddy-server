@@ -256,20 +256,19 @@ export class DevDebugChatClientController {
         return { success: false, error: 'Intent data is required' };
       }
 
-      // COPY THE EXACT WORKING CODE FROM DevDebugService.runSumoReport()
+      // Validate required fields
+      if (!body.intent) {
+        this.logger.error('Missing intent field in request body');
+        return { success: false, error: 'Intent field is required' };
+      }
+
+      // Create intent result using the submitted JSON data
       const intentResult: IntentParsingResponse = {
-        robotName: 'SumoReportJobExecutor',
-        intent: 'generateSumoReport',
+        intent: body.intent,
         intentData: {
-          originalUserPrompt:
-            body.originalUserPrompt ||
-            'Direct intent execution for Sumo report',
-          subIntents: body.subIntents || ['searchSumoLogSubmissionErrors'],
-          subjects: body.subjects || {
-            formId: ['12345'],
-            startDate: ['2025-09-09'],
-            endDate: ['2025-09-10'],
-          },
+          originalUserPrompt: body.originalUserPrompt,
+          subIntents: body.subIntents,
+          subjects: body.subjects,
         },
       };
 
@@ -601,15 +600,20 @@ export class DevDebugChatClientController {
         <div class="right-panel">
             <div class="intent-panel">
                 <h3>🎯 Intent Input</h3>
+                <select id="intent-preset" onchange="loadIntentPreset()" style="margin-bottom: 10px; padding: 8px; width: 100%;">
+                    <option value="submissionCreated">Form Submission Tracking</option>
+                    <option value="submitAction">Submit Action Analysis</option>
+                    <option value="authProvider">Auth Provider Metrics</option>
+                </select>
                 <textarea id="intent-input" class="intent-input-box" placeholder="Raw Intent JSON...">{
   "intent": "generateSumoReport",
-  "subIntents": ["searchSumoLogSubmissionErrors"],
+  "subIntents": ["submissionCreatedForForm"],
   "subjects": {
     "formId": ["12345"],
     "startDate": ["2025-09-09"],
     "endDate": ["2025-09-10"]
   },
-  "originalUserPrompt": "Direct intent execution for Sumo report"
+  "originalUserPrompt": "Generate Sumo report for form submission tracking"
 }</textarea>
                 <button class="intent-btn" onclick="sendIntent()">Send Intent</button>
             </div>
@@ -868,7 +872,13 @@ export class DevDebugChatClientController {
             const input = document.getElementById('intent-input');
             const intentText = input.value.trim();
             
-            if (!intentText) return;
+            console.log('=== FRONTEND DEBUG ===');
+            console.log('Textarea content:', intentText);
+            
+            if (!intentText) {
+                alert('Intent textarea is empty!');
+                return;
+            }
             
             try {
                 input.disabled = true;
@@ -877,10 +887,14 @@ export class DevDebugChatClientController {
                 try {
                     // Parse as JSON intent object
                     intentData = JSON.parse(intentText);
+                    console.log('Parsed intent data:', intentData);
                 } catch (e) {
                     alert('Invalid JSON format. Please provide a valid intent JSON object.');
+                    console.error('JSON parse error:', e);
                     return;
                 }
+                
+                console.log('Sending to server:', JSON.stringify(intentData));
                 
                 // Send to the direct intent endpoint (bypasses message parsing)
                 const response = await fetch('/dev-debug/api/conversation/' + conversationId + '/send-intent', {
@@ -917,6 +931,48 @@ export class DevDebugChatClientController {
             }
         }
         
+        function loadIntentPreset() {
+            const preset = document.getElementById('intent-preset').value;
+            const textarea = document.getElementById('intent-input');
+            
+            const presets = {
+                submissionCreated: {
+                    intent: "generateSumoReport",
+                    subIntents: ["submissionCreatedForForm"],
+                    subjects: {
+                        formId: ["12345"],
+                        startDate: ["2025-09-09"],
+                        endDate: ["2025-09-10"]
+                    },
+                    originalUserPrompt: "Generate Sumo report for form submission tracking"
+                },
+                submitAction: {
+                    intent: "generateSumoReport", 
+                    subIntents: ["submitActionReport"],
+                    subjects: {
+                        formId: ["12345"],
+                        startDate: ["2025-09-09"],
+                        endDate: ["2025-09-10"]
+                    },
+                    originalUserPrompt: "Generate Sumo report for submit action analysis"
+                },
+                authProvider: {
+                    intent: "generateSumoReport",
+                    subIntents: ["authProviderMetrics"],
+                    subjects: {
+                        authProviderId: ["auth-provider-123"],
+                        startDate: ["2025-09-09"],
+                        endDate: ["2025-09-10"]
+                    },
+                    originalUserPrompt: "Generate Sumo report for auth provider metrics"
+                }
+            };
+            
+            if (presets[preset]) {
+                textarea.value = JSON.stringify(presets[preset], null, 2);
+            }
+        }
+
         function addDebugInfo(title, content, className = '') {
             // Add to main debug panel (top right)
             const debugContainer = document.getElementById('debug-info');

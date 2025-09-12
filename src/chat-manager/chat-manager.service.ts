@@ -59,6 +59,7 @@ export class ChatManagerService {
     let accumulatedContent = '';
 
     return {
+      conversationId,
       onStreamChunkReceived: async (
         chunk: string,
         contentType: string = 'text/plain',
@@ -256,8 +257,7 @@ export class ChatManagerService {
         { currentRobot: undefined }, // Could be enhanced with conversation context
       );
 
-      // Step 2: Determine robot name from intent parsing result
-      let robotName: string;
+      // Step 2: Extract intent data from parsing result
       let intentData: any = null;
 
       if ('error' in intentResult) {
@@ -265,13 +265,11 @@ export class ChatManagerService {
         this.logger.warn(
           `Intent parsing failed: ${intentResult.error}. Falling back to AnthropicMarv`,
         );
-        robotName = 'AnthropicMarv';
       } else {
-        // Intent parsing succeeded, use the suggested robot
-        robotName = (intentResult as IntentParsingResponse).robotName;
+        // Intent parsing succeeded, extract intent data
         intentData = (intentResult as IntentParsingResponse).intentData;
         this.logger.log(
-          `Intent parsing selected robot: ${robotName} with intent: ${(intentResult as IntentParsingResponse).intent}`,
+          `Intent parsing succeeded with intent: ${(intentResult as IntentParsingResponse).intent}`,
         );
       }
 

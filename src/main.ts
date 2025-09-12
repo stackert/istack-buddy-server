@@ -14,6 +14,9 @@ export async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const logger = app.get(CustomLoggerService);
 
+  // Global JSON body parsing
+  app.use(json());
+
   // Configure raw body parsing for Slack webhooks
   app.use(
     '/istack-buddy/slack-integration/slack/events',

@@ -16,13 +16,23 @@ const files = new Map();
 let jobIdCounter = 1;
 let fileIdCounter = 1;
 
-// Sample results data - use the realistic fake response
-const fakeResponsePath = path.join(
-  __dirname,
-  'fake-responses',
-  'fake-sumo-submissin-report.json',
-);
-const sampleResults = JSON.parse(fs.readFileSync(fakeResponsePath, 'utf8'));
+// Helper function to load sample results based on query name
+function getSampleResults(queryName) {
+  let fileName;
+
+  switch (queryName) {
+    case 'submitActionReport':
+      fileName = 'fake-sumo-submit-action-report-form-5894350.json';
+      break;
+    case 'submissionCreatedForForm':
+    default:
+      fileName = 'fake-sumo-submissin-report-large.json';
+      break;
+  }
+
+  const fakeResponsePath = path.join(__dirname, 'fake-responses', fileName);
+  return JSON.parse(fs.readFileSync(fakeResponsePath, 'utf8'));
+}
 
 // Helper function to generate job IDs
 function generateJobId() {
@@ -78,6 +88,9 @@ app.post(
           job.progress = 100;
           job.updatedAt = new Date().toISOString();
 
+          // Get the appropriate sample results based on query name
+          const sampleResults = getSampleResults(job.queryName);
+
           // Create a file for the results
           const fileId = generateFileId();
           const file = {
@@ -88,6 +101,7 @@ app.post(
             createdAt: new Date().toISOString(),
             jobId: jobId,
             downloadUrl: `http://localhost:${PORT}/information-services/context-sumo-report/files/${fileId}/download`,
+            sampleResults: sampleResults, // Store the results with the file
           };
 
           files.set(fileId, file);
@@ -166,10 +180,14 @@ app.get(
 
     console.log(`📋 Results requested for job ${jobId}`);
 
+    // Get the file data to return results
+    const file = files.get(job.fileId);
+    const results = file ? file.sampleResults : null;
+
     res.json({
       jobId: job.jobId,
       status: job.status,
-      results: sampleResults,
+      results: results,
       fileId: job.fileId,
     });
   },
@@ -227,7 +245,7 @@ app.get(
       'Content-Disposition',
       `attachment; filename="${file.fileName}"`,
     );
-    res.json(sampleResults);
+    res.json(file.sampleResults);
   },
 );
 

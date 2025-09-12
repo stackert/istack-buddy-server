@@ -237,6 +237,7 @@ export class DevDebugService {
 
       // NoOp callbacks
       const noOpCallbacks = {
+        conversationId: 'dev-debug-test-conversation',
         onStreamChunkReceived: () => {},
         onStreamStart: () => {},
         onStreamFinished: () => {},

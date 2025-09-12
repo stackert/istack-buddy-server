@@ -1,5 +1,5 @@
 export interface IntentParsingResponse {
-  robotName: string;
+  robotName?: string; // Optional - only used for legacy robot fallback
   intent: string;
   intentData: IntentData;
 }

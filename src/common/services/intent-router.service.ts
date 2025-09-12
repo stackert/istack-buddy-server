@@ -2,14 +2,13 @@ import { Injectable, Logger } from '@nestjs/common';
 import { IntentHandler } from '../interfaces/intent-handler.interface';
 import { IntentParsingResponse } from '../types/intent-parsing.types';
 import { IStreamingCallbacks } from '../../robots/types';
-import { RobotService } from '../../robots/robot.service';
 
 @Injectable()
 export class IntentRouterService {
   private readonly logger = new Logger(IntentRouterService.name);
   private readonly intentHandlers = new Map<string, IntentHandler>();
 
-  constructor(private readonly robotService: RobotService) {}
+  constructor() {}
 
   /**
    * Register an intent handler for specific intents
@@ -20,13 +19,13 @@ export class IntentRouterService {
   }
 
   /**
-   * Route intent to appropriate handler or robot
+   * Route intent to appropriate intent handler
    */
   async routeIntent(
     intentResult: IntentParsingResponse,
     callbacks: IStreamingCallbacks,
   ): Promise<void> {
-    const { intent, intentData, robotName } = intentResult;
+    const { intent, intentData } = intentResult;
 
     this.logger.log(`=== INTENT ROUTER: Processing intent '${intent}' ===`);
     this.logger.log(
@@ -43,38 +42,10 @@ export class IntentRouterService {
       );
       await handler.executeIntent(intentData, callbacks);
     } else {
-      this.logger.log(
-        `❌ NO INTENT HANDLER: Routing intent '${intent}' to robot: ${robotName}`,
+      this.logger.error(
+        `❌ NO INTENT HANDLER: No handler registered for intent '${intent}'`,
       );
-      // Fallback to robot (existing behavior)
-      const robot = this.robotService.getRobotByName(robotName);
-      if (!robot) {
-        throw new Error(`Robot ${robotName} not found`);
-      }
-
-      if (
-        'executeIntent' in robot &&
-        typeof robot.executeIntent === 'function'
-      ) {
-        await robot.executeIntent(intentData, callbacks);
-      } else {
-        // Fallback to existing acceptMessageStreamResponse
-        const message = {
-          id: 'intent-execution-' + Date.now(),
-          content: {
-            type: 'text/plain',
-            payload: intentData.originalUserPrompt,
-          },
-          conversationId: 'intent-conversation',
-          authorUserId: null,
-          fromRole: 'customer' as any,
-          toRole: 'robot' as any,
-          messageType: 'text' as any,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        };
-        await (robot as any).acceptMessageStreamResponse(message, callbacks);
-      }
+      throw new Error(`No intent handler registered for intent: ${intent}`);
     }
   }
 

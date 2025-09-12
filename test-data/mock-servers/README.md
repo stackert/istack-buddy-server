@@ -108,7 +108,7 @@ Returns the sample results JSON data.
 - **Automatic Job Progress**: Jobs automatically progress from `pending` → `running` → `completed` over ~4.5 seconds
 - **File Creation**: When a job completes, a file is automatically created with sample data
 - **In-Memory Storage**: All data is stored in memory and resets when the server restarts
-- **Realistic Data**: All completed jobs return realistic fake data from `fake-responses/fake-sumo-submissin-report.json`
+- **Realistic Data**: All completed jobs return realistic fake data from `fake-responses/fake-sumo-submissin-report-large.json`
 
 ## Additional Endpoints
 
@@ -120,7 +120,7 @@ Returns the sample results JSON data.
 ## Configuration
 
 - **Port**: Set `PORT` environment variable (default: 3001)
-- **Sample Data**: Edit `fake-responses/fake-sumo-submissin-report.json` to customize the returned data
+- **Sample Data**: Edit `fake-responses/fake-sumo-submissin-report-large.json` to customize the returned data
 
 ## Development Notes
 

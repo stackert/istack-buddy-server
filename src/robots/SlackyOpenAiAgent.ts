@@ -707,6 +707,7 @@ Need help? Just ask!`;
       await this.acceptMessageStreamResponse(
         message,
         {
+          conversationId: 'slacky-openai-internal',
           onStreamChunkReceived: (chunk: string) => {
             if (chunk !== null) {
               accumulatedContent += chunk;
@@ -789,6 +790,7 @@ Need help? Just ask!`;
       await this.acceptMessageStreamResponse(
         message,
         {
+          conversationId: 'slacky-openai-multipart',
           onStreamChunkReceived: (chunk: string) => {
             accumulatedContent += chunk;
 

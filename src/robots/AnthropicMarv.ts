@@ -316,6 +316,7 @@ Your goal is to help users efficiently manage their Formstack forms through thes
       await this.acceptMessageStreamResponse(
         message,
         {
+          conversationId: 'anthropic-marv-internal',
           onStreamChunkReceived: (chunk: string) => {
             accumulatedContent += chunk;
           },
@@ -382,6 +383,7 @@ Your goal is to help users efficiently manage their Formstack forms through thes
       await this.acceptMessageStreamResponse(
         message,
         {
+          conversationId: 'anthropic-marv-multipart',
           onStreamChunkReceived: (chunk: string) => {
             accumulatedContent += chunk;
 

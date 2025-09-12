@@ -10,7 +10,7 @@ type TConversationMessageContentMediaTypes =
   | 'content/dynamic-account'
   | 'content/dynamic-form'
   | 'content/dynamic-auth-provider'
-  | 'content/document'
+  | 'content/document' // when toRole = 'robot' visible to robot only, when toRole = 'user' visible to user AND robot, content always visible to robot
   | 'sumo-search/report'
   | 'sumo-syntax/query'
   | 'sumo-syntax/validation';
@@ -25,6 +25,11 @@ type TConversationMessageContentTypes<
 
 type TConversationMessageContentString = TConversationMessageContentTypes<
   'text/plain',
+  string
+>;
+
+type TConversationMessageRobotContent = TConversationMessageContentTypes<
+  'content/document',
   string
 >;
 
@@ -118,6 +123,7 @@ type TConversationMessageContentSumoSyntaxValidation =
 // Union type for all possible content types
 type TConversationMessageContent =
   | TConversationMessageContentString
+  | TConversationMessageRobotContent
   | TConversationMessageContentImageBuffer
   | TConversationMessageContentFileBuffer
   | TConversationMessageContentDynamic
