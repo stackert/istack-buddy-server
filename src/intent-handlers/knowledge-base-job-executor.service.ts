@@ -2,24 +2,49 @@ import { Injectable, Logger } from '@nestjs/common';
 import { IntentHandler } from '../common/interfaces/intent-handler.interface';
 import { RobotIntent } from '../common/types/intent-parsing.types';
 import { IStreamingCallbacks } from '../robots/types';
-import {
-  FileManagerService,
-  STORAGE_CLASS,
-} from '../file-manager/file-manager.service';
 import { ChatManagerService } from '../chat-manager/chat-manager.service';
 import { UserRole } from '../chat-manager/dto/create-message.dto';
-import * as fs from 'fs';
-import * as path from 'path';
+import { OpenAI } from 'openai';
 
 @Injectable()
 export class KnowledgeBaseJobExecutor implements IntentHandler {
   private readonly logger = new Logger(KnowledgeBaseJobExecutor.name);
-  private readonly fileStorageBasePath = 'file-storage-server/session-public';
+  constructor(private readonly chatManagerService: ChatManagerService) {}
 
-  constructor(
-    private readonly fileManagerService: FileManagerService,
-    private readonly chatManagerService: ChatManagerService,
-  ) {}
+  private async devDebugCallOpenAI(prompt: string): Promise<string> {
+    try {
+      const apiKey = process.env.OPENAI_API_KEY;
+
+      if (!apiKey || apiKey === '_OPEN_AI_KEY_') {
+        throw new Error(
+          'OPENAI_API_KEY environment variable is required but not set',
+        );
+      }
+
+      const client = new OpenAI({
+        apiKey: apiKey,
+      });
+
+      const completion = await client.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+        max_tokens: 1500,
+        temperature: 0.7,
+      });
+
+      return (
+        completion.choices[0]?.message?.content || 'No response from OpenAI'
+      );
+    } catch (error) {
+      this.logger.error('Error calling OpenAI API:', error);
+      return `Error calling OpenAI: ${error.message}`;
+    }
+  }
 
   getSupportedIntents(): RobotIntent[] {
     return [
@@ -51,30 +76,33 @@ export class KnowledgeBaseJobExecutor implements IntentHandler {
     }
 
     try {
-      // 1. Parse search parameters from intent data
-      const searchParams = this.parseSearchParameters(intentData);
+      // 1. Fetch preQuery from mock server
+      const preQuery = await this.fetchPreQuery(intentData);
 
-      // 2. Execute knowledge base search
-      const searchResults = await this.executeKnowledgeBaseSearch(searchParams);
+      // 2. Fetch search results from mock server using preQuery
+      const searchResults = await this.fetchSearchResults(preQuery);
 
-      // 3. Move results to session-public directory
-      const fileLinks = await this.moveResultsToSessionPublic(
+      // 3. Format search results into robot prompt
+      const robotPrompt = this.formatSearchResultsIntoRobotPrompt(
         searchResults,
-        conversationId,
-        searchParams,
+        preQuery,
+      );
+      this.logger.log('Robot prompt prepared (noOp for now):', robotPrompt);
+
+      // 4. Send prompt to OpenAI for dev debug
+      this.logger.log(
+        'Robot prompt prepared, calling OpenAI:',
+        robotPrompt.substring(0, 100) + '...',
       );
 
-      // 4. Send file links message to conversation
-      await this.sendFileLinksMessage(
-        fileLinks,
+      const openAIResponse = await this.devDebugCallOpenAI(robotPrompt);
+      this.logger.log('OpenAI Response:', openAIResponse);
+
+      // For now: Send search results directly to conversation
+      await this.sendSearchResultsToConversation(
+        searchResults,
         conversationId,
         intentData.originalUserPrompt,
-      );
-
-      // 5. Process search results and send analysis
-      await this.processSearchResultsAndSendAnalysis(
-        searchResults,
-        conversationId,
       );
     } catch (error) {
       this.logger.error(`Knowledge base search failed: ${error.message}`);
@@ -82,20 +110,38 @@ export class KnowledgeBaseJobExecutor implements IntentHandler {
     }
   }
 
-  private parseSearchParameters(intentData: any): any {
-    const subIntents = intentData.subIntents || [];
+  private async fetchPreQuery(intentData: any): Promise<any> {
     const subjects = intentData.subjects || {};
+    const baseUrl = process.env.ISTACK_INFO_SERVICE_BASE_URL;
+    const apiKey = process.env.ISTACK_INFO_SERVICE_API_KEY;
 
-    // Map subIntents to search types
-    const searchType = this.mapSubIntentToSearchType(subIntents[0]);
-
-    return {
-      searchType,
+    const preQueryPayload = {
       query: subjects.query?.[0] || intentData.originalUserPrompt || 'form',
       minConfidence: subjects.minConfidence?.[0] || 0.7,
       pageSize: subjects.pageSize?.[0] || 10,
-      originalText: intentData.originalUserPrompt,
     };
+
+    this.logger.log(`Fetching preQuery: ${JSON.stringify(preQueryPayload)}`);
+
+    const response = await fetch(
+      `${baseUrl}/information-services/knowledge-bases/preQuery`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify(preQueryPayload),
+      },
+    );
+
+    if (!response.ok) {
+      throw new Error(
+        `PreQuery failed: ${response.status} ${response.statusText}`,
+      );
+    }
+
+    return await response.json();
   }
 
   private mapSubIntentToSearchType(subIntent: string): string {
@@ -119,67 +165,13 @@ export class KnowledgeBaseJobExecutor implements IntentHandler {
     return searchType;
   }
 
-  private async executeKnowledgeBaseSearch(searchParams: any): Promise<any> {
-    this.logger.log(
-      `Executing knowledge base search: ${searchParams.searchType} for query: ${searchParams.query}`,
-    );
-
-    try {
-      // Step 1: Submit preQuery for analysis
-      const preQueryResponse = await this.submitPreQuery(searchParams);
-
-      // Step 2: Submit top-results search using preQuery response
-      const searchResults = await this.submitTopResultsSearch(preQueryResponse);
-
-      return searchResults;
-    } catch (error) {
-      this.logger.error(`Knowledge base search failed: ${error.message}`);
-      throw error;
-    }
-  }
-
-  private async submitPreQuery(searchParams: any): Promise<any> {
+  private async fetchSearchResults(preQuery: any): Promise<any> {
     const baseUrl =
       process.env.ISTACK_INFO_SERVICE_BASE_URL || 'http://localhost:3001';
     const apiKey =
       process.env.ISTACK_INFO_SERVICE_API_KEY || '_THE_FAKE_INFO_SERVICE_KEY_';
 
-    const preQueryPayload = {
-      query: searchParams.query,
-      minConfidence: searchParams.minConfidence,
-      pageSize: searchParams.pageSize,
-    };
-
-    this.logger.log(`Submitting preQuery: ${JSON.stringify(preQueryPayload)}`);
-
-    const response = await fetch(
-      `${baseUrl}/information-services/knowledge-bases/preQuery`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify(preQueryPayload),
-      },
-    );
-
-    if (!response.ok) {
-      throw new Error(
-        `PreQuery failed: ${response.status} ${response.statusText}`,
-      );
-    }
-
-    return await response.json();
-  }
-
-  private async submitTopResultsSearch(preQueryResponse: any): Promise<any> {
-    const baseUrl =
-      process.env.ISTACK_INFO_SERVICE_BASE_URL || 'http://localhost:3001';
-    const apiKey =
-      process.env.ISTACK_INFO_SERVICE_API_KEY || '_THE_FAKE_INFO_SERVICE_KEY_';
-
-    this.logger.log(`Submitting top-results search with preQuery data`);
+    this.logger.log(`Fetching search results using preQuery data`);
 
     const response = await fetch(
       `${baseUrl}/information-services/knowledge-bases/top-results`,
@@ -189,90 +181,109 @@ export class KnowledgeBaseJobExecutor implements IntentHandler {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${apiKey}`,
         },
-        body: JSON.stringify(preQueryResponse),
+        body: JSON.stringify(preQuery),
       },
     );
 
     if (!response.ok) {
       throw new Error(
-        `Top-results search failed: ${response.status} ${response.statusText}`,
+        `Search results failed: ${response.status} ${response.statusText}`,
       );
     }
 
     return await response.json();
   }
 
-  private async moveResultsToSessionPublic(
+  private formatSearchResultsIntoRobotPrompt(
     searchResults: any,
-    conversationId: string,
-    searchParams: any,
-  ): Promise<string[]> {
-    const sessionDir = path.join(this.fileStorageBasePath, conversationId);
+    preQuery: any,
+  ): string {
+    const searchTypesExecuted = searchResults.searchTypesExecuted || [];
 
-    // Create directory if it doesn't exist
-    if (!fs.existsSync(sessionDir)) {
-      fs.mkdirSync(sessionDir, { recursive: true });
-      this.logger.log(`Created session directory: ${sessionDir}`);
+    let prompt = `**ROBOT_INSTRUCTION_START**
+The end user has has made an inquiry. We have search relevant knowledge bases and found best possible results. We used several search algorithms which will likely find the same results or different results (hence there may be duplicate results).
+
+Please review the users original query the normalized user query and search results and respond the best you can to the end-user inquiry. For any search result you use in your response please cite the resource (should be included with each search result).
+
+If you find none of the search results are useful - it is ok to ignore. If you are not able to use any of the search results you should say that.
+
+**IMPORTANT** End the response with a positive affirmation 'We appreciate you', 'team work makes dream work', Think of something original. Also, you should ask them to use the istackbuddy /feedback feature
+
+Example Response:
+
+Based on the knowledge base search and a few things I knew already, I think ...
+
+You're the best.
+
+If you benefitted (or did not) from iStackBuddy's search, please responds with
+@iStackBuddy /feedback - 'this was pretty good but..' or 'This was the most awesome ever!'
+
+**ROBOT_INSTRUCTION_END**
+
+___SEARCH_RESULTS_START__
+
+`;
+
+    // Extract key information from each search type
+    for (const searchType of searchTypesExecuted) {
+      const results = searchResults[searchType];
+      if (results) {
+        Object.keys(results).forEach((knowledgeBase) => {
+          const kbResults = results[knowledgeBase];
+          if (Array.isArray(kbResults) && kbResults.length > 0) {
+            // Process each result (but limit to first few for prompt size)
+            kbResults.slice(0, 2).forEach((result, index) => {
+              prompt += `__${searchType}.${knowledgeBase}[${index}]_START__
+
+conversationTextNormalized
+${result.conversationTextNormalized || result.contextDocumentTextNormalized || 'No description available'}
+
+aiTechnicalObservation
+${result.aiTechnicalObservation || 'No technical observation available'}
+
+channelId: ${result.channelId || 'Unknown'}
+confidence: ${result.confidence || 'Unknown'}
+citations: {
+  text: ${result.citations?.text || 'No citation'}
+  link: ${result.citations?.link || 'No link'}
+}
+
+__${searchType}.${knowledgeBase}[${index}]_END__
+
+`;
+            });
+          }
+        });
+      }
     }
 
-    // Generate filename: {conversation-id}-{searchType}-{timestamp}.json
-    const timestamp = this.formatDateForFilename(new Date().toISOString());
-    const fileName = `${conversationId}-${searchParams.searchType}-${timestamp}.json`;
-    const filePath = path.join(sessionDir, fileName);
+    prompt += `___SEARCH_RESULTS_END__
 
-    // Write search results to file
-    fs.writeFileSync(filePath, JSON.stringify(searchResults, null, 2));
+__USER_ORIGINAL_QUERY_START__
+${preQuery.originalText || 'No original query available'}
+__USER_ORIGINAL_QUERY_END__
 
-    // Create file link
-    const fileLink = `file:///file-storage/session-public/${conversationId}/${fileName}`;
+__USER_NORMALIZED_QUERY_START__
+${preQuery.normalizedText || 'No normalized query available'}
+__USER_NORMALIZED_QUERY_END__
 
-    this.logger.log(`Saved knowledge base search results to ${filePath}`);
+`;
 
-    return [fileLink];
+    return prompt;
   }
 
-  private formatDateForFilename(dateString: string): string {
-    const date = new Date(dateString);
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    const seconds = String(date.getSeconds()).padStart(2, '0');
-
-    return `${year}${month}${day}${hours}${minutes}${seconds}`;
-  }
-
-  private async sendFileLinksMessage(
-    fileLinks: string[],
+  private async sendSearchResultsToConversation(
+    searchResults: any,
     conversationId: string,
     originalPrompt: string,
   ): Promise<void> {
-    const message = `Knowledge base search completed for: "${originalPrompt}"\n\nResults saved to:\n${fileLinks.join('\n')}`;
-
-    await this.chatManagerService.addMessage({
-      content: {
-        type: 'text/plain',
-        payload: message,
-      },
-      conversationId,
-      fromUserId: null,
-      fromRole: UserRole.SYSTEM,
-      toRole: UserRole.USER,
-    });
-
-    this.logger.log(
-      `Sent file links message to conversation ${conversationId}`,
+    // Generate analysis of search results
+    const analysisText = this.generateSearchAnalysis(
+      searchResults,
+      originalPrompt,
     );
-  }
 
-  private async processSearchResultsAndSendAnalysis(
-    searchResults: any,
-    conversationId: string,
-  ): Promise<void> {
-    // Simple analysis for now - will be enhanced later
-    const analysisText = this.generateSearchAnalysis(searchResults);
-
+    // Send results directly to conversation
     await this.chatManagerService.addMessage({
       content: {
         type: 'content/document',
@@ -284,14 +295,19 @@ export class KnowledgeBaseJobExecutor implements IntentHandler {
       toRole: UserRole.USER,
     });
 
-    this.logger.log(`Sent search analysis to conversation ${conversationId}`);
+    this.logger.log(
+      `Sent knowledge base search results to conversation ${conversationId}`,
+    );
   }
 
-  private generateSearchAnalysis(searchResults: any): string {
+  private generateSearchAnalysis(
+    searchResults: any,
+    originalPrompt: string,
+  ): string {
     const searchTypesExecuted = searchResults.searchTypesExecuted || [];
     const totalSearchTypes = searchResults.totalSearchTypes || 0;
 
-    let analysis = `Knowledge Base Search Analysis:
+    let analysis = `Knowledge Base Search Results for: "${originalPrompt}"
 
 Search Types Executed: ${totalSearchTypes}
 Types: ${searchTypesExecuted.join(', ')}

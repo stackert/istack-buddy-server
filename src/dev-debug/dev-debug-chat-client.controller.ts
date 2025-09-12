@@ -975,7 +975,7 @@ export class DevDebugChatClientController {
                         minConfidence: ["0.7"],
                         pageSize: ["10"]
                     },
-                    originalUserPrompt: "Search knowledge base for information about forms"
+                    originalUserPrompt: "Customer is raised concern that they are unable restored to previously deleted fields.  What can we do? What do we check? Is there anything we can do on our end? What to tell the customer?"
                 }
             };
             

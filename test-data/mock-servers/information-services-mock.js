@@ -270,18 +270,47 @@ app.get('/information-services/context-sumo-report/files', (req, res) => {
 app.post('/information-services/knowledge-bases/preQuery', (req, res) => {
   console.log('📥 Received knowledge base preQuery:', req.body);
 
-  // Return the same data we pass in, simulating preQuery processing
+  // Load and return real preQuery response from live server
+  try {
+    const preQueryDataPath = path.join(
+      __dirname,
+      'fake-responses/fake-preQuery-form.json',
+    );
+
+    if (fs.existsSync(preQueryDataPath)) {
+      const realPreQueryData = JSON.parse(
+        fs.readFileSync(preQueryDataPath, 'utf8'),
+      );
+      console.log('📋 Returning real preQuery data with 1536 embeddings');
+
+      // Override the query with the submitted query while keeping real embeddings
+      realPreQueryData.query = req.body.query || realPreQueryData.query;
+      realPreQueryData.minConfidence =
+        req.body.minConfidence || realPreQueryData.minConfidence;
+      realPreQueryData.pageSize =
+        req.body.pageSize || realPreQueryData.pageSize;
+
+      res.json(realPreQueryData);
+      return;
+    }
+  } catch (error) {
+    console.error('❌ Error loading real preQuery data:', error.message);
+  }
+
+  // Fallback if real data not available
+  console.log('⚠️ Real preQuery data not found, using simplified response');
   const preQueryResponse = {
     query: req.body.query || 'form',
     minConfidence: req.body.minConfidence || 0.7,
     pageSize: req.body.pageSize || 10,
-    // Add typical preQuery fields
+    originalText: req.body.query || 'form',
     keywords: ['form', 'configuration', 'functionality'],
     nouns: ['customer', 'platform', 'form', 'setup'],
     properNouns: ['Formstack'],
     domains: ['BACKEND:SUBMIT-ACTIONS'],
     userPromptText: req.body.query || 'form',
-    originalText: req.body.query || 'form',
+    applicableKnowledgeBase: ['CONTEXT-DOCUMENTS', 'SLACK'],
+    subjects: null,
   };
 
   res.json(preQueryResponse);

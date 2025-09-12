@@ -1,0 +1,295 @@
+{
+  "searchSemantic": {
+    "SLACK": [
+      {
+        "conversation_id": "95b192cf-1e12-478b-98b6-9971213477a1",
+        "conversationText": "A user is experiencing issues with form submission on the Formstack platform. They encounter an error when clicking the submit button. Although the form validation appears to be functioning correctly, the submit action fails to execute. This situation suggests that there may be a problem with the configuration of the submit actions or potential connectivity issues that need to be addressed to ensure successful form submissions.",
+        "conversationTextNormalized": "A user is experiencing issues with form submission on the Formstack platform. They encounter an error when clicking the submit button. Although the form validation appears to be functioning correctly, the submit action fails to execute. This situation suggests that there may be a problem with the configuration of the submit actions or potential connectivity issues that need to be addressed to ensure successful form submissions.",
+        "aiTechnicalObservation": null,
+        "confidence": "0.665",
+        "channelId": "SLACK:cx-formstack",
+        "keywords": [
+          "form",
+          "submission",
+          "submit action",
+          "error",
+          "validation"
+        ],
+        "nouns": [],
+        "properNouns": ["Formstack"],
+        "domains": ["BACKEND:SUBMIT-ACTIONS"],
+        "subjects": [],
+        "citations": {
+          "text": "conversation: 95b192cf-1e12-478b-98b6-9971213477a1",
+          "link": "https://test.slack.com/test-message"
+        }
+      }
+    ],
+    "CONTEXT-DOCUMENTS": []
+  },
+  "searchKeywords": {
+    "SLACK": [
+      {
+        "conversation_id": "89721987-850a-4f14-bcfa-8740e1e0286e",
+        "conversationText": "USLACKBOT: This message was deleted.\nUT5GJ52TS: <@U4RDSKAVA> create issue\nUT5GJ52TS: <@U092XM3T740> What do you think is going on?",
+        "conversationTextNormalized": "A customer is reporting an issue with the Formstack platform where the configured Submit Actions (Integrations | Webhooks) are not executing as expected after form submissions. The customer has indicated that while the form is successfully receiving submissions, the associated Webhooks are failing to trigger. This situation may indicate a potential connectivity or configuration issue that requires further investigation to ensure that the integrations are functioning correctly.",
+        "aiTechnicalObservation": "The issue reported by the customer regarding the failure of Submit Actions to execute could stem from several factors within the Formstack platform. Submit Actions, which include Webhooks and other integrations, are designed to run after a submission is received. They can be categorized as either blocking or queued actions. Blocking actions run inline during the submission process and can impact the user experience if they fail, potentially aborting the submission. On the other hand, queued actions run asynchronously after the submission is processed. If the Submit Actions are not executing, it is crucial to check the logs for any errors related to the specific Submit Action type. The initial run of Submit Actions uses request-time values, while a re-run would utilize stored values, which may differ in formatting. If the Submit Actions are failing during the initial run, it could be due to misconfigurations or connectivity issues with the external systems they are trying to reach. It is also important to verify that the form settings allow for submission storage and that there are no limits being exceeded that would prevent the actions from executing. A thorough review of the Sumo Logic logs for the specific form and submission ID will provide insights into the execution flow and any errors encountered during the process.",
+        "confidence": "0.750",
+        "channelId": "SLACK:cx-formstack",
+        "keywords": [
+          "submit actions",
+          "webhooks",
+          "integrations",
+          "execution",
+          "configuration",
+          "connectivity"
+        ],
+        "nouns": ["customer", "issue", "platform", "form", "submission"],
+        "properNouns": ["Formstack"],
+        "domains": ["BACKEND:SUBMIT-ACTIONS"],
+        "subjects": [],
+        "citations": {
+          "text": "conversation: 89721987-850a-4f14-bcfa-8740e1e0286e",
+          "link": "https://formstack.slack.com/archives/C3LQ7KNFN/p1752844714951129?thread_ts=1752844714.951129&cid=C3LQ7KNFN"
+        }
+      }
+    ],
+    "CONTEXT-DOCUMENTS": [
+      {
+        "context_document_id": "208da9ad-d1f0-4e2f-917a-5a2b6ec0300b",
+        "contextDocumentText": "## Forms Core BE — Submit Actions (Integrations/Webhooks)\n\n- Doc ID: 31200\n- Area: backend/core/forms\n- Scope: post-submit processing configured per form\n\n### What they are\n- Submit Actions (aka integrations/webhooks) run after a submission is received. They are distinct from plugins (which influence form behavior/collection).\n- Actions can be blocking (run inline) or queued (asynchronous). Some actions handle uploaded files explicitly.\n\n### Where they run in the flow\n- Initial run uses request-time values (off the wire) during submit.\n- Queued actions run asynchronously after initial processing.\n- Re-run uses stored values (at-rest) and may differ in formatting from the initial run.\n\n### Types (examples)\n- Webhooks/HTTP callbacks\n- CRM/marketing integrations\n- File upload processors (run before other actions when files are present)\n- Payment processors (card/token-based)\n\n### Blocking vs queued\n- Blocking: executed inline during submit; can impact user-facing result (redirects, messages). Failures can abort submit or trigger cleanup paths.\n- Queued: scheduled for background execution; downstream systems receive data after submit completion.\n- File-related actions: upload actions run first so subsequent actions can reference file URLs.\n\n### Conditional logic\n- Each action may have run conditions evaluated against submitted values. If conditions do not match, the action is skipped without error.\n\n### Re-run behavior\n- Data source: re-run uses `submissionData` (at-rest). If field configuration changed since initial submit, values may serialize differently for the integration.\n- Files: re-run actions that depend on transient upload context may lack temporary file metadata; ensure actions are resilient to re-run without transient state.\n- Payments: see payment-specific notes below; re-running may not re-charge and often performs idempotent checks.\n\n### Payments\n- Payment submit actions can be treated as blocking to produce redirects/confirmations. On error, payment status and messaging are surfaced; cleanup avoids double-charging.\n\n### Error handling and deletion impacts\n- If a blocking action (or earlier step) raises an exception, the system may delete the just-created submission as cleanup before bubbling the error (see ingress doc). Some action-specific exceptions are exempt from this deletion path.\n- Queued actions log failures and may retry depending on job configuration.\n\n### Logging and observability (facts)\n- Action run (bulk re-run logging and typical worker runs): message \"SubmitAction {type} run for {submissionId}\" with context including `submitActionId`, `formId`, `accountId`, `submissionId`, `type`.\n- Submit-stage errors: message \"Exception thrown while trying to run integrations\" with context `formId`, `formVersion`, `submissionId`, `exceptionMessage`, `error`.\n\n### Sumo queries (runnable)\n- Actions executed by form in time window\n```\n_sourceCategory=formstack/prod/*\n \"SubmitAction {type} run for {submissionId}\"\n| json auto\n| where context.formId = \"_FORM_ID_\"\n| count by context.type\n```\n\n- Action runs for a specific submission\n```\n_sourceCategory=formstack/prod/*\n \"SubmitAction {type} run for {submissionId}\"\n| json auto\n| where context.submissionId = \"_SUBMISSION_ID_\"\n```\n\n- Action run by submitActionId\n```\n_sourceCategory=formstack/prod/*\n \"SubmitAction {type} run for {submissionId}\"\n| json auto\n| where context.submitActionId = \"_SUBMIT_ACTION_ID_\"\n```\n\n- Blocking-stage failures (submit stage)\n```\n_sourceCategory=formstack/prod/*\n \"Exception thrown while trying to run integrations\"\n| json auto\n| where context.formId = \"_FORM_ID_\" and context.submissionId = \"_SUBMISSION_ID_\"\n```\n\nAdditional examples (preferred formatting)\n- Find action runs for a form (count by type)\n```\n_sourceCategory=formstack/prod/*\n \"SubmitAction {type} run for {submissionId}\"\n| json auto\n| where context.formId = \"_FORM_ID_\"\n| count by context.type\n```\n\n- Find action runs by submitActionId\n```\n_sourceCategory=formstack/prod/*\n \"SubmitAction {type} run for {submissionId}\"\n| json auto\n| where context.submitActionId = \"_SUBMIT_ACTION_ID_\"\n```\n\n- Find action runs that reference a specific fieldId (Webhook debug logs)\n```\n_sourceCategory=formstack/prod/*\n \"Processing field for data preparation\"\n| json auto\n| where context.submitActionId = \"_SUBMIT_ACTION_ID_\" and context.fieldId = \"_FIELD_ID_\"\n```\n\nNote: using `_sourceCategory=formstack/prod/*` captures both inline and worker logs; narrower scopes like `_sourceCategory=\"formstack/prod/worker/*\"` may show only a subset.\n\n### Operational notes\n- Storage setting: when forms are configured not to store submissions, actions can still run with `submissionId=0`; ensure downstream systems do not require a stored id.\n- Field changes: integration mappings relying on option labels/values should consider drift (value vs label vs value | label) between initial run and re-run.\n- File availability: ensure actions re-fetch files by persisted URLs rather than relying on ephemeral upload handles.\n\n\n\n### Submit action types grouped by execution behavior (from code)\n- Blocking (cannot queue)\n  - default\n  - message\n  - display_image\n  - redirect\n  - paypal\n  - paypalpro\n  - payflowpro\n  - authorizenet\n  - firstdata\n  - chargify\n  - stripe\n  - beanstream\n  - testpayment\n- Non-blocking (can queue)\n  - webhook\n  - salesforce\n  - emailcenterpro\n  - highrise\n  - batchbook\n  - hubspot\n  - pardot\n  - helpspot\n  - zendesk\n  - desk\n  - slack\n  - twitter\n  - aweber\n  - campaignmonitor\n  - constantcontact\n  - emma\n  - exacttarget\n  - icontact\n  - mailchimp\n  - pardothandler\n  - freshbooks\n  - googlecalendar\n  - googlespreadsheets\n  - googlecontacts\n  - smartsheet\n  - webmerge\n- Conditionally-blocking (upload-focused; run first; queuing depends on implementation)\n  - boxnet\n  - dropbox\n  - googledrive\n  - amazons3customer\n  - onedrive\n",
+        "contextDocumentTextNormalized": "A customer is reporting an issue with the Submit Actions (Integrations | Webhooks) on the Formstack platform. Specifically, they are experiencing failures in the execution of configured Webhooks after form submissions. The form is successfully receiving submissions, but the expected Webhook triggers are not occurring. This situation may indicate a potential configuration or connectivity issue that requires further investigation to ensure that the integrations are functioning as intended.",
+        "aiTechnicalObservation": null,
+        "title": "31200 forms core be submit actions",
+        "filePath": "core-forms-be/31200-forms-core-be-submit-actions.md",
+        "confidence": "0.750",
+        "channelId": "CONTEXT-DOCUMENTS:CORE-FORMS-BE",
+        "keywords": [
+          "submit actions",
+          "webhooks",
+          "integrations",
+          "configuration",
+          "connectivity",
+          "troubleshooting"
+        ],
+        "nouns": [
+          "customer",
+          "issue",
+          "platform",
+          "form",
+          "submission",
+          "configuration",
+          "connectivity"
+        ],
+        "properNouns": ["Formstack"],
+        "domains": ["BACKEND:SUBMIT-ACTIONS"],
+        "subjects": [],
+        "citations": {
+          "text": "in house context document",
+          "link": "208da9ad-d1f0-4e2f-917a-5a2b6ec0300b"
+        }
+      }
+    ]
+  },
+  "searchNouns": {
+    "SLACK": [
+      {
+        "conversation_id": "89721987-850a-4f14-bcfa-8740e1e0286e",
+        "conversationText": "USLACKBOT: This message was deleted.\nUT5GJ52TS: <@U4RDSKAVA> create issue\nUT5GJ52TS: <@U092XM3T740> What do you think is going on?",
+        "conversationTextNormalized": "A customer is reporting an issue with the Formstack platform where the configured Submit Actions (Integrations | Webhooks) are not executing as expected after form submissions. The customer has indicated that while the form is successfully receiving submissions, the associated Webhooks are failing to trigger. This situation may indicate a potential connectivity or configuration issue that requires further investigation to ensure that the integrations are functioning correctly.",
+        "aiTechnicalObservation": "The issue reported by the customer regarding the failure of Submit Actions to execute could stem from several factors within the Formstack platform. Submit Actions, which include Webhooks and other integrations, are designed to run after a submission is received. They can be categorized as either blocking or queued actions. Blocking actions run inline during the submission process and can impact the user experience if they fail, potentially aborting the submission. On the other hand, queued actions run asynchronously after the submission is processed. If the Submit Actions are not executing, it is crucial to check the logs for any errors related to the specific Submit Action type. The initial run of Submit Actions uses request-time values, while a re-run would utilize stored values, which may differ in formatting. If the Submit Actions are failing during the initial run, it could be due to misconfigurations or connectivity issues with the external systems they are trying to reach. It is also important to verify that the form settings allow for submission storage and that there are no limits being exceeded that would prevent the actions from executing. A thorough review of the Sumo Logic logs for the specific form and submission ID will provide insights into the execution flow and any errors encountered during the process.",
+        "confidence": "0.875",
+        "channelId": "SLACK:cx-formstack",
+        "keywords": [
+          "submit actions",
+          "webhooks",
+          "integrations",
+          "execution",
+          "configuration",
+          "connectivity"
+        ],
+        "nouns": ["customer", "issue", "platform", "form", "submission"],
+        "properNouns": ["Formstack"],
+        "domains": ["BACKEND:SUBMIT-ACTIONS"],
+        "subjects": [],
+        "citations": {
+          "text": "conversation: 89721987-850a-4f14-bcfa-8740e1e0286e",
+          "link": "https://formstack.slack.com/archives/C3LQ7KNFN/p1752844714951129?thread_ts=1752844714.951129&cid=C3LQ7KNFN"
+        }
+      }
+    ],
+    "CONTEXT-DOCUMENTS": [
+      {
+        "context_document_id": "0fc7c512-1ba1-476a-8003-0de994852177",
+        "contextDocumentText": "# Forms Core Backend Server\n\n\n# Sumo Logging \n\nVarious backend activities is logged to Sumo Logic\n\n# Common Queriers \n\n# Build your own queries\n\n - Log Messges what to look for.  All of are loggable events\n\n - Paramaters what to filter (date range, specific to form therefore formId, specific to submitAction, specific to submissions)\n\n \n\n # Common questions:\n  - email delivered to foreign server\n  - report ran\n  - reprot sent\n  - submit action ran\n  - submit action run for a particular sumission\n  - errors\n     - submitAction fail\n     - failed to send email\n     - failed to complete submit action\n\n\n# restrictions/limitation\n- only 90 days of log activity\n- we ingests 10,000 messages a minute - results/fitlers are necessary \n  the more specific the better\n\n- \"Error\" are often downgraded to \"Warn\".\n- \"Log Level\" is suggestive and not specific sometimes we have info or warn messages that could be consider 'error'\n-  we never log debug in production      ",
+        "contextDocumentTextNormalized": "A customer is inquiring about the logging capabilities of the Forms Core Backend Server, specifically regarding the Sumo Logic integration. They are interested in understanding how to build custom queries to filter log messages based on various parameters such as date range, form ID, submit action, and submission ID. The customer is particularly focused on identifying common log messages related to submit actions, including errors like 'submit action fail' and 'failed to send email.' They also want to be aware of the limitations of the logging system, such as the 90-day retention period and the ingestion rate of 10,000 messages per minute. This inquiry suggests that the customer is looking to enhance their troubleshooting capabilities within the Formstack platform by leveraging the logging features effectively.",
+        "aiTechnicalObservation": null,
+        "title": "Forms Core Backend Server",
+        "filePath": "core-forms-be/33000-forms-core-be-logging.md",
+        "confidence": "0.875",
+        "channelId": "CONTEXT-DOCUMENTS:CORE-FORMS-BE",
+        "keywords": ["logging", "queries", "submit actions", "errors"],
+        "nouns": [
+          "customer",
+          "inquiry",
+          "logging",
+          "capabilities",
+          "queries",
+          "parameters",
+          "date range",
+          "form ID",
+          "submit action",
+          "submission ID",
+          "errors",
+          "limitations",
+          "retention period",
+          "ingestion rate"
+        ],
+        "properNouns": ["Formstack", "Sumo Logic"],
+        "domains": ["BACKEND:LOGGING", "BACKEND:SUBMIT-ACTIONS"],
+        "subjects": [],
+        "citations": {
+          "text": "in house context document",
+          "link": "0fc7c512-1ba1-476a-8003-0de994852177"
+        }
+      }
+    ]
+  },
+  "searchProperNouns": {
+    "SLACK": [
+      {
+        "conversation_id": "0a014c9e-ec7c-4aef-8515-96eadf4ec804",
+        "conversationText": "U08EZ422CDP: Getting this error when using the restore fields in FCP\nU025HDJN6GZ: Whats the form id?\nU08EZ422CDP: 5894981\nU025HDJN6GZ: Is the form active?\nU08EZ422CDP: <https://sigvaris.formstack.com/forms/new_skus_created_by_engineering_v2>\n\nYes\nU08EZ422CDP: I pulled the id from the form link\nU025HDJN6GZ: and the builder history reflects that the field was deleted within the seven day retention window?\nU08EZ422CDP: Tbh, I could not check because it's a published workflow.\nBut, when they are zero fields to recover, it usually shows 0 fileds recovered from form ....\nU025HDJN6GZ: We will likely have to unpublished it to restore the field. It won't take edits otherwise\nU08EZ422CDP: Thank you\nU08EZ422CDP: Samething\nU08EZ422CDP: It's been 7 days for some of the fields\nU08EZ422CDP: I tried using a test form it works so i think the tool is fine\nU08EZ422CDP: Thank for your help",
+        "conversationTextNormalized": "A customer is experiencing an issue when attempting to use the Restore Fields feature in the Formstack platform. The form ID in question is 5894981, which is confirmed to be active. The customer has noted that the builder history indicates that fields were deleted within the seven-day retention window. However, they are unable to verify this due to the form being published. When attempting to restore fields, the system indicates that there are zero fields available for recovery, which typically suggests that no fields were found to restore. The customer suspects that they may need to unpublish the form to successfully restore the fields, as the tool does not allow edits otherwise. They have also mentioned that it has been seven days since some fields were deleted. Interestingly, they tested the functionality on a different form and it worked as expected, leading them to believe that the issue may be specific to this form. Further assistance is required to resolve this issue and restore the necessary fields.",
+        "aiTechnicalObservation": "The issue reported by the customer regarding the Restore Fields feature in Formstack may stem from the form's current published state, which restricts certain editing capabilities, including field restoration. The Restore Fields functionality relies on the form's builder history, which tracks deleted fields within a seven-day retention window. If the form is published, the system may not allow restoration actions to be performed, leading to the message indicating zero fields available for recovery. To troubleshoot, it is advisable to unpublish the form temporarily, allowing the customer to access the Restore Fields feature. Additionally, the customer should verify that the fields they wish to restore were indeed deleted within the specified timeframe. If the issue persists after unpublishing, further investigation into the form's history and the backend logs may be necessary to identify any discrepancies or errors in the restoration process. The logging system in Formstack captures events related to form submissions and field changes, which can provide insights into the actions taken on the form and assist in diagnosing the problem.",
+        "confidence": "1.000",
+        "channelId": "SLACK:cx-formstack",
+        "keywords": [
+          "restore fields",
+          "formstack",
+          "form ID",
+          "active",
+          "builder history",
+          "deleted fields",
+          "seven-day retention",
+          "unpublish",
+          "functionality"
+        ],
+        "nouns": [
+          "customer",
+          "issue",
+          "form",
+          "ID",
+          "history",
+          "fields",
+          "window",
+          "tool",
+          "edits"
+        ],
+        "properNouns": ["Formstack"],
+        "domains": ["BACKEND:DELETION", "BACKEND:RETENTION"],
+        "subjects": { "formId": ["5894981"] },
+        "citations": {
+          "text": "conversation: 0a014c9e-ec7c-4aef-8515-96eadf4ec804",
+          "link": "https://formstack.slack.com/archives/C3LQ7KNFN/p1752772586611029?thread_ts=1752772586.611029&cid=C3LQ7KNFN"
+        }
+      }
+    ],
+    "CONTEXT-DOCUMENTS": [
+      {
+        "context_document_id": "0b93e1af-d78a-4610-a215-a31925bc388b",
+        "contextDocumentText": "## Forms Core BE — Emails\n\n- Doc ID: 32000\n- Area: backend/core/forms\n- Scope: outbound emails generated by the Core Forms backend\n\n### Email types\n- Confirmation emails (to submitter)\n- Notification emails (to form owners/recipients)\n- System emails (failures, reports complete, other operational notices)\n  - SendGrid webhook notifications (bounces, spam, blocks) processed internally\n  - User email saves/exports (when enabled)\n  - Admin/ops notices related to limits, security, or jobs\n\nDelivery method and Sumo queries per type\n- Prepared (email queued for send)\n```\n_sourceCategory=formstack/prod/*\n \"Email prepared for delivery for\"\n| json field=_raw \"context.formId\" as formId\n| json field=_raw \"context.recipient\" as recipient\n| json field=_raw \"context.uniqueJobId\" as jobId\n| where formId = _FORM_ID_\n```\n- Sent (works with single or multiple recipients)\n```\n_sourceCategory=formstack/prod/*\n \"Successfully sent email message\"\n| json field=_raw \"context.formId\" as formId\n| json field=_raw \"context.recipient\" as recipient\n| where formId = _FORM_ID_\n```\n```\n{\n  \"message\": \"Email prepared for delivery for {gearmanUnique}\",\n  \"context\": {\n    \"workerName\": \"send_email:send_email7\",\n    \"uniqueJobId\": \"7f5ff91d-bb09-4846-809c-e1dc4bba7569\",\n    \"accountId\": \"709534\",\n    \"formId\": 6162468,\n    \"submissionId\": 1371066117,\n    \"templated\": true,\n    \"recipient\": \"dnpwg@originenergy.com.au\",\n    \"returnPath\": \"noreply@originenergy.com.au\",\n    \"sendingAddress\": \"noreply@originenergy.com.au\",\n    \"subject\": \"DNP Assessment/ audit form\",\n    \"templateDirectory\": \"form\",\n    \"templateFile\": \"notification-uil.tmpl\",\n    \"headerPath\": \"\",\n    \"footerPath\": \"\",\n    \"unsubscribeAction\": \"\",\n    \"externalService\": \"SMTP Integration 3522\",\n    \"gearmanHash\": \"dba9a7cb3f9b16d5bb8956dd45f33c09\",\n    \"jobName\": \"SendEmailJob\",\n    \"elapsedSeconds\": 0.005743980407714844,\n    \"event\": \"send_email\",\n    \"sessionId\": \"\",\n    \"errorId\": \"19ddd26e831e058b8925\"\n  },\n  \"level\": 200,\n  \"level_name\": \"INFO\",\n  \"channel\": \"formstackAppLog\",\n  \"datetime\": \"2025-08-13T22:20:59.348051-04:00\",\n\n}\n```\n\n\nSuccessfully sent email message\n- I think this doesn't work because recepient has two addresses?\n\n```\n{\n  \"message\": \"Successfully sent email message\",\n  \"context\": {\n    \"submissionId\": 1371068416,\n    \"isPartialSubmission\": false,\n    \"accountId\": \"885098\",\n    \"organizationId\": \"1576a8ea-6940-11ea-a8b2-126536f4e561\",\n    \"mailEngine\": \"Pear\",\n    \"recipient\": \"printshopac@usd470.com, sydney.hankins@usd470.com\",\n    \"sendingAddress\": \"\\\"No Reply\\\" <noreply@formstack.com>\",\n    \"isHipaaAccount\": false,\n    \"formId\": \"3660713\",\n    \"includesPdfExportAttachment\": true,\n    \"crypto_method\": \"\",\n    \"externalServiceName\": \"SendGrid\",\n    \"sendGridSubAccount\": \"notification\",\n    \"event\": \"send_email\",\n    \"sessionId\": \"\",\n    \"errorId\": \"8ed2c3e9d08b2703f62c\"\n  },\n  \"level\": 200,\n  \"level_name\": \"INFO\",\n  \"channel\": \"formstackAppLog\",\n  \"datetime\": \"2025-08-13T22:34:42.040351-04:00\",\n\n}\n```\n\n```sumo\n \"Successfully sent email message\"\n| json auto\n| where formId = \"3660713\"\n// and recipient = \"_RECIPIENT_\"\n```\nThe above does not work\n\n\n```sumo\n_sourceCategory=formstack/prod/*\n \"Successfully sent email message\"\n| json field=_raw \"context.recipient\" as recipient \n| json field=_raw \"context.formId\" as formId\n| where formId = _FORM_ID_\n```\nThe above works - however \"jon.m@quantumbusiness.com.au\"\nis a poor choice because sometimes recipient can have multiple emails\nbetter to leave it out or do partial matches\n\n_TMC_\n\n\n\n\n\n- SendGrid webhook-derived (delivery/bounce status)\n```\n_sourceCategory=formstack/prod/*\n \"SendGrid webhook for sendgridMessageId\"\n| json field=_raw \"context.sendgridEvent\" as sendgridEvent\n| json field=_raw \"context.recipient\" as recipient\n| where sendgridEvent in (\"delivered\", \"bounce\", \"dropped\", \"spamreport\")\n```\n_TMC_ the above query has the error:\n```\nThe value for json key \"context.submissionid\" was not extracted for at least one tuple since it did not conform to the expected type Long. Please reference this field explicitly in the form: json auto keys \"context.submissionid\" ...\n```\n_TMC_\n\n\n### Triggers and context\n- Submission-created triggers (confirmation/notification)\n- Submit-action outcomes that enqueue emails (e.g., payment success/failure)\n  - Payment-related emails are tied to payment actions and status messaging; most integrations do not directly send emails from submit-action code, but may influence confirmation/notification content.\n- Scheduled/batch/reporting events\n\n### Composition and content sources\n- Templates and substitutions\n  - Emails use templates populated with form field values and system variables. Changes to field labels/options can affect substitutions; validate templates after major form edits.\n- Attachments\n  - Attachments (e.g., PDF exports, signatures) are added at composition time and must meet provider size limits. HIPAA accounts may replace attachments with secure links to private storage. Signatures can be embedded or linked per policy.\n\n### Delivery\n- Transport (SMTP/API)\n- From/reply-to rules and domain restrictions\n- Rate limiting, retries, bounces (high level)\n  - From/reply-to: sender may be normalized to allowed domains; reply-to defaults to configured address when not provided.\n  - Provider: most production email uses SendGrid subaccounts; SMTP credentials selected per account/subaccount; fallback/test services (e.g., Mailpit in dev) may be used.\n  - Retries/bounces: failures are logged at send time; SendGrid webhooks record bounce/spam events; excessive failures may trigger suppression. Misconfigured TLS on HIPAA may log errors.\n\nQueries for delivery outcomes\n```\n_sourceCategory=formstack/prod/*\n \"Successfully sent email message\"\n| json auto\n| where formId = \"_FORM_ID_\" and externalServiceName = \"SendGrid\"\n```\n```\n_sourceCategory=formstack/prod/*\n \"SendGrid webhook for sendgridMessageId\"\n| json auto\n| where sendgridEvent in (\"bounce\",\"spamreport\",\"dropped\")\n```\n\n### HIPAA and compliance\n- Content redaction and attachment restrictions for HIPAA accounts\n- Secure links vs embedded content\n  - HIPAA: enforce TLS, avoid embedding PHI in URLs or attachments where restricted; prefer secure links to files stored in private buckets; non-compliant transports are blocked or logged as errors.\n  - Known issues: if encryption keys or secure link generation fails, attachments may be omitted or replaced with notices; ensure account settings permit the intended mode.\n\n### Observability\n- Log messages to trace enqueue/send results\n- Sumo queries to find sent/failed emails by formId/submissionId/recipient\n  - Local logs include attempts and outcomes (success/failure), with formId, recipient, service name, HIPAA flags, and SendGrid subaccount when applicable.\n  - SendGrid webhooks are logged with event type (bounce, spam, delivered) and message identifiers.\n  - Working Sumo examples:\n```\n_sourceCategory=formstack/prod/*\n \"Successfully sent email message\"\n| json auto\n| where formId = \"_FORM_ID_\"\n| count by recipient\n```\n```\n_sourceCategory=formstack/prod/*\n \"Trying to send email message through mail engine\"\n| json auto\n| where formId = \"_FORM_ID_\" and isHipaaAccount = true\n```\n```\n_sourceCategory=formstack/prod/*\n \"HIPAA Account sending e-mail with no TLS connection\"\n| json auto\n| where formId = \"_FORM_ID_\"\n```\n```\n_sourceCategory=formstack/prod/*\n \"SendGrid webhook for sendgridMessageId\"\n| json auto\n| where sendgridMessageId = \"_SENDGRID_MESSAGE_ID_\"\n```\n\n### Correlation examples\n- By recipient (across prepared, sent, and webhook in one view)\n```\n_sourceCategory=formstack/prod/*\n (\"Email prepared for delivery for\" or \"Successfully sent email message\" or \"SendGrid webhook for sendgridMessageId\")\n| json field=_raw \"context.formId\" as formId\n| json field=_raw \"context.recipient\" as recipient\n| json field=_raw \"context.sendgridEvent\" as sendgridEvent\n| where formId = _FORM_ID_ and recipient contains \"_RECIPIENT_PART_\"\n```\n\n- By SendGrid message id (all webhook events for that message)\n```\n_sourceCategory=formstack/prod/*\n \"SendGrid webhook for sendgridMessageId\"\n| json field=_raw \"context.sendgridMessageId\" as sendgridMessageId\n| json field=_raw \"context.recipient\" as recipient\n| json field=_raw \"context.sendgridEvent\" as sendgridEvent\n| where sendgridMessageId = \"_SENDGRID_MESSAGE_ID_\"\n```\n\n\n### Troubleshooting Steps\n- Verify trigger occurred (submission, submit action, scheduled job)\n- Check logs for enqueue/send, bounces, and policy blocks\n- Validate recipient, domain, and SMTP configuration\n  - Confirm the submission created event and that email configuration is enabled for the form/account.\n  - Inspect send attempts and outcomes; if SendGrid is used, check webhook events for suppression/bounce.\n  - Validate sender domain rules and TLS requirements (especially for HIPAA accounts); ensure attachments are within limits.\n\nNotes on SendGrid vs other transports\n- Most production emails use SendGrid (subaccounts per account type); logs include `externalServiceName: SendGrid` and `sendGridSubAccount` when applicable.\n- To verify delivery path: search for \"Successfully sent email message\" and check `externalServiceName`. For webhook-side status, use the SendGrid webhook query above.\n\n### Testing strategies\n- Test modes and sandboxing\n- Expected headers and rendering checks\n  - In dev environments, Mailpit may be used; verify headers (from/reply-to) and TLS where required. Rendering checks include template substitution success and presence/absence of attachments per policy.",
+        "contextDocumentTextNormalized": "A customer is experiencing issues with the email delivery system within the Formstack platform. Specifically, they have reported that emails are not being sent successfully when multiple recipients are specified in the recipient field. The customer suspects that the issue may be related to the handling of multiple email addresses, as evidenced by the logs indicating that the email was prepared for delivery but not successfully sent. This situation requires further investigation to determine if the email system is correctly parsing and processing multiple recipient addresses, and whether any configuration adjustments are necessary to ensure successful email delivery.",
+        "aiTechnicalObservation": null,
+        "title": "32000 forms core be emails",
+        "filePath": "core-forms-be/32000-forms-core-be-emails.md",
+        "confidence": "1.000",
+        "channelId": "CONTEXT-DOCUMENTS:CORE-FORMS-BE",
+        "keywords": [
+          "email",
+          "delivery",
+          "multiple recipients",
+          "SendGrid",
+          "Formstack"
+        ],
+        "nouns": ["customer", "issue", "system", "addresses", "logs"],
+        "properNouns": ["Formstack", "SendGrid"],
+        "domains": [
+          "BACKEND:EMAILS",
+          "BACKEND:EMAILS:RECIPIENT-PARSING-FAILED"
+        ],
+        "subjects": [],
+        "citations": {
+          "text": "in house context document",
+          "link": "0b93e1af-d78a-4610-a215-a31925bc388b"
+        }
+      }
+    ]
+  },
+  "searchDomains": {
+    "SLACK": [
+      {
+        "conversation_id": "55b63d5d-b6e3-4431-a59b-0c0d6aeb6ed7",
+        "conversationText": "U02N5C54HD4: QQ: would smtp settings apply to submission exports as well? I have a HIPAA customer blocked at sending exports to non-users, but I don't want to recommend a private server if it won't apply.\nU025HDJN6GZ: SMTP only handles notification and confirmation email deliveries\nU02N5C54HD4: Thanks for confirming!",
+        "conversationTextNormalized": "A customer is inquiring whether SMTP settings apply to submission exports as well. They have a HIPAA-compliant customer who is currently blocked from sending exports to non-users. The customer is hesitant to recommend a private server if it will not resolve the issue. It is important to clarify that SMTP settings primarily handle the delivery of notification and confirmation emails, and may not directly influence the submission export process within the Formstack platform. Further investigation may be required to determine the best course of action for the customer's specific needs.",
+        "aiTechnicalObservation": "The inquiry revolves around the interaction between SMTP settings and submission exports in the Formstack platform, particularly in the context of HIPAA compliance. SMTP (Simple Mail Transfer Protocol) is primarily utilized for sending emails, including notification and confirmation emails related to form submissions. It does not directly govern the submission export functionality, which may involve different configurations or settings. Given the customer's HIPAA compliance requirements, it is crucial to ensure that any data handling, including exports, adheres to strict security and privacy standards. The customer should be informed that while SMTP settings are essential for email delivery, they do not impact the ability to export submissions. Therefore, recommending a private server may not be necessary unless there are specific security concerns related to data transmission. It may be beneficial to explore alternative solutions for submission exports that align with HIPAA regulations, ensuring that sensitive data is handled appropriately throughout the process.",
+        "confidence": "0.500",
+        "channelId": "SLACK:cx-formstack",
+        "keywords": [
+          "smtp",
+          "settings",
+          "submission",
+          "exports",
+          "hipaa",
+          "customer"
+        ],
+        "nouns": ["customer", "server", "email", "data"],
+        "properNouns": ["Formstack"],
+        "domains": ["BACKEND:EMAILS", "BACKEND:DATA-AT-REST"],
+        "subjects": [],
+        "citations": {
+          "text": "conversation: 55b63d5d-b6e3-4431-a59b-0c0d6aeb6ed7",
+          "link": "https://formstack.slack.com/archives/C3LQ7KNFN/p1752845173234199?thread_ts=1752845173.234199&cid=C3LQ7KNFN"
+        }
+      }
+    ],
+    "CONTEXT-DOCUMENTS": [
+      {
+        "context_document_id": "0b93e1af-d78a-4610-a215-a31925bc388b",
+        "contextDocumentText": "## Forms Core BE — Emails\n\n- Doc ID: 32000\n- Area: backend/core/forms\n- Scope: outbound emails generated by the Core Forms backend\n\n### Email types\n- Confirmation emails (to submitter)\n- Notification emails (to form owners/recipients)\n- System emails (failures, reports complete, other operational notices)\n  - SendGrid webhook notifications (bounces, spam, blocks) processed internally\n  - User email saves/exports (when enabled)\n  - Admin/ops notices related to limits, security, or jobs\n\nDelivery method and Sumo queries per type\n- Prepared (email queued for send)\n```\n_sourceCategory=formstack/prod/*\n \"Email prepared for delivery for\"\n| json field=_raw \"context.formId\" as formId\n| json field=_raw \"context.recipient\" as recipient\n| json field=_raw \"context.uniqueJobId\" as jobId\n| where formId = _FORM_ID_\n```\n- Sent (works with single or multiple recipients)\n```\n_sourceCategory=formstack/prod/*\n \"Successfully sent email message\"\n| json field=_raw \"context.formId\" as formId\n| json field=_raw \"context.recipient\" as recipient\n| where formId = _FORM_ID_\n```\n```\n{\n  \"message\": \"Email prepared for delivery for {gearmanUnique}\",\n  \"context\": {\n    \"workerName\": \"send_email:send_email7\",\n    \"uniqueJobId\": \"7f5ff91d-bb09-4846-809c-e1dc4bba7569\",\n    \"accountId\": \"709534\",\n    \"formId\": 6162468,\n    \"submissionId\": 1371066117,\n    \"templated\": true,\n    \"recipient\": \"dnpwg@originenergy.com.au\",\n    \"returnPath\": \"noreply@originenergy.com.au\",\n    \"sendingAddress\": \"noreply@originenergy.com.au\",\n    \"subject\": \"DNP Assessment/ audit form\",\n    \"templateDirectory\": \"form\",\n    \"templateFile\": \"notification-uil.tmpl\",\n    \"headerPath\": \"\",\n    \"footerPath\": \"\",\n    \"unsubscribeAction\": \"\",\n    \"externalService\": \"SMTP Integration 3522\",\n    \"gearmanHash\": \"dba9a7cb3f9b16d5bb8956dd45f33c09\",\n    \"jobName\": \"SendEmailJob\",\n    \"elapsedSeconds\": 0.005743980407714844,\n    \"event\": \"send_email\",\n    \"sessionId\": \"\",\n    \"errorId\": \"19ddd26e831e058b8925\"\n  },\n  \"level\": 200,\n  \"level_name\": \"INFO\",\n  \"channel\": \"formstackAppLog\",\n  \"datetime\": \"2025-08-13T22:20:59.348051-04:00\",\n\n}\n```\n\n\nSuccessfully sent email message\n- I think this doesn't work because recepient has two addresses?\n\n```\n{\n  \"message\": \"Successfully sent email message\",\n  \"context\": {\n    \"submissionId\": 1371068416,\n    \"isPartialSubmission\": false,\n    \"accountId\": \"885098\",\n    \"organizationId\": \"1576a8ea-6940-11ea-a8b2-126536f4e561\",\n    \"mailEngine\": \"Pear\",\n    \"recipient\": \"printshopac@usd470.com, sydney.hankins@usd470.com\",\n    \"sendingAddress\": \"\\\"No Reply\\\" <noreply@formstack.com>\",\n    \"isHipaaAccount\": false,\n    \"formId\": \"3660713\",\n    \"includesPdfExportAttachment\": true,\n    \"crypto_method\": \"\",\n    \"externalServiceName\": \"SendGrid\",\n    \"sendGridSubAccount\": \"notification\",\n    \"event\": \"send_email\",\n    \"sessionId\": \"\",\n    \"errorId\": \"8ed2c3e9d08b2703f62c\"\n  },\n  \"level\": 200,\n  \"level_name\": \"INFO\",\n  \"channel\": \"formstackAppLog\",\n  \"datetime\": \"2025-08-13T22:34:42.040351-04:00\",\n\n}\n```\n\n```sumo\n \"Successfully sent email message\"\n| json auto\n| where formId = \"3660713\"\n// and recipient = \"_RECIPIENT_\"\n```\nThe above does not work\n\n\n```sumo\n_sourceCategory=formstack/prod/*\n \"Successfully sent email message\"\n| json field=_raw \"context.recipient\" as recipient \n| json field=_raw \"context.formId\" as formId\n| where formId = _FORM_ID_\n```\nThe above works - however \"jon.m@quantumbusiness.com.au\"\nis a poor choice because sometimes recipient can have multiple emails\nbetter to leave it out or do partial matches\n\n_TMC_\n\n\n\n\n\n- SendGrid webhook-derived (delivery/bounce status)\n```\n_sourceCategory=formstack/prod/*\n \"SendGrid webhook for sendgridMessageId\"\n| json field=_raw \"context.sendgridEvent\" as sendgridEvent\n| json field=_raw \"context.recipient\" as recipient\n| where sendgridEvent in (\"delivered\", \"bounce\", \"dropped\", \"spamreport\")\n```\n_TMC_ the above query has the error:\n```\nThe value for json key \"context.submissionid\" was not extracted for at least one tuple since it did not conform to the expected type Long. Please reference this field explicitly in the form: json auto keys \"context.submissionid\" ...\n```\n_TMC_\n\n\n### Triggers and context\n- Submission-created triggers (confirmation/notification)\n- Submit-action outcomes that enqueue emails (e.g., payment success/failure)\n  - Payment-related emails are tied to payment actions and status messaging; most integrations do not directly send emails from submit-action code, but may influence confirmation/notification content.\n- Scheduled/batch/reporting events\n\n### Composition and content sources\n- Templates and substitutions\n  - Emails use templates populated with form field values and system variables. Changes to field labels/options can affect substitutions; validate templates after major form edits.\n- Attachments\n  - Attachments (e.g., PDF exports, signatures) are added at composition time and must meet provider size limits. HIPAA accounts may replace attachments with secure links to private storage. Signatures can be embedded or linked per policy.\n\n### Delivery\n- Transport (SMTP/API)\n- From/reply-to rules and domain restrictions\n- Rate limiting, retries, bounces (high level)\n  - From/reply-to: sender may be normalized to allowed domains; reply-to defaults to configured address when not provided.\n  - Provider: most production email uses SendGrid subaccounts; SMTP credentials selected per account/subaccount; fallback/test services (e.g., Mailpit in dev) may be used.\n  - Retries/bounces: failures are logged at send time; SendGrid webhooks record bounce/spam events; excessive failures may trigger suppression. Misconfigured TLS on HIPAA may log errors.\n\nQueries for delivery outcomes\n```\n_sourceCategory=formstack/prod/*\n \"Successfully sent email message\"\n| json auto\n| where formId = \"_FORM_ID_\" and externalServiceName = \"SendGrid\"\n```\n```\n_sourceCategory=formstack/prod/*\n \"SendGrid webhook for sendgridMessageId\"\n| json auto\n| where sendgridEvent in (\"bounce\",\"spamreport\",\"dropped\")\n```\n\n### HIPAA and compliance\n- Content redaction and attachment restrictions for HIPAA accounts\n- Secure links vs embedded content\n  - HIPAA: enforce TLS, avoid embedding PHI in URLs or attachments where restricted; prefer secure links to files stored in private buckets; non-compliant transports are blocked or logged as errors.\n  - Known issues: if encryption keys or secure link generation fails, attachments may be omitted or replaced with notices; ensure account settings permit the intended mode.\n\n### Observability\n- Log messages to trace enqueue/send results\n- Sumo queries to find sent/failed emails by formId/submissionId/recipient\n  - Local logs include attempts and outcomes (success/failure), with formId, recipient, service name, HIPAA flags, and SendGrid subaccount when applicable.\n  - SendGrid webhooks are logged with event type (bounce, spam, delivered) and message identifiers.\n  - Working Sumo examples:\n```\n_sourceCategory=formstack/prod/*\n \"Successfully sent email message\"\n| json auto\n| where formId = \"_FORM_ID_\"\n| count by recipient\n```\n```\n_sourceCategory=formstack/prod/*\n \"Trying to send email message through mail engine\"\n| json auto\n| where formId = \"_FORM_ID_\" and isHipaaAccount = true\n```\n```\n_sourceCategory=formstack/prod/*\n \"HIPAA Account sending e-mail with no TLS connection\"\n| json auto\n| where formId = \"_FORM_ID_\"\n```\n```\n_sourceCategory=formstack/prod/*\n \"SendGrid webhook for sendgridMessageId\"\n| json auto\n| where sendgridMessageId = \"_SENDGRID_MESSAGE_ID_\"\n```\n\n### Correlation examples\n- By recipient (across prepared, sent, and webhook in one view)\n```\n_sourceCategory=formstack/prod/*\n (\"Email prepared for delivery for\" or \"Successfully sent email message\" or \"SendGrid webhook for sendgridMessageId\")\n| json field=_raw \"context.formId\" as formId\n| json field=_raw \"context.recipient\" as recipient\n| json field=_raw \"context.sendgridEvent\" as sendgridEvent\n| where formId = _FORM_ID_ and recipient contains \"_RECIPIENT_PART_\"\n```\n\n- By SendGrid message id (all webhook events for that message)\n```\n_sourceCategory=formstack/prod/*\n \"SendGrid webhook for sendgridMessageId\"\n| json field=_raw \"context.sendgridMessageId\" as sendgridMessageId\n| json field=_raw \"context.recipient\" as recipient\n| json field=_raw \"context.sendgridEvent\" as sendgridEvent\n| where sendgridMessageId = \"_SENDGRID_MESSAGE_ID_\"\n```\n\n\n### Troubleshooting Steps\n- Verify trigger occurred (submission, submit action, scheduled job)\n- Check logs for enqueue/send, bounces, and policy blocks\n- Validate recipient, domain, and SMTP configuration\n  - Confirm the submission created event and that email configuration is enabled for the form/account.\n  - Inspect send attempts and outcomes; if SendGrid is used, check webhook events for suppression/bounce.\n  - Validate sender domain rules and TLS requirements (especially for HIPAA accounts); ensure attachments are within limits.\n\nNotes on SendGrid vs other transports\n- Most production emails use SendGrid (subaccounts per account type); logs include `externalServiceName: SendGrid` and `sendGridSubAccount` when applicable.\n- To verify delivery path: search for \"Successfully sent email message\" and check `externalServiceName`. For webhook-side status, use the SendGrid webhook query above.\n\n### Testing strategies\n- Test modes and sandboxing\n- Expected headers and rendering checks\n  - In dev environments, Mailpit may be used; verify headers (from/reply-to) and TLS where required. Rendering checks include template substitution success and presence/absence of attachments per policy.",
+        "contextDocumentTextNormalized": "A customer is experiencing issues with the email delivery system within the Formstack platform. Specifically, they have reported that emails are not being sent successfully when multiple recipients are specified in the recipient field. The customer suspects that the issue may be related to the handling of multiple email addresses, as evidenced by the logs indicating that the email was prepared for delivery but not successfully sent. This situation requires further investigation to determine if the email system is correctly parsing and processing multiple recipient addresses, and whether any configuration adjustments are necessary to ensure successful email delivery.",
+        "aiTechnicalObservation": null,
+        "title": "32000 forms core be emails",
+        "filePath": "core-forms-be/32000-forms-core-be-emails.md",
+        "confidence": "1.000",
+        "channelId": "CONTEXT-DOCUMENTS:CORE-FORMS-BE",
+        "keywords": [
+          "email",
+          "delivery",
+          "multiple recipients",
+          "SendGrid",
+          "Formstack"
+        ],
+        "nouns": ["customer", "issue", "system", "addresses", "logs"],
+        "properNouns": ["Formstack", "SendGrid"],
+        "domains": [
+          "BACKEND:EMAILS",
+          "BACKEND:EMAILS:RECIPIENT-PARSING-FAILED"
+        ],
+        "subjects": [],
+        "citations": {
+          "text": "in house context document",
+          "link": "0b93e1af-d78a-4610-a215-a31925bc388b"
+        }
+      }
+    ]
+  },
+  "searchTypesExecuted": [
+    "searchSemantic",
+    "searchKeywords",
+    "searchNouns",
+    "searchProperNouns",
+    "searchDomains"
+  ],
+  "totalSearchTypes": 5
+}

@@ -44,8 +44,10 @@ echo "$PREQUERY_RESPONSE" | jq 2>/dev/null || echo "Response not valid JSON"
 echo ""
 
 # Step 2: Submit top-results search using preQuery response
-echo "STEP 2: Submitting top-results search..."
+echo "STEP 2: Submitting top-results search with full preQuery data..."
 echo ""
+
+echo "Using preQuery response for top-results search..."
 
 SEARCH_RESPONSE=$(curl -s -X POST "$BASE_URL/knowledge-bases/top-results" \
   -H "Content-Type: application/json" \

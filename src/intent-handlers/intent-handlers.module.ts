@@ -9,7 +9,7 @@ import { LoggerModule } from '../common/logger/logger.module';
 @Module({
   imports: [
     IStackInfoModule,
-    FileManagerModule,
+    FileManagerModule, // Still needed for SumoReportJobExecutor
     RobotModule,
     forwardRef(() => ChatManagerModule),
     LoggerModule,
