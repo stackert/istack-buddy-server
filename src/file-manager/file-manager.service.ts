@@ -1,12 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { promises as fs } from 'fs';
 import * as fsSync from 'fs';
-import { join, extname } from 'path';
+import { join, extname, dirname } from 'path';
 import { v4 as uuidv4 } from 'uuid';
 
 export enum STORAGE_CLASS {
   TEMP = 'temp',
   SHORT_TERM = 'short-term',
+  SESSION_PUBLIC = 'session-public',
 }
 
 export interface FileMetaDetails {
@@ -23,6 +24,7 @@ export interface FileMetaDetails {
 export interface FileContent {
   content: string | Buffer;
   contentType?: string;
+  filename?: string; // Optional custom filename for session-public files
 }
 
 @Injectable()
@@ -31,19 +33,27 @@ export class FileManagerService {
   private readonly basePath: string;
   private readonly tempPath: string;
   private readonly shortTermPath: string;
+  private readonly sessionPublicPath: string;
 
   constructor() {
-    this.basePath = process.env.FILE_STORAGE_BASE_PATH || './storage';
+    this.basePath =
+      process.env.FILE_STORAGE_BASE_PATH || './file-storage-server';
 
     // All paths are relative to basePath
-    const tempSubPath = process.env.FILE_STORAGE_TEMP_PATH || 'temp';
+    const tempSubPath = process.env.FILE_STORAGE_TEMP_PATH || 'tmp';
     const shortTermSubPath =
       process.env.FILE_STORAGE_SHORT_TERM_PATH || 'short-term';
+    const sessionPublicSubPath =
+      process.env.FILE_STORAGE_SESSION_PUBLIC_PATH || 'session-public';
 
     this.tempPath = join(this.basePath, tempSubPath.replace(/^\//, ''));
     this.shortTermPath = join(
       this.basePath,
       shortTermSubPath.replace(/^\//, ''),
+    );
+    this.sessionPublicPath = join(
+      this.basePath,
+      sessionPublicSubPath.replace(/^\//, ''),
     );
 
     // Initialize directories synchronously - die hard if this fails
@@ -54,6 +64,7 @@ export class FileManagerService {
     try {
       fsSync.mkdirSync(this.tempPath, { recursive: true });
       fsSync.mkdirSync(this.shortTermPath, { recursive: true });
+      fsSync.mkdirSync(this.sessionPublicPath, { recursive: true });
       this.logger.log(`File storage directories initialized: ${this.basePath}`);
     } catch (error) {
       this.logger.error(
@@ -72,20 +83,31 @@ export class FileManagerService {
   async put(
     fileContent: FileContent,
     storageClass: STORAGE_CLASS,
+    customPath?: string,
   ): Promise<string> {
     try {
-      const fileId = this.generateFileId(fileContent.contentType);
-      const filePath = this.getFilePath(fileId, storageClass);
+      // Use custom filename for session-public files, otherwise generate UUID
+      const fileId =
+        fileContent.filename || this.generateFileId(fileContent.contentType);
+
+      // For session-public with custom path, combine them
+      const finalFileId = customPath ? `${customPath}/${fileId}` : fileId;
+      const filePath = this.getFilePath(finalFileId, storageClass);
 
       // Write file content
       const content = Buffer.isBuffer(fileContent.content)
         ? fileContent.content
         : Buffer.from(fileContent.content, 'utf8');
 
+      // Ensure directory exists for nested paths
+      await fs.mkdir(dirname(filePath), { recursive: true });
+
       await fs.writeFile(filePath, content);
 
-      this.logger.debug(`File stored: ${fileId} in ${storageClass} storage`);
-      return fileId;
+      this.logger.debug(
+        `File stored: ${finalFileId} in ${storageClass} storage`,
+      );
+      return finalFileId;
     } catch (error) {
       this.logger.error(`Failed to store file: ${error.message}`);
       throw error;
@@ -259,15 +281,47 @@ export class FileManagerService {
   }
 
   private getFilePath(fileId: string, storageClass: STORAGE_CLASS): string {
-    const dirPath =
-      storageClass === STORAGE_CLASS.TEMP ? this.tempPath : this.shortTermPath;
+    let dirPath: string;
+    switch (storageClass) {
+      case STORAGE_CLASS.TEMP:
+        dirPath = this.tempPath;
+        break;
+      case STORAGE_CLASS.SHORT_TERM:
+        dirPath = this.shortTermPath;
+        break;
+      case STORAGE_CLASS.SESSION_PUBLIC:
+        dirPath = this.sessionPublicPath;
+        break;
+      default:
+        dirPath = this.tempPath;
+    }
     return join(dirPath, fileId);
   }
 
   private extractStorageClass(fileId: string): STORAGE_CLASS {
-    // For now, we'll determine storage class by checking which directory the file exists in
-    // This could be enhanced to include storage class in the file ID format
-    return STORAGE_CLASS.TEMP; // Default, will be determined by file existence
+    // Check which directory the file exists in
+    const tempPath = this.getFilePath(fileId, STORAGE_CLASS.TEMP);
+    const shortTermPath = this.getFilePath(fileId, STORAGE_CLASS.SHORT_TERM);
+    const sessionPublicPath = this.getFilePath(
+      fileId,
+      STORAGE_CLASS.SESSION_PUBLIC,
+    );
+
+    try {
+      // Check session-public first (most likely for our use case)
+      if (fsSync.existsSync(sessionPublicPath)) {
+        return STORAGE_CLASS.SESSION_PUBLIC;
+      }
+      // Check short-term
+      if (fsSync.existsSync(shortTermPath)) {
+        return STORAGE_CLASS.SHORT_TERM;
+      }
+      // Default to temp
+      return STORAGE_CLASS.TEMP;
+    } catch (error) {
+      // If there's an error checking, default to temp
+      return STORAGE_CLASS.TEMP;
+    }
   }
 
   private getContentTypeFromExtension(extension: string): string {

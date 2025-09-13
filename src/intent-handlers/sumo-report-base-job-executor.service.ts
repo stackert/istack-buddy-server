@@ -8,8 +8,6 @@ import { ChatManagerService } from '../chat-manager/chat-manager.service';
 import { UserRole } from '../chat-manager/dto/create-message.dto';
 import { ObservationMakerSumoSubmitActionJobReport } from './ObservationMakerSumoSubmitActionJobReport';
 import { ObservationMakerSumoReport } from './ObservationMakerSumoQuery';
-import * as fs from 'fs';
-import * as path from 'path';
 
 export interface SumoJobParams {
   queryName: string;
@@ -95,19 +93,22 @@ export abstract class SumoReportBaseJobExecutor {
     const timestamp = this.formatDateForFilename(new Date().toISOString());
     const filename = `sumo-${queryParams.queryName}-${queryParams.subject.formId}-${timestamp}.json`;
 
-    // Create session-public directory path
+    // Create session-public directory path (maintain existing structure)
     const sessionPublicDir = `file-storage-server/session-public/${conversationId}`;
     const filePath = `${sessionPublicDir}/${filename}`;
 
-    // Write file directly to session-public directory (following original pattern)
+    // Write file directly (consistent with existing files)
+    const fs = require('fs');
+    const path = require('path');
+
     // Ensure directory exists
     fs.mkdirSync(path.dirname(filePath), { recursive: true });
 
     // Write file
     fs.writeFileSync(filePath, fileBuffer);
 
-    // Return file link
-    return `file:///file-storage/session-public/${conversationId}/${filename}`;
+    // Generate proper public URL that will be served by FileController
+    return `/files/session-public/${conversationId}/${filename}`;
   }
 
   protected async processJobData(
