@@ -66,6 +66,8 @@ describe('KnowledgeBaseJobExecutor', () => {
     const mockChatManager = {
       addMessage: jest.fn(),
       createMessage: jest.fn(),
+      addMessageUserOnly: jest.fn(),
+      addMessageWithRobotResponse: jest.fn(),
     };
 
     const mockRobot = {
@@ -151,12 +153,22 @@ describe('KnowledgeBaseJobExecutor', () => {
       mockIStackInfoService.knowledgeBase.topResults.mockResolvedValue(
         mockTopResultsResponse,
       );
-      mockChatManagerService.addMessage.mockResolvedValue({
+      mockChatManagerService.addMessageUserOnly.mockResolvedValue({
         id: 'msg-123',
         conversationId: 'test-conversation',
-        content: { type: 'context/document', payload: 'test' },
+        content: { type: 'text/markdown', payload: 'test' },
         authorUserId: null,
         fromRole: UserRole.SYSTEM,
+        toRole: UserRole.USER,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as any);
+      mockChatManagerService.addMessageWithRobotResponse.mockResolvedValue({
+        id: 'msg-456',
+        conversationId: 'test-conversation',
+        content: { type: 'text/markdown', payload: 'robot prompt' },
+        authorUserId: null,
+        fromRole: UserRole.USER,
         toRole: UserRole.ROBOT,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -176,28 +188,23 @@ describe('KnowledgeBaseJobExecutor', () => {
         mockIStackInfoService.knowledgeBase.topResults,
       ).toHaveBeenCalledWith(mockPreQueryResponse);
 
-      // Verify robot-only message was sent
-      expect(mockChatManagerService.addMessage).toHaveBeenCalledWith(
+      // Verify user-visible search results were sent
+      expect(mockChatManagerService.addMessageUserOnly).toHaveBeenCalledWith(
+        'test-conversation',
         expect.objectContaining({
-          conversationId: 'test-conversation',
-          content: expect.objectContaining({
-            type: 'context/document',
-          }),
-          fromRole: UserRole.SYSTEM,
-          toRole: UserRole.ROBOT,
+          type: 'text/markdown',
         }),
       );
 
-      // Verify user-visible results were sent
-      expect(mockChatManagerService.addMessage).toHaveBeenCalledWith(
+      // Verify robot response was triggered
+      expect(
+        mockChatManagerService.addMessageWithRobotResponse,
+      ).toHaveBeenCalledWith(
+        'test-conversation',
         expect.objectContaining({
-          conversationId: 'test-conversation',
-          content: expect.objectContaining({
-            type: 'text/plain',
-          }),
-          fromRole: UserRole.SYSTEM,
-          toRole: UserRole.USER,
+          type: 'text/markdown',
         }),
+        'KnobbyOpenAiSearch',
       );
     });
 
