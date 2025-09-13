@@ -1,0 +1,21 @@
+{
+  "name": "form-3303-analysis",
+  "version": "1.0.0",
+  "description": "Scripts for analyzing stalled webhooks and submit actions",
+  "scripts": {
+    "analyze-expected": "npx ts-node 20250815/scripts/analyze-submit-actions.ts",
+    "compare-submissions": "npx ts-node 20250815/scripts/compare-expected-vs-actual.ts"
+  },
+  "dependencies": {
+    "@types/node": "^20.11.0",
+    "axios": "^1.11.0",
+    "axios-cookiejar-support": "^5.0.5",
+    "csv-parse": "^5.5.3",
+    "dotenv": "^17.2.1",
+    "tough-cookie": "^5.1.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  },
+  "author": "",
+  "license": "ISC"
+}

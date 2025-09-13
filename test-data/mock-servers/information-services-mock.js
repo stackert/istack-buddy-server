@@ -24,6 +24,9 @@ function getSampleResults(queryName) {
     case 'submitActionReport':
       fileName = 'fake-sumo-submit-action-report-form-5894350.json';
       break;
+    case 'submitActionsSelectedForExecution':
+      fileName = 'fake-sumo-submit-actions-selected-report.json';
+      break;
     case 'submissionCreatedForForm':
     default:
       fileName = 'fake-sumo-submissin-report-large.json';

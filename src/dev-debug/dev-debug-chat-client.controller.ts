@@ -606,21 +606,22 @@ export class DevDebugChatClientController {
             <div class="intent-panel">
                 <h3>🎯 Intent Input</h3>
                 <select id="intent-preset" onchange="loadIntentPreset()" style="margin-bottom: 10px; padding: 8px; width: 100%;">
+                    <option value="sumoAnalysis">Sumo - Multi-Report Analysis</option>
+                    <option value="submitAction">Sumo - Submit Action Analysis</option>
+                    <option value="submissionCreated">Sumo - Form Submission Tracking</option>
+                    <option value="authProvider">Sumo - Auth Provider Metrics</option>
                     <option value="knowledgeBase">Knowledge Base Search</option>
                     <option value="contextDynamic">Context Dynamic - Form</option>
-                    <option value="submissionCreated">Form Submission Tracking</option>
-                    <option value="submitAction">Submit Action Analysis</option>
-                    <option value="authProvider">Auth Provider Metrics</option>
                 </select>
                 <textarea id="intent-input" class="intent-input-box" placeholder="Raw Intent JSON...">{
-  "intent": "searchKnowledgeBase",
-  "subIntents": ["topResults"],
+  "intent": "generateSumoAnalysis",
+  "subIntents": ["multiReportAnalysis"],
   "subjects": {
-    "query": ["form"],
-    "minConfidence": ["0.7"],
-    "pageSize": ["10"]
+    "formId": ["12345"],
+    "startDate": ["2025-09-09"],
+    "endDate": ["2025-09-10"]
   },
-  "originalUserPrompt": "Customer is raised concern that they are unable restored to previously deleted fields. What can we do? What do we check? Is there anything we can do on our end? What to tell the customer?"
+  "originalUserPrompt": "Run comprehensive Sumo analysis comparing submit actions and form submissions"
 }</textarea>
                 <button class="intent-btn" onclick="sendIntent()">Send Intent</button>
             </div>
@@ -984,6 +985,16 @@ export class DevDebugChatClientController {
             const textarea = document.getElementById('intent-input');
             
             const presets = {
+                sumoAnalysis: {
+                    intent: "generateSumoAnalysis",
+                    subIntents: ["multiReportAnalysis"],
+                    subjects: {
+                        formId: ["12345"],
+                        startDate: ["2025-09-09"],
+                        endDate: ["2025-09-10"]
+                    },
+                    originalUserPrompt: "Run comprehensive Sumo analysis comparing submit actions and form submissions"
+                },
                 submissionCreated: {
                     intent: "generateSumoReport",
                     subIntents: ["submissionCreatedForForm"],

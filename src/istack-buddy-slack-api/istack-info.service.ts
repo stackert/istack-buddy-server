@@ -289,6 +289,56 @@ export class IStackInfoService implements OnModuleDestroy {
       );
     },
 
+    submitQueryAndWait: async (
+      request: SumoJobSubmissionRequest,
+      maxAttempts: number = 30,
+      pollIntervalMs: number = 1000,
+    ): Promise<string> => {
+      this.logger.debug(
+        `Submitting Sumo query and waiting: ${request.queryName}`,
+      );
+
+      // Submit the query
+      const submissionResponse = await this.sumoReport.submitQuery(request);
+      const jobId = submissionResponse.jobId;
+
+      this.logger.debug(`Sumo job submitted: ${jobId}`);
+
+      // Poll until completed
+      let status = 'pending';
+      let attempts = 0;
+
+      while (
+        (status === 'pending' || status === 'running') &&
+        attempts < maxAttempts
+      ) {
+        await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
+        const statusResponse = await this.sumoReport.jobs.getStatus(jobId);
+        status = statusResponse.status;
+        this.logger.debug(
+          `Job ${jobId} status: ${status} (attempt ${++attempts})`,
+        );
+      }
+
+      if (status !== 'completed') {
+        throw new Error(
+          `Sumo job ${jobId} timed out after ${maxAttempts} attempts`,
+        );
+      }
+
+      // Get results and return fileId
+      const resultsResponse = await this.sumoReport.jobs.getResults(jobId);
+
+      if (!resultsResponse.fileId) {
+        throw new Error(`No fileId found in results for job ${jobId}`);
+      }
+
+      this.logger.debug(
+        `Job ${jobId} completed with fileId: ${resultsResponse.fileId}`,
+      );
+      return resultsResponse.fileId;
+    },
+
     getQueryList: (): Promise<SumoQueryListResponse> =>
       this.getCachedMetaData<SumoQueryListResponse>('getQueryList'),
 

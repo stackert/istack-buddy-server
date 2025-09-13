@@ -1,0 +1,442 @@
+Loading credentials...
+[dotenv@17.2.1] injecting env (3) from .env.live -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
+=== REQUEST DETAILS ===
+Job ID: 13701EC469823993
+URL: https://api.us2.sumologic.com/api/v1/search/jobs/13701EC469823993/messages?offset=0&limit=10
+Method: GET
+
+Getting job results...
+=== RESPONSE ===
+Status: 200
+Response Data:
+{
+  "warning": "You must enable cookies for subsequent requests to the search job. A 404 status (Page Not Found) on a follow-up request may be due to a cookie not accompanying the request.",
+  "fields": [
+    {
+      "name": "_searchabletime",
+      "fieldType": "long",
+      "keyField": false,
+      "userReferenced": false
+    },
+    {
+      "name": "_blockid",
+      "fieldType": "long",
+      "keyField": false,
+      "userReferenced": true
+    },
+    {
+      "name": "_collector",
+      "fieldType": "string",
+      "keyField": false,
+      "userReferenced": true
+    },
+    {
+      "name": "_collectorid",
+      "fieldType": "long",
+      "keyField": false,
+      "userReferenced": true
+    },
+    {
+      "name": "_format",
+      "fieldType": "string",
+      "keyField": false,
+      "userReferenced": true
+    },
+    {
+      "name": "_loglevel",
+      "fieldType": "string",
+      "keyField": false,
+      "userReferenced": false
+    },
+    {
+      "name": "_messagecount",
+      "fieldType": "int",
+      "keyField": false,
+      "userReferenced": true
+    },
+    {
+      "name": "_messageid",
+      "fieldType": "long",
+      "keyField": false,
+      "userReferenced": true
+    },
+    {
+      "name": "_messagetime",
+      "fieldType": "long",
+      "keyField": false,
+      "userReferenced": true
+    },
+    {
+      "name": "_raw",
+      "fieldType": "string",
+      "keyField": false,
+      "userReferenced": true
+    },
+    {
+      "name": "_receipttime",
+      "fieldType": "long",
+      "keyField": false,
+      "userReferenced": false
+    },
+    {
+      "name": "_size",
+      "fieldType": "long",
+      "keyField": false,
+      "userReferenced": true
+    },
+    {
+      "name": "_source",
+      "fieldType": "string",
+      "keyField": false,
+      "userReferenced": true
+    },
+    {
+      "name": "_sourcecategory",
+      "fieldType": "string",
+      "keyField": false,
+      "userReferenced": true
+    },
+    {
+      "name": "_sourcehost",
+      "fieldType": "string",
+      "keyField": false,
+      "userReferenced": true
+    },
+    {
+      "name": "_sourceid",
+      "fieldType": "long",
+      "keyField": false,
+      "userReferenced": true
+    },
+    {
+      "name": "_sourcename",
+      "fieldType": "string",
+      "keyField": false,
+      "userReferenced": true
+    },
+    {
+      "name": "_view",
+      "fieldType": "string",
+      "keyField": false,
+      "userReferenced": true
+    },
+    {
+      "name": "accountid",
+      "fieldType": "string",
+      "keyField": false,
+      "userReferenced": false
+    },
+    {
+      "name": "event",
+      "fieldType": "string",
+      "keyField": false,
+      "userReferenced": false
+    },
+    {
+      "name": "formid",
+      "fieldType": "string",
+      "keyField": false,
+      "userReferenced": false
+    },
+    {
+      "name": "hipaaaccount",
+      "fieldType": "string",
+      "keyField": false,
+      "userReferenced": false
+    },
+    {
+      "name": "submissionid",
+      "fieldType": "string",
+      "keyField": false,
+      "userReferenced": false
+    },
+    {
+      "name": "userid",
+      "fieldType": "string",
+      "keyField": false,
+      "userReferenced": false
+    }
+  ],
+  "messages": [
+    {
+      "map": {
+        "formid": "6116351",
+        "_blockid": "-5221618022332938074",
+        "_loglevel": "INFO",
+        "_messagetime": "1755280640036",
+        "_raw": "{\"message\":\"Submission created on {formId}.\",\"context\":{\"submissionId\":1371629167,\"isPartialSubmission\":false,\"submissionMethod\":\"web\",\"formId\":\"6116351\",\"accountId\":\"981486\",\"submissionNonce\":null,\"submissionChecksum\":\"b3bf6b7e2de8c6939236d28356ded47aa4825e7c968e591a6fd27097d3c0ffad\",\"event\":\"submission_created\",\"sessionId\":\"\",\"errorId\":\"fd6e7281df35265d9513\"},\"level\":200,\"level_name\":\"INFO\",\"channel\":\"formstackAppLog\",\"datetime\":\"2025-08-15T13:57:20.036217-04:00\",\"extra\":{\"hostname\":\"ip-172-22-3-22.ec2.internal\",\"uid\":\"7915da8\",\"url\":\"/forms/index.php\",\"ip\":\"216.176.105.80\",\"http_method\":\"POST\",\"server\":\"formstack.com\",\"referrer\":\"https://outgrow.formstack.com/forms/oa_alkis_crassas_omnia\",\"memory_usage\":\"6 MB\"},\"dd\":{\"trace_id\":\"139067659724833753119956253241001547398\",\"span_id\":\"13848705820643202694\",\"trace_url\":\"https://app.datadoghq.com/apm/trace/139067659724833753119956253241001547398\"}}",
+        "_collectorid": "403677884",
+        "_sourceid": "3353508943",
+        "_collector": "ip-172-22-3-22.ec2.internal-1755091154696",
+        "_messagecount": "897594",
+        "_sourcehost": "ip-172-22-3-22.ec2.internal",
+        "userid": "",
+        "_searchabletime": "1755280650652",
+        "_messageid": "-8568640410141284656",
+        "_sourcename": "/var/log/formstack/app.log",
+        "_size": "907",
+        "accountid": "981486",
+        "hipaaaccount": "",
+        "submissionid": "1371629167",
+        "_view": "Formstack_Prod",
+        "_receipttime": "1755280641147",
+        "_sourcecategory": "formstack/prod/web/formstack-app/log",
+        "_format": "t:cache:o:436:l:32:p:yyyy-MM-dd'T'HH:mm:ss*SSSZZZZ",
+        "_source": "app_log",
+        "event": "submission_created"
+      }
+    },
+    {
+      "map": {
+        "formid": "6209484",
+        "_blockid": "-1470471321698351611",
+        "_loglevel": "INFO",
+        "_messagetime": "1755280635961",
+        "_raw": "{\"message\":\"Submission created on {formId}.\",\"context\":{\"submissionId\":1371629142,\"isPartialSubmission\":false,\"submissionMethod\":\"web\",\"formId\":\"6209484\",\"accountId\":\"913104\",\"submissionNonce\":null,\"submissionChecksum\":\"8c32b20466ffbe80d193103792e1e4f6c73104c4e4e0f11da2827939695b62e5\",\"event\":\"submission_created\",\"sessionId\":\"\",\"errorId\":\"ba39d9b89e47f30c5a60\"},\"level\":200,\"level_name\":\"INFO\",\"channel\":\"formstackAppLog\",\"datetime\":\"2025-08-15T13:57:15.961382-04:00\",\"extra\":{\"hostname\":\"ip-172-22-2-203.ec2.internal\",\"uid\":\"1f1e97f\",\"url\":\"/forms/index.php\",\"ip\":\"12.74.84.76\",\"http_method\":\"POST\",\"server\":\"formstack.com\",\"referrer\":\"https://medtechealthcare.formstack.com/forms/hca_step3\",\"memory_usage\":\"4 MB\"},\"dd\":{\"trace_id\":\"139067659407921103051615340213966962245\",\"span_id\":\"2565143167784418885\",\"trace_url\":\"https://app.datadoghq.com/apm/trace/139067659407921103051615340213966962245\"}}",
+        "_collectorid": "403677877",
+        "_sourceid": "3353508911",
+        "_collector": "ip-172-22-2-203.ec2.internal-1755091152710",
+        "_messagecount": "896433",
+        "_sourcehost": "ip-172-22-2-203.ec2.internal",
+        "userid": "",
+        "_searchabletime": "1755280650652",
+        "_messageid": "-7505776880590125676",
+        "_sourcename": "/var/log/formstack/app.log",
+        "_size": "900",
+        "accountid": "913104",
+        "hipaaaccount": "",
+        "submissionid": "1371629142",
+        "_view": "Formstack_Prod",
+        "_receipttime": "1755280637142",
+        "_sourcecategory": "formstack/prod/web/formstack-app/log",
+        "_format": "t:cache:o:436:l:32:p:yyyy-MM-dd'T'HH:mm:ss*SSSZZZZ",
+        "_source": "app_log",
+        "event": "submission_created"
+      }
+    },
+    {
+      "map": {
+        "formid": "5306106",
+        "_blockid": "-3715835840685391359",
+        "_loglevel": "INFO",
+        "_messagetime": "1755280634886",
+        "_raw": "{\"message\":\"Submission created on {formId}.\",\"context\":{\"submissionId\":1371629135,\"isPartialSubmission\":false,\"submissionMethod\":\"web\",\"formId\":\"5306106\",\"accountId\":\"618302\",\"submissionNonce\":null,\"submissionChecksum\":\"1da713b9cc2dd1653c7430fed65aebc274f71769857f821a57cee2440e3a1510\",\"event\":\"submission_created\",\"sessionId\":\"\",\"errorId\":\"0f086ce6b47ae30dd46d\"},\"level\":200,\"level_name\":\"INFO\",\"channel\":\"formstackAppLog\",\"datetime\":\"2025-08-15T13:57:14.886517-04:00\",\"extra\":{\"hostname\":\"ip-172-22-2-203.ec2.internal\",\"uid\":\"016a657\",\"url\":\"/forms/index.php\",\"ip\":\"170.142.177.232\",\"http_method\":\"POST\",\"server\":\"formstack.com\",\"referrer\":\"https://stateoftennessee.formstack.com/forms/naloxone\",\"memory_usage\":\"4 MB\"},\"dd\":{\"trace_id\":\"139067659328692940550314542710783411558\",\"span_id\":\"15528683258144818534\",\"trace_url\":\"https://app.datadoghq.com/apm/trace/139067659328692940550314542710783411558\"}}",
+        "_collectorid": "403677877",
+        "_sourceid": "3353508911",
+        "_collector": "ip-172-22-2-203.ec2.internal-1755091152710",
+        "_messagecount": "896384",
+        "_sourcehost": "ip-172-22-2-203.ec2.internal",
+        "userid": "",
+        "_searchabletime": "1755280650652",
+        "_messageid": "-5858341437838327502",
+        "_sourcename": "/var/log/formstack/app.log",
+        "_size": "904",
+        "accountid": "618302",
+        "hipaaaccount": "",
+        "submissionid": "1371629135",
+        "_view": "Formstack_Prod",
+        "_receipttime": "1755280636140",
+        "_sourcecategory": "formstack/prod/web/formstack-app/log",
+        "_format": "t:cache:o:436:l:32:p:yyyy-MM-dd'T'HH:mm:ss*SSSZZZZ",
+        "_source": "app_log",
+        "event": "submission_created"
+      }
+    },
+    {
+      "map": {
+        "formid": "6273638",
+        "_blockid": "5345536046620230093",
+        "_loglevel": "INFO",
+        "_messagetime": "1755280630376",
+        "_raw": "{\"message\":\"Submission created on {formId}.\",\"context\":{\"submissionId\":1371629110,\"isPartialSubmission\":false,\"submissionMethod\":\"web\",\"formId\":\"6273638\",\"accountId\":\"1084888\",\"submissionNonce\":null,\"submissionChecksum\":\"235792caf776abc049a6ae4270bc3932bad6a979cd462a070c6197288786bc51\",\"event\":\"submission_created\",\"sessionId\":\"\",\"errorId\":\"fb9a2830dae7962dc6c6\"},\"level\":200,\"level_name\":\"INFO\",\"channel\":\"formstackAppLog\",\"datetime\":\"2025-08-15T13:57:10.376939-04:00\",\"extra\":{\"hostname\":\"ip-172-22-3-22.ec2.internal\",\"uid\":\"4ce1adb\",\"url\":\"/forms/index.php\",\"ip\":\"67.205.215.81\",\"http_method\":\"POST\",\"server\":\"formstack.com\",\"referrer\":\"https://ceocoaching.formstack.com/forms/2025dallas_sp_connection_forum\",\"memory_usage\":\"4 MB\"},\"dd\":{\"trace_id\":\"139067659011780290483499886597309380531\",\"span_id\":\"5771377518846588851\",\"trace_url\":\"https://app.datadoghq.com/apm/trace/139067659011780290483499886597309380531\"}}",
+        "_collectorid": "403677884",
+        "_sourceid": "3353508943",
+        "_collector": "ip-172-22-3-22.ec2.internal-1755091154696",
+        "_messagecount": "897256",
+        "_sourcehost": "ip-172-22-3-22.ec2.internal",
+        "userid": "",
+        "_searchabletime": "1755280650652",
+        "_messageid": "-5825205556576400015",
+        "_sourcename": "/var/log/formstack/app.log",
+        "_size": "918",
+        "accountid": "1084888",
+        "hipaaaccount": "",
+        "submissionid": "1371629110",
+        "_view": "Formstack_Prod",
+        "_receipttime": "1755280632135",
+        "_sourcecategory": "formstack/prod/web/formstack-app/log",
+        "_format": "t:cache:o:437:l:32:p:yyyy-MM-dd'T'HH:mm:ss*SSSZZZZ",
+        "_source": "app_log",
+        "event": "submission_created"
+      }
+    },
+    {
+      "map": {
+        "formid": "3174679",
+        "_blockid": "-3146232742206487036",
+        "_loglevel": "INFO",
+        "_messagetime": "1755280630361",
+        "_raw": "{\"message\":\"Submission created on {formId}.\",\"context\":{\"submissionId\":1371629109,\"isPartialSubmission\":false,\"submissionMethod\":\"web\",\"formId\":\"3174679\",\"accountId\":\"469719\",\"submissionNonce\":null,\"submissionChecksum\":\"995b3bee3e715668c982ba05d0bf997d74ad39d6b2926786609df0afc5276a95\",\"event\":\"submission_created\",\"sessionId\":\"\",\"errorId\":\"000d96068c908f19aa2a\"},\"level\":200,\"level_name\":\"INFO\",\"channel\":\"formstackAppLog\",\"datetime\":\"2025-08-15T13:57:10.361949-04:00\",\"extra\":{\"hostname\":\"ip-172-22-3-22.ec2.internal\",\"uid\":\"a174ad4\",\"url\":\"/forms/index.php\",\"ip\":\"187.172.114.105\",\"http_method\":\"POST\",\"server\":\"formstack.com\",\"referrer\":\"https://ywammazatlan.formstack.com/forms/mid_lecture_phase_selfevaluation_auto_evaluaci_n_a_la_mitad_de_la_fase_te_rica\",\"memory_usage\":\"6 MB\"},\"dd\":{\"trace_id\":\"139067659011780290488600375881438806887\",\"span_id\":\"10871866802976015207\",\"trace_url\":\"https://app.datadoghq.com/apm/trace/139067659011780290488600375881438806887\"}}",
+        "_collectorid": "403677884",
+        "_sourceid": "3353508943",
+        "_collector": "ip-172-22-3-22.ec2.internal-1755091154696",
+        "_messagecount": "897250",
+        "_sourcehost": "ip-172-22-3-22.ec2.internal",
+        "userid": "",
+        "_searchabletime": "1755280650652",
+        "_messageid": "-7613900816926767928",
+        "_sourcename": "/var/log/formstack/app.log",
+        "_size": "969",
+        "accountid": "469719",
+        "hipaaaccount": "",
+        "submissionid": "1371629109",
+        "_view": "Formstack_Prod",
+        "_receipttime": "1755280632135",
+        "_sourcecategory": "formstack/prod/web/formstack-app/log",
+        "_format": "t:cache:o:436:l:32:p:yyyy-MM-dd'T'HH:mm:ss*SSSZZZZ",
+        "_source": "app_log",
+        "event": "submission_created"
+      }
+    },
+    {
+      "map": {
+        "formid": "4703908",
+        "_blockid": "-594232890499051774",
+        "_loglevel": "INFO",
+        "_messagetime": "1755280629921",
+        "_raw": "{\"message\":\"Submission created on {formId}.\",\"context\":{\"submissionId\":1371629106,\"isPartialSubmission\":false,\"submissionMethod\":\"web\",\"formId\":\"4703908\",\"accountId\":\"487737\",\"submissionNonce\":null,\"submissionChecksum\":\"5603c63f3d46452ac17f39e20ed4d2957b742e0a1a5b4d7dddd430890717dece\",\"event\":\"submission_created\",\"sessionId\":\"\",\"errorId\":\"3ef984bcee5dfb2bf852\"},\"level\":200,\"level_name\":\"INFO\",\"channel\":\"formstackAppLog\",\"datetime\":\"2025-08-15T13:57:09.921767-04:00\",\"extra\":{\"hostname\":\"ip-172-22-3-22.ec2.internal\",\"uid\":\"bf94d44\",\"url\":\"/forms/index.php\",\"ip\":\"216.249.77.17\",\"http_method\":\"POST\",\"server\":\"formstack.com\",\"referrer\":\"https://eldoraspeedway.formstack.com/forms/suites_catering_order_form\",\"memory_usage\":\"6 MB\"},\"dd\":{\"trace_id\":\"139067658932552127963469890496048861505\",\"span_id\":\"5719011130020161\",\"trace_url\":\"https://app.datadoghq.com/apm/trace/139067658932552127963469890496048861505\"}}",
+        "_collectorid": "403677884",
+        "_sourceid": "3353508943",
+        "_collector": "ip-172-22-3-22.ec2.internal-1755091154696",
+        "_messagecount": "897234",
+        "_sourcehost": "ip-172-22-3-22.ec2.internal",
+        "userid": "",
+        "_searchabletime": "1755280650652",
+        "_messageid": "-9161353396512423399",
+        "_sourcename": "/var/log/formstack/app.log",
+        "_size": "913",
+        "accountid": "487737",
+        "hipaaaccount": "",
+        "submissionid": "1371629106",
+        "_view": "Formstack_Prod",
+        "_receipttime": "1755280631134",
+        "_sourcecategory": "formstack/prod/web/formstack-app/log",
+        "_format": "t:cache:o:436:l:32:p:yyyy-MM-dd'T'HH:mm:ss*SSSZZZZ",
+        "_source": "app_log",
+        "event": "submission_created"
+      }
+    },
+    {
+      "map": {
+        "formid": "5330307",
+        "_blockid": "-7560230501323160212",
+        "_loglevel": "INFO",
+        "_messagetime": "1755280629154",
+        "_raw": "{\"message\":\"Submission created on {formId}.\",\"context\":{\"submissionId\":1371629101,\"isPartialSubmission\":false,\"submissionMethod\":\"web\",\"formId\":\"5330307\",\"accountId\":\"46770\",\"submissionNonce\":null,\"submissionChecksum\":\"bc24529a97b0f0c9b9f5a53517702a9092b5e49745b48ea9b16540fa25f79b2f\",\"event\":\"submission_created\",\"sessionId\":\"\",\"errorId\":\"ab15f58b175561637a1c\"},\"level\":200,\"level_name\":\"INFO\",\"channel\":\"formstackAppLog\",\"datetime\":\"2025-08-15T13:57:09.154740-04:00\",\"extra\":{\"hostname\":\"ip-172-22-3-22.ec2.internal\",\"uid\":\"9fcea25\",\"url\":\"/workflows/purchase_request_v_2\",\"ip\":\"24.176.230.10\",\"http_method\":\"POST\",\"server\":\"formstack.com\",\"referrer\":\"https://sierraview.formstack.com/workflows/purchase_request_v_2\",\"memory_usage\":\"4 MB\"},\"dd\":{\"trace_id\":\"139067658853323965457638396870304942215\",\"span_id\":\"8438562978930051207\",\"trace_url\":\"https://app.datadoghq.com/apm/trace/139067658853323965457638396870304942215\"}}",
+        "_collectorid": "403677884",
+        "_sourceid": "3353508943",
+        "_collector": "ip-172-22-3-22.ec2.internal-1755091154696",
+        "_messagecount": "897202",
+        "_sourcehost": "ip-172-22-3-22.ec2.internal",
+        "userid": "",
+        "_searchabletime": "1755280650652",
+        "_messageid": "-7734252636077724493",
+        "_sourcename": "/var/log/formstack/app.log",
+        "_size": "924",
+        "accountid": "46770",
+        "hipaaaccount": "",
+        "submissionid": "1371629101",
+        "_view": "Formstack_Prod",
+        "_receipttime": "1755280630132",
+        "_sourcecategory": "formstack/prod/web/formstack-app/log",
+        "_format": "t:cache:o:435:l:32:p:yyyy-MM-dd'T'HH:mm:ss*SSSZZZZ",
+        "_source": "app_log",
+        "event": "submission_created"
+      }
+    },
+    {
+      "map": {
+        "formid": "1741700",
+        "_blockid": "6209283904793232293",
+        "_loglevel": "INFO",
+        "_messagetime": "1755280627788",
+        "_raw": "{\"message\":\"Submission created on {formId}.\",\"context\":{\"submissionId\":1371629094,\"isPartialSubmission\":false,\"submissionMethod\":\"web\",\"formId\":\"1741700\",\"accountId\":\"523327\",\"submissionNonce\":null,\"submissionChecksum\":\"8f3b4dd0529b38106b12a386177e0a5b6f320979ff6ce478cd2aa67189f66c92\",\"event\":\"submission_created\",\"sessionId\":\"\",\"errorId\":\"e787c7496b7e0c3ae6f9\"},\"level\":200,\"level_name\":\"INFO\",\"channel\":\"formstackAppLog\",\"datetime\":\"2025-08-15T13:57:07.788798-04:00\",\"extra\":{\"hostname\":\"ip-172-22-3-22.ec2.internal\",\"uid\":\"f2eb25a\",\"url\":\"/forms/index.php\",\"ip\":\"64.38.180.105\",\"http_method\":\"POST\",\"server\":\"formstack.com\",\"referrer\":\"https://franklincollege-ubsru.formstack.com/forms/untitled_form20?i-18822958-UgtYmIBDwk\",\"memory_usage\":\"6 MB\"},\"dd\":{\"trace_id\":\"139067658774095802946022881200637200376\",\"span_id\":\"11087384902806259704\",\"trace_url\":\"https://app.datadoghq.com/apm/trace/139067658774095802946022881200637200376\"}}",
+        "_collectorid": "403677884",
+        "_sourceid": "3353508943",
+        "_collector": "ip-172-22-3-22.ec2.internal-1755091154696",
+        "_messagecount": "897175",
+        "_sourcehost": "ip-172-22-3-22.ec2.internal",
+        "userid": "",
+        "_searchabletime": "1755280650652",
+        "_messageid": "-6066682748801407538",
+        "_sourcename": "/var/log/formstack/app.log",
+        "_size": "935",
+        "accountid": "523327",
+        "hipaaaccount": "",
+        "submissionid": "1371629094",
+        "_view": "Formstack_Prod",
+        "_receipttime": "1755280629132",
+        "_sourcecategory": "formstack/prod/web/formstack-app/log",
+        "_format": "t:cache:o:436:l:32:p:yyyy-MM-dd'T'HH:mm:ss*SSSZZZZ",
+        "_source": "app_log",
+        "event": "submission_created"
+      }
+    },
+    {
+      "map": {
+        "formid": "5934232",
+        "_blockid": "-6888669443727080935",
+        "_loglevel": "INFO",
+        "_messagetime": "1755280627692",
+        "_raw": "{\"message\":\"Submission created on {formId}.\",\"context\":{\"submissionId\":1371629092,\"isPartialSubmission\":false,\"submissionMethod\":\"web\",\"formId\":\"5934232\",\"accountId\":\"492400\",\"submissionNonce\":null,\"submissionChecksum\":\"b1322c0592b202a68f73cde53a5845e37e2dcffef7d37f476314514b5d2ee373\",\"event\":\"submission_created\",\"sessionId\":\"\",\"errorId\":\"e7d75dd0ea877dbb0662\"},\"level\":200,\"level_name\":\"INFO\",\"channel\":\"formstackAppLog\",\"datetime\":\"2025-08-15T13:57:07.692502-04:00\",\"extra\":{\"hostname\":\"ip-172-22-3-22.ec2.internal\",\"uid\":\"5a1d2c8\",\"url\":\"/forms/index.php\",\"ip\":\"172.56.223.191\",\"http_method\":\"POST\",\"server\":\"formstack.com\",\"referrer\":\"https://srm--c.vf.force.com/\",\"memory_usage\":\"4 MB\"},\"dd\":{\"trace_id\":\"139067658774095802945269944537750829446\",\"span_id\":\"10334448239919888774\",\"trace_url\":\"https://app.datadoghq.com/apm/trace/139067658774095802945269944537750829446\"}}",
+        "_collectorid": "403677884",
+        "_sourceid": "3353508943",
+        "_collector": "ip-172-22-3-22.ec2.internal-1755091154696",
+        "_messagecount": "897166",
+        "_sourcehost": "ip-172-22-3-22.ec2.internal",
+        "userid": "",
+        "_searchabletime": "1755280650652",
+        "_messageid": "-6447004573296879304",
+        "_sourcename": "/var/log/formstack/app.log",
+        "_size": "877",
+        "accountid": "492400",
+        "hipaaaccount": "",
+        "submissionid": "1371629092",
+        "_view": "Formstack_Prod",
+        "_receipttime": "1755280629132",
+        "_sourcecategory": "formstack/prod/web/formstack-app/log",
+        "_format": "t:cache:o:436:l:32:p:yyyy-MM-dd'T'HH:mm:ss*SSSZZZZ",
+        "_source": "app_log",
+        "event": "submission_created"
+      }
+    },
+    {
+      "map": {
+        "formid": "6267883",
+        "_blockid": "6753089109316814675",
+        "_loglevel": "INFO",
+        "_messagetime": "1755280626809",
+        "_raw": "{\"message\":\"Submission created on {formId}.\",\"context\":{\"submissionId\":1371629086,\"isPartialSubmission\":false,\"submissionMethod\":\"web\",\"formId\":\"6267883\",\"accountId\":\"605378\",\"submissionNonce\":null,\"submissionChecksum\":\"f0a97e215b77946e38cda23c653a8402bc06fc0c31f8a9268ce9fe9346adc787\",\"event\":\"submission_created\",\"sessionId\":\"\",\"errorId\":\"8aa2fadcbe8a48ef3fdb\"},\"level\":200,\"level_name\":\"INFO\",\"channel\":\"formstackAppLog\",\"datetime\":\"2025-08-15T13:57:06.809030-04:00\",\"extra\":{\"hostname\":\"ip-172-22-3-22.ec2.internal\",\"uid\":\"0f4bcfc\",\"url\":\"/forms/index.php\",\"ip\":\"98.171.103.106\",\"http_method\":\"POST\",\"server\":\"formstack.com\",\"referrer\":null,\"memory_usage\":\"4 MB\"},\"dd\":{\"trace_id\":\"139067658694867640421956853562498071516\",\"span_id\":\"1285694858211081180\",\"trace_url\":\"https://app.datadoghq.com/apm/trace/139067658694867640421956853562498071516\"}}",
+        "_collectorid": "403677884",
+        "_sourceid": "3353508943",
+        "_collector": "ip-172-22-3-22.ec2.internal-1755091154696",
+        "_messagecount": "897142",
+        "_sourcehost": "ip-172-22-3-22.ec2.internal",
+        "userid": "",
+        "_searchabletime": "1755280650652",
+        "_messageid": "-5203130943595392165",
+        "_sourcename": "/var/log/formstack/app.log",
+        "_size": "850",
+        "accountid": "605378",
+        "hipaaaccount": "",
+        "submissionid": "1371629086",
+        "_view": "Formstack_Prod",
+        "_receipttime": "1755280628132",
+        "_sourcecategory": "formstack/prod/web/formstack-app/log",
+        "_format": "t:cache:o:436:l:32:p:yyyy-MM-dd'T'HH:mm:ss*SSSZZZZ",
+        "_source": "app_log",
+        "event": "submission_created"
+      }
+    }
+  ]
+}

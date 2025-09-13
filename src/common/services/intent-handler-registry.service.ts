@@ -1,6 +1,7 @@
 import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
 import { IntentRouterService } from './intent-router.service';
-import { SumoReportJobExecutor } from '../../intent-handlers/sumo-report-job-executor.service';
+import { SumoReportSingleJobExecutor } from '../../intent-handlers/sumo-report-single-job-executor.service';
+import { SumoReportMultiJobExecutor } from '../../intent-handlers/sumo-report-multi-job-executor.service';
 import { KnowledgeBaseJobExecutor } from '../../intent-handlers/knowledge-base-job-executor.service';
 import { ContextDynamicJobExecutor } from '../../intent-handlers/context-dynamic-job-executor.service';
 import { IntentHandler } from '../interfaces/intent-handler.interface';
@@ -11,14 +12,16 @@ export class IntentHandlerRegistryService implements OnModuleInit {
 
   constructor(
     private readonly intentRouter: IntentRouterService,
-    private readonly sumoReportExecutor: SumoReportJobExecutor,
+    private readonly sumoReportSingleExecutor: SumoReportSingleJobExecutor,
+    private readonly sumoReportMultiExecutor: SumoReportMultiJobExecutor,
     private readonly knowledgeBaseExecutor: KnowledgeBaseJobExecutor,
     private readonly contextDynamicExecutor: ContextDynamicJobExecutor,
   ) {}
 
   onModuleInit() {
     this.logger.log('Registering intent handlers...');
-    this.registerHandler(this.sumoReportExecutor);
+    this.registerHandler(this.sumoReportSingleExecutor);
+    this.registerHandler(this.sumoReportMultiExecutor);
     this.registerHandler(this.knowledgeBaseExecutor);
     this.registerHandler(this.contextDynamicExecutor);
     this.logger.log('Intent handler registration completed');
