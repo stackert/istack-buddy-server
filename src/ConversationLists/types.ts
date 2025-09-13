@@ -1,17 +1,18 @@
 type TConversationMessageContentMediaTypes =
   | 'text/plain'
+  | 'text/markdown'
   | 'image/jpg'
   | 'image/gif'
   | 'image/*'
   | 'application/octet-stream'
   | 'application/json'
   // Information Services Content Types
-  | 'content/dynamic'
-  | 'content/dynamic-account'
-  | 'content/dynamic-form'
-  | 'content/dynamic-auth-provider'
-  | 'content/document' // when toRole = 'robot' visible to robot only, when toRole = 'user' visible to user AND robot, content always visible to robot
-  | 'content/knowledge-base-prompt' // structured robot prompt for knowledge base searches
+  | 'context/dynamic'
+  | 'context/dynamic-account'
+  | 'context/dynamic-form'
+  | 'context/dynamic-auth-provider'
+  | 'context/document' // when toRole = 'robot' visible to robot only, when toRole = 'user' visible to user AND robot, content always visible to robot
+  | 'context/knowledge-base-prompt' // structured robot prompt for knowledge base searches
   | 'sumo-search/report'
   | 'sumo-syntax/query'
   | 'sumo-syntax/validation';
@@ -29,8 +30,13 @@ type TConversationMessageContentString = TConversationMessageContentTypes<
   string
 >;
 
+type TConversationMessageContentMarkdown = TConversationMessageContentTypes<
+  'text/markdown',
+  string
+>;
+
 type TConversationMessageRobotContent = TConversationMessageContentTypes<
-  'content/document',
+  'context/document',
   string
 >;
 
@@ -47,13 +53,13 @@ type TConversationMessageContentFileBuffer = TConversationMessageContentTypes<
 
 // Information Services Content Types
 type TConversationMessageContentDynamic = TConversationMessageContentTypes<
-  'content/dynamic',
+  'context/dynamic',
   string
 >;
 
 type TConversationMessageContentDynamicAccount =
   TConversationMessageContentTypes<
-    'content/dynamic-account',
+    'context/dynamic-account',
     {
       accountRecord: any;
       [key: string]: any;
@@ -61,7 +67,7 @@ type TConversationMessageContentDynamicAccount =
   >;
 
 type TConversationMessageContentDynamicForm = TConversationMessageContentTypes<
-  'content/dynamic-form',
+  'context/dynamic-form',
   {
     formRecord: any;
     submitActionIds?: string[];
@@ -72,7 +78,7 @@ type TConversationMessageContentDynamicForm = TConversationMessageContentTypes<
 
 type TConversationMessageContentDynamicAuthProvider =
   TConversationMessageContentTypes<
-    'content/dynamic-auth-provider',
+    'context/dynamic-auth-provider',
     {
       authProviderRecord: any;
       [key: string]: any;
@@ -80,7 +86,7 @@ type TConversationMessageContentDynamicAuthProvider =
   >;
 
 type TConversationMessageContentDocument = TConversationMessageContentTypes<
-  'content/document',
+  'context/document',
   {
     content: any;
     tokenCount?: number;
@@ -124,6 +130,7 @@ type TConversationMessageContentSumoSyntaxValidation =
 // Union type for all possible content types
 type TConversationMessageContent =
   | TConversationMessageContentString
+  | TConversationMessageContentMarkdown
   | TConversationMessageRobotContent
   | TConversationMessageContentImageBuffer
   | TConversationMessageContentFileBuffer
@@ -160,6 +167,7 @@ export type {
   // Content types
   TConversationMessageContent,
   TConversationMessageContentString,
+  TConversationMessageContentMarkdown,
   TConversationMessageContentImageBuffer,
   TConversationMessageContentFileBuffer,
   // Information Services Content Types

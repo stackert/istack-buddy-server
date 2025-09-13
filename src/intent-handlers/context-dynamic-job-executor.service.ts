@@ -97,7 +97,7 @@ export class ContextDynamicJobExecutor implements IntentHandler {
     // Send the context as a structured message
     await this.chatManagerService.addMessage({
       content: {
-        type: 'content/dynamic-form',
+        type: 'context/dynamic-form',
         payload: {
           formRecord: form,
           submitActionIds: form.submitActions?.map((action: any) =>

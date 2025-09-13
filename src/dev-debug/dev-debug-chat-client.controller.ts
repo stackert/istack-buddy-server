@@ -549,13 +549,18 @@ export class DevDebugChatClientController {
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
         .header { background: #007bff; color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
         .chat-container { display: flex; gap: 20px; height: 60vh; }
-        .messages-panel { flex: 2; background: white; border-radius: 8px; padding: 20px; overflow-y: auto; }
-        .right-panel { flex: 1; display: flex; flex-direction: column; gap: 20px; }
+        .messages-panel { flex: 3; min-width: 60%; background: white; border-radius: 8px; padding: 20px; overflow-y: auto; }
+        .right-panel { flex: 1; max-width: 35%; display: flex; flex-direction: column; gap: 20px; }
         .intent-panel { background: white; border-radius: 8px; padding: 20px; height: 40%; }
         .debug-panel { background: white; border-radius: 8px; padding: 20px; overflow-y: auto; height: 60%; }
         .message { margin-bottom: 15px; padding: 10px; border-radius: 8px; }
         .user-message { background: #e3f2fd; }
         .robot-message { background: #f3e5f5; }
+        .context-message { background: #f8f9fa; border-left: 4px solid #6c757d; }
+        .debug-label { position: absolute; top: 5px; left: 5px; background: #6c757d; color: white; padding: 2px 6px; border-radius: 3px; font-size: 10px; }
+        .markdown-content h1, .markdown-content h2, .markdown-content h3 { margin-top: 0; margin-bottom: 10px; }
+        .markdown-content pre { background: #f8f9fa; padding: 10px; border-radius: 4px; overflow-x: auto; }
+        .markdown-content code { background: #f8f9fa; padding: 2px 4px; border-radius: 3px; }
         .streaming { border-left: 3px solid #28a745; animation: pulse 1.5s infinite; }
         @keyframes pulse { 0%, 100% { opacity: 0.8; } 50% { opacity: 1; } }
         .message-header { font-weight: bold; font-size: 12px; color: #666; margin-bottom: 5px; }
@@ -601,19 +606,21 @@ export class DevDebugChatClientController {
             <div class="intent-panel">
                 <h3>🎯 Intent Input</h3>
                 <select id="intent-preset" onchange="loadIntentPreset()" style="margin-bottom: 10px; padding: 8px; width: 100%;">
-                    <option value="contextDynamic">Context Dynamic - Form</option>
                     <option value="knowledgeBase">Knowledge Base Search</option>
+                    <option value="contextDynamic">Context Dynamic - Form</option>
                     <option value="submissionCreated">Form Submission Tracking</option>
                     <option value="submitAction">Submit Action Analysis</option>
                     <option value="authProvider">Auth Provider Metrics</option>
                 </select>
                 <textarea id="intent-input" class="intent-input-box" placeholder="Raw Intent JSON...">{
-  "intent": "getContextDynamic",
-  "subIntents": ["getFormContext"],
+  "intent": "searchKnowledgeBase",
+  "subIntents": ["topResults"],
   "subjects": {
-    "formId": ["12345"]
+    "query": ["form"],
+    "minConfidence": ["0.7"],
+    "pageSize": ["10"]
   },
-  "originalUserPrompt": "Get live form context for form 12345 including submit actions, emails, and configurations"
+  "originalUserPrompt": "Customer is raised concern that they are unable restored to previously deleted fields. What can we do? What do we check? Is there anything we can do on our end? What to tell the customer?"
 }</textarea>
                 <button class="intent-btn" onclick="sendIntent()">Send Intent</button>
             </div>
@@ -643,6 +650,7 @@ export class DevDebugChatClientController {
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script>
         const conversationId = '${conversation.id}';
         const userId = '${session.userId}';
@@ -741,7 +749,16 @@ export class DevDebugChatClientController {
         function displayMessage(message) {
             const messagesContainer = document.getElementById('messages');
             const messageDiv = document.createElement('div');
-            messageDiv.className = 'message ' + (message.fromRole === 'cx-customer' ? 'user-message' : 'robot-message');
+            
+            // Check for context/document messages
+            const isContextDocument = message.content && message.content.type === 'context/document';
+            
+            if (isContextDocument) {
+                messageDiv.className = 'message context-message';
+                messageDiv.style.position = 'relative';
+            } else {
+                messageDiv.className = 'message ' + (message.fromRole === 'cx-customer' ? 'user-message' : 'robot-message');
+            }
             
             // Add special styling for different content types
             if (message._debug && message._debug.contentType === 'application/json') {
@@ -750,13 +767,39 @@ export class DevDebugChatClientController {
             }
             
             const timeStr = new Date(message.createdAt).toLocaleTimeString();
-            const contentType = message._debug ? message._debug.contentType : 'text/plain';
-            const payloadLength = message._debug ? message._debug.payloadLength : 0;
+            const actualContentType = message.content?.type || 'unknown';
+            const debugContentType = message._debug ? message._debug.contentType : 'text/plain';
+            const payloadLength = (message.content?.payload || '').length;
             
             let displayContent = message.content.payload || message.content || 'No content';
             
+            // Add debug label for context/document messages
+            let debugLabel = '';
+            if (isContextDocument) {
+                debugLabel = '<div class="debug-label">debug - context</div>';
+            }
+            
+            // Convert ALL messages to markdown (client-side assumption)
+            let isMarkdownContent = false;
+            console.log('Message content type:', message.content?.type);
+            console.log('Content payload preview:', (message.content?.payload || '').substring(0, 100));
+            
+            // Render all messages as markdown
+            if (typeof marked !== 'undefined') {
+                try {
+                    displayContent = marked.parse(displayContent);
+                    isMarkdownContent = true;
+                    console.log('Markdown rendered successfully');
+                } catch (e) {
+                    console.warn('Failed to parse markdown:', e);
+                    // Fallback to plain text if markdown parsing fails
+                }
+            } else {
+                console.warn('Marked library not available');
+            }
+            
             // Format JSON content for better readability
-            if (contentType === 'application/json') {
+            if (actualContentType === 'application/json' || debugContentType === 'application/json') {
                 try {
                     const parsed = JSON.parse(displayContent);
                     displayContent = \`<pre style="font-size: 12px; max-height: 200px; overflow-y: auto; white-space: pre-wrap;">\${JSON.stringify(parsed, null, 2)}</pre>\`;
@@ -766,13 +809,14 @@ export class DevDebugChatClientController {
             }
             
             messageDiv.innerHTML = \`
+                \${debugLabel}
                 <div class="message-header">
                     \${message.fromRole} → \${message.toRole} (\${timeStr})
                     <span style="font-size: 10px; color: #666; margin-left: 10px;">
-                        [\${contentType}] \${payloadLength} chars
+                        [\${actualContentType}] \${payloadLength} chars
                     </span>
                 </div>
-                <div>\${displayContent}</div>
+                <div class="\${isMarkdownContent ? 'markdown-content' : ''}">\${displayContent}</div>
             \`;
             
             messagesContainer.appendChild(messageDiv);
@@ -905,7 +949,11 @@ export class DevDebugChatClientController {
                     body: JSON.stringify(intentData)
                 });
                 
+                console.log('Response status:', response.status);
+                console.log('Response ok:', response.ok);
+                
                 const data = await response.json();
+                console.log('Response data:', data);
                 
                 if (data.success) {
                     // Display intent results

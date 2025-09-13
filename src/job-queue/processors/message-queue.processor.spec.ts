@@ -60,7 +60,7 @@ describe('MessageQueueProcessor', () => {
           messageId: 'msg-123',
           userId: 'user-456',
           content: {
-            type: 'content/dynamic-form',
+            type: 'context/dynamic-form',
             payload: {
               formRecord: { id: 'form-123' },
               submitActionIds: ['action-1', 'action-2'],
@@ -154,7 +154,7 @@ describe('MessageQueueProcessor', () => {
           messageId: 'msg-123',
           userId: 'user-456',
           content: {
-            type: 'content/dynamic-form',
+            type: 'context/dynamic-form',
             payload: {},
           },
         },
@@ -172,7 +172,7 @@ describe('MessageQueueProcessor', () => {
           messageId: 'msg-123',
           userId: 'user-456',
           content: {
-            type: 'content/dynamic-account',
+            type: 'context/dynamic-account',
             payload: {},
           },
         },

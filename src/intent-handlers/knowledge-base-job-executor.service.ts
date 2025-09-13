@@ -1,13 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { ChatManagerService } from '../chat-manager/chat-manager.service';
 import { IntentHandler } from '../common/interfaces/intent-handler.interface';
 import { RobotIntent } from '../common/types/intent-parsing.types';
-import { IStreamingCallbacks } from '../robots/types';
-import { ChatManagerService } from '../chat-manager/chat-manager.service';
-import { UserRole } from '../chat-manager/dto/create-message.dto';
-import { RobotService } from '../robots/robot.service';
-import { AbstractRobotChat } from '../robots/AbstractRobotChat';
 import { IStackInfoService } from '../istack-buddy-slack-api/istack-info.service';
-import { TConversationMessageContentString } from '../ConversationLists/types';
+import { RobotService } from '../robots/robot.service';
+import { IStreamingCallbacks } from '../robots/types';
+import { RobotName } from '../chat-manager/dto/create-message.dto';
+import { TConversationMessageContentMarkdown } from '../ConversationLists/types';
 
 @Injectable()
 export class KnowledgeBaseJobExecutor implements IntentHandler {
@@ -42,7 +41,7 @@ export class KnowledgeBaseJobExecutor implements IntentHandler {
   ): Promise<void> {
     this.logger.log('Starting knowledge base search workflow');
 
-    const conversationId = (callbacks as any).conversationId;
+    const conversationId = callbacks.conversationId;
     if (!conversationId) {
       throw new Error('conversationId is required in callbacks');
     }
@@ -66,64 +65,24 @@ export class KnowledgeBaseJobExecutor implements IntentHandler {
       );
       this.logger.log('Robot prompt prepared (noOp for now):', robotPrompt);
 
-      // 4. Send structured prompt as robot-only message
-      await this.chatManagerService.addMessage({
-        content: {
-          type: 'content/document',
+      // 4. Send search results summary to user (like other executors)
+      await this.sendSearchResultsToConversation(
+        searchResults,
+        conversationId,
+        intentData.originalUserPrompt,
+      );
+
+      // 5. Send structured prompt to robot and get response
+      await this.chatManagerService.addMessageWithRobotResponse(
+        conversationId,
+        {
+          type: 'text/markdown',
           payload: robotPrompt,
         },
-        conversationId: conversationId,
-        fromUserId: null,
-        fromRole: UserRole.SYSTEM,
-        toRole: UserRole.ROBOT, // Robot sees but user doesn't
-      });
-
-      this.logger.log('Sent structured knowledge base prompt to robot');
-
-      // 5. Use KnobbyOpenAiSearch robot to process the prompt
-      const knobbyRobot =
-        this.robotService.getRobotByName('KnobbyOpenAiSearch');
-      if (!knobbyRobot) {
-        throw new Error('KnobbyOpenAiSearch robot not found');
-      }
-
-      // Enhanced callbacks that stream to user AND save final message
-      const enhancedCallbacks: IStreamingCallbacks = {
-        ...callbacks,
-        conversationId: conversationId,
-        onFullMessageReceived: async (message) => {
-          // Save the final robot response to conversation
-          await this.chatManagerService.addMessage({
-            content: message.content,
-            conversationId: conversationId,
-            fromUserId: null,
-            fromRole: UserRole.ROBOT,
-            toRole: UserRole.USER,
-          });
-          this.logger.log('KnobbyOpenAiSearch response saved to conversation');
-        },
-      };
-
-      // Create message for the robot with the structured prompt
-      const robotMessage =
-        await this.chatManagerService.createMessage<TConversationMessageContentString>(
-          {
-            conversationId: conversationId,
-            content: {
-              type: 'text/plain',
-              payload: robotPrompt,
-            },
-            fromUserId: null,
-            fromRole: UserRole.USER,
-            toRole: UserRole.ROBOT,
-          },
-        );
-
-      // Call the robot directly with streaming response
-      await (knobbyRobot as AbstractRobotChat).acceptMessageStreamResponse(
-        robotMessage,
-        enhancedCallbacks,
+        RobotName.KNOBBY_OPENAI_SEARCH,
       );
+
+      this.logger.log('Knowledge base search workflow completed');
     } catch (error) {
       this.logger.error(`Knowledge base search failed: ${error.message}`);
       callbacks.onError?.(error);
@@ -213,5 +172,79 @@ __USER_NORMALIZED_QUERY_END__
 `;
 
     return prompt;
+  }
+
+  private async sendSearchResultsToConversation(
+    searchResults: any,
+    conversationId: string,
+    originalPrompt: string,
+  ): Promise<void> {
+    // Create combined markdown message with summary and structured data
+    const summary = this.createSearchResultsSummary(
+      searchResults,
+      originalPrompt,
+    );
+    const structuredData = JSON.stringify(searchResults, null, 2);
+
+    const combinedMarkdown = `${summary}
+
+---
+
+**Raw Search Results:**
+\`\`\`json
+${structuredData}
+\`\`\``;
+
+    // Send single markdown message (user-only)
+    await this.chatManagerService.addMessageUserOnly(conversationId, {
+      type: 'text/markdown',
+      payload: combinedMarkdown,
+    });
+
+    this.logger.log(
+      `Sent knowledge base search results to conversation ${conversationId}`,
+    );
+  }
+
+  private createSearchResultsSummary(
+    searchResults: any,
+    originalPrompt: string,
+  ): string {
+    const searchTypesExecuted = searchResults.searchTypesExecuted || [];
+    const totalSearchTypes = searchResults.totalSearchTypes || 0;
+
+    let summary = `🔍 **Knowledge Base Search Results**\n\n`;
+    summary += `**Query:** ${originalPrompt}\n\n`;
+    summary += `**Search Types Executed:** ${totalSearchTypes} (${searchTypesExecuted.join(', ')})\n\n`;
+
+    // Show results from each search type
+    for (const searchType of searchTypesExecuted) {
+      const results = searchResults[searchType];
+      if (results) {
+        summary += `**${searchType}:**\n`;
+        Object.keys(results).forEach((knowledgeBase) => {
+          const kbResults = results[knowledgeBase];
+          if (Array.isArray(kbResults) && kbResults.length > 0) {
+            summary += `  ${knowledgeBase}: ${kbResults.length} results\n`;
+            // Show top result
+            const topResult = kbResults[0];
+            if (
+              topResult.conversationTextNormalized ||
+              topResult.contextDocumentTextNormalized
+            ) {
+              const text =
+                topResult.conversationTextNormalized ||
+                topResult.contextDocumentTextNormalized;
+              summary += `    → ${text.substring(0, 100)}...\n`;
+              summary += `    → Confidence: ${topResult.confidence}\n`;
+            }
+          }
+        });
+        summary += `\n`;
+      }
+    }
+
+    summary += `*Knowledge base search completed successfully.*`;
+    return summary;
   }
 }

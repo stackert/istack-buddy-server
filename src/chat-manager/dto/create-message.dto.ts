@@ -21,6 +21,13 @@ export enum UserRole {
   SYSTEM = 'system', // Replaces SYSTEM_DEBUG
 }
 
+export enum RobotName {
+  AGENT_ROBOT_PARROT = 'AgentRobotParrot',
+  SLACKY_OPENAI_AGENT = 'SlackyOpenAiAgent',
+  ANTHROPIC_MARV = 'AnthropicMarv',
+  KNOBBY_OPENAI_SEARCH = 'KnobbyOpenAiSearch',
+}
+
 export class CreateMessageDto {
   @IsObject()
   @ValidateNested()

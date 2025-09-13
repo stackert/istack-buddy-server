@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { ChatConversationListService } from '../ConversationLists/ChatConversationListService';
 import {
   TConversationMessageContentString,
+  TConversationMessageContentMarkdown,
   TConversationMessageContent,
 } from '../ConversationLists/types';
 import { RobotService } from '../robots/robot.service';
@@ -22,6 +23,7 @@ import {
   CreateMessageDto,
   MessageType,
   UserRole,
+  RobotName,
 } from './dto/create-message.dto';
 import { GetMessagesDto } from './dto/get-messages.dto';
 import { JoinRoomDto } from './dto/join-room.dto';
@@ -435,6 +437,8 @@ export class ChatManagerService {
   /**
    * Add a message to a conversation
    * This is the core method - all messages go through here
+   *
+   * @deprecated Use addMessageContextNoResponse() for robot-only messages or addMessageWithRobotResponse() for robot conversations instead
    */
   async addMessage<
     T extends TConversationMessageContent = TConversationMessageContent,
@@ -497,6 +501,107 @@ export class ChatManagerService {
     T extends TConversationMessageContent = TConversationMessageContent,
   >(createMessageDto: CreateMessageDto): Promise<IConversationMessage<T>> {
     return this.addMessage<T>(createMessageDto);
+  }
+
+  /**
+   * Add message that only users can see (robot doesn't see)
+   * Perfect for user-only results, summaries, notifications
+   */
+  async addMessageUserOnly(
+    conversationId: string,
+    content: TConversationMessageContent,
+    fromRole: UserRole = UserRole.SYSTEM,
+  ): Promise<IConversationMessage> {
+    return this.addMessage({
+      conversationId,
+      content,
+      fromUserId: null,
+      fromRole,
+      toRole: UserRole.USER, // User sees, robot doesn't
+    });
+  }
+
+  /**
+   * Add context message that only robots (and dev/debug) can see
+   * Perfect for structured prompts, data, instructions to robots
+   * No robot response triggered - just adds context
+   */
+  async addMessageContextNoResponse(
+    conversationId: string,
+    content: TConversationMessageContent,
+    fromRole: UserRole = UserRole.SYSTEM,
+  ): Promise<IConversationMessage> {
+    return this.addMessage({
+      conversationId,
+      content,
+      fromUserId: null,
+      fromRole,
+      toRole: UserRole.ROBOT, // Robot sees, user doesn't
+    });
+  }
+
+  /**
+   * Add message and trigger robot response with streaming to users
+   * Perfect for user messages that should get robot responses
+   */
+  async addMessageWithRobotResponse(
+    conversationId: string,
+    content:
+      | TConversationMessageContentString
+      | TConversationMessageContentMarkdown,
+    robotName: RobotName,
+    callbacks?: Partial<IStreamingCallbacks>,
+  ): Promise<IConversationMessage> {
+    // Add the user message first
+    const userMessage =
+      await this.addMessage<TConversationMessageContentString>({
+        conversationId,
+        content,
+        fromUserId: null,
+        fromRole: UserRole.USER,
+        toRole: UserRole.ROBOT,
+      });
+
+    // Get the specified robot
+    const robot = this.robotService.getRobotByName(robotName);
+    if (!robot) {
+      throw new Error(`Robot ${robotName} not found`);
+    }
+
+    // Create enhanced callbacks for robot response
+    const robotCallbacks: IStreamingCallbacks = {
+      conversationId,
+      onStreamStart: callbacks?.onStreamStart || (() => {}),
+      onStreamChunkReceived: callbacks?.onStreamChunkReceived || (() => {}),
+      onStreamFinished: callbacks?.onStreamFinished || (() => {}),
+      onFullMessageReceived: async (message) => {
+        // Save robot response to conversation
+        await this.addMessage({
+          content: message.content,
+          conversationId,
+          fromUserId: null,
+          fromRole: UserRole.ROBOT,
+          toRole: UserRole.USER,
+        });
+        // Call custom callback if provided
+        if (callbacks?.onFullMessageReceived) {
+          callbacks.onFullMessageReceived(message);
+        }
+      },
+      onError:
+        callbacks?.onError ||
+        ((error) => {
+          this.logger.error(`Robot ${robotName} error:`, error);
+        }),
+    };
+
+    // Trigger robot response
+    await (robot as any).acceptMessageStreamResponse(
+      userMessage,
+      robotCallbacks,
+    );
+
+    return userMessage;
   }
 
   /**

@@ -197,8 +197,8 @@ describe('IStackInfoService', () => {
         mockAxiosInstance.request.mockResolvedValue({ data: mockResponse });
 
         const input = {
-          query: 'How to configure SAML',
-          knowledgeBases: ['CONTEXT-DOCUMENTS'],
+          userPromptText: 'How to configure SAML',
+          limit: 10,
         };
 
         const result = await service.knowledgeBase.semanticSearch(input);
@@ -206,31 +206,6 @@ describe('IStackInfoService', () => {
         expect(mockAxiosInstance.request).toHaveBeenCalledWith({
           method: 'POST',
           url: '/information-services/knowledge-bases/semantic-search',
-          data: input,
-        });
-        expect(result).toEqual(mockResponse);
-      });
-    });
-
-    describe('topSearch', () => {
-      it('should perform top search', async () => {
-        const mockResponse: SearchResults = {
-          SLACK: [{ confidence: '0.95', content: 'Top result...' }],
-        };
-
-        mockAxiosInstance.request.mockResolvedValue({ data: mockResponse });
-
-        const input = {
-          query: 'authentication setup',
-          maxResults: 5,
-          maxConfidence: 0.9,
-        };
-
-        const result = await service.knowledgeBase.topSearch(input);
-
-        expect(mockAxiosInstance.request).toHaveBeenCalledWith({
-          method: 'POST',
-          url: '/information-services/knowledge-bases/top-search',
           data: input,
         });
         expect(result).toEqual(mockResponse);
@@ -291,6 +266,150 @@ describe('IStackInfoService', () => {
 
         const result = await service.knowledgeBase.listDomains();
 
+        expect(result).toEqual(mockResponse);
+      });
+    });
+    describe('nounSearch', () => {
+      it('should perform noun search', async () => {
+        const mockResponse: SearchResults = {
+          SLACK: [{ confidence: '0.88', content: 'Noun search result...' }],
+        };
+
+        mockAxiosInstance.request.mockResolvedValue({ data: mockResponse });
+
+        const input = {
+          nouns: ['user', 'password', 'system'],
+          limit: 5,
+        };
+
+        const result = await service.knowledgeBase.nounSearch(input);
+
+        expect(mockAxiosInstance.request).toHaveBeenCalledWith({
+          method: 'POST',
+          url: '/information-services/knowledge-bases/noun-search',
+          data: input,
+        });
+        expect(result).toEqual(mockResponse);
+      });
+    });
+
+    describe('properNounSearch', () => {
+      it('should perform proper noun search', async () => {
+        const mockResponse: SearchResults = {
+          'CONTEXT-DOCUMENTS': [
+            { confidence: '0.92', content: 'Proper noun result...' },
+          ],
+        };
+
+        mockAxiosInstance.request.mockResolvedValue({ data: mockResponse });
+
+        const input = {
+          properNouns: ['SAML', 'OAuth', 'ActiveDirectory'],
+          channelIds: ['SLACK:cx-formstack'],
+          limit: 3,
+        };
+
+        const result = await service.knowledgeBase.properNounSearch(input);
+
+        expect(mockAxiosInstance.request).toHaveBeenCalledWith({
+          method: 'POST',
+          url: '/information-services/knowledge-bases/proper-noun-search',
+          data: input,
+        });
+        expect(result).toEqual(mockResponse);
+      });
+    });
+
+    describe('domainSearch', () => {
+      it('should perform domain search', async () => {
+        const mockResponse: SearchResults = {
+          SLACK: [{ confidence: '0.90', content: 'Domain search result...' }],
+        };
+
+        mockAxiosInstance.request.mockResolvedValue({ data: mockResponse });
+
+        const input = {
+          domains: ['authentication', 'security', 'integration'],
+          maxConfidence: 0.95,
+        };
+
+        const result = await service.knowledgeBase.domainSearch(input);
+
+        expect(mockAxiosInstance.request).toHaveBeenCalledWith({
+          method: 'POST',
+          url: '/information-services/knowledge-bases/domain-search',
+          data: input,
+        });
+        expect(result).toEqual(mockResponse);
+      });
+    });
+
+    describe('freeTextSearch', () => {
+      it('should perform free text search', async () => {
+        const mockResponse: SearchResults = {
+          'CONTEXT-DOCUMENTS': [
+            { confidence: '0.85', content: 'Free text result...' },
+          ],
+        };
+
+        mockAxiosInstance.request.mockResolvedValue({ data: mockResponse });
+
+        const input = {
+          freeText: ['setup', 'configure', 'enable'],
+          channelIds: ['SLACK:cx-engineering'],
+        };
+
+        const result = await service.knowledgeBase.freeTextSearch(input);
+
+        expect(mockAxiosInstance.request).toHaveBeenCalledWith({
+          method: 'POST',
+          url: '/information-services/knowledge-bases/free-text-search',
+          data: input,
+        });
+        expect(result).toEqual(mockResponse);
+      });
+    });
+
+    describe('topResults', () => {
+      it('should execute top-results with full preQuery object', async () => {
+        const mockPreQuery = {
+          query: 'form',
+          originalText: 'form',
+          normalizedText: 'Customer inquiry about forms',
+          keywords: ['form', 'configuration'],
+          nouns: ['customer', 'platform'],
+          properNouns: ['Formstack'],
+          domains: ['BACKEND:SUBMIT-ACTIONS'],
+          userPromptText: 'form inquiry',
+          chunks: [
+            { index: 0, chunk_text: 'form', chunk_embedding: [0.1, 0.2] },
+          ],
+        };
+
+        const mockResponse = {
+          searchSemantic: {
+            SLACK: [
+              { confidence: '0.95', conversationTextNormalized: 'Result...' },
+            ],
+          },
+          searchKeywords: {
+            'CONTEXT-DOCUMENTS': [
+              { confidence: '0.88', contextDocumentTextNormalized: 'Doc...' },
+            ],
+          },
+          searchTypesExecuted: ['searchSemantic', 'searchKeywords'],
+          totalSearchTypes: 2,
+        };
+
+        mockAxiosInstance.request.mockResolvedValue({ data: mockResponse });
+
+        const result = await service.knowledgeBase.topResults(mockPreQuery);
+
+        expect(mockAxiosInstance.request).toHaveBeenCalledWith({
+          method: 'POST',
+          url: '/information-services/knowledge-bases/top-results',
+          data: mockPreQuery,
+        });
         expect(result).toEqual(mockResponse);
       });
     });

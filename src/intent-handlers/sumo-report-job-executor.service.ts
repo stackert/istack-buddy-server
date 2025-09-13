@@ -361,7 +361,7 @@ export class SumoReportJobExecutor implements IntentHandler {
         // Send observation results
         await this.chatManagerService.addMessage({
           content: {
-            type: 'content/document',
+            type: 'context/document',
             payload: observationText,
           },
           conversationId: conversationId,

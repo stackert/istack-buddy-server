@@ -94,10 +94,10 @@ export class MessageQueueProcessor {
 
     // Handle different Information Service content types
     switch (contentType) {
-      case 'content/dynamic-form':
+      case 'context/dynamic-form':
         await this.processDynamicFormContent(content.payload);
         break;
-      case 'content/dynamic-account':
+      case 'context/dynamic-account':
         await this.processDynamicAccountContent(content.payload);
         break;
       case 'sumo-search/report':
