@@ -82,10 +82,25 @@ Available intents: generateSumoReport, generateSumoAnalysis, searchKnowledgeBase
 Available executors: SumoReportSingleJobExecutor, SumoReportMultiJobExecutor, KnowledgeBaseJobExecutor, ContextDynamicJobExecutor
 Available robots: SlackyOpenAiAgent, AnthropicMarv, KnobbyOpenAiSearch
 
-IMPORTANT: Follow the Subject Harvest guidelines above for extracting subjects. Only use the specified entity types and patterns.
+SUMO REPORT SUBINTENTS (for generateSumoReport intent):
+- "submitActionReport": For analyzing submit action execution, webhooks, integrations
+- "submissionCreatedForForm": For tracking form submissions, submission reports, submission data
+- "submitActionsSelectedForExecution": For internal analysis only
 
-Example response format:
-{"intent":"assistUser","intentData":{"originalUserPrompt":"hello","subIntents":["generalAssistance"],"subjects":null},"devDebugRecommendedExecutor":"N/A","devDebugRecommendedRobot":"SlackyOpenAiAgent"}`,
+SUMO ANALYSIS SUBINTENTS (for generateSumoAnalysis intent):
+- "multiReportAnalysis": For comprehensive analysis combining multiple Sumo reports
+
+KNOWLEDGE BASE SUBINTENTS (for searchKnowledgeBase intent):
+- "topResults": For searching knowledge base documents and Slack conversations
+
+CONTEXT DYNAMIC SUBINTENTS (for getContextDynamic intent):
+- "getFormContext": For retrieving live form configuration and settings
+
+IMPORTANT: Follow the harvest guidelines above for extracting subjects and dates. Only use the specified entity types and patterns from the guidelines.
+
+Example response formats:
+General assistance: {"intent":"assistUser","intentData":{"originalUserPrompt":"hello","subIntents":["generalAssistance"],"subjects":null},"devDebugRecommendedExecutor":"N/A","devDebugRecommendedRobot":"SlackyOpenAiAgent"}
+Submission report with dates: {"intent":"generateSumoReport","intentData":{"originalUserPrompt":"submission report for form 12345","subIntents":["submissionCreatedForForm"],"subjects":{"formId":["12345"],"startDate":["TODAY_START_ISO8601"],"endDate":["TODAY_END_ISO8601"]}},"devDebugRecommendedExecutor":"SumoReportSingleJobExecutor","devDebugRecommendedRobot":"SlackyOpenAiAgent"}`,
           },
         ],
         temperature: 0.1,
@@ -169,28 +184,41 @@ Example response format:
   }
 
   /**
-   * Load subject harvest guidelines from file
+   * Load harvest guidelines from files
    */
-  private async loadSubjectHarvestGuidelines(): Promise<string> {
+  private async loadHarvestGuidelines(): Promise<string> {
     try {
       const subjectHarvestPath = join(
         process.cwd(),
         'CONTEXT-DOCUMENTS',
-        'SUBJECT_HARVEST.md',
+        'HARVEST_SUBJECTS.md',
       );
-      const content = await fs.readFile(subjectHarvestPath, 'utf8');
-      return content;
+      const dateHarvestPath = join(
+        process.cwd(),
+        'CONTEXT-DOCUMENTS',
+        'HARVEST_DATES_SUMO.md',
+      );
+
+      const [subjectContent, dateContent] = await Promise.all([
+        fs.readFile(subjectHarvestPath, 'utf8'),
+        fs.readFile(dateHarvestPath, 'utf8'),
+      ]);
+
+      return `${subjectContent}\n\n${dateContent}`;
     } catch (error) {
-      this.logger.error(
-        `Failed to load subject harvest guidelines: ${error.message}`,
-      );
+      this.logger.error(`Failed to load harvest guidelines: ${error.message}`);
       // Fallback to basic guidelines
       return `# Subject Harvest
 HARVEST SUBJECT IDS:
 Extract any entity IDs mentioned in the query:
 - Supported entities: account:accountId, authProvider:authProviderId, form:formId, submission:submissionId, submitAction:submitActionId, case:caseId, jira:jiraTicketId
 - Return as object: {"formId": ["1234"], "submissionId": ["12304"]}
-- If no subjects found, return null 'subjects: null'`;
+- If no subjects found, return null 'subjects: null'
+
+# Date Harvest
+HARVEST DATES (for Sumo queries):
+- "past week" → startDate: 7 days ago, endDate: today
+- Return as: {"startDate": ["2025-09-01"], "endDate": ["2025-09-05"]}`;
     }
   }
 
@@ -198,15 +226,15 @@ Extract any entity IDs mentioned in the query:
    * Build the system prompt by combining base + personality + robot intent segments
    */
   private async buildSystemPrompt(): Promise<string> {
-    const subjectHarvestGuidelines = await this.loadSubjectHarvestGuidelines();
+    const harvestGuidelines = await this.loadHarvestGuidelines();
 
     const basePrompt = `You are an intelligent intent parsing system for iStackBuddy, a specialized AI assistant for Intellistack Forms Core troubleshooting.
 
 Your task is to analyze user messages and determine:
 1. What specific intent the user has
-2. Extract standardized subjects following the guidelines below
+2. Extract standardized subjects and dates following the guidelines below
 
-${subjectHarvestGuidelines}
+${harvestGuidelines}
 
 Available robots and their intents:`;
 
@@ -247,5 +275,12 @@ When uncertain, prefer more specific robots over general ones.`;
    */
   public getRegisteredIntents(): RobotIntentRegistry[] {
     return [...this.robotIntentRegistries];
+  }
+
+  /**
+   * Get the system prompt for debugging (without making OpenAI call)
+   */
+  public async getSystemPromptForDebugging(): Promise<string> {
+    return await this.buildSystemPrompt();
   }
 }

@@ -17,10 +17,7 @@ export class SumoReportSingleJobExecutor
     return [
       {
         intent: 'generateSumoReport',
-          subIntents: [
-            'submitActionReport',
-            'submissionCreatedForForm',
-          ],
+        subIntents: ['submitActionReport', 'submissionCreatedForForm'],
         description: 'Generate single Sumo Logic report',
       },
     ];
@@ -38,10 +35,12 @@ export class SumoReportSingleJobExecutor
       // 1. Parse query parameters from intent data
       const queryParams = this.parseQueryParameters(intentData);
 
-      // 2. Send status message to user
-      await this.chatManagerService.addMessageUserOnly(conversationId, {
-        type: 'text/plain',
-        payload: `**Running Sumo query with parameters:**\n\n- Query: ${queryParams.queryName}\n- Form ID: ${queryParams.subject.formId}\n- Date Range: ${queryParams.subject.startDate} to ${queryParams.subject.endDate}\n\nProcessing...`,
+      // 2. Send status message to user via callbacks
+      await callbacks.onFullMessageReceived({
+        content: {
+          type: 'text/plain',
+          payload: `**Running Sumo query with parameters:**\n\n- Query: ${queryParams.queryName}\n- Form ID: ${queryParams.subject.formId}\n- Date Range: ${queryParams.subject.startDate} to ${queryParams.subject.endDate}\n\nProcessing...`,
+        },
       });
 
       // 3. Submit single job and fetch data
@@ -66,6 +65,7 @@ export class SumoReportSingleJobExecutor
         processedData,
         conversationId,
         intentData.originalUserPrompt,
+        callbacks,
       );
     } catch (error) {
       this.logger.error(`Sumo report job execution failed: ${error.message}`);
@@ -89,6 +89,7 @@ export class SumoReportSingleJobExecutor
     processedData: any,
     conversationId: string,
     originalQuery: string,
+    callbacks: IStreamingCallbacks,
   ): Promise<void> {
     try {
       const observationText = await this.runObservationAnalysis(processedData);
@@ -98,16 +99,12 @@ export class SumoReportSingleJobExecutor
       const isSmallContext = recordCount <= 1;
 
       if (isSmallContext) {
-        // Small context goes to robot only as context (no file link needed for robot)
-        await this.chatManagerService.addMessage({
+        // Small context: send analysis directly to user via callbacks
+        await callbacks.onFullMessageReceived({
           content: {
-            type: 'context/document',
-            payload: observationText,
+            type: 'text/plain',
+            payload: `## Sumo Logic Report Results\n\n**Query:** "${originalQuery}"\n\n**📊 Analysis:**\n${observationText}\n\n**📁 Download File:**\n[Download Report Data](${fileLink})\n\n*Report generated successfully.*`,
           },
-          conversationId: conversationId,
-          fromUserId: null,
-          fromRole: UserRole.SYSTEM,
-          toRole: UserRole.ROBOT,
         });
       } else {
         // Large context goes to user as combined markdown message
@@ -123,9 +120,11 @@ ${observationText}
 
 *Report generated successfully.*`;
 
-        await this.chatManagerService.addMessageUserOnly(conversationId, {
-          type: 'text/markdown',
-          payload: combinedMessage,
+        await callbacks.onFullMessageReceived({
+          content: {
+            type: 'text/plain',
+            payload: combinedMessage,
+          },
         });
       }
 

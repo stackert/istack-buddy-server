@@ -190,25 +190,35 @@ export class IstackBuddySlackApiService implements OnModuleDestroy {
       // IMMEDIATE ACKNOWLEDGMENT - Add thinking emoji reaction
       await this.addSlackReaction('thinking_face', event.channel, event.ts);
 
-      // DEBUG: Parse intent and send back the parsed result (no processing)
+      // DEBUG: Parse intent and send result to Slack, then STOP (no processing)
       try {
+        this.logger.log('Starting intent parsing for Slack debug...');
+
         const intentResult = await this.intentParsingService.parsePromptIntent(
           event.text,
           { currentRobot: undefined },
         );
 
-        let responseMessage: string;
+        this.logger.log(
+          `Intent parsing completed: ${JSON.stringify(intentResult)}`,
+        );
+
+        // Send parsed intent to Slack for debugging
+        let debugMessage: string;
         if ('error' in intentResult) {
-          responseMessage = `**Intent Parsing Failed:**\n\`\`\`json\n${JSON.stringify(intentResult, null, 2)}\n\`\`\``;
+          debugMessage = `**Intent Parsing Failed:**\n\`\`\`json\n${JSON.stringify(intentResult, null, 2)}\n\`\`\``;
         } else {
-          responseMessage = `**Intent Parsed Successfully:**\n\`\`\`json\n${JSON.stringify(intentResult, null, 2)}\n\`\`\``;
+          debugMessage = `**Intent Parsed Successfully:**\n\`\`\`json\n${JSON.stringify(intentResult, null, 2)}\n\`\`\``;
         }
 
-        // Send parsed intent back to Slack
         await conversationRecord.sendConversationResponseToSlack({
           type: 'text',
-          payload: responseMessage,
+          payload: debugMessage,
         });
+
+        this.logger.log(
+          'Intent parsing debug sent to Slack - STOPPING here (no processing)',
+        );
       } catch (intentError) {
         this.logger.error('Error parsing intent for Slack:', intentError);
         await conversationRecord.sendConversationResponseToSlack({
