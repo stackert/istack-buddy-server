@@ -221,7 +221,8 @@ export class DevDebugService {
     try {
       // Create intent data for Sumo report
       const intentResult: IntentParsingResponse = {
-        robotName: 'SumoReportJobExecutor',
+        devDebugRecommendedExecutor: 'SumoReportSingleJobExecutor',
+        devDebugRecommendedRobot: 'SlackyOpenAiAgent',
         intent: 'generateSumoReport',
         intentData: {
           originalUserPrompt:

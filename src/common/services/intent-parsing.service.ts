@@ -1,5 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { OpenAI } from 'openai';
+import { promises as fs } from 'fs';
+import { join } from 'path';
 import {
   IntentParsingResult,
   IntentParsingResponse,
@@ -52,8 +54,8 @@ export class IntentParsingService {
         `Parsing intent for message: ${messageText.substring(0, 100)}...`,
       );
 
-      // Build dynamic prompt combining base + personality + robot intent segments
-      const systemPrompt = this.buildSystemPrompt();
+      // Build dynamic prompt combining base + personality + robot intent segments + subject harvest guidelines
+      const systemPrompt = await this.buildSystemPrompt();
 
       const completion = await this.openai.chat.completions.create({
         model: 'gpt-4o',
@@ -70,10 +72,20 @@ Message: "${messageText}"
 
 ${conversationContext?.currentRobot ? `Current conversation robot: ${conversationContext.currentRobot}` : ''}
 
-Respond with a JSON object containing:
-- robotName: string (exact robot name)
+Respond with ONLY a valid JSON object (no markdown, no explanation) containing:
 - intent: string (exact intent name)
-- intentData: object with originalUserPrompt, subIntents array, and subjects object`,
+- intentData: object with originalUserPrompt, subIntents array, and subjects object (following Subject Harvest guidelines above)
+- devDebugRecommendedExecutor: string (suggested executor class name)
+- devDebugRecommendedRobot: string (fallback robot name)
+
+Available intents: generateSumoReport, generateSumoAnalysis, searchKnowledgeBase, getContextDynamic, assistUser
+Available executors: SumoReportSingleJobExecutor, SumoReportMultiJobExecutor, KnowledgeBaseJobExecutor, ContextDynamicJobExecutor
+Available robots: SlackyOpenAiAgent, AnthropicMarv, KnobbyOpenAiSearch
+
+IMPORTANT: Follow the Subject Harvest guidelines above for extracting subjects. Only use the specified entity types and patterns.
+
+Example response format:
+{"intent":"assistUser","intentData":{"originalUserPrompt":"hello","subIntents":["generalAssistance"],"subjects":null},"devDebugRecommendedExecutor":"N/A","devDebugRecommendedRobot":"SlackyOpenAiAgent"}`,
           },
         ],
         temperature: 0.1,
@@ -88,26 +100,43 @@ Respond with a JSON object containing:
         );
       }
 
-      // Parse the JSON response
+      // Parse the JSON response (handle markdown-wrapped JSON)
       let parsedResponse: any;
       try {
+        // First try direct JSON parsing
         parsedResponse = JSON.parse(responseContent);
       } catch (parseError) {
-        this.logger.error(
-          `Failed to parse OpenAI response: ${responseContent}`,
-        );
-        return this.createError(
-          'Invalid JSON response',
-          'Could not parse OpenAI response as JSON',
-        );
+        // If direct parsing fails, try to extract JSON from markdown blocks
+        try {
+          const jsonMatch = responseContent.match(
+            /```(?:json)?\s*(\{[\s\S]*?\})\s*```/,
+          );
+          if (jsonMatch && jsonMatch[1]) {
+            parsedResponse = JSON.parse(jsonMatch[1]);
+            this.logger.debug(
+              'Successfully extracted JSON from markdown block',
+            );
+          } else {
+            throw new Error('No JSON block found in response');
+          }
+        } catch (secondParseError) {
+          this.logger.error(
+            `Failed to parse OpenAI response: ${responseContent}`,
+          );
+          this.logger.error('Original parse error:', parseError.message);
+          this.logger.error(
+            'Markdown extraction error:',
+            secondParseError.message,
+          );
+          return this.createError(
+            'Invalid JSON response',
+            'Could not parse OpenAI response as JSON',
+          );
+        }
       }
 
       // Validate the response structure
-      if (
-        !parsedResponse.robotName ||
-        !parsedResponse.intent ||
-        !parsedResponse.intentData
-      ) {
+      if (!parsedResponse.intent || !parsedResponse.intentData) {
         return this.createError(
           'Invalid response structure',
           'Missing required fields in response',
@@ -123,13 +152,14 @@ Respond with a JSON object containing:
       };
 
       const result: IntentParsingResponse = {
-        robotName: parsedResponse.robotName,
         intent: parsedResponse.intent,
         intentData,
+        devDebugRecommendedExecutor: parsedResponse.devDebugRecommendedExecutor,
+        devDebugRecommendedRobot: parsedResponse.devDebugRecommendedRobot,
       };
 
       this.logger.log(
-        `Parsed intent: ${result.intent} for robot: ${result.robotName}`,
+        `Parsed intent: ${result.intent} (debug recommends executor: ${result.devDebugRecommendedExecutor})`,
       );
       return result;
     } catch (error) {
@@ -139,15 +169,44 @@ Respond with a JSON object containing:
   }
 
   /**
+   * Load subject harvest guidelines from file
+   */
+  private async loadSubjectHarvestGuidelines(): Promise<string> {
+    try {
+      const subjectHarvestPath = join(
+        process.cwd(),
+        'CONTEXT-DOCUMENTS',
+        'SUBJECT_HARVEST.md',
+      );
+      const content = await fs.readFile(subjectHarvestPath, 'utf8');
+      return content;
+    } catch (error) {
+      this.logger.error(
+        `Failed to load subject harvest guidelines: ${error.message}`,
+      );
+      // Fallback to basic guidelines
+      return `# Subject Harvest
+HARVEST SUBJECT IDS:
+Extract any entity IDs mentioned in the query:
+- Supported entities: account:accountId, authProvider:authProviderId, form:formId, submission:submissionId, submitAction:submitActionId, case:caseId, jira:jiraTicketId
+- Return as object: {"formId": ["1234"], "submissionId": ["12304"]}
+- If no subjects found, return null 'subjects: null'`;
+    }
+  }
+
+  /**
    * Build the system prompt by combining base + personality + robot intent segments
    */
-  private buildSystemPrompt(): string {
+  private async buildSystemPrompt(): Promise<string> {
+    const subjectHarvestGuidelines = await this.loadSubjectHarvestGuidelines();
+
     const basePrompt = `You are an intelligent intent parsing system for iStackBuddy, a specialized AI assistant for Intellistack Forms Core troubleshooting.
 
 Your task is to analyze user messages and determine:
-1. Which robot should handle the request
-2. What specific intent the user has
-3. Extract relevant entities and subjects from the message
+1. What specific intent the user has
+2. Extract standardized subjects following the guidelines below
+
+${subjectHarvestGuidelines}
 
 Available robots and their intents:`;
 

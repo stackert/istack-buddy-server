@@ -7,6 +7,7 @@ import { ChatManagerService } from '../chat-manager/chat-manager.service';
 import { UserRole } from '../chat-manager/dto/create-message.dto';
 import { UserProfileService } from '../user-profile/user-profile.service';
 import { KnowledgeBaseService } from './knowledge-base.service';
+import { IntentParsingService } from '../common/services/intent-parsing.service';
 import * as helpers from './helpers';
 
 // Interface for storing Slack conversation mapping and callback
@@ -44,6 +45,7 @@ export class IstackBuddySlackApiService implements OnModuleDestroy {
     private readonly authorizationPermissionsService: AuthorizationPermissionsService,
     private readonly userProfileService: UserProfileService,
     private readonly knowledgeBaseService: KnowledgeBaseService,
+    private readonly intentParsingService: IntentParsingService,
   ) {
     // Clean up old processed events and slack mappings every minute
     this.cleanupIntervalId = setInterval(() => {
@@ -69,6 +71,14 @@ export class IstackBuddySlackApiService implements OnModuleDestroy {
   public async handleSlackEvent(req: any, res: any): Promise<void> {
     const body = req.body;
 
+    // DEBUG: Log ALL incoming Slack events regardless of signature
+    this.logger.log('=== SLACK EVENT RECEIVED ===');
+    this.logger.log(`Headers: ${JSON.stringify(req.headers, null, 2)}`);
+    this.logger.log(`Body: ${JSON.stringify(body, null, 2)}`);
+    this.logger.log(`Raw body available: ${!!req.rawBody}`);
+    this.logger.log(`Raw body string available: ${!!req.rawBodyString}`);
+    this.logger.log('==============================');
+
     try {
       // Handle URL verification challenge (Slack App setup)
       if (body.challenge) {
@@ -79,7 +89,9 @@ export class IstackBuddySlackApiService implements OnModuleDestroy {
 
       // Handle app mention events
       if (body.event && body.event.type === 'app_mention') {
-        this.logger.log('Received app mention event');
+        this.logger.log(
+          `Received app mention event - ts: ${body.event.ts}, text: "${body.event.text}"`,
+        );
 
         // Create simplified event for app mention events only
         const simpleEvent = helpers.makeSimplifiedEvent(body.event);
@@ -98,7 +110,31 @@ export class IstackBuddySlackApiService implements OnModuleDestroy {
 
       // Handle message events (for command interception)
       if (body.event && body.event.type === 'message') {
-        this.logger.log('Received message event');
+        this.logger.log(
+          `Received message event - ts: ${body.event.ts}, text: "${body.event.text}", bot_id: ${body.event.bot_id}, subtype: ${body.event.subtype}`,
+        );
+
+        // DEBUG: Check if this is actually a bot message (should be ignored)
+        if (body.event.bot_id || body.event.subtype === 'bot_message') {
+          this.logger.log(
+            'Ignoring bot message event (likely echo of our own message)',
+          );
+          res.status(200).json({ status: 'ok' });
+          return;
+        }
+
+        // DEBUG: Check if this is an app mention disguised as a message event
+        // BUT ONLY if we haven't already processed it as an app_mention event
+        if (body.event.text && body.event.text.includes('<@U092RRN555X>')) {
+          this.logger.log(
+            'Message event contains bot mention - but this may be a duplicate of app_mention event',
+          );
+          this.logger.log(
+            'SKIPPING to avoid duplicate processing - app_mention events should handle mentions',
+          );
+          res.status(200).json({ status: 'ok' });
+          return;
+        }
 
         // Create simplified event for message events
         const simpleEvent = helpers.makeSimplifiedEvent(body.event);
@@ -154,12 +190,32 @@ export class IstackBuddySlackApiService implements OnModuleDestroy {
       // IMMEDIATE ACKNOWLEDGMENT - Add thinking emoji reaction
       await this.addSlackReaction('thinking_face', event.channel, event.ts);
 
-      // Add message to conversation and trigger robot response
-      await this.chatManagerService.addMessageFromSlack(
-        conversationRecord.internalConversationId,
-        { type: 'text', payload: event.text },
-        conversationRecord.sendConversationResponseToSlack,
-      );
+      // DEBUG: Parse intent and send back the parsed result (no processing)
+      try {
+        const intentResult = await this.intentParsingService.parsePromptIntent(
+          event.text,
+          { currentRobot: undefined },
+        );
+
+        let responseMessage: string;
+        if ('error' in intentResult) {
+          responseMessage = `**Intent Parsing Failed:**\n\`\`\`json\n${JSON.stringify(intentResult, null, 2)}\n\`\`\``;
+        } else {
+          responseMessage = `**Intent Parsed Successfully:**\n\`\`\`json\n${JSON.stringify(intentResult, null, 2)}\n\`\`\``;
+        }
+
+        // Send parsed intent back to Slack
+        await conversationRecord.sendConversationResponseToSlack({
+          type: 'text',
+          payload: responseMessage,
+        });
+      } catch (intentError) {
+        this.logger.error('Error parsing intent for Slack:', intentError);
+        await conversationRecord.sendConversationResponseToSlack({
+          type: 'text',
+          payload: `**Intent Parsing Error:**\n\`\`\`\n${intentError.message}\n\`\`\``,
+        });
+      }
     } catch (error) {
       this.logger.error('Error handling app mention:', error);
 

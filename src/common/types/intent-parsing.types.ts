@@ -1,7 +1,8 @@
 export interface IntentParsingResponse {
-  robotName?: string; // Optional - only used for legacy robot fallback
   intent: string;
   intentData: IntentData;
+  devDebugRecommendedExecutor?: string; // For debugging - suggested executor class name
+  devDebugRecommendedRobot?: string; // For debugging - fallback robot name
 }
 
 export interface IntentData {

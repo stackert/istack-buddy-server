@@ -1,13 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { IStackInfoService } from '../istack-buddy-slack-api/istack-info.service';
+import { ChatManagerService } from '../chat-manager/chat-manager.service';
 import {
   FileManagerService,
   STORAGE_CLASS,
 } from '../file-manager/file-manager.service';
-import { ChatManagerService } from '../chat-manager/chat-manager.service';
-import { UserRole } from '../chat-manager/dto/create-message.dto';
-import { ObservationMakerSumoSubmitActionJobReport } from './ObservationMakerSumoSubmitActionJobReport';
+import { IStackInfoService } from '../istack-buddy-slack-api/istack-info.service';
 import { ObservationMakerSumoReport } from './ObservationMakerSumoQuery';
+import { ObservationMakerSumoSubmitActionJobReport } from './ObservationMakerSumoSubmitActionJobReport';
 
 export interface SumoJobParams {
   queryName: string;

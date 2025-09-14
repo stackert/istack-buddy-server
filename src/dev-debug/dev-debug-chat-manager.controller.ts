@@ -105,7 +105,9 @@ export class DevDebugChatManagerController {
         const successResult = intentResult as IntentParsingResponse;
         intentParsing = {
           success: true,
-          robotName: successResult.robotName,
+          devDebugRecommendedExecutor:
+            successResult.devDebugRecommendedExecutor,
+          devDebugRecommendedRobot: successResult.devDebugRecommendedRobot,
           intent: successResult.intent,
           subIntents: successResult.intentData.subIntents || [],
           subjects: successResult.intentData.subjects || {},
@@ -198,7 +200,9 @@ export class DevDebugChatManagerController {
         const successResult = intentResult as IntentParsingResponse;
         intentParsing = {
           success: true,
-          robotName: successResult.robotName,
+          devDebugRecommendedExecutor:
+            successResult.devDebugRecommendedExecutor,
+          devDebugRecommendedRobot: successResult.devDebugRecommendedRobot,
           intent: successResult.intent,
           subIntents: successResult.intentData.subIntents || [],
           subjects: successResult.intentData.subjects || {},

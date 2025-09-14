@@ -8,6 +8,7 @@ import { AuthenticationModule } from '../authentication/authentication.module';
 import { LoggerModule } from '../common/logger/logger.module';
 import { AuthorizationPermissionsModule } from '../authorization-permissions/authorization-permissions.module';
 import { UserProfileModule } from '../user-profile/user-profile.module';
+import { IntentParsingService } from '../common/services/intent-parsing.service';
 
 @Module({
   imports: [
@@ -19,7 +20,11 @@ import { UserProfileModule } from '../user-profile/user-profile.module';
     UserProfileModule,
   ],
   controllers: [IstackBuddySlackApiController],
-  providers: [IstackBuddySlackApiService, KnowledgeBaseService],
+  providers: [
+    IstackBuddySlackApiService,
+    KnowledgeBaseService,
+    IntentParsingService,
+  ],
   exports: [IstackBuddySlackApiService, KnowledgeBaseService],
 })
 export class IstackBuddySlackApiModule {}

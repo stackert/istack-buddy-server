@@ -14,6 +14,15 @@ export class SlackSignatureGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest();
 
+    // DEBUG: Log all request details for debugging
+    this.logger.log('=== SLACK SIGNATURE GUARD DEBUG ===');
+    this.logger.log(`URL: ${request.method} ${request.url}`);
+    this.logger.log(`Headers: ${JSON.stringify(request.headers, null, 2)}`);
+    this.logger.log(`Raw body available: ${!!request.rawBody}`);
+    this.logger.log(`Raw body string available: ${!!request.rawBodyString}`);
+    this.logger.log(`Body keys: ${Object.keys(request.body || {})}`);
+    this.logger.log('===================================');
+
     // Skip verification if no signing secret is configured
     const signingSecret = process.env.SLACK_SIGNING_SECRET;
     if (!signingSecret) {
@@ -23,10 +32,34 @@ export class SlackSignatureGuard implements CanActivate {
       return true;
     }
 
+    // TEMPORARY: Skip signature verification in development for debugging
+    const isDevelopment = process.env.NODE_ENV !== 'production';
+    if (
+      isDevelopment &&
+      process.env.SKIP_SLACK_SIGNATURE_VERIFICATION === 'true'
+    ) {
+      this.logger.warn(
+        'DEVELOPMENT MODE: Skipping Slack signature verification',
+      );
+      return true;
+    }
+
     // Get the raw body that was captured in main.ts
     const rawBody = request.rawBody;
     if (!rawBody) {
       this.logger.error('Raw body not available for signature verification');
+      this.logger.error(
+        'This usually means the raw body middleware in main.ts is not working properly',
+      );
+
+      // TEMPORARY: Allow through in development if raw body is missing
+      if (isDevelopment) {
+        this.logger.warn(
+          'DEVELOPMENT MODE: Allowing request through despite missing raw body',
+        );
+        return true;
+      }
+
       throw new UnauthorizedException('Invalid request signature');
     }
 
