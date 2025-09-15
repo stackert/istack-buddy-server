@@ -127,91 +127,28 @@ export class ChatManagerService {
       onFullMessageReceived: async (
         message: TStreamingCallbackMessageOnFullMessageReceived,
       ) => {
-        // this differs from onStreamFinished - in that clients
-        // may listen for either this Event or onStreamFinished.
-        // if they subscribe to both they will get duplicate messages (same messageId)
-
-        // Add tool response to conversation database
-        await this.addMessage({
-          conversationId: conversationId,
-          fromUserId: 'anthropic-marv-robot',
-          content: {
-            type: 'text/plain',
-            payload: message.content.payload,
-          },
-          fromRole: UserRole.ROBOT,
-          toRole: UserRole.USER,
-        });
-
-        // Create message and broadcast through gateway like onError does
+        // Create and send message for dev/debug
         const fullMessage = await this.createMessage({
           conversationId: conversationId,
-          fromUserId: 'anthropic-marv-robot',
-
-          // from public-interface.controller.ts
-          fromRole: UserRole.ROBOT,
-          toRole: UserRole.USER,
-
-          // from above
-          // messageType: MessageType.ROBOT,
-          // fromRole: UserRole.ROBOT,
-          // toRole: UserRole.USER,
-
-          // original
-          // messageType: MessageType.TEXT,
-          // fromRole: UserRole.USER,
-          // toRole: UserRole.USER,
+          fromUserId: 'intent-handler-robot',
           content: {
             type: 'text/plain',
             payload: message.content.payload,
           },
-        });
-
-        `
-
-         // from public-interface.controller.ts
-           conversationId: conversationId,
-          fromUserId: 'anthropic-marv-robot',
           fromRole: UserRole.ROBOT,
           toRole: UserRole.USER,
-          content: 'DEBUG - Conversation Message II',
+        });
 
-
-
-        // from above somewhere
-            conversationId: conversationId,
-            fromUserId: 'anthropic-marv-robot',
-            fromRole: UserRole.ROBOT,
-            toRole: UserRole.USER,
-            content: accumulatedContent,
-
-`;
-
-        // Broadcast message and completion through gateway
+        // Broadcast message through gateway for dev/debug
         if (this.getGateway()) {
           this.getGateway()
             .server.to(conversationId)
             .emit('new_message', fullMessage);
-          this.getGateway().broadcastToConversation(
-            conversationId,
-            'robot_complete',
-            {
-              messageId: fullMessage.id,
-            },
-          );
         }
       },
       onError: async (error: any) => {
-        await this.addMessage({
-          conversationId: conversationId,
-          fromUserId: 'AnthropicMarv',
-          content: {
-            type: 'text/plain',
-            payload: 'DEBUG onError',
-          },
-          fromRole: UserRole.ROBOT,
-          toRole: UserRole.USER,
-        });
+        // Remove the DEBUG onError message - it's not helpful
+        // The actual error message will be sent below
 
         // Create error message and broadcast through gateway
         const errorMessage = await this.createMessage({
@@ -665,6 +602,13 @@ export class ChatManagerService {
         `Error in Slack intent processing for conversation ${conversationId}:`,
         error,
       );
+      this.logger.error('Slack intent processing error details:', {
+        errorMessage: error.message,
+        errorName: error.name,
+        errorStack: error.stack,
+        conversationId,
+        messagePayload: content.payload,
+      });
       // Final fallback to SlackyOpenAiAgent
       await this.handleSlackyFallback(
         conversationId,
@@ -697,6 +641,10 @@ export class ChatManagerService {
         // For Slack, we don't need to handle stream finished
       },
       onFullMessageReceived: async (message: any) => {
+        this.logger.debug(
+          `Slack callback onFullMessageReceived called with: ${message.content.payload?.substring(0, 100)}...`,
+        );
+
         // Add robot response to conversation history
         await this.addRobotResponseFromSlack(conversationId, {
           type: 'text',
@@ -705,10 +653,16 @@ export class ChatManagerService {
 
         // Send to Slack if callback provided
         if (slackResponseCallback && message.content.payload?.trim()) {
+          this.logger.debug(`Sending message to Slack via callback...`);
           await slackResponseCallback({
             type: 'text',
             payload: message.content.payload,
           });
+          this.logger.debug(`Message sent to Slack successfully`);
+        } else {
+          this.logger.warn(
+            `Slack callback not available or empty payload. Callback: ${!!slackResponseCallback}, Payload: ${!!message.content.payload?.trim()}`,
+          );
         }
       },
       onError: async (error: any) => {

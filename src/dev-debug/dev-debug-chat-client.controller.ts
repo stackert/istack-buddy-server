@@ -611,9 +611,18 @@ export class DevDebugChatClientController {
                     <option value="sumoAnalysis">Sumo - Multi-Report Analysis</option>
                     <option value="submitAction">Sumo - Submit Action Analysis</option>
                     <option value="submissionCreated">Sumo - Form Submission Tracking</option>
+                    <option value="submitActionSelected">Sumo - Submit Action Selection</option>
                     <option value="authProvider">Sumo - Auth Provider Metrics</option>
-                    <option value="knowledgeBase">Knowledge Base Search</option>
+                    <option value="knowledgeBase">Knowledge Base - Top Results</option>
+                    <option value="knowledgeBaseSemantic">Knowledge Base - Semantic Search</option>
+                    <option value="knowledgeBaseKeyword">Knowledge Base - Keyword Search</option>
+                    <option value="knowledgeBaseNoun">Knowledge Base - Noun Search</option>
+                    <option value="knowledgeBaseProperNoun">Knowledge Base - Proper Noun Search</option>
+                    <option value="knowledgeBaseDomain">Knowledge Base - Domain Search</option>
+                    <option value="knowledgeBaseFreeText">Knowledge Base - Free Text Search</option>
                     <option value="contextDynamic">Context Dynamic - Form</option>
+                    <option value="contextAccount">Context Dynamic - Account</option>
+                    <option value="contextAuthProvider">Context Dynamic - Auth Provider</option>
                 </select>
                 <textarea id="intent-input" class="intent-input-box" placeholder="Raw Intent JSON...">{
   "intent": "generateSumoAnalysis",
@@ -991,9 +1000,9 @@ export class DevDebugChatClientController {
                     intent: "generateSumoAnalysis",
                     subIntents: ["multiReportAnalysis"],
                     subjects: {
-                        formId: ["12345"],
-                        startDate: ["2025-09-09"],
-                        endDate: ["2025-09-10"]
+                        formId: ["5894350"],
+                        startDate: ["2025-09-14"],
+                        endDate: ["2025-09-15"]
                     },
                     originalUserPrompt: "Run comprehensive Sumo analysis comparing submit actions and form submissions"
                 },
@@ -1001,9 +1010,9 @@ export class DevDebugChatClientController {
                     intent: "generateSumoReport",
                     subIntents: ["submissionCreatedForForm"],
                     subjects: {
-                        formId: ["12345"],
-                        startDate: ["2025-09-09"],
-                        endDate: ["2025-09-10"]
+                        formId: ["5894350"],
+                        startDate: ["2025-09-14"],
+                        endDate: ["2025-09-15"]
                     },
                     originalUserPrompt: "Generate Sumo report for form submission tracking"
                 },
@@ -1011,19 +1020,29 @@ export class DevDebugChatClientController {
                     intent: "generateSumoReport", 
                     subIntents: ["submitActionReport"],
                     subjects: {
-                        formId: ["12345"],
-                        startDate: ["2025-09-09"],
-                        endDate: ["2025-09-10"]
+                        formId: ["5894350"],
+                        startDate: ["2025-09-14"],
+                        endDate: ["2025-09-15"]
                     },
                     originalUserPrompt: "Generate Sumo report for submit action analysis"
+                },
+                submitActionSelected: {
+                    intent: "generateSumoReport",
+                    subIntents: ["submitActionSelectedForExecution"],
+                    subjects: {
+                        formId: ["5894350"],
+                        startDate: ["2025-09-14"],
+                        endDate: ["2025-09-15"]
+                    },
+                    originalUserPrompt: "Generate Sumo report for submit actions selected for execution"
                 },
                 authProvider: {
                     intent: "generateSumoReport",
                     subIntents: ["authProviderMetrics"],
                     subjects: {
-                        authProviderId: ["auth-provider-123"],
-                        startDate: ["2025-09-09"],
-                        endDate: ["2025-09-10"]
+                        authProviderId: ["2175"],
+                        startDate: ["2025-09-14"],
+                        endDate: ["2025-09-15"]
                     },
                     originalUserPrompt: "Generate Sumo report for auth provider metrics"
                 },
@@ -1037,13 +1056,89 @@ export class DevDebugChatClientController {
                     },
                     originalUserPrompt: "Customer is raised concern that they are unable restored to previously deleted fields.  What can we do? What do we check? Is there anything we can do on our end? What to tell the customer?"
                 },
+                knowledgeBaseSemantic: {
+                    intent: "searchKnowledgeBase",
+                    subIntents: ["semanticSearch"],
+                    subjects: {
+                        query: ["form configuration"],
+                        minConfidence: ["0.7"],
+                        pageSize: ["10"]
+                    },
+                    originalUserPrompt: "How do I configure form fields and validation rules?"
+                },
+                knowledgeBaseKeyword: {
+                    intent: "searchKnowledgeBase",
+                    subIntents: ["keywordSearch"],
+                    subjects: {
+                        query: ["webhook"],
+                        minConfidence: ["0.5"],
+                        pageSize: ["10"]
+                    },
+                    originalUserPrompt: "Search for webhook related documentation"
+                },
+                knowledgeBaseNoun: {
+                    intent: "searchKnowledgeBase",
+                    subIntents: ["nounSearch"],
+                    subjects: {
+                        query: ["submission"],
+                        minConfidence: ["0.6"],
+                        pageSize: ["10"]
+                    },
+                    originalUserPrompt: "Find information about form submissions"
+                },
+                knowledgeBaseProperNoun: {
+                    intent: "searchKnowledgeBase",
+                    subIntents: ["properNounSearch"],
+                    subjects: {
+                        query: ["Salesforce"],
+                        minConfidence: ["0.7"],
+                        pageSize: ["10"]
+                    },
+                    originalUserPrompt: "Find Salesforce integration documentation"
+                },
+                knowledgeBaseDomain: {
+                    intent: "searchKnowledgeBase",
+                    subIntents: ["domainSearch"],
+                    subjects: {
+                        query: ["authentication"],
+                        minConfidence: ["0.7"],
+                        pageSize: ["10"]
+                    },
+                    originalUserPrompt: "Search authentication domain for SSO setup"
+                },
+                knowledgeBaseFreeText: {
+                    intent: "searchKnowledgeBase",
+                    subIntents: ["freeTextSearch"],
+                    subjects: {
+                        query: ["customer cannot see submitted data"],
+                        minConfidence: ["0.5"],
+                        pageSize: ["10"]
+                    },
+                    originalUserPrompt: "Customer cannot see their submitted data in the form"
+                },
                 contextDynamic: {
                     intent: "getContextDynamic",
                     subIntents: ["getFormContext"],
                     subjects: {
-                        formId: ["12345"]
+                        formId: ["2606894"]
                     },
-                    originalUserPrompt: "Get live form context for form 12345 including submit actions, emails, and configurations"
+                    originalUserPrompt: "Get live form context for form 2606894 including submit actions, emails, and configurations"
+                },
+                contextAccount: {
+                    intent: "getContextDynamic",
+                    subIntents: ["getAccountContext"],
+                    subjects: {
+                        accountId: ["995011"]
+                    },
+                    originalUserPrompt: "Get live account context for account 995011 including forms, users, and configurations"
+                },
+                contextAuthProvider: {
+                    intent: "getContextDynamic",
+                    subIntents: ["getAuthProviderContext"],
+                    subjects: {
+                        authProviderId: ["2175"]
+                    },
+                    originalUserPrompt: "Get live auth provider context for auth provider 2175 including configurations and metrics"
                 }
             };
             

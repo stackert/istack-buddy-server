@@ -452,12 +452,12 @@ describe('IStackInfoService', () => {
 
         mockAxiosInstance.request.mockResolvedValue({ data: mockResponse });
 
-        const result = await service.contextDynamic.getAccount('789012');
+        const result = await service.contextDynamic.getAccount(789012);
 
         expect(mockAxiosInstance.request).toHaveBeenCalledWith({
           method: 'POST',
           url: '/information-services/context-dynamic/account',
-          data: { accountId: '789012' },
+          data: { accountId: 789012 },
         });
         expect(result).toEqual(mockResponse);
       });
@@ -479,12 +479,12 @@ describe('IStackInfoService', () => {
 
         mockAxiosInstance.request.mockResolvedValue({ data: mockResponse });
 
-        const result = await service.contextDynamic.getForm('123456');
+        const result = await service.contextDynamic.getForm(123456);
 
         expect(mockAxiosInstance.request).toHaveBeenCalledWith({
           method: 'POST',
           url: '/information-services/context-dynamic/form',
-          data: { formId: '123456' },
+          data: { formId: 123456 },
         });
         expect(result).toEqual(mockResponse);
       });
@@ -504,12 +504,12 @@ describe('IStackInfoService', () => {
 
         mockAxiosInstance.request.mockResolvedValue({ data: mockResponse });
 
-        const result = await service.contextDynamic.getAuthProvider('auth123');
+        const result = await service.contextDynamic.getAuthProvider(2175);
 
         expect(mockAxiosInstance.request).toHaveBeenCalledWith({
           method: 'POST',
           url: '/information-services/context-dynamic/auth-provider',
-          data: { authProviderId: 'auth123' },
+          data: { authProviderId: 2175 },
         });
         expect(result).toEqual(mockResponse);
       });

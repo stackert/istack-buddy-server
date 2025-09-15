@@ -1,0 +1,767 @@
+{
+  "query": "webhooks",
+  "keywords": [
+    "webhooks",
+    "submit actions",
+    "configuration",
+    "trigger"
+  ],
+  "searchResponse": {
+    "SLACK": [
+      {
+        "conversation_id": "61a8630f-be34-420b-bfbf-03e07709c20d",
+        "conversationText": "QQ: A customer is experiencing issues with Formstack webhooks and email triggers in Power Automate and Logic Apps. They used to work fine, but now they’re failing in certain scenarios. Any ideas on what might be causing this?\n\nNot enough info. What error and what scenarios?\n\nFormId would also be helpful\n\nThe integration in Formstack indicates a failure during the CX encounter. When the CX tries to resubmit, they continue to receive the error shown in the screenshot below. As a result, the data does not appear to be reaching Power Automate or Logic Apps.\n\nForm ID : 5805171\nCase # : 00708567\nEmail : <mailto:eugene.yi@getevolved.com|eugene.yi@getevolved.com>\n\nWhen I look at that form’s submissions, I see no submissions with errors?\n\nFor formId 5805171, looking at dates August 18 - August 20, I see no submission events in Sumo.\n\nIs the screenshot you’re sharing for form 5805171?\n\n<@UT5GJ52TS> Here is the Form ID associated with the Error 5881060.\n\nSo when you post an error message, for Submission/Integration.. The error has a expand option which will give a little more information for what is going wrong\n\n`{\"error\":{\"code\":\"DirectApiAuthorizationRequired\",\"message\":\"The OAuth authorization scheme is required. Please add authentication scheme and try again.\"}}`\n\nThe authentication stuff should be take care of when the customer set-up the Power Automate.\n\nDo you know if the customer created the PA Flow from within Power Automate? or did they do it manually?\n\nThe customer isn't handling integrations directly; instead, they are using a custom webhook.\n\nOk.. I don’t think I would be able to help them with that.  We recommend the customer set-up the webhook by creating a flow from within Power Automate.  That process takes care of the authentication.\n\n<@UT5GJ52TS> Thank you for taking the time to review this matter. I truly appreciate your attention to it.",
+        "conversationTextNormalized": "A customer is experiencing issues with Formstack Webhooks and email triggers in Power Automate and Logic Apps. Previously, these integrations functioned correctly, but they are now failing in certain scenarios. The customer is seeking assistance in identifying the root cause of these failures. The integration within Formstack indicates a failure during the customer experience encounter. When the customer attempts to resubmit, they continue to receive an error message, which is detailed in the attached screenshot. Consequently, the data is not reaching Power Automate or Logic Apps as intended. The specific Form ID associated with this issue is 5805171, and the case number is 00708567. The customer's email for further communication is eugene.yi@getevolved.com. Upon reviewing the submissions for this form, there are no records of errors for submissions made between August 18 and August 20. Additionally, the error message provided indicates a requirement for OAuth authorization: {\"error\":{\"code\":\"DirectApiAuthorizationRequired\",\"message\":\"The OAuth authorization scheme is required. Please add authentication scheme and try again.\"}}. It is important to confirm whether the customer created the Power Automate flow directly within Power Automate or if it was set up manually. The customer is utilizing a custom webhook for integration, which may complicate troubleshooting. It is recommended that the customer set up the webhook by creating a flow directly within Power Automate, as this process typically ensures proper authentication configuration.",
+        "aiTechnicalObservation": "The reported issue involves failures in the execution of Webhooks and email triggers configured in Formstack, specifically when integrated with Power Automate and Logic Apps. The error message indicates that OAuth authorization is required, suggesting that the authentication scheme may not be properly configured. This could stem from the customer using a custom webhook instead of the recommended method of creating a flow directly within Power Automate, which automatically handles authentication. The submit actions in Formstack are designed to execute after a submission is received, and they can be either blocking or queued. Blocking actions run inline and can affect the user experience, while queued actions run asynchronously. If the submit action fails during the initial run, it may prevent the submission from being stored, leading to the observed issues. The customer should verify the OAuth setup and consider reconfiguring the webhook integration to ensure proper authentication. Additionally, reviewing the Sumo logs for the specific Form ID during the submission timeframe may provide insights into any underlying issues.",
+        "confidence": "0.833",
+        "channelId": "SLACK:cx-formstack",
+        "keywords": [
+          "webhooks",
+          "email triggers",
+          "Power Automate",
+          "Logic Apps",
+          "OAuth authorization",
+          "submit actions"
+        ],
+        "nouns": [
+          "customer",
+          "issues",
+          "integrations",
+          "error message",
+          "data",
+          "form",
+          "case number",
+          "email"
+        ],
+        "properNouns": [
+          "Formstack",
+          "Power Automate",
+          "Logic Apps",
+          "OAuth"
+        ],
+        "domains": [
+          "BACKEND:SUBMIT-ACTIONS",
+          "BACKEND:AUTHENTICATION"
+        ],
+        "subjects": {
+          "formId": "5805171",
+          "submissionId": null
+        },
+        "citations": {
+          "text": "conversation: 61a8630f-be34-420b-bfbf-03e07709c20d",
+          "link": "https://formstack.slack.com/archives/C3LQ7KNFN/p1724159683198259?thread_ts=1724159683.198259&cid=C3LQ7KNFN"
+        }
+      },
+      {
+        "conversation_id": "89721987-850a-4f14-bcfa-8740e1e0286e",
+        "conversationText": "USLACKBOT: This message was deleted.\nUT5GJ52TS: <@U4RDSKAVA> create issue\nUT5GJ52TS: <@U092XM3T740> What do you think is going on?",
+        "conversationTextNormalized": "A customer is reporting an issue with the Formstack platform where the configured Submit Actions (Integrations | Webhooks) are not executing as expected after form submissions. The customer has indicated that while the form is successfully receiving submissions, the associated Webhooks are failing to trigger. This situation may indicate a potential connectivity or configuration issue that requires further investigation to ensure that the integrations are functioning correctly.",
+        "aiTechnicalObservation": "The issue reported by the customer regarding the failure of Submit Actions to execute could stem from several factors within the Formstack platform. Submit Actions, which include Webhooks and other integrations, are designed to run after a submission is received. They can be categorized as either blocking or queued actions. Blocking actions run inline during the submission process and can impact the user experience if they fail, potentially aborting the submission. On the other hand, queued actions run asynchronously after the submission is processed. If the Submit Actions are not executing, it is crucial to check the logs for any errors related to the specific Submit Action type. The initial run of Submit Actions uses request-time values, while a re-run would utilize stored values, which may differ in formatting. If the Submit Actions are failing during the initial run, it could be due to misconfigurations or connectivity issues with the external systems they are trying to reach. It is also important to verify that the form settings allow for submission storage and that there are no limits being exceeded that would prevent the actions from executing. A thorough review of the Sumo Logic logs for the specific form and submission ID will provide insights into the execution flow and any errors encountered during the process.",
+        "confidence": "0.833",
+        "channelId": "SLACK:cx-formstack",
+        "keywords": [
+          "submit actions",
+          "webhooks",
+          "integrations",
+          "execution",
+          "configuration",
+          "connectivity"
+        ],
+        "nouns": [
+          "customer",
+          "issue",
+          "platform",
+          "form",
+          "submission"
+        ],
+        "properNouns": [
+          "Formstack"
+        ],
+        "domains": [
+          "BACKEND:SUBMIT-ACTIONS"
+        ],
+        "subjects": [],
+        "citations": {
+          "text": "conversation: 89721987-850a-4f14-bcfa-8740e1e0286e",
+          "link": "https://formstack.slack.com/archives/C3LQ7KNFN/p1752844714951129?thread_ts=1752844714.951129&cid=C3LQ7KNFN"
+        }
+      },
+      {
+        "conversation_id": "119059cf-5a22-45d4-b46e-f8ba192c87ff",
+        "conversationText": "Hi team, this <https://getmaple.formstack.com/forms/medpoint_maple|form> (5555290) is new and the integration isn't fully working, it keeps getting a salesforce error. Any help would be much appreciated.\n\nWhile we can't see what the values are that she has in SF, a quick work around is to uncheck restrict option on the picklist setting.",
+        "conversationTextNormalized": "A customer is reporting that the integration for the Formstack form (ID: 5555290) is not functioning correctly, resulting in a Salesforce error. The customer is seeking assistance to resolve this issue. They have suggested a temporary workaround of unchecking the 'restrict option' on the picklist setting, but a more permanent solution is needed to ensure the integration works seamlessly. This issue may involve examining the configuration of the Salesforce integration within the Formstack platform to identify any potential misconfigurations or connectivity problems.",
+        "aiTechnicalObservation": "The reported issue likely stems from a misconfiguration in the Salesforce integration settings within the Formstack platform. When a form submission is processed, the associated submit actions (integrations/webhooks) are triggered. If the Salesforce integration encounters an error, it may be due to incorrect field mappings or authentication issues. The submit action for Salesforce is typically a non-blocking action, meaning it runs asynchronously after the submission is created. If the integration fails, it may log an error indicating the nature of the failure, such as 'Salesforce: Field Map Error' or 'Salesforce: Auth Failed'. To troubleshoot, review the Sumo Logic logs for the specific form ID and submission ID to identify the exact error messages generated during the integration attempt. Additionally, ensure that the field mappings in Salesforce align with the fields in the Formstack form, and verify that the API credentials used for the integration are valid and have the necessary permissions. If the issue persists, consider re-running the submit action to see if the error is consistent or if it was a transient issue.",
+        "confidence": "0.667",
+        "channelId": "SLACK:cx-formstack",
+        "keywords": [
+          "integration",
+          "Salesforce",
+          "error",
+          "configuration",
+          "submit actions"
+        ],
+        "nouns": [
+          "customer",
+          "form",
+          "workaround",
+          "option",
+          "setting"
+        ],
+        "properNouns": [
+          "Formstack",
+          "Salesforce"
+        ],
+        "domains": [
+          "BACKEND:SUBMIT-ACTIONS"
+        ],
+        "subjects": {
+          "formId": "5555290",
+          "submissionId": null
+        },
+        "citations": {
+          "text": "conversation: 119059cf-5a22-45d4-b46e-f8ba192c87ff",
+          "link": "https://formstack.slack.com/archives/C3LQ7KNFN/p1706741762313029?thread_ts=1706741762.313029&cid=C3LQ7KNFN"
+        }
+      },
+      {
+        "conversation_id": "19edb95e-7e40-4853-8e84-a20892a94337",
+        "conversationText": "#CASE ASSIST\n&lt;@Clayton Bruce&gt; *Is requesting assistance on this ticket:*  \n*Here is the Form Id: 5622069 &amp; 5742513\n*Here is the issue they're trying to solve:*  Case: 00708540\nThis account is reporting that they have two separate power automate flows with one of each form and when one is submitted both Flows trigger. \n\nI have no way of testing this as I do not have a MS PA account. Does anyone have any advice here? \n*Troubleshooting steps taken or team that they think may need to get involved:* *Impersonation access granted* Yes \n*Email or Org ID associated with impersonation access:* <mailto:jasonyudesigns@gmail.com|jasonyudesigns@gmail.com>\n\n*Please take a look at this and see if you can help.  If not, please respond in a thread so that they know to go ahead and escalate the ticket.*\n\nFrom customer:\n&gt; The data from the test form gets run through the same flow as the production flow. Example would be we have a test and production folders as the endpoints of the flows. When the test form is run I see pdf files end up in both the test and production folders when it should just end up in the test folder. Our first thought was that it could be the Formstack triggers.\n\nIs there logic on the web-hook with conditions for when each should trigger?\n\nNo text content\n\nNo webhook logic on either form.\n\nThe submit action webhook is EXACTLY the same though. Not sure if that means anything",
+        "conversationTextNormalized": "A customer is requesting assistance regarding two separate Formstack forms (IDs: 5622069 and 5742513) that are integrated with Microsoft Power Automate. The customer has reported that when one of these forms is submitted, both Power Automate flows are triggered, which is not the intended behavior. They suspect that the issue may be related to the Formstack triggers. The customer has provided impersonation access for troubleshooting purposes and has requested guidance on how to resolve this issue. They are particularly interested in understanding if there is any logic or conditions set on the webhooks that could be causing both flows to trigger simultaneously. The customer has also noted that there is no specific webhook logic configured on either form, although the submit action webhook is identical for both forms. This situation requires a thorough investigation to determine the root cause of the issue and to ensure that the integrations function as expected.",
+        "aiTechnicalObservation": "The issue described involves the execution of submit actions (webhooks) configured for two Formstack forms. When a submission is made, the submit actions are triggered, which can either be blocking or queued. In this case, it appears that both forms are executing their submit actions simultaneously, which suggests a potential misconfiguration in the webhook settings or the Power Automate flows. The submit actions are processed in the order they are received, and if both forms are set to trigger the same webhook without any conditional logic, this could lead to both flows being activated. It is essential to verify the webhook configurations for both forms and ensure that they are distinct if they are intended to operate independently. Additionally, the customer should check the Power Automate flows to confirm that they are not inadvertently set to trigger on the same conditions. If the submit actions are identical, it may be beneficial to implement conditional logic within the webhooks to prevent both flows from executing simultaneously. Furthermore, the submit actions can be re-run if necessary, using the stored submission data, which may help in testing the configurations without needing to submit new data. This analysis should guide the troubleshooting process effectively.",
+        "confidence": "0.667",
+        "channelId": "SLACK:cx-formstack",
+        "keywords": [
+          "submit actions",
+          "webhooks",
+          "Power Automate",
+          "Formstack",
+          "integration",
+          "troubleshooting"
+        ],
+        "nouns": [
+          "customer",
+          "forms",
+          "issue",
+          "behavior",
+          "access",
+          "guidance",
+          "logic"
+        ],
+        "properNouns": [
+          "Formstack",
+          "Microsoft Power Automate"
+        ],
+        "domains": [
+          "BACKEND:SUBMIT-ACTIONS"
+        ],
+        "subjects": {
+          "formId": "5622069",
+          "submissionId": null
+        },
+        "citations": {
+          "text": "conversation: 19edb95e-7e40-4853-8e84-a20892a94337",
+          "link": "https://formstack.slack.com/archives/C3LQ7KNFN/p1724172588250919?thread_ts=1724172588.250919&cid=C3LQ7KNFN"
+        }
+      },
+      {
+        "conversation_id": "258b4e2d-efd2-4a7b-bf2f-8db8b9d59fc3",
+        "conversationText": "#CASE ASSIST\n&lt;@Trudie Freeman&gt; *Is requesting assistance on this ticket:* <https://formstack.lightning.force.com/lightning/r/Case/500Vu000005lXp3IAE/view?channel=OMNI>  \n*Here is the Form Id: 5735703\n*Here is the issue they're trying to solve:*  Help resolve the issue\n*Troubleshooting steps taken or team that they think may need to get involved:* Can't troubleshoot the case as we do not have access to Power Automate anymore. \nBut I have researched documentation and looked in slack.\nMade sure the account had access to webhooks.\n\n*Impersonation access granted* Yes \n*Email or Org ID associated with impersonation access:* <mailto:imcknight@aecon.com|imcknight@aecon.com>\n\n*Please take a look at this and see if you can help.  If not, please respond in a thread so that they know to go ahead and escalate the ticket.*\n\nAlso searched the MS PA site for information on the error.\n\nHey <@UJ2UGHEKB>,\n\nHave you every run across this error?\n\nLet me check my notes. Sorry for the delay here.\n\nSo I notice that he never mentioned if he removed that empty space in that \"inspection\" field. If he never did, that can cause the issue where the field doesn't show up in PA.\n\nThe error message you're seeing in Power Automate indicates that the \"Join\" action in your flow is expecting a value for the \"from\" property, but it's not getting one. This usually means that the data you're trying to join is either null or not being passed correctly to the action.\n\nLet me confirm this.\n\nI bet you the space is the issue.\n\nHe made the changes, but unfortunately, that did not resolve the issue. Imma have him look at his data again… Does anyone have any other ideas? <@UJ2UGHEKB> <@UT5GJ52TS> <@U025HDJN6GZ>\n\n(warn) label: “Pass/Fail Status” is used 4 times.\nRelated Fields: 164171936, 164171967, 164171975, 164171985\n\n(warn) label: “Repair Required” is used 3 times.\nRelated Fields: 164171937, 164171976, 164171987\n\n(warn) label: “Comments/Reason for Repair” is used 4 times.\nRelated Fields: 164171938, 164171968, 164171977, 164171988\n\n(warn) label: “Manufacturer” is used 2 times.\nRelated Fields: 164171950, 164171979\n\n(warn) Number of fields with circular references: 2\nRelated Fields: 164171933, 164171986\n\nSorry for the screenshots being goofy sizes.\n\nI can’t tell what field is having the problem, the screenshot shown above says “from” but I dont see a field name “from”.\n\nThere are a couple duplicate field names but I dont think that will be an issue for PA.\nThere are a couple of fields with circular logic (which is a possible cause).   I believe, if a field is hidden by logic we may send `null` if it’s an ‘advanced’ field (I am not 100% certain, it maybe different for each field type).",
+        "conversationTextNormalized": "A customer is requesting assistance with a ticket related to Formstack, specifically regarding Form ID 5735703. They are experiencing issues with the integration of Power Automate, as they no longer have access to it for troubleshooting. The customer has confirmed that their account has access to webhooks and has conducted preliminary research in the documentation and Slack for potential solutions. They are seeking help to resolve the issue, as they are unable to identify the root cause. Impersonation access has been granted for further investigation, and the associated email for this access is imcknight@aecon.com. The customer has also noted an error message in Power Automate indicating that the 'Join' action in their flow is not receiving a value for the 'from' property, which may suggest that the data being passed is either null or incorrectly formatted. They suspect that an empty space in the 'inspection' field may be contributing to the problem. The customer is looking for additional insights or suggestions to address this issue effectively.",
+        "aiTechnicalObservation": "The issue appears to be related to the integration between Formstack and Power Automate, specifically concerning the handling of data passed to the 'Join' action in the flow. The error message indicates that the 'from' property is not receiving a value, which could be due to null data or incorrect formatting. Given that the customer suspects an empty space in the 'inspection' field, it is crucial to verify the data being sent from Formstack to Power Automate. The submit actions configured for the form may be executing with request-time values, and if the field configuration has changed since the initial submission, the stored values may differ in formatting. It is recommended to check the Sumo logs for any submit action failures or discrepancies during the integration process. Additionally, the customer should ensure that the field mappings in Power Automate align with the current field definitions in Formstack. If necessary, a re-run of the submit actions may be performed to see if the issue persists with the stored values. The submit actions can be either blocking or queued, and understanding their execution flow will help in diagnosing the problem further.",
+        "confidence": "0.667",
+        "channelId": "SLACK:cx-formstack",
+        "keywords": [
+          "integration",
+          "Power Automate",
+          "webhooks",
+          "submit actions",
+          "error message"
+        ],
+        "nouns": [
+          "customer",
+          "ticket",
+          "Formstack",
+          "Form ID",
+          "access",
+          "data",
+          "field",
+          "error",
+          "action"
+        ],
+        "properNouns": [
+          "Formstack",
+          "Power Automate",
+          "imcknight@aecon.com"
+        ],
+        "domains": [
+          "BACKEND:SUBMIT-ACTIONS"
+        ],
+        "subjects": {
+          "formId": "5735703",
+          "submissionId": null
+        },
+        "citations": {
+          "text": "conversation: 258b4e2d-efd2-4a7b-bf2f-8db8b9d59fc3",
+          "link": "https://formstack.slack.com/archives/C3LQ7KNFN/p1713882557917689?thread_ts=1713882557.917689&cid=C3LQ7KNFN"
+        }
+      },
+      {
+        "conversation_id": "31abddf8-c15b-4321-aac9-c82a9c7a2faa",
+        "conversationText": "heya forms team, can I get this ticket answered please? they reached out to jeanna directly. it's a v4 issue\n\n<https://formstack.lightning.force.com/lightning/r/Case/500Vu000002W4PAIA0/view?ws=%2Flightning%2Fr%2FAccount%2F0014A00002IRf70QAD%2Fview>\n\nI responded to this customer and reverted their forms as they were experiencing a bug. <https://formstack.atlassian.net/browse/FORM-1663> Just want to make sure this team knows that I responded so the customer isn’t given double info",
+        "conversationTextNormalized": "A Customer has reached out to Jeanna regarding a version 4 issue with their forms. They have reported experiencing a bug, which I have addressed by reverting their forms. I would like to ensure that the team is aware of my response to prevent the customer from receiving duplicate information. For reference, the related Jira ticket is available at <https://formstack.atlassian.net/browse/FORM-1663>. Additionally, please find the customer case details at <https://formstack.lightning.force.com/lightning/r/Case/500Vu000002W4PAIA0/view?ws=%2Flightning%2Fr%2FAccount%2F0014A00002IRf70QAD%2Fview>.",
+        "aiTechnicalObservation": "The issue reported by the customer may involve the Forms Core backend, specifically related to the submit actions that are executed after a form submission. Given that the customer is using version 4 of the Formstack platform, it is crucial to ensure that the submit actions are configured correctly and that any integrations or webhooks are functioning as intended. The submit actions can be either blocking or queued, which affects how they interact with the submission process. If the submit action is blocking, it runs inline during the submission process and can impact the user experience if it fails. Conversely, queued actions run asynchronously and may not affect the immediate submission outcome. It is important to check the logs for any errors related to the submit actions, particularly focusing on the execution context and any potential discrepancies between the initial run and re-run of the actions. If the issue persists, further investigation into the specific configurations and any recent changes to the form or integrations may be necessary.",
+        "confidence": "0.667",
+        "channelId": "SLACK:cx-formstack",
+        "keywords": [
+          "customer",
+          "issue",
+          "forms",
+          "bug",
+          "submit actions",
+          "integrations",
+          "webhooks"
+        ],
+        "nouns": [
+          "case",
+          "ticket",
+          "response",
+          "information"
+        ],
+        "properNouns": [
+          "Jeanna",
+          "Formstack",
+          "FORM-1663"
+        ],
+        "domains": [
+          "BACKEND:SUBMIT-ACTIONS"
+        ],
+        "subjects": [],
+        "citations": {
+          "text": "conversation: 31abddf8-c15b-4321-aac9-c82a9c7a2faa",
+          "link": "https://formstack.slack.com/archives/C3LQ7KNFN/p1707860083193539?thread_ts=1707860083.193539&cid=C3LQ7KNFN"
+        }
+      },
+      {
+        "conversation_id": "385d9f19-f1d9-49b4-bfa4-486e6526dd2d",
+        "conversationText": "QQ: Just want to know what exactly causes the error as shown at the screenshot below. this happens on a certain user from a workflow\nemail address that experienced the error <mailto:titshawm@liphatech.com|titshawm@liphatech.com>\n\nform id: 5276983\ncase id: 00658611\n\nHave we tried changing the assignee to a different user and then changing it back to this user?\n\nGood day <@U025HDJN6GZ>\n\nhave not tried to have that tried to the customer. Ill let them do that and will update you after sir\n\nHello <@U025HDJN6GZ>\n\nThe customer is still experiencing the same error.\n\nI'm showing the user's queue as empty\n\nall the assignees are having the same error as the new assigned.\n\nNeed consent to access a problem profile to examine\n\nCUstomer just had granted access",
+        "conversationTextNormalized": "A customer is experiencing an error related to a specific user within a workflow on the Formstack platform. The user's email address is titshawm@liphatech.com. The form ID associated with this issue is 5276983, and the case ID is 00658611. The customer inquired whether we have attempted to change the assignee to a different user and then revert it back to the original user. As of now, this approach has not been tried with the customer. I will advise them to attempt this and provide an update afterward. However, the customer continues to face the same error, and I have noted that the user's queue appears empty. All assignees are encountering the same error as the newly assigned user. I require consent to access the problem profile for further examination, and the customer has just granted access.",
+        "aiTechnicalObservation": "The issue appears to be related to the submit actions configured for the form associated with the user experiencing the error. Given that all assignees are encountering the same error, it suggests a systemic issue rather than an isolated user problem. The submit actions, which include integrations and webhooks, may be failing during execution, potentially due to misconfiguration or connectivity issues. The Formstack platform processes submit actions in two phases: the initial run uses request-time values, while a re-run utilizes stored values. If the submit action is blocking, it could prevent the submission from being processed correctly, leading to the observed errors. I recommend checking the Sumo logs for any exceptions thrown during the submit action execution, particularly focusing on the form ID 5276983 and the associated submission IDs. This will help identify if there are any specific errors related to the integrations or webhooks that are configured for this form. Additionally, ensure that the form's submission settings allow for proper storage and processing of submissions.",
+        "confidence": "0.667",
+        "channelId": "SLACK:cx-formstack",
+        "keywords": [
+          "error",
+          "workflow",
+          "submit actions",
+          "integrations",
+          "webhooks"
+        ],
+        "nouns": [
+          "customer",
+          "user",
+          "email address",
+          "form",
+          "case",
+          "assignee",
+          "queue"
+        ],
+        "properNouns": [
+          "Formstack",
+          "Liphatech"
+        ],
+        "domains": [
+          "BACKEND:SUBMIT-ACTIONS"
+        ],
+        "subjects": {
+          "formId": "5276983",
+          "submissionId": null
+        },
+        "citations": {
+          "text": "conversation: 385d9f19-f1d9-49b4-bfa4-486e6526dd2d",
+          "link": "https://formstack.slack.com/archives/C3LQ7KNFN/p1708520148837209?thread_ts=1708520148.837209&cid=C3LQ7KNFN"
+        }
+      },
+      {
+        "conversation_id": "42bcaa06-96f4-434e-811d-556abe86310f",
+        "conversationText": "QQ: A customer wanted to integrate with <http://monday.com|monday.com>, is there a way that we could do this also by using <http://make.io|make.io>?\n\ncase id: <https://formstack.lightning.force.com/lightning/r/500Vu00000CmcQhIAJ/view|00712606>\nemail: <mailto:assaf@weaversoft.io|assaf@weaversoft.io>\nacc#: <https://www.formstack.com/admin/fcp.php?id=1173264&amp;action=viewAccount|1173264>\n\nMake didn’t seem to have much for API documentation.\n\nTwo of our popular general integration services are Power Automate and Zapier.  We do not currently have an integration for <http://Monday.com|Monday.com>, Zapier or PA may.\n\nI appreciate you looking at this matter <@UT5GJ52TS> and this is noted. Thanks! :thankyou2::thankyou2:",
+        "conversationTextNormalized": "A customer is inquiring about the possibility of integrating the Formstack platform with Monday.com using Make.io as an intermediary. They are seeking guidance on how to achieve this integration, as they have noted that Make.io does not provide extensive API documentation. Currently, Formstack does not have a direct integration with Monday.com, but the customer is interested in exploring options through other integration services such as Power Automate and Zapier. This request is noted for further investigation and assistance.",
+        "aiTechnicalObservation": "The integration of Formstack with external platforms like Monday.com typically involves the use of submit actions, which are configured to trigger after a form submission. These submit actions can be set up as webhooks or integrations that send data to external services. In this case, the customer is looking to utilize Make.io, which acts as a middleware to facilitate communication between Formstack and Monday.com. The submit actions can be either blocking or queued, depending on how they are configured. Blocking actions execute inline during the submission process and can affect the user experience, while queued actions run asynchronously after the submission is completed. If the integration fails during the initial run, it may require a re-run using stored submission data, which could lead to discrepancies if the data format has changed. It is essential to ensure that the integration logic is resilient to these changes and that the necessary API endpoints are correctly configured to handle the data being sent. Additionally, the customer should be made aware of the limitations of Make.io's API documentation, which may necessitate further exploration of alternative integration methods or platforms.",
+        "confidence": "0.667",
+        "channelId": "SLACK:cx-formstack",
+        "keywords": [
+          "integration",
+          "Formstack",
+          "Monday.com",
+          "Make.io",
+          "submit actions",
+          "webhooks"
+        ],
+        "nouns": [
+          "customer",
+          "platform",
+          "guidance",
+          "API",
+          "documentation",
+          "service"
+        ],
+        "properNouns": [
+          "Formstack",
+          "Monday.com",
+          "Make.io",
+          "Power Automate",
+          "Zapier"
+        ],
+        "domains": [
+          "BACKEND:SUBMIT-ACTIONS"
+        ],
+        "subjects": [],
+        "citations": {
+          "text": "conversation: 42bcaa06-96f4-434e-811d-556abe86310f",
+          "link": "https://formstack.slack.com/archives/C3LQ7KNFN/p1724246250484679?thread_ts=1724246250.484679&cid=C3LQ7KNFN"
+        }
+      },
+      {
+        "conversation_id": "437cbd1d-74d9-42be-9c1b-d8fbe20c310a",
+        "conversationText": "#CASE ASSIST\n&lt;@Justin Choke&gt; *Is requesting assistance on this ticket:* <https://formstack.lightning.force.com/lightning/r/Case/500Vu000004l6FpIAI/view?channel=OMNI&amp;ws=%2Flightning%2Fr%2FAccount%2F001G0000024nT9yIAE%2Fview>  \n*Here is the Form Id: 4121022\n*Here is the issue they're trying to solve:*  Customer has stopped getting notification emails for their form. I checked Sumo and there is no record of us generating and sending an email to their address (<mailto:curtis@dakotavideo.com|curtis@dakotavideo.com>) after 3/29. There's no logic on the notification email they've set up so it should send for each submission. Their notification emails aren't deactivated in CP and they have no SMTP. \n*Troubleshooting steps taken or team that they think may need to get involved:* CaseID: 00671060*Impersonation access granted* Yes \n*Email or Org ID associated with impersonation access:* <mailto:curtis@dakotavideo.com|curtis@dakotavideo.com>\n\n*Please take a look at this and see if you can help.  If not, please respond in a thread so that they know to go ahead and escalate the ticket.*\n\nLikely coincides with the reports of the Google Drive notification email. For now, advise to set the File Upload File setting to never. The file info will still be set, and this will restore email functionality.\n\n<https://formstack.atlassian.net/browse/FORM-1916>\n\n<!subteam^S06M8EH34Q5>",
+        "conversationTextNormalized": "A customer is requesting assistance regarding their Formstack form (Form ID: 4121022). They have reported that they are no longer receiving notification emails for submissions made through this form. Upon investigation, it was found that there have been no records of emails being generated and sent to the specified address (curtis@dakotavideo.com) since March 29. The notification email logic appears to be correctly configured, as it should trigger for each submission. Additionally, the notification emails are not deactivated in the Control Panel, and there is no SMTP configuration that could interfere with email delivery. The customer has provided impersonation access for further investigation. It is important to note that this issue may coincide with recent reports regarding Google Drive notification emails. As a temporary measure, it is advised to set the File Upload File setting to 'never' to restore email functionality while the underlying issue is being addressed. Please review the case and provide assistance or escalate if necessary.",
+        "aiTechnicalObservation": "The issue appears to be related to the email notification system within the Formstack platform. Given that the customer has not received notification emails since a specific date, it is crucial to check the email logs in Sumo Logic for any errors or anomalies related to the form submissions. The absence of email records suggests that the submit actions responsible for sending notifications may not be executing correctly. This could be due to a misconfiguration in the notification settings or an issue with the email service provider. The submit actions for this form should be examined to ensure they are set up correctly and that there are no blocking actions preventing the emails from being sent. Additionally, the recent changes regarding Google Drive notifications may indicate a broader issue affecting email delivery. It is recommended to verify the email configuration, check for any recent changes in the form settings, and review the logs for any errors related to email delivery. If necessary, consider re-running the submit actions to see if that resolves the issue.",
+        "confidence": "0.667",
+        "channelId": "SLACK:cx-formstack",
+        "keywords": [
+          "notification",
+          "emails",
+          "Formstack",
+          "submit actions",
+          "configuration"
+        ],
+        "nouns": [
+          "customer",
+          "form",
+          "issue",
+          "email",
+          "address"
+        ],
+        "properNouns": [
+          "Formstack",
+          "Google Drive",
+          "Curtis"
+        ],
+        "domains": [
+          "BACKEND:EMAILS",
+          "BACKEND:SUBMIT-ACTIONS"
+        ],
+        "subjects": {
+          "formId": "4121022",
+          "submissionId": null
+        },
+        "citations": {
+          "text": "conversation: 437cbd1d-74d9-42be-9c1b-d8fbe20c310a",
+          "link": "https://formstack.slack.com/archives/C3LQ7KNFN/p1712331939071809?thread_ts=1712331939.071809&cid=C3LQ7KNFN"
+        }
+      },
+      {
+        "conversation_id": "4a92186e-6073-4a5e-8925-50954a072eb7",
+        "conversationText": "Hi team, I just escalated case 00642993 - customer is stating that their business has been at a standstill for the past few days. Can someone please take a look at this when you have time?\n\nIt may have to do with the V4 update but I'm not sure\n\n<@U01R0V47KBK> I'm handling this case. Currently troubleshooting the issue. Thanks.\n\nDon’t be shy to ping me if you need help.",
+        "conversationTextNormalized": "A Customer has escalated case 00642993, indicating that their business operations have been significantly impacted for the past few days. They suspect that the issue may be related to the recent V4 update of the Formstack platform. Immediate attention is required to investigate the root cause of this disruption and to restore normal functionality. Please prioritize this case and provide updates as troubleshooting progresses.",
+        "aiTechnicalObservation": "The reported issue may stem from the recent V4 update, which could have introduced changes affecting the functionality of Submit Actions (Integrations | Webhooks) within the Formstack platform. Submit Actions are critical for executing integrations and webhooks post-submission, and any disruptions could lead to failures in processing submissions or triggering necessary actions. Given that Submit Actions can be either blocking or queued, it is essential to determine if the issue is related to the execution flow of these actions. If the actions are blocking, any failure could prevent the submission from being completed successfully, while queued actions may not execute as expected if there are issues with the job processing. It is advisable to review the logs for any errors related to Submit Actions, particularly focusing on the execution context and any exceptions thrown during the integration process. Additionally, verifying the configuration settings for the affected forms and ensuring that all integrations are correctly set up will be crucial in diagnosing the problem. If necessary, re-running the Submit Actions with stored values may help identify discrepancies in the data being processed. Please ensure that all relevant logs are reviewed to trace the submission lifecycle and identify any points of failure.",
+        "confidence": "0.667",
+        "channelId": "SLACK:cx-formstack",
+        "keywords": [
+          "escalated",
+          "case",
+          "business operations",
+          "V4 update",
+          "Formstack",
+          "Submit Actions",
+          "Integrations",
+          "Webhooks"
+        ],
+        "nouns": [
+          "customer",
+          "case",
+          "business",
+          "operations",
+          "issue",
+          "update",
+          "platform"
+        ],
+        "properNouns": [
+          "Formstack"
+        ],
+        "domains": [
+          "BACKEND:SUBMIT-ACTIONS"
+        ],
+        "subjects": [],
+        "citations": {
+          "text": "conversation: 4a92186e-6073-4a5e-8925-50954a072eb7",
+          "link": "https://formstack.slack.com/archives/C3LQ7KNFN/p1706039021260619?thread_ts=1706039021.260619&cid=C3LQ7KNFN"
+        }
+      }
+    ],
+    "CONTEXT-DOCUMENTS": [
+      {
+        "context_document_id": "208da9ad-d1f0-4e2f-917a-5a2b6ec0300b",
+        "contextDocumentText": "## Forms Core BE — Submit Actions (Integrations/Webhooks)\n\n- Doc ID: 31200\n- Area: backend/core/forms\n- Scope: post-submit processing configured per form\n\n### What they are\n- Submit Actions (aka integrations/webhooks) run after a submission is received. They are distinct from plugins (which influence form behavior/collection).\n- Actions can be blocking (run inline) or queued (asynchronous). Some actions handle uploaded files explicitly.\n\n### Where they run in the flow\n- Initial run uses request-time values (off the wire) during submit.\n- Queued actions run asynchronously after initial processing.\n- Re-run uses stored values (at-rest) and may differ in formatting from the initial run.\n\n### Types (examples)\n- Webhooks/HTTP callbacks\n- CRM/marketing integrations\n- File upload processors (run before other actions when files are present)\n- Payment processors (card/token-based)\n\n### Blocking vs queued\n- Blocking: executed inline during submit; can impact user-facing result (redirects, messages). Failures can abort submit or trigger cleanup paths.\n- Queued: scheduled for background execution; downstream systems receive data after submit completion.\n- File-related actions: upload actions run first so subsequent actions can reference file URLs.\n\n### Conditional logic\n- Each action may have run conditions evaluated against submitted values. If conditions do not match, the action is skipped without error.\n\n### Re-run behavior\n- Data source: re-run uses `submissionData` (at-rest). If field configuration changed since initial submit, values may serialize differently for the integration.\n- Files: re-run actions that depend on transient upload context may lack temporary file metadata; ensure actions are resilient to re-run without transient state.\n- Payments: see payment-specific notes below; re-running may not re-charge and often performs idempotent checks.\n\n### Payments\n- Payment submit actions can be treated as blocking to produce redirects/confirmations. On error, payment status and messaging are surfaced; cleanup avoids double-charging.\n\n### Error handling and deletion impacts\n- If a blocking action (or earlier step) raises an exception, the system may delete the just-created submission as cleanup before bubbling the error (see ingress doc). Some action-specific exceptions are exempt from this deletion path.\n- Queued actions log failures and may retry depending on job configuration.\n\n### Logging and observability (facts)\n- Action run (bulk re-run logging and typical worker runs): message \"SubmitAction {type} run for {submissionId}\" with context including `submitActionId`, `formId`, `accountId`, `submissionId`, `type`.\n- Submit-stage errors: message \"Exception thrown while trying to run integrations\" with context `formId`, `formVersion`, `submissionId`, `exceptionMessage`, `error`.\n\n### Sumo queries (runnable)\n- Actions executed by form in time window\n```\n_sourceCategory=formstack/prod/*\n \"SubmitAction {type} run for {submissionId}\"\n| json auto\n| where context.formId = \"_FORM_ID_\"\n| count by context.type\n```\n\n- Action runs for a specific submission\n```\n_sourceCategory=formstack/prod/*\n \"SubmitAction {type} run for {submissionId}\"\n| json auto\n| where context.submissionId = \"_SUBMISSION_ID_\"\n```\n\n- Action run by submitActionId\n```\n_sourceCategory=formstack/prod/*\n \"SubmitAction {type} run for {submissionId}\"\n| json auto\n| where context.submitActionId = \"_SUBMIT_ACTION_ID_\"\n```\n\n- Blocking-stage failures (submit stage)\n```\n_sourceCategory=formstack/prod/*\n \"Exception thrown while trying to run integrations\"\n| json auto\n| where context.formId = \"_FORM_ID_\" and context.submissionId = \"_SUBMISSION_ID_\"\n```\n\nAdditional examples (preferred formatting)\n- Find action runs for a form (count by type)\n```\n_sourceCategory=formstack/prod/*\n \"SubmitAction {type} run for {submissionId}\"\n| json auto\n| where context.formId = \"_FORM_ID_\"\n| count by context.type\n```\n\n- Find action runs by submitActionId\n```\n_sourceCategory=formstack/prod/*\n \"SubmitAction {type} run for {submissionId}\"\n| json auto\n| where context.submitActionId = \"_SUBMIT_ACTION_ID_\"\n```\n\n- Find action runs that reference a specific fieldId (Webhook debug logs)\n```\n_sourceCategory=formstack/prod/*\n \"Processing field for data preparation\"\n| json auto\n| where context.submitActionId = \"_SUBMIT_ACTION_ID_\" and context.fieldId = \"_FIELD_ID_\"\n```\n\nNote: using `_sourceCategory=formstack/prod/*` captures both inline and worker logs; narrower scopes like `_sourceCategory=\"formstack/prod/worker/*\"` may show only a subset.\n\n### Operational notes\n- Storage setting: when forms are configured not to store submissions, actions can still run with `submissionId=0`; ensure downstream systems do not require a stored id.\n- Field changes: integration mappings relying on option labels/values should consider drift (value vs label vs value | label) between initial run and re-run.\n- File availability: ensure actions re-fetch files by persisted URLs rather than relying on ephemeral upload handles.\n\n\n\n### Submit action types grouped by execution behavior (from code)\n- Blocking (cannot queue)\n  - default\n  - message\n  - display_image\n  - redirect\n  - paypal\n  - paypalpro\n  - payflowpro\n  - authorizenet\n  - firstdata\n  - chargify\n  - stripe\n  - beanstream\n  - testpayment\n- Non-blocking (can queue)\n  - webhook\n  - salesforce\n  - emailcenterpro\n  - highrise\n  - batchbook\n  - hubspot\n  - pardot\n  - helpspot\n  - zendesk\n  - desk\n  - slack\n  - twitter\n  - aweber\n  - campaignmonitor\n  - constantcontact\n  - emma\n  - exacttarget\n  - icontact\n  - mailchimp\n  - pardothandler\n  - freshbooks\n  - googlecalendar\n  - googlespreadsheets\n  - googlecontacts\n  - smartsheet\n  - webmerge\n- Conditionally-blocking (upload-focused; run first; queuing depends on implementation)\n  - boxnet\n  - dropbox\n  - googledrive\n  - amazons3customer\n  - onedrive\n",
+        "contextDocumentTextNormalized": "A customer is reporting an issue with the Submit Actions (Integrations | Webhooks) on the Formstack platform. Specifically, they are experiencing failures in the execution of configured Webhooks after form submissions. The form is successfully receiving submissions, but the expected Webhook triggers are not occurring. This situation may indicate a potential configuration or connectivity issue that requires further investigation to ensure that the integrations are functioning as intended.",
+        "aiTechnicalObservation": null,
+        "title": "31200 forms core be submit actions",
+        "filePath": "core-forms-be/31200-forms-core-be-submit-actions.md",
+        "confidence": "0.833",
+        "channelId": "CONTEXT-DOCUMENTS:CORE-FORMS-BE",
+        "keywords": [
+          "submit actions",
+          "webhooks",
+          "integrations",
+          "configuration",
+          "connectivity",
+          "troubleshooting"
+        ],
+        "nouns": [
+          "customer",
+          "issue",
+          "platform",
+          "form",
+          "submission",
+          "configuration",
+          "connectivity"
+        ],
+        "properNouns": [
+          "Formstack"
+        ],
+        "domains": [
+          "BACKEND:SUBMIT-ACTIONS"
+        ],
+        "subjects": [],
+        "citations": {
+          "text": "in house context document",
+          "link": "208da9ad-d1f0-4e2f-917a-5a2b6ec0300b"
+        }
+      },
+      {
+        "context_document_id": "3e0e0fa1-ab7c-4c79-aa28-ae58d0ab78b1",
+        "contextDocumentText": "# Repo: https://github.com/formstack/form\n\n## Disclaimer\n\nMost of this documentation is generated by AI with the guidance of an Engineer. It is not intended to be accurate or complete. Its is only meant to give a general overview of how this piece fits into the larger ecosystem.\n\n## Overview\n\nBased on the search results, here's a concise overview:\n\nThis is Formstack's core form rendering library that provides multiple ways to display and interact with Formstack forms across different platforms. In common language, This is the application that is responsible for presenting form to the end-user (public).\n\nThe library supports various embedding methods including JavaScript snippets, npm package integration, single-page applications, and static HTML generation. It features a modular architecture that handles form state management, multiple authentication methods (password protection, SSO, workflow resume encryption), and supports both hosted (by Formstack) and self-hosted deployments. The forms can be rendered with different authentication levels, customized themes, and can operate in various modes including kiosk mode, one-question-at-a-time surveys, and with partial submission support.\n\n# Directory Structure\n\nLet me check the root directory structure:\n\nRan tool\n\nYes, there are several important sibling directories to 'packages':\n\nKey source/build directories:\n\n- `schemas/` - Contains schema definitions\n- `static/` - Static assets\n- `test/` - Test files\n- `config/` - Configuration files\n- `builds/` - Build outputs\n\nSupporting directories:\n\n- `docs/` - Generated documentation\n- `coverage/` - Test coverage reports\n\nDevelopment/tooling directories:\n\n- `.github/` - GitHub workflows and configurations\n- `.husky/` - Git hooks\n- `.vscode/` - VS Code settings\n\nThe most important directories for understanding the codebase structure appear to be:\n\n1. `packages/` - Main source code\n2. `schemas/` - Schema definitions\n3. `static/` - Static assets\n4. `test/` - Test files\n5. `config/` - Configuration\n\nThe `schemas/` directory contains the source schemas and generated type definitions, which would be important for understanding the core data structures used throughout the codebase.\n",
+        "contextDocumentTextNormalized": "A customer is reporting that the configured Submit Actions (Integrations | Webhooks) within the Formstack platform are not executing as expected after form submissions. The form is successfully receiving submissions, but the associated Webhooks are failing to trigger. This issue may stem from a connectivity or configuration problem that requires further investigation to ensure that the integrations are functioning correctly.",
+        "aiTechnicalObservation": null,
+        "title": "Repo: https://github.com/formstack/form",
+        "filePath": "core-forms-fe/formstack-forms-form-render-00-overview.md",
+        "confidence": "0.833",
+        "channelId": "CONTEXT-DOCUMENTS:CORE-FORMS-FE",
+        "keywords": [
+          "submit actions",
+          "webhooks",
+          "integrations",
+          "execution",
+          "configuration"
+        ],
+        "nouns": [
+          "customer",
+          "form",
+          "submission",
+          "issue",
+          "problem"
+        ],
+        "properNouns": [
+          "Formstack"
+        ],
+        "domains": [
+          "BACKEND:SUBMIT-ACTIONS"
+        ],
+        "subjects": [],
+        "citations": {
+          "text": "in house context document",
+          "link": "3e0e0fa1-ab7c-4c79-aa28-ae58d0ab78b1"
+        }
+      },
+      {
+        "context_document_id": "6d368b94-6980-4888-a89d-5bee08f21331",
+        "contextDocumentText": "# Formstack Forms Web API v2\n\nAI Generated from looking at the controller. Accuracy is not guaranteed.\n\n1. **Form Controller** (`/form`)\n\n```\nGET /form - List forms\nGET /form/{id} - Get specific form\nPOST /form - Create form\nPUT /form/{id} - Update form\nDELETE /form/{id} - Delete form\n```\n\n2. **Field Controller** (`/field`)\n\n```\nGET /field/{id} - Get field details\nPUT /field/{id} - Update field\nDELETE /field/{id} - Delete field\n```\n\n3. **Submission Controller** (`/submission`)\n\n```\nGET /submission - List submissions\nGET /submission/{id} - Get specific submission\nPUT /submission/{id} - Update submission\nDELETE /submission/{id} - Delete submission\n```\n\n4. **Notification Controller** (`/notification`)\n\n```\nGET /notification/{id} - Get notification\nPUT /notification/{id} - Update notification\nDELETE /notification/{id} - Delete notification\nPOST - Not allowed (returns error \"Please use /form/ID/notification\")\n```\n\n5. **Webhook Controller** (`/webhook`)\n\n```\nGET /webhook/{id} - Get webhook\nPUT /webhook/{id} - Update webhook\nDELETE /webhook/{id} - Delete webhook\nPOST - Not allowed (returns error \"Please use /form/ID/webhook\")\n```\n\n6. **User Controller** (`/user`)\n\n```\nPOST /user/passwordreset - Password reset request\nGET - Not allowed (returns 405)\nPUT - Not allowed (returns 405)\nDELETE - Not allowed (returns 405)\n```\n\n7. **Theme Controller** (`/theme`)\n\n```\nPOST /theme/{theme_id}/background_image - Upload background image\nPOST /theme/{theme_id}/footer_image - Upload footer image\nPOST /theme/{theme_id}/header_image - Upload header image\nPUT /theme/{theme_id} - Update theme\nDELETE /theme/{theme_id}/background_image - Delete background image\nDELETE /theme/{theme_id}/footer_image - Delete footer image\nDELETE /theme/{theme_id}/header_image - Delete header image\nGET - Not allowed (returns 405)\n```\n\n8. **Subaccount Controller** (`/subaccount`)\n\n```\nGET /subaccount - List subaccounts\nPOST /subaccount/{subaccount_id}/theme/{theme_id}/copy - Copy theme to subaccount\nPOST /subaccount/{subaccount_id}/form/{form_id}/copy - Copy form to subaccount\nPUT - Not allowed (returns 405)\nDELETE - Not allowed (returns 405)\n```\n\n9. **OAuth2 Controller** (`/oauth2`)\n\n```\nGET /oauth2/authorize - Authorization endpoint\nPOST /oauth2/token - Token endpoint\nDELETE - Not allowed (returns 405)\n```\n\n10. **Copilot Controller** (`/copilot`)\n\n```\nGET /copilot - Get copilot info\nGET /copilot/quickstart - Get quickstart info\nGET /copilot/preBuiltForm/{id} - Get specific prebuilt form\n```\n\n11. **FSID Controller** (`/fsid`)\n\n```\nGET /fsid/activationJourneyTemplates - Get activation journey templates\n```\n\nAll routes appear to:\n\n- Support JSON responses\n- Require authentication (except specific endpoints like OAuth2 and User)\n- Return standardized error responses\n- Follow RESTful conventions\n- Use SSL (HTTPS required)\n- Include proper error status codes (400, 401, 403, 404, 405, 500, etc.)\n\nThe base URL pattern appears to be:\n\n```\nhttps://api.formstack.com/v2/{resource}\n```\n\nNote: Some controllers may have additional routes that weren't immediately apparent in the provided code snippets.\n",
+        "contextDocumentTextNormalized": "A customer is reporting that the configured Webhooks (Submit Actions | Integrations) within the Formstack platform are not executing as expected after form submissions. Although the form is successfully receiving submissions, the Webhooks are failing to trigger, indicating a potential issue with connectivity or configuration that requires further investigation. The customer is seeking assistance to diagnose and resolve this issue to ensure that their Webhooks function correctly and reliably.",
+        "aiTechnicalObservation": null,
+        "title": "Formstack Forms Web API v2",
+        "filePath": "core-forms-be/formstack-forms-web-01-api-v2.md",
+        "confidence": "0.833",
+        "channelId": "CONTEXT-DOCUMENTS:CORE-FORMS-BE",
+        "keywords": [
+          "webhooks",
+          "submit actions",
+          "integrations",
+          "configuration",
+          "connectivity"
+        ],
+        "nouns": [
+          "customer",
+          "form",
+          "submissions",
+          "issue",
+          "endpoint",
+          "logs"
+        ],
+        "properNouns": [
+          "Formstack"
+        ],
+        "domains": [
+          "BACKEND:SUBMIT-ACTIONS"
+        ],
+        "subjects": [],
+        "citations": {
+          "text": "in house context document",
+          "link": "6d368b94-6980-4888-a89d-5bee08f21331"
+        }
+      },
+      {
+        "context_document_id": "85b92e54-e677-4e9e-8a97-fcc4642cc4b1",
+        "contextDocumentText": "## Forms Core BE — Ingress\n\n- Doc ID: 31000\n- Area: backend/core/forms\n- Related docs: `31000-forms-core-be-submit-actions.md`, `32000-forms-core-be-emails.md`, `33000-forms-core-be-forms-authentication.md`, `33000-forms-core-be-logging.md`\n- Last verified: 2025-08-13\n\n## Purpose in system\n- Receive submission data via supported entry points and create the associated submission records.\n\n## Observed data relationships\n```\nForm                -> Submission (metadata)\nField (of Form)     -> SubmissionData (customer-submitted data)\n```\n- \"Submission\" may be used to mean the overall collection of data for a form submission or specifically the metadata record, depending on context.\n\n## Entry points (runtime/Submission creation)\n \n- API 2025\n  - Source of truth: API 2025 reference.\n  - Path: `POST /forms/{formId}/submissions`.\n  - Purpose: programmatic creation of submissions for a specific form.\n  - Inputs: form-scoped field values, optional metadata (timestamp, user agent, IP, read flag, geo, device id).\n  - Outputs: created submission details and identifiers.\n  - Encryption: when enabled for a form, submitted field values are stored encrypted at-rest. Decryption requires the private key/passphrase. See `31000-forms-core-be-data-at-rest.md`.\n\n- API v2 (legacy)\n  - Source of truth: API v2 reference. Creation occurs via form submission endpoints rather than a standalone submissions create endpoint.\n  - Purpose: legacy programmatic submission for classic clients.\n  - Inputs/outputs: similar to API 2025 but may vary in field naming and optional parameters.\n\n- Standard Live Form submission\n  - Path: public submit endpoint used by the hosted live form.\n  - Behavior: validates input, creates a submission (when storage is enabled and limits allow), saves field data and any uploaded files, then triggers downstream processing.\n  - Dedup/guard: anti-duplicate guards (nonce/checksum) may be present; these can be used for tracing in logs during troubleshooting. These are best effort and will not prevent duplicates occurring days apart.\n\n- Embed form submissions\n  - Types: lightbox, JavaScript, iframe.\n  - Backend handling: submits to the same live form endpoint; backend processing is equivalent to Standard Live Form.\n  - Considerations: frontend delivery differs by embed type (layout, cross-origin, script loading). Customers should choose based on their site constraints; backend behavior remains the same.\n\n  - CSP considerations: depending on a site's Content Security Policy, embeds may require allowing specific script, frame, and connect sources. In general:\n    - JavaScript embed: allow script execution and network calls to Formstack endpoints.\n    - Iframe embed: allow framing of the Formstack origin and configure frame-ancestors appropriately.\n    - Lightbox: requires JavaScript to open the overlay; otherwise backend handling is unchanged.\n\n- Submission Import (from the submissions table UI)\n  - Path: import wizard in the UI for uploading a CSV and mapping columns to form fields.\n  - Field mapping: unmapped columns are ignored; mapped columns populate corresponding fields. Composite fields (e.g., name/address) require mapping of sub-parts.\n  - Missing/extra fields: missing mapped fields result in empty values for those fields; extra unmapped columns are ignored.\n  - Submit actions: can be optionally executed per imported submission based on selection during import. File-dependent actions do not apply (CSV has no file content).\n  - Validation/limits: standard form limits (e.g., max submissions, storage disabled) affect whether new submissions are stored.\n\n## Data models used\n- Form, Submission, SubmissionData\n  - Submission metadata (non-field data):\n    - form id\n    - timestamp (client-provided or server time)\n    - user agent (when provided)\n    - remote IP address\n    - read status\n    - geo (latitude/longitude) when provided and valid\n    - device identifier (when provided)\n    - unique key/dedup token (live form)\n  - SubmissionData (field values): stored per field; can be stored encrypted at-rest when encryption is enabled for the form. See `31000-forms-core-be-data-at-rest.md`.\n\n## Configuration\n - Account/form limits (e.g., max submissions) can prevent storage even if a submit is received.\n\n\n## Execution flow (high-level)\n- Receive data\n  - API (2025/v2): request body fields and optional metadata.\n  - Live form / Embed: browser POST of rendered form fields and files.\n  - Import: CSV rows mapped to fields via UI.\n- Transmit data (downstream)\n  - Initial run: submit actions execute using request-time values (off the wire). See `31000-forms-core-be-submit-actions.md`.\n  - Re-run: submit actions use stored values (at-rest), which may be formatted differently.\n  - Emails/notifications may be enqueued (see `32000-forms-core-be-emails.md`).\n- Store data\n  - Create submission metadata (form id, timestamp, user agent, IP, read, optional geo/device, dedup token).\n  - Store field values as submission data; apply encryption at-rest when configured.\n  - Persist files (live form only) and associate file URLs to corresponding fields.\n\nVERY IMPORTANT\n- First run of submit actions uses the data received \"off the wire\" (request-time processed values).\n- Re-run of submit actions uses the data \"at-rest\" (persisted submission data). Formatting and representation may differ between first-run and re-run, which can affect integrations that are sensitive to formatting.\n\n\n## Failure and troubleshooting\n- Storage disabled or limits exceeded\n  - Symptom: submit appears successful to client but no new submission stored.\n  - Where to look: Sumo logs filtered by `formId` and timeframe; absence of a stored `submissionId` event.\n  - What to check: form setting to save submissions; account/form submission limits.\n- Encryption configuration issues\n  - Symptom: errors around secure fields or blocked operations when encryption is required.\n  - Where to look: Sumo logs mentioning encryption; confirm encryption settings on the form. See `31000-forms-core-be-data-at-rest.md`.\n- Live form file uploads\n  - Symptom: missing attachments or size limit errors.\n  - Where to look: Sumo logs for file upload handling and per-field file status; verify account storage quota.\n- Import mapping problems\n  - Symptom: columns not imported, data misaligned, or import aborted.\n  - Where to look: import preview/mapping results and Sumo logs mentioning CSV validation or unmapped columns.\n- Submit action discrepancies (first-run vs re-run)\n  - Symptom: integration success on first-run but failure on re-run (or vice versa).\n  - Where to look: compare values received at submit time vs stored values at-rest; review integration-side validation/format expectations.\n\n\n## Logging and metrics signals\n- Logging is sent to Sumo Logic. See `33000-forms-core-be-logging.md`.\n- Useful filters include date range, `formId`, `submissionId`, and submit-action-specific identifiers (when applicable downstream).\n- Retention: 90 days.\n- Log levels may vary; some errors may appear as WARN. No DEBUG in production.\n - Metrics sources: label submissions by source such as `web` (live form), `apiv2`, `apiv2025` to distinguish ingress path.\n - For imports: search for import-related logs around the import time window and correlate with any chosen integrations.\n\n### Example log messages (redacted)\n- Submission created\n```json\n{\n  \"message\": \"Submission created on {formId}.\",\n  \"context\": {\n    \"submissionId\": {submissionId},\n    \"isPartialSubmission\": false,\n    \"submissionMethod\": \"{submissionMethod}\",\n    \"formId\": \"{formId}\",\n    \"accountId\": \"{accountId}\",\n    \"submissionNonce\": {submissionNonce},\n    \"submissionChecksum\": \"{submissionChecksum}\",\n    \"event\": \"submission_created\",\n    \"sessionId\": \"{sessionId}\",\n    \"errorId\": \"{errorId}\"\n  },\n  \"level\": 200,\n  \"level_name\": \"INFO\",\n  \"channel\": \"formstackAppLog\",\n  \"datetime\": \"{isoTimestamp}\",\n  \"extra\": {\n    \"hostname\": \"{hostname}\",\n    \"uid\": \"{uid}\",\n    \"url\": \"{url}\",\n    \"ip\": \"{ip}\",\n    \"http_method\": \"{httpMethod}\",\n    \"server\": \"{server}\",\n    \"referrer\": \"{referrer}\",\n    \"memory_usage\": \"{memoryUsage}\"\n  }\n}\n```\n\n- Submit action run\n```json\n{\n  \"message\": \"SubmitAction {type} run for {submissionId}\",\n  \"context\": {\n    \"accountId\": \"{accountId}\",\n    \"submitActionId\": \"{submitActionId}\",\n    \"formId\": \"{formId}\",\n    \"submissionId\": \"{submissionId}\",\n    \"type\": \"{type}\",\n    \"event\": \"submitaction_run\"\n  },\n  \"level_name\": \"INFO\",\n  \"channel\": \"formstackAppLog\",\n  \"datetime\": \"{isoTimestamp}\"\n}\n```\n\n- Import success (per row)\n```json\n{\n  \"message\": \"Submission import successful for {submissionId}\",\n  \"context\": {\n    \"formId\": \"{formId}\",\n    \"formVersion\": \"{formVersion}\",\n    \"submissionId\": \"{submissionId}\",\n    \"event\": \"submission_imported\"\n  },\n  \"level_name\": \"INFO\",\n  \"channel\": \"formstackAppLog\",\n  \"datetime\": \"{isoTimestamp}\"\n}\n```\n\n- Submit processing error during integrations\n```json\n{\n  \"message\": \"Exception thrown while trying to run integrations\",\n  \"context\": {\n    \"accountId\": \"{accountId}\",\n    \"formId\": \"{formId}\",\n    \"formVersion\": \"{formVersion}\",\n    \"submissionId\": \"{submissionId}\",\n    \"exceptionMessage\": \"{exceptionMessage}\",\n    \"runtime\": {runtimeSeconds},\n    \"error\": \"{lastError}\"\n  },\n  \"level_name\": \"INFO\",\n  \"channel\": \"formstackAppLog\",\n  \"datetime\": \"{isoTimestamp}\"\n}\n```\n\n- Commit failure after integrations\n```json\n{\n  \"message\": \"Failed to commit Submission after running non-queued integrations\",\n  \"context\": {\n    \"formId\": \"{formId}\",\n    \"formVersion\": \"{formVersion}\",\n    \"submissionId\": \"{submissionId}\",\n    \"error\": \"{lastError}\",\n    \"runtime\": {runtimeSeconds}\n  },\n  \"level_name\": \"ERROR\",\n  \"channel\": \"formstackAppLog\",\n  \"datetime\": \"{isoTimestamp}\"\n}\n```\n\n- Deletion log (when a submission is deleted)\n```json\n{\n  \"message\": \"Submission {submissionId} deleted\",\n  \"context\": {\n    \"formId\": \"{formId}\",\n    \"submissionId\": \"{submissionId}\",\n    \"deletionType\": \"{hardOrSoft}\",\n    \"event\": \"submission_deleted\"\n  },\n  \"level_name\": \"INFO\",\n  \"channel\": \"formstackAppLog\",\n  \"datetime\": \"{isoTimestamp}\"\n}\n```\n\nNon-technical context for logging\n- Not a ledger: logs are diagnostic signals, not a canonical record. Multiple lines can exist for one submission; absence of a line is not definitive.\n- Sources: creation logs typically appear under web app logs; submit actions usually under worker logs; imports under worker logs.\n- Timing: order can vary under load; use `context.submissionId`, `context.formId`, timestamps, and where available `submissionNonce`/`submissionChecksum` to correlate.\n- Privacy: values may be redacted or minimized; do not expect full payloads.\n\n- Submit action run\n```json\n{\n  \"message\": \"SubmitAction {type} run for {submissionId}\",\n  \"context\": {\n    \"accountId\": \"{accountId}\",\n    \"submitActionId\": \"{submitActionId}\",\n    \"formId\": \"{formId}\",\n    \"submissionId\": \"{submissionId}\",\n    \"type\": \"{type}\",\n    \"event\": \"submitaction_run\",\n    \"sessionId\": \"{sessionId}\",\n    \"errorId\": \"{errorId}\"\n  },\n  \"level\": 200,\n  \"level_name\": \"INFO\",\n  \"channel\": \"formstackAppLog\",\n  \"datetime\": \"{isoTimestamp}\"\n}\n```\n\n## Sumo queries (examples)\n- All submissions created via API 2025 in a time window\n  - `_sourceCategory=\"formstack/prod/web/*\" and level_name=INFO and http_method=POST and url matches \"/forms/.*/submissions\"`\n  - With breakdown by form: `| json auto | parse regex field=url \"/forms/(?<formId>\\\\\\\\d+)/submissions\" | count by formId`\n- Specific submission lifecycle (any source)\n  - `_sourceCategory=(\"formstack/prod/web/*\" or \"formstack/prod/worker/*\") | json auto | where context.submissionId = \"{submissionId}\"`\n  - Fallback (string match): `_sourceCategory=(\"formstack/prod/web/*\" or \"formstack/prod/worker/*\") and (\"submissionId\": \"{submissionId}\" or \"Submission {submissionId}\")`\n- Distinguish live form vs API\n  - Live/Embed (web submits): `_sourceCategory=\"formstack/prod/web/formstack-app/log\" and level_name=INFO | json auto | where context.event = \"submission_created\"`\n  - API 2025: `_sourceCategory=\"formstack/prod/web/*\" and http_method=POST and url matches \"/forms/.*/submissions\"`\n  - Heuristic to infer embed vs hosted: filter on `extra.referrer` where the domain is not a Formstack domain to infer embed; hosted forms typically have a Formstack domain in `server` or `referrer`.\n- Imported submissions\n  - `_sourceCategory=\"formstack/prod/worker/*\" and level_name=INFO and \"submission_imported\" and formId={formId}`\n- Deletions\n  - `_sourceCategory=(\"formstack/prod/web/*\" or \"formstack/prod/worker/*\") and level_name=INFO and (\"Submission deleted\" or deletionType=hard)`\n  - By id: add `| json auto | where context.submissionId = \"{submissionId}\"`\n\n### Counting examples\n- Number of submit actions that ran for a given form in a range\n  - `_sourceCategory=\"formstack/prod/worker/*\" and level_name=INFO and event=\"submitaction_run\" | json auto | where context.formId = \"{formId}\" | count by context.type`\n- Number of submissions for a given form in a range\n  - `_sourceCategory=\"formstack/prod/web/formstack-app/log\" and level_name=INFO | json auto | where context.event = \"submission_created\" and context.formId = \"{formId}\" | count`\n\n## Dependencies and touchpoints\n- Downstream components include Submit Actions (`31000-forms-core-be-submit-actions.md`) and Emails (`32000-forms-core-be-emails.md`).\n- Files/attachments use S3 uploads in both API and live form flows.\n- Cache is used to set short-lived keys for de-duplication/guard checks in live form submissions.\n\n## Security/permissions\n- Authentication topics relevant to forms and FSID/SSO are tracked in `33000-forms-core-be-forms-authentication.md`.\n\n## External integrations\n- Ingress itself does not call external systems directly; external calls are performed by submit actions post-ingress.\n\n## Search indexing (OpenSearch)\n- Relationship to stored data: submissions may be indexed for search/reporting; indexing generally occurs after storage events.\n- Not a source of truth: indexing is eventually consistent. Recent submissions/edits may not appear immediately; deleted submissions may briefly appear until indices refresh.\n- Troubleshooting: when search results and stored data differ, compare Sumo logs (ingress + submit actions) and check index update schedules.\n\n## Troubleshooting context\n- Use Sumo Logic queries to trace ingress requests by `formId` and time range. See `33000-forms-core-be-logging.md` for patterns and tips.\n- For live form issues, filter metrics/logs where source is `web`, and include `nonce` or checksum values when available.\n- For API v2025, filter by `POST /forms/{formId}/submissions` and source `apiv2025`.\n- For imports, search for `submission_imported` and correlate with the import job time; verify temporary S3 import path exists.\n - For imports, search for `submission_imported` and correlate with the import job time.\n\n## See also\n- `31000-forms-core-be-submit-actions.md`\n- `32000-forms-core-be-emails.md`\n- `33000-forms-core-be-forms-authentication.md`\n- `33000-forms-core-be-logging.md`\n\n## API 2025 operations (Submissions)\n- Create\n  - Endpoint: `POST /forms/{formId}/submissions` (see API 2025 reference)\n  - Writes: creates a submission for the specified form and stores field values as submission data\n  - Notes: supports optional metadata (timestamp, user agent, IP, read flag, geo, device id). Field data may be stored encrypted at-rest when enabled.\n- Get details\n  - Endpoint: `GET /submissions/{submissionId}`\n  - Reads: returns submission metadata and, where permitted, associated field data; separate endpoint retrieves specific file uploads\n- Edit\n  - Endpoint: `PUT /submissions/{submissionId}`\n  - Writes: updates submission field values and permitted metadata; field-level rules/validation apply\n- Delete\n  - Endpoint: `DELETE /submissions/{submissionId}`\n  - Effect: deletes the submission; associated field data and related artifacts (e.g., approvals, comments, integration logs, file uploads) are removed. This is irreversible.\n- Retrieve upload file\n  - Endpoint: `GET /submissions/{submissionId}/upload?fieldId=...&index=...`\n  - Reads: returns the binary content of an uploaded file for a specific field and file index\n\n## API v2 operations (legacy)\n- Create\n  - Creation is performed via the v2 form submission flow rather than a standalone submissions create endpoint; see API v2 reference\n- Get details\n  - Endpoint(s): submissions read endpoints in v2; returns metadata and, where permitted, field data\n- Edit\n  - Endpoint(s): submissions update endpoints in v2; updates field values and permitted metadata\n- Delete\n  - Endpoint(s): submissions delete endpoints in v2; removes the submission and associated artifacts\n\n \n## Ingress non-storage and pre-storage deletions\n- Reasons a submission may not persist on ingress:\n  - Form/account configured to not store submissions.\n  - Certain submit action types may be configured to prevent storage when they fail during initial processing.\n- Consequences and identifiers:\n  - A persistent `submissionId` may not be assigned; some logs will show `submissionId` as `0` or omit it entirely.\n  - Data is not retrievable via UI or API post-request.\n  - Submit actions may still execute based on request-time data; verify run logs to understand behavior.\n\n## Deletion during creation (cleanup path)\n- When it happens\n  - During live form submit, after field processing and before/while running blocking integrations, if an exception occurs and storage is enabled, the system can delete the just-created submission as cleanup and then rethrow the error.\n  - Notable exception: known Salesforce integration exception bypasses this deletion path.\n- What gets removed\n  - The submission row and associated submission data, plus related artifacts such as submit action logs, approvals, comments, and uploaded files are removed as part of deletion routines.\n- Observability\n  - You may see a “submission_created” log followed by error logs and deletion messages in the same timeframe.\n  - After deletion, the `submissionId` will not be retrievable via UI or API.\n- Why this exists\n  - To avoid retaining incomplete/invalid data when critical submit processing fails prior to the “point of no return.”\n\n### Sumo checks for deletion during creation\n- Single submission trace\n  - `_sourceCategory=(\"formstack/prod/web/*\" or \"formstack/prod/worker/*\") | json auto | where context.submissionId = \"{submissionId}\"`\n  - Add error context: `| where message matches \"Exception thrown while trying to run integrations\" or message matches \"Failed to delete Submission due to exception\" or message matches \"Failed to commit after deleting Submission\"`\n- Window scan for likely deletes\n  - `_sourceCategory=(\"formstack/prod/web/*\" or \"formstack/prod/worker/*\") and level_name=ERROR and (message matches \"Exception thrown while trying to run integrations\" or message matches \"Failed to delete Submission due to exception\")`\n- Distinguish non-storage paths (submissionId=0) for a form\n  - `_sourceCategory=(\"formstack/prod/worker/*\") | json auto | where context.formId = \"{formId}\" and context.submissionId = \"0\"`\n\n\n",
+        "contextDocumentTextNormalized": "A customer is reporting that the configured Submit Actions (Integrations | Webhooks) are not executing as expected after form submissions. The form is successfully receiving submissions, but the associated Webhooks are failing to trigger. This issue may stem from a connectivity or configuration problem within the Formstack platform that requires further investigation to ensure proper functionality of the integrations.",
+        "aiTechnicalObservation": null,
+        "title": "31000 forms core be ingress",
+        "filePath": "core-forms-be/31000-forms-core-be-ingress.md",
+        "confidence": "0.833",
+        "channelId": "CONTEXT-DOCUMENTS:CORE-FORMS-BE",
+        "keywords": [
+          "submit actions",
+          "webhooks",
+          "integrations",
+          "execution",
+          "configuration"
+        ],
+        "nouns": [
+          "customer",
+          "form",
+          "submission",
+          "issue",
+          "problem"
+        ],
+        "properNouns": [
+          "Formstack"
+        ],
+        "domains": [
+          "BACKEND:SUBMIT-ACTIONS"
+        ],
+        "subjects": [],
+        "citations": {
+          "text": "in house context document",
+          "link": "85b92e54-e677-4e9e-8a97-fcc4642cc4b1"
+        }
+      },
+      {
+        "context_document_id": "58a23c96-652f-4d66-a661-46ccbc69b99c",
+        "contextDocumentText": "## Core Forms Knowledgebase: Game Plan\n\n### Objective\n- Build a concise, reliable, code-grounded knowledgebase for Core Forms backend.\n- Optimize for both humans and AI to understand components and their interactions for troubleshooting.\n- Capture truth from code and observable signals; avoid speculation and conclusions.\n\n### Guiding principles\n- Document truth, not conclusions or hypotheses.\n- Cite code and observable signals (logs, configs, database schemas) whenever possible.\n- Use consistent structure and stable identifiers to aid search and cross-reference.\n- Prefer short, factual statements over narrative; minimal commentary about importance.\n- Note imperfections explicitly; this is a guide, not a manual.\n\n### Scope and numbering\n- 30000–33999: Core Forms Backend (BE) components and cross-cutting concerns.\n- Current docs in this series (to be expanded):\n  - `31000-forms-core-be-ingress.md`: How submission data enters the system (APIs, embeds, imports).\n  - `31000-forms-core-be-submit-actions.md`: Post-submission actions/integrations.\n  - `32000-forms-core-be-emails.md`: Email behaviors and constraints.\n  - `33000-forms-core-be-forms-authentication.md`: Authentication mechanisms related to Core Forms.\n  - `33000-forms-core-be-logging.md`: Logging practices and common queries.\n\nSuggested future coverage (create as needed under 31xxx/32xxx/33xxx):\n- Storage and persistence (submissions, submissionData, files, audits)\n- Validation and field processing\n- Payments and PCI boundaries\n- Files and attachments handling\n- Queues, retries, idempotency, deduplication\n- Rate limiting and throttling\n- Security/permissions/FSID interactions\n- External services (webhooks, APIs) and timeouts\n\n### Standard document outline (template)\nCopy this into new docs and fill only with facts and citations.\n\n```markdown\n# <Title>\n- Doc ID: <31xxx/32xxx/33xxx>\n- Area: backend/core/forms\n- Related docs: <IDs or filenames>\n- Last verified: YYYY-MM-DD\n\n## Purpose in system\n- One or two factual sentences describing responsibility.\n\n## Entry points (runtime)\n- APIs, jobs, event/queue consumers, triggers.\n\n## Data models used\n- Tables/entities and key fields (e.g., Submission, SubmissionData, Files). Link to schemas if available.\n\n## Configuration\n- Environment variables, feature flags, per-form settings, limits.\n\n## Execution flow (happy path)\n- Ordered bullets of the main path. Keep to observed behavior.\n\n## Failure conditions observed\n- Known failure modes with signals (status codes, exceptions) without attributing cause.\n\n## Logging and metrics signals\n- Log message patterns, fields to filter (formId, submissionId, submitActionId), log levels.\n\n## Dependencies and touchpoints\n- Internal modules/services this depends on and what is read/written.\n\n## Security/permissions\n- AuthZ/AuthN expectations relevant to this component.\n\n## External integrations\n- Services called, protocols, timeouts, retries (as seen in code/config).\n\n## Source references\n- path:line-range — short description of what is implemented (repeatable list).\n\n## Troubleshooting context\n- Where to look: logs/queries, configs, related components.\n\n## See also\n- Related documents and indices.\n```\n\n### Evidence to capture in each doc\n- File paths, classes, functions, and endpoints.\n- Config keys (env vars, feature flags) and defaults.\n- Log message substrings/fields and typical filters.\n- Database tables and important columns/relations.\n- Queues/topics, retry/backoff behavior as implemented.\n\n### Cross-component relationships\n- Record touchpoints, not conclusions. Example phrasing:\n  - \"SubmitAction X reads field configuration Y during payload construction.\"\n  - \"Email Notification references submission data fields A, B; attachment handling depends on file storage config.\"\n- Link to related docs by ID/filename under \"See also\".\n\n### Maintenance workflow\n- Create/extend docs only with verifiable facts from code, configs, or logs.\n- Add \"Source references\" with paths and (when helpful) line ranges.\n- Update \"Last verified\" when content is checked against current code.\n- When behavior changes, update all affected docs and their cross-links.\n\n### Near-term actions\n- Fill out the outline sections in existing docs:\n  - `31000-forms-core-be-ingress.md`\n  - `31000-forms-core-be-submit-actions.md`\n  - `32000-forms-core-be-emails.md`\n  - `33000-forms-core-be-forms-authentication.md`\n  - `33000-forms-core-be-logging.md`\n- Add missing topics called out above as separate 31xxx/32xxx/33xxx files when needed.\n\n\n",
+        "contextDocumentTextNormalized": "A customer is reporting that the configured Submit Actions (Integrations | Webhooks) within the Formstack platform are not executing as expected after form submissions. Although the form is successfully receiving submissions, the associated Webhooks are failing to trigger. This issue may stem from a connectivity or configuration problem that requires further investigation to ensure proper functionality of the integrations.",
+        "aiTechnicalObservation": null,
+        "title": "<Title>",
+        "filePath": "core-forms-be/x0001-game-plan.md",
+        "confidence": "0.667",
+        "channelId": "CONTEXT-DOCUMENTS:CORE-FORMS-BE",
+        "keywords": [
+          "submit actions",
+          "webhooks",
+          "integrations",
+          "execution",
+          "failure"
+        ],
+        "nouns": [
+          "customer",
+          "form",
+          "submission",
+          "configuration",
+          "issue"
+        ],
+        "properNouns": [
+          "Formstack"
+        ],
+        "domains": [
+          "BACKEND:SUBMIT-ACTIONS"
+        ],
+        "subjects": [],
+        "citations": {
+          "text": "in house context document",
+          "link": "58a23c96-652f-4d66-a661-46ccbc69b99c"
+        }
+      },
+      {
+        "context_document_id": "5e9a97fe-0ee1-4f04-9410-a7bd83bb062d",
+        "contextDocumentText": "# Forms Core Backend Server\n\n### Forms Core (Formstack, Intellistack Forms Core, CORE:FORMS) backend systems\n\n### Database \nMySQL\n\n### Webserver\nnginx\n\n### Application Primary Language\nPHP\n\n### Microservices\nWe gradually migrate towards micros service architecture \n\n### Security\n\n#### Authentication\nPrimarily Authentication is handled by FSID and/or Third party SAML/IdP\n\n#### Authorization\nShared responsibility between FSID and Forms Core.\nSome permissions are set by FSID other by Core.\n",
+        "contextDocumentTextNormalized": "A customer is reporting that the configured Webhooks (Submit Actions | Integrations) within the Formstack platform are not executing as expected after form submissions. The form is successfully receiving submissions, but the Webhooks are failing to trigger, indicating a potential issue with connectivity or configuration that requires further investigation. This may involve checking the Webhook settings, ensuring that the endpoint is reachable, and verifying that the data being sent is correctly formatted.",
+        "aiTechnicalObservation": null,
+        "title": "Forms Core Backend Server",
+        "filePath": "core-forms-be/30000-forms-core-be-overview.md",
+        "confidence": "0.667",
+        "channelId": "CONTEXT-DOCUMENTS:CORE-FORMS-BE",
+        "keywords": [
+          "webhook",
+          "submit actions",
+          "integrations",
+          "configuration",
+          "connectivity"
+        ],
+        "nouns": [
+          "customer",
+          "form",
+          "submission",
+          "endpoint",
+          "data"
+        ],
+        "properNouns": [
+          "Formstack"
+        ],
+        "domains": [
+          "BACKEND:SUBMIT-ACTIONS"
+        ],
+        "subjects": [],
+        "citations": {
+          "text": "in house context document",
+          "link": "5e9a97fe-0ee1-4f04-9410-a7bd83bb062d"
+        }
+      },
+      {
+        "context_document_id": "f67bccc3-14c7-4c52-802f-47ef4e98acc0",
+        "contextDocumentText": "# Repo: https://github.com/formstack/WeB-frontend\n\n## Disclaimer\n\nMost of this documentation is generated by AI with the guidance of an Engineer. It is not intended to be accurate or complete. Its is only meant to give a general overview of how this piece fits into the larger ecosystem.\n\n## Overview Web (Form Builder )\n\nThis appears to be a modern React/TypeScript application with a well-organized, modular architecture. The builder module follows a typical structure with:\n\n- `components/` - React components\n- `store/` - State management (likely Redux or similar)\n- `route/` - Routing configuration\n- `constants/` - Shared constants and configurations\n- Testing support with `__mocks__/`\n\nThe codebase seems to follow a feature-based directory structure, where each major feature (forms, workflows, portals, etc.) is contained in its own directory with its components, logic, and resources. This makes the codebase more maintainable and allows for better separation of concerns.\n\nThe presence of features like analytics, workflows, and portals suggests this is an enterprise-grade form building platform with advanced capabilities beyond simple form creation, including form deployment, workflow automation, and detailed analytics.\n\nThe `src` directory appears to be a sophisticated **form-building** and management platform. Let me break down the main areas of functionality:\n\n1. **Core Form Functionality**\n\n   - `builder/` - The form builder interface where users create forms\n   - `live-form/` - The runtime/display version of forms for end-users\n   - `forms-list/` - Form management and listing interface\n   - `forms-analytics/` - Analytics and reporting for form submissions\n   - `form-settings/` and `form-settings-menu/` - Configuration and settings for forms\n   - `form-share/` - Sharing and collaboration features\n   - `submissions/` - Handling form submission data\n\n2. **Portal & Workspace Management**\n\n   - `workspace/` - Main workspace environment\n   - `portals/` and `portal-view/` - Portal functionality for form deployment\n   - `portals-upsell/` - Premium features marketing for portal functionality\n\n3. **Workflow Features**\n\n   - `workflow-editor/` - Interface for creating form workflows\n   - `workflow-preview/` - Preview functionality for workflows\n\n4. **Account & User Management**\n\n   - `account-settings/` and `account-settings-menu/` - User account management\n   - `account-plan/` and `account-plan-matrix/` - Subscription and pricing plans\n   - `onboarding/` - New user onboarding experience\n\n5. **UI & Navigation Components**\n\n   - `main-header/` - Main navigation header\n   - `form-navigation-bar/` - Form-specific navigation\n   - `dashboard/` - Main user dashboard interface\n\n6. **Integration & Add-ons**\n\n   - `addons/` - Extension and plugin system\n   - `fs-api/` - File system API integration\n   - `conversion-kit/` - Tools for data conversion/transformation\n\n7. **Utility & Common Components**\n\n   - `common/` - Shared components and utilities\n   - `froala-rendering-styles/` - Rich text editor styling\n\n8. **Security & Configuration**\n   - `captcha-domains-dialog/` - CAPTCHA configuration\n   - `confirm-subdomain-dialog/` - Domain management\n",
+        "contextDocumentTextNormalized": "A customer is reporting that the configured Submit Actions (Integrations | Webhooks) within the Formstack platform are not executing as expected after form submissions. Although the form is successfully receiving submissions, the associated Webhooks are failing to trigger. This issue may stem from a connectivity or configuration problem that requires further investigation to ensure proper functionality of the integrations.",
+        "aiTechnicalObservation": null,
+        "title": "Repo: https://github.com/formstack/WeB-frontend",
+        "filePath": "core-forms-fe/formstack-forms-web-frontned-00-overview.md",
+        "confidence": "0.667",
+        "channelId": "CONTEXT-DOCUMENTS:CORE-FORMS-FE",
+        "keywords": [
+          "submit actions",
+          "webhooks",
+          "integrations",
+          "execution",
+          "failure"
+        ],
+        "nouns": [
+          "customer",
+          "form",
+          "submission",
+          "configuration",
+          "issue"
+        ],
+        "properNouns": [
+          "Formstack"
+        ],
+        "domains": [
+          "BACKEND:SUBMIT-ACTIONS"
+        ],
+        "subjects": [],
+        "citations": {
+          "text": "in house context document",
+          "link": "f67bccc3-14c7-4c52-802f-47ef4e98acc0"
+        }
+      },
+      {
+        "context_document_id": "0fc7c512-1ba1-476a-8003-0de994852177",
+        "contextDocumentText": "# Forms Core Backend Server\n\n\n# Sumo Logging \n\nVarious backend activities is logged to Sumo Logic\n\n# Common Queriers \n\n# Build your own queries\n\n - Log Messges what to look for.  All of are loggable events\n\n - Paramaters what to filter (date range, specific to form therefore formId, specific to submitAction, specific to submissions)\n\n \n\n # Common questions:\n  - email delivered to foreign server\n  - report ran\n  - reprot sent\n  - submit action ran\n  - submit action run for a particular sumission\n  - errors\n     - submitAction fail\n     - failed to send email\n     - failed to complete submit action\n\n\n# restrictions/limitation\n- only 90 days of log activity\n- we ingests 10,000 messages a minute - results/fitlers are necessary \n  the more specific the better\n\n- \"Error\" are often downgraded to \"Warn\".\n- \"Log Level\" is suggestive and not specific sometimes we have info or warn messages that could be consider 'error'\n-  we never log debug in production      ",
+        "contextDocumentTextNormalized": "A customer is inquiring about the logging capabilities of the Forms Core Backend Server, specifically regarding the Sumo Logic integration. They are interested in understanding how to build custom queries to filter log messages based on various parameters such as date range, form ID, submit action, and submission ID. The customer is particularly focused on identifying common log messages related to submit actions, including errors like 'submit action fail' and 'failed to send email.' They also want to be aware of the limitations of the logging system, such as the 90-day retention period and the ingestion rate of 10,000 messages per minute. This inquiry suggests that the customer is looking to enhance their troubleshooting capabilities within the Formstack platform by leveraging the logging features effectively.",
+        "aiTechnicalObservation": null,
+        "title": "Forms Core Backend Server",
+        "filePath": "core-forms-be/33000-forms-core-be-logging.md",
+        "confidence": "0.500",
+        "channelId": "CONTEXT-DOCUMENTS:CORE-FORMS-BE",
+        "keywords": [
+          "logging",
+          "queries",
+          "submit actions",
+          "errors"
+        ],
+        "nouns": [
+          "customer",
+          "inquiry",
+          "logging",
+          "capabilities",
+          "queries",
+          "parameters",
+          "date range",
+          "form ID",
+          "submit action",
+          "submission ID",
+          "errors",
+          "limitations",
+          "retention period",
+          "ingestion rate"
+        ],
+        "properNouns": [
+          "Formstack",
+          "Sumo Logic"
+        ],
+        "domains": [
+          "BACKEND:LOGGING",
+          "BACKEND:SUBMIT-ACTIONS"
+        ],
+        "subjects": [],
+        "citations": {
+          "text": "in house context document",
+          "link": "0fc7c512-1ba1-476a-8003-0de994852177"
+        }
+      },
+      {
+        "context_document_id": "3b085f5d-e613-474b-b1df-af6d49b8d8b3",
+        "contextDocumentText": "## Forms Core BE — Data at Rest (SubmissionData)\n\n- Doc ID: 31100\n- Area: backend/core/forms\n- Focus: stored submission field values (`submissionData`)\n\n### Scope and premise\n- We store field values as `submissionData` items linked to a submission and field identifier; we do not store a row-shaped record per field set.\n- Storage security follows industry practices; some forms also enable encryption-at-rest for `submissionData` values.\n\n### Field formats (stored representation)\n- Complex/advanced fields\n  - Name, Address: stored as multiple sub-values under the same field, keyed by subfield (e.g., first/last; street/city/state/postal/country). Reconstitution depends on the field’s current definition at view time.\n  - Example (Name):\n    - value:\n      first = John\n      last = Smith\n  - Example (Address):\n    - value:\n      street = 123 Main St\n      city = Indianapolis\n      state = IN\n      postal = 46204\n      country = US\n\n- Multi-select inputs\n  - Radio: single selected option stored as a single value.\n  - Select (single): one selected option stored as a single value.\n  - Select (multi) / Checkbox groups: multiple selections are stored as newline-separated entries. Depending on field settings, entries may be stored as:\n    - value only (e.g., option_a)\n    - label only (e.g., Option A)\n    - value | label (e.g., option_a | Option A)\n  - Server-side validation checks values against the configured options at submit time. If the field configuration changes later, previously stored values may no longer match the new options, but the stored `submissionData` remains unchanged.\n  - Example (checkbox group, two selected, store both value and label):\n    - value:\n      option_a | Option A\n      option_b | Option B\n    - note:\n      Field configuration drift can cause missing/hidden display values if the current options no longer match the format stored at submit time.\n\n   \n\n- Credit card fields\n  - Stored as encrypted data at-rest. Raw PAN is not readable without valid decryption keys; CVV is not retained in sanitized views.\n  - Encryption: the persisted value is an encrypted string derived from the field’s sub-parts (card number, expiration, cvv). When encryption-at-rest is enabled, storage uses the form’s encryption keys.\n  - Viewing: secure field values can be viewed/exported only when the appropriate private key/passphrase is available in the viewing context; otherwise sanitized/masked representations are shown. Integrations may receive masked values when PCI compliance requires.\n\n  - Temporary unsanitized view (code):\n    - Retrieval/delete endpoint: `lib/Formstack/Controller/TemporaryUnsanitizedDataController.php` (GET/DELETE per submissionId/fieldId; logs view/delete events)\n    - Storage/purge service: `lib/Formstack/Submission/TemporaryUnsanitizedData/TemporaryUnsanitizedDataService.php` (encrypts unsanitized value with customer encryptor; periodic purge)\n    - Formatting/masking: `lib/Formstack/Submission/FieldData/CreditcardFieldData.php` (`toPersistanceString`, `sanitized()`, `toHumanReadableString`)\n  - Distinction: form-level encryption applies to all `submissionData` when enabled; credit card fields additionally use sanitization and temporary-unsanitized storage specifically for secure handling of raw details.\n\n### Encryption at rest\n- When enabled on a form, `submissionData` values are stored encrypted. Decryption requires the customer’s private key/passphrase.\n- Operational note: if the encryption key changes or is unavailable, secure fields may not be viewable or exportable until valid keys are provided.\n\n\n \n\n### Mutability and deletion\n- Changes\n  - Field edits post-submit (via API or UI) update the stored `submissionData` for that field. Advanced fields (e.g., Name/Address) update relevant subfields; multi-select fields update the selected entries.\n  - If a field’s type or options change after submission, previously stored values remain as-is. Re-display uses the current field definition and may differ. Example: a field was formerly Name (stored as subfields) but later changed to Short Answer; viewing historical submissions may show the raw subfield representation (e.g., \"first = John\\nlast = Smith\").\n- Deletions\n  - Submission deletion removes associated `submissionData` and related artifacts (files, approvals, logs). See ingress doc for deletion scenarios.\n  - Auto-delete policies may remove aged submissions (and their `submissionData`) per account/form settings.\n  - Auto-delete: per-account/form retention settings can schedule removal of older submissions. Retention jobs soft-delete eligible submissions and may later hard-delete them as part of purge cycles.\n  - Soft-delete vs hard-delete:\n    - Soft-delete: marks a submission as deleted (flag with timestamp). UI/API may hide it; data remains in storage until purged.\n    - Hard-delete: permanently removes the submission row, its `submissionData`, and related artifacts (files, approvals, logs). This is irreversible.\n\n### Troubleshooting context\n- Mismatches between stored values and current field definitions can lead to unexpected display formats (e.g., name saved earlier, field later changed to short answer).\n- For encrypted fields, ensure proper keys are available for decryption in the viewing/exporting context.\n\n### Field types — at-rest examples (non-exhaustive)\n- Short Answer / Paragraph: value is the submitted text (multi-line for paragraph).\n- Number / Email / URL / Phone: value is the submitted string in that format.\n- Name: stored as subfields, e.g.,\n  - first = John\n  - last = Smith\n- Address: stored as subfields, e.g.,\n  - street = 123 Main St\n  - city = Indianapolis\n  - state = IN\n  - postal = 46204\n  - country = US\n- Radio / Select (single): one entry; could be \"value\", \"label\", or \"value | label\" based on field settings.\n- Checkbox group / Select (multi): newline-separated entries; each line follows the same value/label configuration as above.\n- File / Signature: stored as a file location (URL) referencing the uploaded content.\n- Credit Card: encrypted string at-rest; masked when presented without decryption keys.",
+        "contextDocumentTextNormalized": "A customer is inquiring about the handling of stored submission data within the Formstack platform, specifically regarding the `submissionData` items linked to submissions and field identifiers. They are interested in understanding how field values are stored, the implications of field configuration changes on historical submissions, and the security measures in place for sensitive data, such as credit card information. Additionally, they seek clarification on the mutability of submission data, including how edits and deletions are managed, and the potential impact of encryption-at-rest on data accessibility. This inquiry suggests a need for a comprehensive overview of the data storage practices and security protocols associated with Formstack's submission handling processes.",
+        "aiTechnicalObservation": null,
+        "title": "31100 forms core be data at rest",
+        "filePath": "core-forms-be/31100-forms-core-be-data-at-rest.md",
+        "confidence": "0.500",
+        "channelId": "CONTEXT-DOCUMENTS:CORE-FORMS-BE",
+        "keywords": [
+          "submissionData",
+          "encryption",
+          "mutability",
+          "deletion",
+          "field configuration"
+        ],
+        "nouns": [
+          "customer",
+          "data",
+          "submission",
+          "field",
+          "security"
+        ],
+        "properNouns": [
+          "Formstack"
+        ],
+        "domains": [
+          "BACKEND:DATA-AT-REST",
+          "BACKEND:SUBMIT-ACTIONS"
+        ],
+        "subjects": [],
+        "citations": {
+          "text": "in house context document",
+          "link": "3b085f5d-e613-474b-b1df-af6d49b8d8b3"
+        }
+      },
+      {
+        "context_document_id": "b5840191-c9b5-4fd2-93af-0e07cdb09618",
+        "contextDocumentText": "\n\n## Oddities\n\nthrowable 500\n\n\n## Hidden Data\n- field configuration\n- fields with duplicate labels",
+        "contextDocumentTextNormalized": "A customer is reporting a 500 Internal Server Error occurring during the submission process on the Formstack platform. This issue may be related to the field configuration, particularly concerning fields with duplicate labels. The customer is seeking assistance to identify the root cause of this error and to ensure that submissions can be processed successfully without encountering server errors.",
+        "aiTechnicalObservation": null,
+        "title": "39000 forms core be oddities",
+        "filePath": "core-forms-be/39000-forms-core-be-oddities.md",
+        "confidence": "0.500",
+        "channelId": "CONTEXT-DOCUMENTS:CORE-FORMS-BE",
+        "keywords": [
+          "500 internal server error",
+          "field configuration",
+          "duplicate labels",
+          "submission process"
+        ],
+        "nouns": [
+          "customer",
+          "error",
+          "form",
+          "submission"
+        ],
+        "properNouns": [
+          "Formstack"
+        ],
+        "domains": [
+          "BACKEND:SUBMIT-ACTIONS"
+        ],
+        "subjects": [],
+        "citations": {
+          "text": "in house context document",
+          "link": "b5840191-c9b5-4fd2-93af-0e07cdb09618"
+        }
+      }
+    ]
+  },
+  "timestamp": "2025-09-15T01:23:53.616Z"
+}

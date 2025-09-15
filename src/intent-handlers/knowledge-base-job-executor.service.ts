@@ -5,7 +5,7 @@ import { RobotIntent } from '../common/types/intent-parsing.types';
 import { IStackInfoService } from '../istack-buddy-slack-api/istack-info.service';
 import { RobotService } from '../robots/robot.service';
 import { IStreamingCallbacks } from '../robots/types';
-import { RobotName } from '../chat-manager/dto/create-message.dto';
+import { RobotName, UserRole } from '../chat-manager/dto/create-message.dto';
 import { TConversationMessageContentMarkdown } from '../ConversationLists/types';
 
 @Injectable()
@@ -47,6 +47,18 @@ export class KnowledgeBaseJobExecutor implements IntentHandler {
     }
 
     try {
+      // Send immediate acknowledgment
+      await this.chatManagerService.addMessage({
+        conversationId,
+        fromUserId: 'knowledge-base-robot',
+        content: {
+          type: 'text/plain',
+          payload: `🔄 **Knowledge Base Search Request Received**\n\nSearching for: ${intentData.originalUserPrompt}\nProcessing query...`,
+        },
+        fromRole: UserRole.ROBOT,
+        toRole: UserRole.USER,
+      });
+
       // 1. Fetch preQuery using service wrapper
       const query = intentData.originalUserPrompt;
       if (!query) {
@@ -55,8 +67,9 @@ export class KnowledgeBaseJobExecutor implements IntentHandler {
       const preQuery =
         await this.iStackInfoService.knowledgeBase.preQuery(query);
 
-      // 2. Fetch search results from mock server using preQuery
-      const searchResults = await this.fetchSearchResults(preQuery);
+      // 2. Fetch search results using the specific sub-intent
+      const subIntent = intentData.subIntents?.[0] || 'topResults';
+      const searchResults = await this.fetchSearchResults(preQuery, subIntent);
 
       // 3. Format search results into robot prompt
       const robotPrompt = this.formatSearchResultsIntoRobotPrompt(
@@ -65,22 +78,20 @@ export class KnowledgeBaseJobExecutor implements IntentHandler {
       );
       this.logger.log('Robot prompt prepared (noOp for now):', robotPrompt);
 
-      // 4. Send search results summary to user (like other executors)
+      // 4. Send search results summary to conversation
       await this.sendSearchResultsToConversation(
         searchResults,
         conversationId,
         intentData.originalUserPrompt,
       );
 
-      // 5. Send structured prompt to robot and get response
-      await this.chatManagerService.addMessageWithRobotResponse(
-        conversationId,
-        {
-          type: 'text/markdown',
+      // 5. For dev/debug only: Send robot prompt to conversation for debugging
+      if (process.env.NODE_ENV === 'development') {
+        await this.chatManagerService.addMessageUserOnly(conversationId, {
+          type: 'context/document',
           payload: robotPrompt,
-        },
-        RobotName.KNOBBY_OPENAI_SEARCH,
-      );
+        });
+      }
 
       this.logger.log('Knowledge base search workflow completed');
     } catch (error) {
@@ -89,11 +100,63 @@ export class KnowledgeBaseJobExecutor implements IntentHandler {
     }
   }
 
-  private async fetchSearchResults(preQuery: any): Promise<any> {
-    this.logger.log(`Fetching search results using preQuery data`);
+  private async fetchSearchResults(
+    preQuery: any,
+    subIntent: string,
+  ): Promise<any> {
+    this.logger.log(
+      `Fetching search results using preQuery data for subIntent: ${subIntent}`,
+    );
 
-    // The /top-results endpoint expects the FULL PreQueryDto object as input
-    return await this.iStackInfoService.knowledgeBase.topResults(preQuery);
+    switch (subIntent) {
+      case 'semanticSearch':
+        return await this.iStackInfoService.knowledgeBase.semanticSearch({
+          userPromptText: preQuery.userPromptText,
+          maxConfidence: 1.0,
+          limit: 10,
+        });
+
+      case 'keywordSearch':
+        return await this.iStackInfoService.knowledgeBase.keywordSearch({
+          keywords: preQuery.keywords || [],
+          maxConfidence: 1.0,
+          limit: 10,
+        });
+
+      case 'nounSearch':
+        return await this.iStackInfoService.knowledgeBase.nounSearch({
+          nouns: preQuery.nouns || [],
+          maxConfidence: 1.0,
+          limit: 10,
+        });
+
+      case 'properNounSearch':
+        return await this.iStackInfoService.knowledgeBase.properNounSearch({
+          properNouns: preQuery.properNouns || [],
+          maxConfidence: 1.0,
+          limit: 10,
+        });
+
+      case 'domainSearch':
+        return await this.iStackInfoService.knowledgeBase.domainSearch({
+          domains: preQuery.domains || [],
+          maxConfidence: 1.0,
+          limit: 10,
+        });
+
+      case 'freeTextSearch':
+        return await this.iStackInfoService.knowledgeBase.freeTextSearch({
+          freeText: preQuery.freeText ||
+            preQuery.keywords || ['text', 'search'],
+          maxConfidence: 1.0,
+          limit: 10,
+        });
+
+      case 'topResults':
+      default:
+        // The /top-results endpoint expects the FULL PreQueryDto object as input
+        return await this.iStackInfoService.knowledgeBase.topResults(preQuery);
+    }
   }
 
   private formatSearchResultsIntoRobotPrompt(
@@ -126,16 +189,18 @@ ___SEARCH_RESULTS_START__
 
 `;
 
-    // Extract key information from each search type
-    for (const searchType of searchTypesExecuted) {
-      const results = searchResults[searchType];
-      if (results) {
-        Object.keys(results).forEach((knowledgeBase) => {
-          const kbResults = results[knowledgeBase];
-          if (Array.isArray(kbResults) && kbResults.length > 0) {
-            // Process each result (but limit to first few for prompt size)
-            kbResults.slice(0, 2).forEach((result, index) => {
-              prompt += `__${searchType}.${knowledgeBase}[${index}]_START__
+    // Extract key information from search results - handle both formats
+    if (searchTypesExecuted.length > 0) {
+      // This is from topResults - handle multiple search types
+      for (const searchType of searchTypesExecuted) {
+        const results = searchResults[searchType];
+        if (results) {
+          Object.keys(results).forEach((knowledgeBase) => {
+            const kbResults = results[knowledgeBase];
+            if (Array.isArray(kbResults) && kbResults.length > 0) {
+              // Process each result (but limit to first few for prompt size)
+              kbResults.slice(0, 2).forEach((result, index) => {
+                prompt += `__${searchType}.${knowledgeBase}[${index}]_START__
 
 conversationTextNormalized
 ${result.conversationTextNormalized || result.contextDocumentTextNormalized || 'No description available'}
@@ -153,10 +218,39 @@ citations: {
 __${searchType}.${knowledgeBase}[${index}]_END__
 
 `;
-            });
-          }
-        });
+              });
+            }
+          });
+        }
       }
+    } else {
+      // This is from individual search method - handle single SearchResults
+      Object.keys(searchResults).forEach((knowledgeBase) => {
+        const kbResults = searchResults[knowledgeBase];
+        if (Array.isArray(kbResults) && kbResults.length > 0) {
+          // Process each result (but limit to first few for prompt size)
+          kbResults.slice(0, 3).forEach((result, index) => {
+            prompt += `__individualSearch.${knowledgeBase}[${index}]_START__
+
+conversationTextNormalized
+${result.conversationTextNormalized || result.contextDocumentTextNormalized || 'No description available'}
+
+aiTechnicalObservation
+${result.aiTechnicalObservation || 'No technical observation available'}
+
+channelId: ${result.channelId || 'Unknown'}
+confidence: ${result.confidence || 'Unknown'}
+citations: {
+  text: ${result.citations?.text || 'No citation'}
+  link: ${result.citations?.link || 'No link'}
+}
+
+__individualSearch.${knowledgeBase}[${index}]_END__
+
+`;
+          });
+        }
+      });
     }
 
     prompt += `___SEARCH_RESULTS_END__
@@ -210,41 +304,105 @@ ${structuredData}
     searchResults: any,
     originalPrompt: string,
   ): string {
-    const searchTypesExecuted = searchResults.searchTypesExecuted || [];
-    const totalSearchTypes = searchResults.totalSearchTypes || 0;
-
     let summary = `🔍 **Knowledge Base Search Results**\n\n`;
     summary += `**Query:** ${originalPrompt}\n\n`;
-    summary += `**Search Types Executed:** ${totalSearchTypes} (${searchTypesExecuted.join(', ')})\n\n`;
 
-    // Show results from each search type
-    for (const searchType of searchTypesExecuted) {
-      const results = searchResults[searchType];
-      if (results) {
-        summary += `**${searchType}:**\n`;
-        Object.keys(results).forEach((knowledgeBase) => {
-          const kbResults = results[knowledgeBase];
-          if (Array.isArray(kbResults) && kbResults.length > 0) {
-            summary += `  ${knowledgeBase}: ${kbResults.length} results\n`;
-            // Show top result
-            const topResult = kbResults[0];
-            if (
-              topResult.conversationTextNormalized ||
-              topResult.contextDocumentTextNormalized
-            ) {
-              const text =
+    // Check if this is a TopResultsResponse (multiple search types) or individual SearchResults
+    if (searchResults.searchTypesExecuted) {
+      // This is from topResults - handle multiple search types
+      const searchTypesExecuted = searchResults.searchTypesExecuted || [];
+      const totalSearchTypes = searchResults.totalSearchTypes || 0;
+
+      summary += `**Search Types Executed:** ${totalSearchTypes} (${searchTypesExecuted.join(', ')})\n\n`;
+
+      // Show results from each search type
+      for (const searchType of searchTypesExecuted) {
+        const results = searchResults[searchType];
+        if (results) {
+          summary += `**${searchType}:**\n`;
+          Object.keys(results).forEach((knowledgeBase) => {
+            const kbResults = results[knowledgeBase];
+            if (Array.isArray(kbResults) && kbResults.length > 0) {
+              summary += `  ${knowledgeBase}: ${kbResults.length} results\n`;
+              // Show top result
+              const topResult = kbResults[0];
+              if (
                 topResult.conversationTextNormalized ||
-                topResult.contextDocumentTextNormalized;
-              summary += `    → ${text.substring(0, 100)}...\n`;
-              summary += `    → Confidence: ${topResult.confidence}\n`;
+                topResult.contextDocumentTextNormalized
+              ) {
+                const text =
+                  topResult.conversationTextNormalized ||
+                  topResult.contextDocumentTextNormalized;
+                summary += `    → ${text.substring(0, 100)}...\n`;
+                summary += `    → Confidence: ${topResult.confidence}\n`;
+              }
             }
-          }
-        });
-        summary += `\n`;
+          });
+          summary += `\n`;
+        }
       }
+    } else {
+      // This is from individual search method - handle single SearchResults
+      summary += `**Search Type:** Individual Search\n\n`;
+
+      // Calculate total results
+      let totalResults = 0;
+      Object.keys(searchResults).forEach((knowledgeBase) => {
+        const kbResults = searchResults[knowledgeBase];
+        if (Array.isArray(kbResults)) {
+          totalResults += kbResults.length;
+        }
+      });
+
+      summary += `**Total Results:** ${totalResults}\n\n`;
+
+      // Show results from each knowledge base
+      Object.keys(searchResults).forEach((knowledgeBase) => {
+        const kbResults = searchResults[knowledgeBase];
+        if (Array.isArray(kbResults) && kbResults.length > 0) {
+          summary += `**${knowledgeBase}:** ${kbResults.length} results\n`;
+          // Show top result
+          const topResult = kbResults[0];
+          if (
+            topResult.conversationTextNormalized ||
+            topResult.contextDocumentTextNormalized
+          ) {
+            const text =
+              topResult.conversationTextNormalized ||
+              topResult.contextDocumentTextNormalized;
+            summary += `  → ${text.substring(0, 100)}...\n`;
+            summary += `  → Confidence: ${topResult.confidence}\n`;
+          }
+          summary += `\n`;
+        }
+      });
     }
 
     summary += `*Knowledge base search completed successfully.*`;
     return summary;
+  }
+
+  private async sendPromptToRobotWithCallbacks(
+    conversationId: string,
+    robotPrompt: string,
+    callbacks: IStreamingCallbacks,
+  ): Promise<void> {
+    this.logger.log('Sending prompt to KnobbyOpenAiSearch robot via callbacks');
+
+    // Add the prompt to conversation as context
+    await this.chatManagerService.addMessageUserOnly(conversationId, {
+      type: 'context/document',
+      payload: robotPrompt,
+    });
+
+    // Use the chat manager to send prompt to robot with streaming response back to Slack
+    await this.chatManagerService.handleRobotStreamingResponse(
+      conversationId,
+      RobotName.KNOBBY_OPENAI_SEARCH,
+      robotPrompt,
+      callbacks,
+    );
+
+    this.logger.log('Robot response sent via callbacks');
   }
 }

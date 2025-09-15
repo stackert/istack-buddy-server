@@ -40,29 +40,59 @@ export class ContextDynamicJobExecutor implements IntentHandler {
     }
 
     try {
-      // Extract formId from subjects
-      const subjects = intentData.subjects || {};
-      const formId = subjects.formId?.[0];
+      // Send immediate acknowledgment to BOTH dev/debug AND Slack
+      const ackMessage = `🔄 **Context Dynamic Request Received**\n\nProcessing: ${intentData.originalUserPrompt}\nFetching data...`;
 
-      if (!formId) {
-        throw new Error('formId is required in subjects but was not provided');
-      }
-
-      this.logger.log(
-        `Fetching context-dynamic form data for formId: ${formId}`,
-      );
-
-      // 1. Fetch form context using service wrapper
-      const formContext =
-        await this.iStackInfoService.contextDynamic.getForm(formId);
-
-      // 2. Send form context directly to conversation
-      await this.sendFormContextToConversation(
-        formContext,
+      await this.chatManagerService.addMessage({
         conversationId,
-        intentData.originalUserPrompt,
-        formId,
-      );
+        fromUserId: 'context-dynamic-robot',
+        content: {
+          type: 'text/plain',
+          payload: ackMessage,
+        },
+        fromRole: UserRole.ROBOT,
+        toRole: UserRole.USER,
+      });
+
+      // ALSO send acknowledgment to Slack via callbacks
+      await callbacks.onFullMessageReceived({
+        content: {
+          type: 'text/plain',
+          payload: ackMessage,
+        },
+      });
+
+      const subIntent = intentData.subIntents?.[0];
+      const subjects = intentData.subjects || {};
+
+      switch (subIntent) {
+        case 'getFormContext':
+          await this.handleFormContext(
+            subjects,
+            conversationId,
+            intentData,
+            callbacks,
+          );
+          break;
+        case 'getAccountContext':
+          await this.handleAccountContext(
+            subjects,
+            conversationId,
+            intentData,
+            callbacks,
+          );
+          break;
+        case 'getAuthProviderContext':
+          await this.handleAuthProviderContext(
+            subjects,
+            conversationId,
+            intentData,
+            callbacks,
+          );
+          break;
+        default:
+          throw new Error(`Unsupported sub-intent: ${subIntent}`);
+      }
     } catch (error) {
       this.logger.error(`Context-dynamic workflow failed: ${error.message}`);
       callbacks.onError?.(error);
@@ -92,7 +122,11 @@ export class ContextDynamicJobExecutor implements IntentHandler {
     }
 
     // Create a structured summary of the form context
-    const contextSummary = this.formatFormContextSummary(form, originalPrompt);
+    const contextSummary = this.formatFormContextSummary(
+      form,
+      originalPrompt,
+      formId,
+    );
 
     // Send the context as a structured message
     await this.chatManagerService.addMessage({
@@ -132,9 +166,13 @@ export class ContextDynamicJobExecutor implements IntentHandler {
     );
   }
 
-  private formatFormContextSummary(form: any, originalPrompt: string): string {
+  private formatFormContextSummary(
+    formContext: any,
+    originalPrompt: string,
+    actualFormId: string,
+  ): string {
+    const form = formContext.data || formContext;
     const {
-      formId,
       activeAuthProviderName,
       protectionType,
       submitActions = [],
@@ -144,11 +182,11 @@ export class ContextDynamicJobExecutor implements IntentHandler {
       smartLists = [],
     } = form;
 
-    let summary = `📋 **Form Context for Form ${formId}**\n\n`;
+    let summary = `📋 **Form Context for Form ${actualFormId}**\n\n`;
     summary += `**User Query:** ${originalPrompt}\n\n`;
 
     // Basic form info
-    summary += `form: ${formId}\n`;
+    summary += `form: ${actualFormId}\n`;
     summary += `protectionType: ${protectionType}\n`;
     if (activeAuthProviderName) {
       summary += `activeAuthProvider: ${activeAuthProviderName}\n`;
@@ -209,5 +247,214 @@ export class ContextDynamicJobExecutor implements IntentHandler {
     summary += `*Form context retrieved successfully.*`;
 
     return summary;
+  }
+
+  private formatFormContextMessage(
+    formContext: any,
+    originalPrompt: string,
+    formId: string,
+  ): string {
+    // Use the same detailed formatting as the conversation message
+    return this.formatFormContextSummary(formContext, originalPrompt, formId);
+  }
+
+  private async handleFormContext(
+    subjects: any,
+    conversationId: string,
+    intentData: any,
+    callbacks: any,
+  ): Promise<void> {
+    const formIdString = subjects.formId?.[0];
+
+    if (!formIdString) {
+      throw new Error('formId is required in subjects but was not provided');
+    }
+
+    // Convert formId to number as required by API
+    const formId = parseInt(formIdString, 10);
+    if (isNaN(formId) || formId <= 0) {
+      throw new Error(`formId must be a positive number, got: ${formIdString}`);
+    }
+
+    this.logger.log(`Fetching context-dynamic form data for formId: ${formId}`);
+
+    // Fetch form context using service wrapper
+    const formContext =
+      await this.iStackInfoService.contextDynamic.getForm(formId);
+
+    // DEBUG: Log the exact API response to see what Slack is getting
+    this.logger.log(
+      `API RESPONSE FOR FORM ${formId}: ${JSON.stringify(formContext, null, 2)}`,
+    );
+
+    // Send rich form context to BOTH dev/debug AND Slack
+    const form = formContext.data || formContext;
+    this.logger.log(`EXTRACTED FORM DATA: ${JSON.stringify(form, null, 2)}`);
+
+    const richFormContextMessage = this.formatFormContextSummary(
+      form,
+      intentData.originalUserPrompt,
+      formId.toString(),
+    );
+
+    this.logger.log(
+      `FORMATTED MESSAGE: ${richFormContextMessage.substring(0, 200)}...`,
+    );
+
+    // Send to dev/debug conversation
+    await this.chatManagerService.addMessage({
+      conversationId,
+      fromUserId: 'context-dynamic-robot',
+      content: {
+        type: 'text/plain',
+        payload: richFormContextMessage,
+      },
+      fromRole: UserRole.SYSTEM,
+      toRole: UserRole.USER,
+    });
+
+    // ALSO send rich data to Slack via callbacks
+    await callbacks.onFullMessageReceived({
+      content: {
+        type: 'text/plain',
+        payload: richFormContextMessage,
+      },
+    });
+  }
+
+  private async handleAccountContext(
+    subjects: any,
+    conversationId: string,
+    intentData: any,
+    callbacks: any,
+  ): Promise<void> {
+    const accountIdString = subjects.accountId?.[0];
+
+    if (!accountIdString) {
+      throw new Error('accountId is required in subjects but was not provided');
+    }
+
+    // Convert accountId to number as required by API
+    const accountId = parseInt(accountIdString, 10);
+    if (isNaN(accountId) || accountId <= 0) {
+      throw new Error(
+        `accountId must be a positive number, got: ${accountIdString}`,
+      );
+    }
+
+    this.logger.log(
+      `Fetching context-dynamic account data for accountId: ${accountId}`,
+    );
+
+    // Fetch account context using service wrapper
+    const accountContext =
+      await this.iStackInfoService.contextDynamic.getAccount(accountId);
+
+    // Send account context via callbacks (works for both dev debug and Slack)
+    const accountContextMessage = `## 🏢 Account Context Retrieved
+
+**Account ID:** ${accountId}
+**Query:** "${intentData.originalUserPrompt}"
+
+**Account Details:**
+- Name: ${accountContext.data?.accountName || 'N/A'}
+- Status: ${accountContext.data?.status || 'N/A'}
+- Plan: ${accountContext.data?.plan || 'N/A'}
+
+*Account context retrieved successfully.*`;
+
+    // Send account context directly to conversation
+    await this.sendContextToConversation(
+      accountContext,
+      conversationId,
+      intentData.originalUserPrompt,
+      'account',
+      accountId.toString(),
+    );
+  }
+
+  private async handleAuthProviderContext(
+    subjects: any,
+    conversationId: string,
+    intentData: any,
+    callbacks: any,
+  ): Promise<void> {
+    const authProviderIdString = subjects.authProviderId?.[0];
+
+    if (!authProviderIdString) {
+      throw new Error(
+        'authProviderId is required in subjects but was not provided',
+      );
+    }
+
+    // Convert authProviderId to number as required by API
+    const authProviderId = parseInt(authProviderIdString, 10);
+    if (isNaN(authProviderId) || authProviderId <= 0) {
+      throw new Error(
+        `authProviderId must be a positive number, got: ${authProviderIdString}`,
+      );
+    }
+
+    this.logger.log(
+      `Fetching context-dynamic auth provider data for authProviderId: ${authProviderId}`,
+    );
+
+    // Fetch auth provider context using service wrapper
+    const authProviderContext =
+      await this.iStackInfoService.contextDynamic.getAuthProvider(
+        authProviderId,
+      );
+
+    // Send auth provider context via callbacks (works for both dev debug and Slack)
+    const authProviderContextMessage = `## 🔐 Auth Provider Context Retrieved
+
+**Auth Provider ID:** ${authProviderId}
+**Query:** "${intentData.originalUserPrompt}"
+
+**Auth Provider Details:**
+- Type: ${authProviderContext.data?.providerType || 'N/A'}
+- Status: ${authProviderContext.data?.status || 'N/A'}
+
+*Auth provider context retrieved successfully.*`;
+
+    // Send auth provider context directly to conversation
+    await this.sendContextToConversation(
+      authProviderContext,
+      conversationId,
+      intentData.originalUserPrompt,
+      'auth provider',
+      authProviderId.toString(),
+    );
+  }
+
+  private async sendContextToConversation(
+    contextData: any,
+    conversationId: string,
+    originalPrompt: string,
+    entityType: string,
+    entityId: string,
+  ): Promise<void> {
+    const content = {
+      type: 'context/dynamic' as const,
+      payload: JSON.stringify({
+        entityType,
+        entityId,
+        originalQuery: originalPrompt,
+        contextData,
+        timestamp: new Date().toISOString(),
+      }),
+    };
+
+    await this.chatManagerService.addMessage({
+      conversationId,
+      fromUserId: 'context-dynamic-robot',
+      content,
+      fromRole: UserRole.ROBOT,
+      toRole: UserRole.USER,
+    });
+
+    this.logger.log(
+      `Sent ${entityType} context data to conversation ${conversationId}`,
+    );
   }
 }

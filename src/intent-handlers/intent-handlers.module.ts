@@ -7,11 +7,13 @@ import { IStackInfoModule } from '../istack-buddy-slack-api/istack-info.module';
 import { FileManagerModule } from '../file-manager/file-manager.module';
 import { RobotModule } from '../robots/robot.module';
 import { ChatManagerModule } from '../chat-manager/chat-manager.module';
+import { JobQueueModule } from '../job-queue/job-queue.module';
 import { LoggerModule } from '../common/logger/logger.module';
 @Module({
   imports: [
     IStackInfoModule,
     FileManagerModule, // Still needed for Sumo executors
+    JobQueueModule, // For BullMQ Sumo job processing
     RobotModule,
     forwardRef(() => ChatManagerModule),
     LoggerModule,

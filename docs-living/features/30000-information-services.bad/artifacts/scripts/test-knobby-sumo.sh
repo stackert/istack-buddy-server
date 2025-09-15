@@ -9,7 +9,8 @@
 set -e
 
 # Configuration
-BASE_URL="http://localhost:3505/information-services"
+# BASE_URL="http://localhost:3505/information-services"
+BASE_URL="http://192.168.1.4:3505/information-services"
 AUTH_TOKEN="istack-buddy-dev-token-2024"
 
 echo "KnobbyOpenAiSumoReport Test"

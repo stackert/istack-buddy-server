@@ -17,7 +17,12 @@ export class SumoReportSingleJobExecutor
     return [
       {
         intent: 'generateSumoReport',
-        subIntents: ['submitActionReport', 'submissionCreatedForForm'],
+        subIntents: [
+          'submitActionReport',
+          'submissionCreatedForForm',
+          'authProviderMetrics',
+          'submitActionSelectedForExecution',
+        ],
         description: 'Generate single Sumo Logic report',
       },
     ];
@@ -35,12 +40,16 @@ export class SumoReportSingleJobExecutor
       // 1. Parse query parameters from intent data
       const queryParams = this.parseQueryParameters(intentData);
 
-      // 2. Send status message to user via callbacks
-      await callbacks.onFullMessageReceived({
+      // 2. Send immediate acknowledgment
+      await this.chatManagerService.addMessage({
+        conversationId,
+        fromUserId: 'sumo-report-robot',
         content: {
           type: 'text/plain',
-          payload: `**Running Sumo query with parameters:**\n\n- Query: ${queryParams.queryName}\n- Form ID: ${queryParams.subject.formId}\n- Date Range: ${queryParams.subject.startDate} to ${queryParams.subject.endDate}\n\nProcessing...`,
+          payload: `🔄 **Sumo Report Request Received**\n\nQuery: ${queryParams.queryName}\nForm ID: ${queryParams.subject.formId}\nDate Range: ${queryParams.subject.startDate} to ${queryParams.subject.endDate}\n\nSubmitting job...`,
         },
+        fromRole: UserRole.ROBOT,
+        toRole: UserRole.USER,
       });
 
       // 3. Submit single job and fetch data
@@ -78,6 +87,8 @@ export class SumoReportSingleJobExecutor
       queryName: this.mapSubIntentToQueryName(intentData.subIntents[0]),
       subject: {
         formId: intentData.subjects?.formId?.[0] || '',
+        submitActionId: intentData.subjects?.submitActionId?.[0] || '',
+        submissionId: intentData.subjects?.submissionId?.[0] || '',
         startDate: intentData.subjects?.startDate?.[0] || '',
         endDate: intentData.subjects?.endDate?.[0] || '',
       },

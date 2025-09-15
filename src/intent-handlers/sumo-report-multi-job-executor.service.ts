@@ -8,7 +8,7 @@ import {
   ProcessedSumoData,
 } from './sumo-report-base-job-executor.service';
 import { RobotService } from '../robots/robot.service';
-import { RobotName } from '../chat-manager/dto/create-message.dto';
+import { RobotName, UserRole } from '../chat-manager/dto/create-message.dto';
 import { IStackInfoService } from '../istack-buddy-slack-api/istack-info.service';
 import { FileManagerService } from '../file-manager/file-manager.service';
 import { ChatManagerService } from '../chat-manager/chat-manager.service';
@@ -58,10 +58,16 @@ export class SumoReportMultiJobExecutor
       // 1. Parse base parameters from intent data
       const baseParams = this.parseBaseParameters(intentData);
 
-      // 2. Send initial status message
-      await this.chatManagerService.addMessageUserOnly(conversationId, {
-        type: 'text/markdown',
-        payload: `**Running Sumo analysis with parameters:**\n\n- Form ID: ${baseParams.formId}\n- Date Range: ${baseParams.startDate} to ${baseParams.endDate}\n\nProcessing multiple reports...`,
+      // 2. Send immediate acknowledgment
+      await this.chatManagerService.addMessage({
+        conversationId,
+        fromUserId: 'sumo-analysis-robot',
+        content: {
+          type: 'text/plain',
+          payload: `🔄 **Sumo Analysis Request Received**\n\nForm ID: ${baseParams.formId}\nDate Range: ${baseParams.startDate} to ${baseParams.endDate}\n\nStarting multiple reports...`,
+        },
+        fromRole: UserRole.ROBOT,
+        toRole: UserRole.USER,
       });
 
       // 3. Run all three reports in parallel
@@ -69,7 +75,7 @@ export class SumoReportMultiJobExecutor
         await Promise.all([
           this.runSingleReport('submitActionReport', baseParams),
           this.runSingleReport('submissionCreatedForForm', baseParams),
-          this.runSingleReport('submitActionsSelectedForExecution', baseParams),
+          this.runSingleReport('submitActionSelectedForExecution', baseParams),
         ]);
 
       // 4. Send intermediate status
@@ -115,8 +121,38 @@ export class SumoReportMultiJobExecutor
           analysisPrompt.slice(0, 100),
       });
 
-      // 8. Send prompt to robot (commented out for dev/debug)
-      // await this.sendPromptToRobot(conversationId, analysisPrompt, reportData);
+      // 8. Send final message with download links
+      const finalMessage = `## 📊 Sumo Logic Multi-Report Analysis Complete
+
+**Original Query:** "${intentData.originalUserPrompt}"
+
+**📁 Download Links:**
+- [Submit Actions Report](${reportData.submitActionFileLink}) - ${submitActionData.processedData.records?.length || 0} records
+- [Form Submissions Report](${reportData.submissionFileLink}) - ${submissionData.processedData.records?.length || 0} records  
+- [Submit Actions Selected Report](${reportData.submitActionsSelectedFileLink}) - ${submitActionsSelectedData.processedData.records?.length || 0} records
+
+**📊 Analysis Summary:**
+${submitActionAnalysis.slice(0, 200)}...
+
+*Multi-report analysis completed successfully.*`;
+
+      // 8. Send final message via callbacks (works for both dev debug and Slack)
+      await callbacks.onFullMessageReceived({
+        content: {
+          type: 'text/plain',
+          payload: finalMessage,
+        },
+      });
+
+      // 9. For dev/debug: Also send to conversation directly
+      if (process.env.NODE_ENV === 'development') {
+        await this.chatManagerService.addMessageUserOnly(conversationId, {
+          type: 'text/markdown',
+          payload: finalMessage,
+        });
+      }
+
+      this.logger.log('Multi-report analysis completed successfully');
     } catch (error) {
       this.logger.error(`Sumo analysis job execution failed: ${error.message}`);
       callbacks.onError?.(error);

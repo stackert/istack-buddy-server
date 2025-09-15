@@ -11,7 +11,9 @@ import { ObservationMakerSumoSubmitActionJobReport } from './ObservationMakerSum
 export interface SumoJobParams {
   queryName: string;
   subject: {
-    formId: string;
+    formId?: string;
+    submitActionId?: string;
+    submissionId?: string;
     startDate: string;
     endDate: string;
   };
@@ -45,7 +47,8 @@ export abstract class SumoReportBaseJobExecutor {
     const mapping: Record<string, string> = {
       submitActionReport: 'submitActionReport',
       submissionCreatedForForm: 'submissionCreatedForForm',
-      submitActionsSelectedForExecution: 'submitActionsSelectedForExecution',
+      submitActionSelectedForExecution: 'submitActionSelectedForExecution',
+      authProviderMetrics: 'authProviderMetrics',
     };
     return mapping[subIntent] || 'submitActionReport';
   }
@@ -55,31 +58,87 @@ export abstract class SumoReportBaseJobExecutor {
   ): Promise<string> {
     this.logger.log(`Submitting Sumo query: ${queryParams.queryName}`);
 
-    // Submit query and wait for completion - returns fileId
-    const fileId =
-      await this.iStackInfoService.sumoReport.submitQueryAndWait(queryParams);
+    // Use direct API call with non-blocking polling (truly concurrent)
+    const resultsResponse =
+      await this.submitQueryWithNonBlockingPoll(queryParams);
 
-    this.logger.log(`Got fileId from completed job: ${fileId}`);
+    this.logger.log(
+      `Got results with ${(resultsResponse as any).records?.length || 0} records`,
+    );
 
-    const fileResponse =
-      await this.iStackInfoService.sumoReport.files.get(fileId);
-
-    // Download and store file
-    if (!fileResponse.downloadUrl) {
-      throw new Error('No download URL provided for file');
-    }
-    const response = await fetch(fileResponse.downloadUrl);
-    const fileContent = await response.text();
+    // Store the results as JSON file
+    const fileContent = JSON.stringify(resultsResponse, null, 2);
 
     const localFileId = await this.fileManagerService.put(
       {
         content: fileContent,
-        contentType: 'application/json', // I am not 100% sure it's json. It maybe stringify json within csv
+        contentType: 'application/json',
       },
       STORAGE_CLASS.TEMP,
     );
 
     return localFileId;
+  }
+
+  private async submitQueryWithNonBlockingPoll(
+    queryParams: SumoJobParams,
+  ): Promise<any> {
+    // Submit the query
+    const submissionResponse =
+      await this.iStackInfoService.sumoReport.submitQuery(queryParams);
+    const jobId = submissionResponse.jobId;
+
+    this.logger.debug(
+      `Sumo job submitted: ${jobId}, starting non-blocking poll`,
+    );
+
+    // Non-blocking polling using Promise + setTimeout
+    return new Promise((resolve, reject) => {
+      let attempts = 0;
+      const maxAttempts = 300; // 5 minutes
+      const pollIntervalMs = 1000;
+
+      const checkStatus = async () => {
+        try {
+          attempts++;
+          const statusResponse =
+            await this.iStackInfoService.sumoReport.jobs.getStatus(jobId);
+          const status = statusResponse.status;
+
+          if (attempts % 30 === 0) {
+            this.logger.debug(
+              `Job ${jobId} status: ${status} (attempt ${attempts}/${maxAttempts})`,
+            );
+          }
+
+          if (status === 'completed') {
+            // Get results and resolve
+            const resultsResponse =
+              await this.iStackInfoService.sumoReport.jobs.getResults(jobId);
+            resolve(resultsResponse);
+          } else if (status === 'failed') {
+            reject(new Error(`Sumo job ${jobId} failed`));
+          } else if (attempts >= maxAttempts) {
+            const timeoutMinutes = Math.floor(
+              (maxAttempts * pollIntervalMs) / 60000,
+            );
+            reject(
+              new Error(
+                `Sumo job ${jobId} timed out after ${attempts} attempts (${timeoutMinutes} minutes)`,
+              ),
+            );
+          } else {
+            // Schedule next check (NON-BLOCKING)
+            setTimeout(checkStatus, pollIntervalMs);
+          }
+        } catch (error) {
+          reject(error);
+        }
+      };
+
+      // Start polling
+      checkStatus();
+    });
   }
 
   protected async moveFileToSessionPublic(
@@ -90,7 +149,12 @@ export abstract class SumoReportBaseJobExecutor {
     const fileBuffer = await this.fileManagerService.get(fileId);
 
     const timestamp = this.formatDateForFilename(new Date().toISOString());
-    const filename = `sumo-${queryParams.queryName}-${queryParams.subject.formId}-${timestamp}.json`;
+    const identifier =
+      queryParams.subject.formId ||
+      queryParams.subject.submitActionId ||
+      queryParams.subject.submissionId ||
+      'unknown';
+    const filename = `sumo-${queryParams.queryName}-${identifier}-${timestamp}.json`;
 
     // Create session-public directory path (maintain existing structure)
     const sessionPublicDir = `file-storage-server/session-public/${conversationId}`;
@@ -107,7 +171,10 @@ export abstract class SumoReportBaseJobExecutor {
     fs.writeFileSync(filePath, fileBuffer);
 
     // Generate proper public URL that will be served by FileController
-    return `/files/session-public/${conversationId}/${filename}`;
+    const baseUrl =
+      process.env.ISTACK_BUDDY_BACKEND_SERVER_BASE_URL ||
+      `http://localhost:${process.env.ISTACK_BUDDY_BACKEND_SERVER_HOST_PORT || 3500}`;
+    return `${baseUrl}/files/session-public/${conversationId}/${filename}`;
   }
 
   protected async processJobData(

@@ -7,10 +7,12 @@ import { MessageQueueProcessor } from './processors/message-queue.processor';
 import { FileProcessingProcessor } from './processors/file-processing.processor';
 import { NotificationProcessor } from './processors/notification.processor';
 import { FileManagerModule } from '../file-manager/file-manager.module';
+import { IStackInfoModule } from '../istack-buddy-slack-api/istack-info.module';
 
 @Module({
   imports: [
     FileManagerModule,
+    IStackInfoModule,
     BullModule.forRoot({
       redis: {
         host: process.env.BULLMQ_REDIS_HOST || 'localhost',
@@ -60,6 +62,17 @@ import { FileManagerModule } from '../file-manager/file-manager.module';
             type: process.env.JOB_QUEUE_BACKOFF_TYPE || 'exponential',
             delay: parseInt(process.env.JOB_QUEUE_BACKOFF_DELAY || '2000'),
           },
+        },
+      },
+      {
+        name: 'sumo-query',
+        defaultJobOptions: {
+          removeOnComplete: parseInt(
+            process.env.JOB_QUEUE_REMOVE_ON_COMPLETE || '50',
+          ),
+          removeOnFail: parseInt(process.env.JOB_QUEUE_REMOVE_ON_FAIL || '25'),
+          attempts: 1, // Don't retry Sumo jobs automatically
+          delay: 0, // Process immediately
         },
       },
     ),

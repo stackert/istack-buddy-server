@@ -801,11 +801,13 @@ paths:
             **Supported Query Types:**
             - `submissionCreatedForForm`: Track form submission creation events
             - `submitActionReport`: Analyze submit action execution details  
-            - `submitActionsSelectedForExecution`: Track submit actions selected for execution
             - `authProviderMetrics`: Monitor authentication provider activity
+            - `submitActionSelectedForExecution`: Track submit actions selected for execution
             
             **Date Range Limits:**
-            - Maximum 7 full days (1 week)
+            - Maximum 7 + 1 day (8 days total) per query
+            - Dates cannot be more than 91 days in the past
+            - Dates cannot be more than 1 day in the future
             - Dates assumed to be Eastern Time (ET)
             - Default: last 24 hours if no dates provided
             
@@ -883,11 +885,17 @@ paths:
       description: |-
         Retrieve the results of a completed Sumo Logic query job.
             
-            **Response Structure:**
-            - `executedQuery`: The actual Sumo Logic query that was executed
-            - `recordSchema`: Schema of the returned records for validation
-            - `records`: Array of parsed, structured results
+            **Clean Response Structure (NO raw Sumo Logic data exposed):**
+            - `executedQuery`: The actual Sumo Logic query that was executed  
+            - `recordSchema`: Schema of returned records for validation
+            - `records`: Array of parsed, structured business records
+            - `messageCount`: Total number of records found
+            - `queryName`: Name of the executed query type
+            - `arguments`: List of arguments the query accepts
+            - `timeRange`: UTC time range used for the query
             - `validationNote`: Instructions for manual validation in Sumo Logic
+            
+            **Security Note:** Raw Sumo Logic message format is NOT exposed via this endpoint.
 
       parameters:
         - name: jobId
@@ -907,14 +915,84 @@ paths:
                 properties:
                   executedQuery:
                     type: string
+                    description: The actual Sumo Logic query that was executed
+                    example: >-
+                      _sourceCategory=formstack/prod/* | json field=_raw
+                      "message" | where formId = 4533939
                   recordSchema:
                     type: object
+                    description: Schema of returned records for validation
+                    example:
+                      message:
+                        type: string
+                        example: SubmitAction {type} run for {submissionId}
+                      formId:
+                        type: string
+                        example: '4533939'
+                      submitActionId:
+                        type: string
+                        example: '7574231'
+                      _validationNote: >-
+                        To validate results, run the executedQuery directly in
+                        Sumo Logic
                   records:
                     type: array
+                    description: >-
+                      Array of parsed, structured business records (NO raw Sumo
+                      Logic data)
                     items:
                       type: object
+                      example:
+                        message: SubmitAction {type} run for {submissionId}
+                        submitActionId: '7574231'
+                        submissionId: '1378187770'
+                        formId: '4533939'
+                        type: webhook
+                        accountId: '648537'
+                        datetime: '2025-09-06T08:29:19.467703-04:00'
+                  messageCount:
+                    type: number
+                    description: Total number of records returned
+                    example: 9
+                  queryName:
+                    type: string
+                    description: Name of the executed query type
+                    example: submitActionReport
+                  arguments:
+                    type: array
+                    description: List of arguments the query accepts
+                    items:
+                      type: string
+                    example:
+                      - submitActionId
+                      - submissionId
+                      - submitActionType
+                      - startDate
+                      - endDate
+                  timeRange:
+                    type: object
+                    description: UTC time range used for the query
+                    properties:
+                      from:
+                        type: string
+                        format: date-time
+                        example: '2025-09-05T04:00:01.000Z'
+                      to:
+                        type: string
+                        format: date-time
+                        example: '2025-09-07T03:59:59.000Z'
                   validationNote:
                     type: string
+                    description: Instructions for manual validation
+                    example: >-
+                      To validate results, run the executedQuery directly in
+                      Sumo Logic
+                required:
+                  - executedQuery
+                  - recordSchema
+                  - records
+                  - messageCount
+                  - validationNote
         '400':
           description: Job not completed or still running
         '404':
@@ -1794,44 +1872,79 @@ components:
           minimum: 1
       required:
         - formId
-    QuerySubjectDto:
+    EntitySubjectsDto:
       type: object
       properties:
         submitActionId:
-          type: string
-          description: Submit action ID for filtering
-          example: '12345'
+          description: Submit action IDs for filtering
+          example:
+            - '12345'
+            - '67890'
+          type: array
+          items:
+            type: string
         submitActionType:
-          type: string
-          description: Type of submit action (webhook, salesforce, stripe, etc.)
-          example: webhook
+          description: Types of submit actions (webhook, salesforce, stripe, etc.)
+          example:
+            - webhook
+            - salesforce
+          type: array
+          items:
+            type: string
         formId:
-          type: string
-          description: Form ID for filtering
-          example: '67890'
+          description: Form IDs for filtering
+          example:
+            - '67890'
+            - '11111'
+          type: array
+          items:
+            type: string
         submissionId:
-          type: string
-          description: Submission ID for filtering
-          example: '11111'
+          description: Submission IDs for filtering
+          example:
+            - '11111'
+            - '22222'
+          type: array
+          items:
+            type: string
         authProviderId:
-          type: string
-          description: Authentication provider ID
-          example: '22222'
-        message:
-          type: string
-          description: Specific Sumo Logic message to filter on
-          example: Submission created on {formId}.
+          description: Authentication provider IDs
+          example:
+            - '22222'
+            - '33333'
+          type: array
+          items:
+            type: string
         accountId:
-          type: string
-          description: Account ID for filtering
-          example: '33333'
+          description: Account IDs for filtering
+          example:
+            - '33333'
+            - '44444'
+          type: array
+          items:
+            type: string
+        message:
+          description: Specific Sumo Logic messages to filter on
+          example:
+            - Submission created on {formId}.
+            - Authentication failed for {authProviderId}.
+          type: array
+          items:
+            type: string
+    DateRangeDto:
+      type: object
+      properties:
         startDate:
           type: string
-          description: Start date in Eastern Time (YYYY-MM-DD or YYYY-MM-DD HH:MM:SS)
+          description: >-
+            Start date in Eastern Time (YYYY-MM-DD, YYYY-MM-DD HH:MM:SS, or ISO
+            8601)
           example: '2024-01-01'
         endDate:
           type: string
-          description: End date in Eastern Time (YYYY-MM-DD or YYYY-MM-DD HH:MM:SS)
+          description: >-
+            End date in Eastern Time (YYYY-MM-DD, YYYY-MM-DD HH:MM:SS, or ISO
+            8601)
           example: '2024-01-07'
     SumoJobSubmissionRequestDto:
       type: object
@@ -1843,12 +1956,18 @@ components:
           enum:
             - submissionCreatedForForm
             - submitActionReport
-            - submitActionsSelectedForExecution
             - authProviderMetrics
-        subject:
-          description: Query parameters and filters
+            - submitActionSelectedForExecution
+        subjects:
+          description: >-
+            Entity subjects for filtering - ONLY entity IDs with unique
+            identifiers (arrays for consistency)
           allOf:
-            - $ref: '#/components/schemas/QuerySubjectDto'
+            - $ref: '#/components/schemas/EntitySubjectsDto'
+        dateRange:
+          description: Date range for time-based filtering (separate from entity subjects)
+          allOf:
+            - $ref: '#/components/schemas/DateRangeDto'
         isValidationOnly:
           type: boolean
           description: Only validate request without executing query
@@ -1867,7 +1986,6 @@ components:
               example: user-tracking-id-12345
       required:
         - queryName
-        - subject
     SumoJobStatusDto:
       type: object
       properties:

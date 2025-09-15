@@ -46,6 +46,7 @@ export class IStackInfoService implements OnModuleDestroy {
   private httpClient: AxiosInstance;
   private readonly redis: Redis;
   private isInitialized = false;
+  private readonly activeSumoJobs = new Map<string, Date>(); // Track active job IDs with start time
 
   constructor(redisClient: Redis) {
     this.redis = redisClient;
@@ -61,6 +62,11 @@ export class IStackInfoService implements OnModuleDestroy {
       // WE NEVER USE FALL BACKS FOR CONFIG
       this.apiKey = process.env.ISTACK_INFO_SERVICE_API_KEY as string;
       this.baseUrl = process.env.ISTACK_INFO_SERVICE_BASE_URL as string;
+
+      // DEBUG: Log configuration
+      this.logger.log(`IStackInfoService configured with:`);
+      this.logger.log(`Base URL: ${this.baseUrl}`);
+      this.logger.log(`API Key: ${this.apiKey ? '[CONFIGURED]' : '[MISSING]'}`);
 
       if (!this.apiKey) {
         throw new Error(
@@ -238,7 +244,7 @@ export class IStackInfoService implements OnModuleDestroy {
       );
     },
 
-    getAccount: async (accountId: string): Promise<AccountContextResponse> => {
+    getAccount: async (accountId: number): Promise<AccountContextResponse> => {
       this.logger.debug(`Getting account context: ${accountId}`);
       return this.makeRequest<AccountContextResponse>(
         'POST',
@@ -247,7 +253,7 @@ export class IStackInfoService implements OnModuleDestroy {
       );
     },
 
-    getForm: async (formId: string): Promise<FormContextResponse> => {
+    getForm: async (formId: number): Promise<FormContextResponse> => {
       this.logger.debug(`Getting form context: ${formId}`);
       return this.makeRequest<FormContextResponse>(
         'POST',
@@ -257,7 +263,7 @@ export class IStackInfoService implements OnModuleDestroy {
     },
 
     getAuthProvider: async (
-      authProviderId: string,
+      authProviderId: number,
     ): Promise<AuthProviderContextResponse> => {
       this.logger.debug(`Getting auth provider context: ${authProviderId}`);
       return this.makeRequest<AuthProviderContextResponse>(
@@ -291,52 +297,89 @@ export class IStackInfoService implements OnModuleDestroy {
 
     submitQueryAndWait: async (
       request: SumoJobSubmissionRequest,
-      maxAttempts: number = 30,
+      maxAttempts: number = 300, // 5 minutes at 1 second intervals
       pollIntervalMs: number = 1000,
-    ): Promise<string> => {
-      this.logger.debug(
-        `Submitting Sumo query and waiting: ${request.queryName}`,
-      );
+    ): Promise<any> => {
+      let jobId: string | undefined;
 
-      // Submit the query
-      const submissionResponse = await this.sumoReport.submitQuery(request);
-      const jobId = submissionResponse.jobId;
-
-      this.logger.debug(`Sumo job submitted: ${jobId}`);
-
-      // Poll until completed
-      let status = 'pending';
-      let attempts = 0;
-
-      while (
-        (status === 'pending' || status === 'running') &&
-        attempts < maxAttempts
-      ) {
-        await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
-        const statusResponse = await this.sumoReport.jobs.getStatus(jobId);
-        status = statusResponse.status;
+      try {
         this.logger.debug(
-          `Job ${jobId} status: ${status} (attempt ${++attempts})`,
+          `Submitting Sumo query and waiting: ${request.queryName}`,
         );
-      }
 
-      if (status !== 'completed') {
-        throw new Error(
-          `Sumo job ${jobId} timed out after ${maxAttempts} attempts`,
+        // Submit the query
+        const submissionResponse = await this.sumoReport.submitQuery(request);
+        jobId = submissionResponse.jobId;
+
+        // Track active job with start time
+        this.activeSumoJobs.set(jobId, new Date());
+
+        this.logger.debug(
+          `Sumo job submitted: ${jobId} (${this.activeSumoJobs.size} active jobs)`,
         );
+
+        // Poll until completed
+        let status = 'pending';
+        let attempts = 0;
+
+        while (
+          (status === 'pending' || status === 'running') &&
+          attempts < maxAttempts
+        ) {
+          await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
+          const statusResponse = await this.sumoReport.jobs.getStatus(jobId);
+          status = statusResponse.status;
+          this.logger.debug(
+            `Job ${jobId} status: ${status} (attempt ${++attempts})`,
+          );
+        }
+
+        // Clean up job tracking regardless of outcome
+        const jobStartTime = this.activeSumoJobs.get(jobId);
+        this.activeSumoJobs.delete(jobId);
+
+        const duration = jobStartTime ? Date.now() - jobStartTime.getTime() : 0;
+
+        if (status !== 'completed') {
+          const timeoutSeconds = (maxAttempts * pollIntervalMs) / 1000;
+          const timeoutMinutes = Math.floor(timeoutSeconds / 60);
+          const remainingSeconds = timeoutSeconds % 60;
+
+          let timeoutMessage = `Sumo job ${jobId} timed out after ${maxAttempts} attempts`;
+          if (timeoutMinutes > 0) {
+            timeoutMessage += ` (${timeoutMinutes} minutes${remainingSeconds > 0 ? ` and ${remainingSeconds} seconds` : ''})`;
+          } else {
+            timeoutMessage += ` (${timeoutSeconds} seconds)`;
+          }
+
+          this.logger.warn(
+            `Job ${jobId} failed after ${Math.round(duration / 1000)}s. ${this.activeSumoJobs.size} jobs still active.`,
+          );
+          throw new Error(timeoutMessage);
+        }
+
+        // Get results and return the full results object
+        const resultsResponse = await this.sumoReport.jobs.getResults(jobId);
+
+        this.logger.debug(
+          `Job ${jobId} completed successfully in ${Math.round(duration / 1000)}s with ${(resultsResponse as any).records?.length || 0} records. ${this.activeSumoJobs.size} jobs still active.`,
+        );
+
+        return resultsResponse;
+      } catch (error) {
+        // Clean up job tracking on error
+        if (jobId) {
+          const jobStartTime = this.activeSumoJobs.get(jobId);
+          this.activeSumoJobs.delete(jobId);
+          const duration = jobStartTime
+            ? Date.now() - jobStartTime.getTime()
+            : 0;
+          this.logger.error(
+            `Job ${jobId} failed after ${Math.round(duration / 1000)}s with error: ${error.message}. ${this.activeSumoJobs.size} jobs still active.`,
+          );
+        }
+        throw error;
       }
-
-      // Get results and return fileId
-      const resultsResponse = await this.sumoReport.jobs.getResults(jobId);
-
-      if (!resultsResponse.fileId) {
-        throw new Error(`No fileId found in results for job ${jobId}`);
-      }
-
-      this.logger.debug(
-        `Job ${jobId} completed with fileId: ${resultsResponse.fileId}`,
-      );
-      return resultsResponse.fileId;
     },
 
     getQueryList: (): Promise<SumoQueryListResponse> =>
@@ -569,9 +612,18 @@ export class IStackInfoService implements OnModuleDestroy {
       };
     } else if (error.request) {
       // The request was made but no response was received
+      this.logger.error('Network error details:', {
+        baseUrl: this.baseUrl,
+        requestUrl: error.config?.url,
+        fullUrl: `${this.baseUrl}${error.config?.url}`,
+        method: error.config?.method,
+        timeout: error.config?.timeout,
+        errorCode: error.code,
+        errorMessage: error.message,
+      });
       return {
         error: 'Network Error',
-        message: 'No response received from server',
+        message: `No response received from server. Attempted: ${this.baseUrl}${error.config?.url}`,
         statusCode: 0,
         timestamp: new Date().toISOString(),
       };
