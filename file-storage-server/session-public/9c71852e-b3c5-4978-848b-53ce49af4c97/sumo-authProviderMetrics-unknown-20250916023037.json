@@ -1,0 +1,19 @@
+{
+  "executedQuery": "_sourceCategory=formstack/prod/*\n| json field=_raw \"context.event\" as event\n| json field=_raw \"context.authProviderId\" as authProviderId\n| json field=_raw \"context.accountId\" as accountId\n| json field=_raw \"context.formId\" as formId\n| json field=_raw \"context.redirectUrlPath\" as redirectUrlPath\n| json field=_raw \"context.formAlias\" as formAlias\n| json field=_raw \"context.sessionId\" as sessionId\n| json field=_raw \"context.errorId\" as errorId\n| json field=_raw \"extra.url\" as url\n| json field=_raw \"extra.referrer\" as referrer\n| where event = \"auth_provider_saml\" AND authProviderId = 2175",
+  "recordSchema": {
+    "_validationNote": "To validate results, run the executedQuery directly in Sumo Logic"
+  },
+  "records": [],
+  "messageCount": 0,
+  "queryName": "authProviderMetrics",
+  "arguments": [
+    "authProviderId",
+    "accountId",
+    "formId"
+  ],
+  "timeRange": {
+    "from": "2025-09-14T04:00:01.000Z",
+    "to": "2025-09-16T03:59:59.000Z"
+  },
+  "validationNote": "To validate results, run the executedQuery directly in Sumo Logic"
+}

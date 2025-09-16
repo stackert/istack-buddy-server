@@ -296,10 +296,12 @@ Need help? Just ask!`;
         model: this.LLModelName,
         max_tokens: 1024,
         messages: [
-          {
-            role: 'system' as const,
-            content: this.robotRole,
-          },
+          // THIS SHOULD NEVER BE HERE - AGAIN ANOTHER AI FUCK UP
+          // SYSTEM MESSAGE (or similar, instruction, etc) BELONG IN CLIENT (robot) INITIALIZATION
+          // {
+          //   role: 'system' as const,
+          //   content: this.robotRole,
+          // },
           ...messages,
         ],
         tools: this.tools,
@@ -454,6 +456,13 @@ Need help? Just ask!`;
       if (typeof callbacks.onStreamFinished === 'function') {
         // @ts-ignore
         callbacks.onStreamFinished({
+          content: { payload: accumulatedContent, type: 'text/plain' },
+        });
+      }
+      // Call onStreamFinished with minimal data
+      if (typeof callbacks.onFullMessageReceived === 'function') {
+        // @ts-ignore
+        callbacks.onFullMessageReceived({
           content: { payload: accumulatedContent, type: 'text/plain' },
         });
       }

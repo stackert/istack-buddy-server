@@ -611,9 +611,11 @@ export class DevDebugChatClientController {
   "intent": "generateSumoAnalysis",
   "subIntents": ["multiReportAnalysis"],
   "subjects": {
-    "formId": ["12345"],
-    "startDate": ["2025-09-09"],
-    "endDate": ["2025-09-10"]
+    "formId": ["5894350"]
+  },
+  "dateRange": {
+    "startDate": "2025-09-14",
+    "endDate": "2025-09-15"
   },
   "originalUserPrompt": "Run comprehensive Sumo analysis comparing submit actions and form submissions"
 }</textarea>

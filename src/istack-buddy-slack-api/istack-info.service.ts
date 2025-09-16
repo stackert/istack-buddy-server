@@ -302,6 +302,9 @@ export class IStackInfoService implements OnModuleDestroy {
           ...(request.subject.submissionId && {
             submissionId: [request.subject.submissionId],
           }),
+          ...(request.subject.authProviderId && {
+            authProviderId: [request.subject.authProviderId],
+          }),
         },
         dateRange: {
           startDate: request.subject.startDate,

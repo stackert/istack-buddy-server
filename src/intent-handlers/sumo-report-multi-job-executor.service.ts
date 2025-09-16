@@ -64,39 +64,99 @@ export class SumoReportMultiJobExecutor
         },
       );
 
-      // 3. Run all three reports in parallel
-      const [submitActionData, submissionData, submitActionsSelectedData] =
-        await Promise.all([
-          this.runSingleReport('submitActionReport', baseParams),
-          this.runSingleReport('submissionCreatedForForm', baseParams),
-          this.runSingleReport('submitActionSelectedForExecution', baseParams),
-        ]);
-
-      // 4. Send intermediate status
-      await this.chatManagerService.addMessageUserOnly(conversationId, {
-        type: 'text/markdown',
-        payload: `**Sumo report files generated, doing more analysis please wait...**\n\n- Submit Actions: ${submitActionData.processedData.records?.length || 0} records\n- Submissions: ${submissionData.processedData.records?.length || 0} records\n- Submit Actions Selected: ${submitActionsSelectedData.processedData.records?.length || 0} records\n\nAnalyzing data...`,
-      });
-
-      // 5. Generate analysis summaries for all three reports
-      const [
-        submitActionAnalysis,
-        submissionAnalysis,
-        submitActionsSelectedAnalysis,
-      ] = await Promise.all([
-        this.runObservationAnalysis(submitActionData.processedData),
-        this.runObservationAnalysis(submissionData.processedData),
-        this.runObservationAnalysis(submitActionsSelectedData.processedData),
+      // 3. Run all three reports in parallel (handle partial failures)
+      const results = await Promise.allSettled([
+        this.runSingleReport('submitActionReport', baseParams),
+        this.runSingleReport('submissionCreatedForForm', baseParams),
+        this.runSingleReport('submitActionSelectedForExecution', baseParams),
       ]);
 
-      // 6. Generate analysis prompt
+      // Extract successful results and log failures
+      const submitActionData =
+        results[0].status === 'fulfilled' ? results[0].value : null;
+      const submissionData =
+        results[1].status === 'fulfilled' ? results[1].value : null;
+      const submitActionsSelectedData =
+        results[2].status === 'fulfilled' ? results[2].value : null;
+
+      // Log any failures
+      results.forEach((result, index) => {
+        if (result.status === 'rejected') {
+          const reportNames = [
+            'submitActionReport',
+            'submissionCreatedForForm',
+            'submitActionSelectedForExecution',
+          ];
+          this.logger.error(
+            `${reportNames[index]} failed: ${result.reason.message}`,
+          );
+        }
+      });
+
+      // Continue with successful results only
+      if (!submitActionData && !submissionData && !submitActionsSelectedData) {
+        throw new Error('All three reports failed - no data to analyze');
+      }
+
+      // 4. Send intermediate status
+      await this.chatManagerService.addMessageSystemNotification(
+        conversationId,
+        {
+          type: 'text/plain',
+          payload: `**Sumo report files generated, doing more analysis please wait...**\n\n- Submit Actions: ${submitActionData?.processedData.records?.length || 0} records\n- Submissions: ${submissionData?.processedData.records?.length || 0} records\n- Submit Actions Selected: ${submitActionsSelectedData?.processedData.records?.length || 0} records\n\nAnalyzing data...`,
+        },
+      );
+
+      // 5. Generate analysis summaries for successful reports only
+      const analysisPromises = [];
+      if (submitActionData)
+        analysisPromises.push(
+          this.runObservationAnalysis(submitActionData.processedData),
+        );
+      if (submissionData)
+        analysisPromises.push(
+          this.runObservationAnalysis(submissionData.processedData),
+        );
+      if (submitActionsSelectedData)
+        analysisPromises.push(
+          this.runObservationAnalysis(submitActionsSelectedData.processedData),
+        );
+
+      const analysisResults = await Promise.all(analysisPromises);
+
+      const submitActionAnalysis = submitActionData
+        ? analysisResults[0]
+        : 'Report failed';
+      const submissionAnalysis = submissionData
+        ? analysisResults[submitActionData ? 1 : 0]
+        : 'Report failed';
+      const submitActionsSelectedAnalysis = submitActionsSelectedData
+        ? analysisResults[(submitActionData ? 1 : 0) + (submissionData ? 1 : 0)]
+        : 'Report failed';
+
+      // 6. Generate analysis prompt (only for successful reports)
+      const emptyProcessedData = {
+        records: [],
+        executedQuery: '',
+        recordSchema: {},
+        messageCount: 0,
+        queryName: '',
+        arguments: [],
+        timeRange: { from: '', to: '' },
+        timestamp: '',
+        totalRecords: 0,
+        validationNote: 'Report failed',
+      };
+
       const reportData = {
-        submitActionData: submitActionData.processedData,
-        submissionData: submissionData.processedData,
-        submitActionsSelectedData: submitActionsSelectedData.processedData,
-        submitActionFileLink: submitActionData.fileLink,
-        submissionFileLink: submissionData.fileLink,
-        submitActionsSelectedFileLink: submitActionsSelectedData.fileLink,
+        submitActionData: submitActionData?.processedData || emptyProcessedData,
+        submissionData: submissionData?.processedData || emptyProcessedData,
+        submitActionsSelectedData:
+          submitActionsSelectedData?.processedData || emptyProcessedData,
+        submitActionFileLink: submitActionData?.fileLink || 'N/A',
+        submissionFileLink: submissionData?.fileLink || 'N/A',
+        submitActionsSelectedFileLink:
+          submitActionsSelectedData?.fileLink || 'N/A',
       };
 
       const analysisPrompt = this.generatePrompt(
@@ -115,8 +175,33 @@ export class SumoReportMultiJobExecutor
           analysisPrompt.slice(0, 100),
       });
 
-      // 8. Send final message with download links
-      const finalMessage = `## 📊 Sumo Logic Multi-Report Analysis Complete
+      // 8. Check if we have any failures and create appropriate message
+      const hasFailures =
+        !submitActionData || !submissionData || !submitActionsSelectedData;
+      const successCount =
+        (submitActionData ? 1 : 0) +
+        (submissionData ? 1 : 0) +
+        (submitActionsSelectedData ? 1 : 0);
+
+      let finalMessage;
+
+      if (hasFailures) {
+        // Partial failure - inform user and provide available links
+        finalMessage = `## ⚠️ Sumo Logic Multi-Report Partial Results
+
+**Original Query:** "${intentData.originalUserPrompt}"
+
+**📁 Available Download Links:**
+${submitActionData ? `- [Submit Actions Report](${reportData.submitActionFileLink}) - ${submitActionData.processedData.records?.length || 0} records` : '- ❌ Submit Actions Report - Failed'}
+${submissionData ? `- [Form Submissions Report](${reportData.submissionFileLink}) - ${submissionData.processedData.records?.length || 0} records` : '- ❌ Form Submissions Report - Failed'}
+${submitActionsSelectedData ? `- [Submit Actions Selected Report](${reportData.submitActionsSelectedFileLink}) - ${submitActionsSelectedData.processedData.records?.length || 0} records` : '- ❌ Submit Actions Selected Report - Failed'}
+
+**⚠️ Notice:** ${3 - successCount} of 3 reports failed. We could not generate the complete compilation analysis, but you can download the successful reports above.
+
+*Partial results completed - ${successCount}/3 reports successful.*`;
+      } else {
+        // All successful - normal message
+        finalMessage = `## 📊 Sumo Logic Multi-Report Analysis Complete
 
 **Original Query:** "${intentData.originalUserPrompt}"
 
@@ -129,6 +214,7 @@ export class SumoReportMultiJobExecutor
 ${submitActionAnalysis.slice(0, 200)}...
 
 *Multi-report analysis completed successfully.*`;
+      }
 
       // 8. Send final message
       await this.chatManagerService.addMessageResponseFromRobot(
@@ -228,13 +314,14 @@ Provide a comprehensive analysis comparing these three reports. Highlight key in
       payload: robotContext,
     });
 
-    // Send prompt to robot for response
-    await this.chatManagerService.addMessageRequestRobotResponse(
+    // Send robot analysis response directly (like the main flow does)
+    await this.chatManagerService.addMessageResponseFromRobot(
       conversationId,
       {
         type: 'text/plain',
-        payload: `Please analyze the Sumo Logic reports for Form ${reportData.submitActionData.records?.[0]?.formId || 'Unknown'} and provide insights on the submit action and submission data patterns.`,
+        payload: `Based on the Sumo Logic reports analysis for Form ${reportData.submitActionData.records?.[0]?.formId || 'Unknown'}, I've provided the comprehensive analysis above with download links for detailed data review.`,
       },
+      'sumo-analysis-robot',
     );
   }
 }

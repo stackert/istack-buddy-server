@@ -15,6 +15,7 @@ export interface SumoJobParams {
     submitActionId?: string;
     submitActionType?: string;
     submissionId?: string;
+    authProviderId?: string;
     startDate: string;
     endDate: string;
   };

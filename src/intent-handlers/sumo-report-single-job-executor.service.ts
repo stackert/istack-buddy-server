@@ -91,6 +91,7 @@ export class SumoReportSingleJobExecutor
         submitActionId: intentData.subjects?.submitActionId?.[0] || '',
         submitActionType: intentData.subjects?.submitActionType?.[0] || '',
         submissionId: intentData.subjects?.submissionId?.[0] || '',
+        authProviderId: intentData.subjects?.authProviderId?.[0] || '',
         startDate: intentData.dateRange?.startDate || '',
         endDate: intentData.dateRange?.endDate || '',
       },

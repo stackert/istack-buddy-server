@@ -442,23 +442,27 @@ export class ChatManagerService {
    * Add robot prompt (triggers robot response)
    * Role: SYSTEM → ROBOT
    */
-  async addMessageRequestRobotResponse(
+  async _addMessageRequestRobotResponse(
     conversationId: string,
     content: TConversationMessageContent,
   ): Promise<void> {
-    // 1. Store message
-    const message = await this.storeMessage({
-      conversationId,
-      fromUserId: 'system',
-      content,
-      fromRole: UserRole.SYSTEM,
-      toRole: UserRole.ROBOT,
-    });
+    // Use existing working robot response mechanism
+    const currentRobot =
+      this.getCurrentRobot(conversationId) || 'SlackyOpenAiAgent';
 
-    // 2. Broadcast to all clients
-    await this.broadcastMessage(message);
+    // Convert content to text/plain for robot processing
+    const robotContent = {
+      type: 'text/plain' as const,
+      payload: content.payload as string,
+    };
 
-    // TODO: Trigger robot response processing
+    // THIS FUNCTION `_addMessageRequestRobotResponse(` WAS AN AI FUCK UP DOES NOT BELONG IN CODE
+
+    // await this.addMessageToGetRobotResponse(
+    //   conversationId,
+    //   robotContent,
+    //   '',
+    // );
   }
 
   /**
@@ -734,13 +738,16 @@ export class ChatManagerService {
    * Add message and trigger robot response with streaming to users
    * Perfect for user messages that should get robot responses
    */
-  async addMessageWithRobotResponse(
+  async addMessageToGetRobotResponse(
     conversationId: string,
     content:
       | TConversationMessageContentString
       | TConversationMessageContentMarkdown,
-    robotName: RobotName,
+    //    robotName: RobotName,
   ): Promise<IConversationMessage> {
+    const robotName =
+      this.getCurrentRobot(conversationId) || 'SlackyOpenAiAgent';
+
     // Add the user message first
     const userMessage = await this.storeMessage({
       conversationId,
@@ -753,34 +760,45 @@ export class ChatManagerService {
     // Get the specified robot
     const robot = this.robotService.getRobotByName(robotName);
     if (!robot) {
-      throw new Error(`Robot ${robotName} not found`);
+      throw new Error(
+        `Failed to get currentRobot from conversation, robot name: ${robotName}`,
+      );
     }
 
     // Create enhanced callbacks for robot response
     const robotCallbacks: IStreamingCallbacks = {
       conversationId,
-      onStreamStart: () => {},
-      onStreamChunkReceived: () => {},
-      onStreamFinished: () => {},
+      onStreamStart: (message) => {
+        console.log('onStreamStart', message);
+      },
+      onStreamChunkReceived: (chunk) => {
+        console.log('onStreamChunkReceived', chunk);
+      },
+      onStreamFinished: (message) => {
+        console.log('onStreamFinished', message);
+      },
       onFullMessageReceived: async (message) => {
-        // Save robot response to conversation
-        await this.storeMessage({
-          content: message.content,
+        // Add robot response to conversation and broadcast
+        await this.addMessageResponseFromRobot(
           conversationId,
-          fromUserId: null,
-          fromRole: UserRole.ROBOT,
-          toRole: UserRole.USER,
-        });
+          message.content,
+          robot.name,
+        );
       },
       onError: (error) => {
         this.logger.error(`Robot ${robotName} error:`, error);
       },
     };
 
-    // Trigger robot response
+    // Trigger robot response with conversation history
     await (robot as any).acceptMessageStreamResponse(
       userMessage,
       robotCallbacks,
+      () => {
+        const conversationList =
+          this.chatConversationListService.getConversationById(conversationId);
+        return conversationList ? conversationList.getAllChatMessages() : [];
+      },
     );
 
     return userMessage;

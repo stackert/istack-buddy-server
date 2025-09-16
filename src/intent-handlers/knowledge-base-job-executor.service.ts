@@ -65,32 +65,24 @@ export class KnowledgeBaseJobExecutor implements IntentHandler {
       const subIntent = intentData.subIntents?.[0] || 'topResults';
       const searchResults = await this.fetchSearchResults(preQuery, subIntent);
 
-      // 3. Format search results into robot prompt
-      const robotPrompt = this.formatSearchResultsIntoRobotPrompt(
+      // 3. Format search results into robot context
+      const robotContext = this.formatSearchResultsIntoRobotContext(
         searchResults,
         preQuery,
       );
-      this.logger.log('Robot prompt prepared (noOp for now):', robotPrompt);
 
-      // 4. Send search results summary to conversation
-      await this.sendSearchResultsToConversation(
-        searchResults,
-        conversationId,
-        intentData.originalUserPrompt,
-      );
-
-      // 5. Add context for robot processing
+      // 4. Add robot context to conversation
       await this.chatManagerService.addMessageAsContext(conversationId, {
         type: 'context/document',
-        payload: robotPrompt,
+        payload: robotContext,
       });
 
-      // 6. Send robot prompt to get user-facing response
-      await this.chatManagerService.addMessageRequestRobotResponse(
+      // 6. Request robot response with the new context
+      await this.chatManagerService.addMessageToGetRobotResponse(
         conversationId,
         {
           type: 'text/plain',
-          payload: `Please analyze these knowledge base search results and provide a helpful summary for the user's query: "${intentData.originalUserPrompt}"`,
+          payload: `Please analyze the knowledge base search results and provide a helpful answer to: "${intentData.originalUserPrompt}"`,
         },
       );
 
@@ -168,7 +160,7 @@ export class KnowledgeBaseJobExecutor implements IntentHandler {
     }
   }
 
-  private formatSearchResultsIntoRobotPrompt(
+  private formatSearchResultsIntoRobotContext(
     searchResults: any,
     preQuery: any,
   ): string {
@@ -264,7 +256,13 @@ __individualSearch.${knowledgeBase}[${index}]_END__
 
     prompt += `___SEARCH_RESULTS_END__
 
-__USER_ORIGINAL_QUERY_START__
+`;
+
+    return prompt;
+  }
+
+  private formatUserOriginalQuery(preQuery: any): string {
+    return `__USER_ORIGINAL_QUERY_START__
 ${preQuery.originalText || 'No original query available'}
 __USER_ORIGINAL_QUERY_END__
 
@@ -273,40 +271,6 @@ ${preQuery.normalizedText || 'No normalized query available'}
 __USER_NORMALIZED_QUERY_END__
 
 `;
-
-    return prompt;
-  }
-
-  private async sendSearchResultsToConversation(
-    searchResults: any,
-    conversationId: string,
-    originalPrompt: string,
-  ): Promise<void> {
-    // Create combined markdown message with summary and structured data
-    const summary = this.createSearchResultsSummary(
-      searchResults,
-      originalPrompt,
-    );
-    const structuredData = JSON.stringify(searchResults, null, 2);
-
-    const combinedMarkdown = `${summary}
-
----
-
-**Raw Search Results:**
-\`\`\`json
-${structuredData}
-\`\`\``;
-
-    // Send single markdown message (user-only)
-    await this.chatManagerService.addMessageSystemNotification(conversationId, {
-      type: 'text/markdown',
-      payload: combinedMarkdown,
-    });
-
-    this.logger.log(
-      `Sent knowledge base search results to conversation ${conversationId}`,
-    );
   }
 
   private createSearchResultsSummary(
@@ -389,29 +353,5 @@ ${structuredData}
 
     summary += `*Knowledge base search completed successfully.*`;
     return summary;
-  }
-
-  private async sendPromptToRobotWithCallbacks(
-    conversationId: string,
-    robotPrompt: string,
-    callbacks: IStreamingCallbacks,
-  ): Promise<void> {
-    this.logger.log('Sending prompt to KnobbyOpenAiSearch robot via callbacks');
-
-    // Add the prompt to conversation as context
-    await this.chatManagerService.addMessageAsContext(conversationId, {
-      type: 'context/document',
-      payload: robotPrompt,
-    });
-
-    // Use the chat manager to send prompt to robot with streaming response back to Slack
-    await this.chatManagerService.handleRobotStreamingResponse(
-      conversationId,
-      RobotName.KNOBBY_OPENAI_SEARCH,
-      robotPrompt,
-      callbacks,
-    );
-
-    this.logger.log('Robot response sent via callbacks');
   }
 }
