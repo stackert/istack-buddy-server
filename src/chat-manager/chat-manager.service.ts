@@ -400,7 +400,7 @@ export class ChatManagerService {
    * Send system message (acknowledgments, status updates, progress notifications)
    * Role: SYSTEM → USER
    */
-  async addSystemMessage(
+  async addMessageSystemNotification(
     conversationId: string,
     content: TConversationMessageContent,
   ): Promise<void> {
@@ -421,7 +421,7 @@ export class ChatManagerService {
    * Add context for robot processing
    * Role: SYSTEM → ROBOT
    */
-  async addContext(
+  async addMessageAsContext(
     conversationId: string,
     content: TConversationMessageContent,
   ): Promise<void> {
@@ -442,7 +442,7 @@ export class ChatManagerService {
    * Add robot prompt (triggers robot response)
    * Role: SYSTEM → ROBOT
    */
-  async addRobotPrompt(
+  async addMessageRequestRobotResponse(
     conversationId: string,
     content: TConversationMessageContent,
   ): Promise<void> {
@@ -465,7 +465,7 @@ export class ChatManagerService {
    * Add robot response message - new conversation method
    * Role: ROBOT → USER
    */
-  async addRobotMessage(
+  async addMessageResponseFromRobot(
     conversationId: string,
     content: TConversationMessageContent,
     fromUserId: string = 'robot',
@@ -1122,13 +1122,19 @@ export class ChatManagerService {
     // STEP 1: GET MESSAGE, ADD TO CONVERSATION, BROADCAST
     await this.addMessageFromUser(conversationId, messageText, userId);
 
-    // STEP 2: PARSE INTENT
-    const intentResult =
-      await this.intentParsingService.parsePromptIntent(messageText);
+    // STEP 2: PARSE INTENT (with conversation context)
+    const conversationContext = {
+      currentRobot: this.getCurrentRobot(conversationId) || undefined,
+    };
+
+    const intentResult = await this.intentParsingService.parsePromptIntent(
+      messageText,
+      conversationContext,
+    );
 
     if (!('error' in intentResult)) {
       // STEP 3: ADD INTENT TO CONVERSATION, BROADCAST
-      await this.addSystemMessage(conversationId, {
+      await this.addMessageSystemNotification(conversationId, {
         type: 'text/plain',
         payload: `🎯 **Intent Parsed**: ${intentResult.intent}\nSubIntents: ${intentResult.intentData.subIntents?.join(', ') || 'none'}`,
       });
@@ -1156,6 +1162,89 @@ export class ChatManagerService {
    */
   async routeIntent(intentData: any) {
     return this.intentRouterService.routeIntent(intentData);
+  }
+
+  /**
+   * Get last intent from conversation history
+   * Used by intent parser for context
+   */
+  getLastIntent(conversationId: string): string | null {
+    // Get all messages and filter for intent parsing messages
+    const allMessages = this.chatConversationListService.getFilteredMessages(
+      conversationId,
+      {},
+    );
+
+    // Look for the most recent intent parsing message
+    for (let i = allMessages.length - 1; i >= 0; i--) {
+      const message = allMessages[i];
+      if (
+        typeof message.content.payload === 'string' &&
+        message.content.payload.includes('🎯 **Intent Parsed**:')
+      ) {
+        // Extract intent from the payload
+        const match = message.content.payload.match(
+          /Intent Parsed\*\*:\s*(\w+)/,
+        );
+        return match ? match[1] : null;
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Get last subjects from conversation history
+   * Used by intent parser for context
+   */
+  getLastSubjects(conversationId: string): any {
+    // Get all messages and filter for context types
+    const allMessages = this.chatConversationListService.getFilteredMessages(
+      conversationId,
+      {},
+    );
+
+    // Look for the most recent context message with subjects
+    for (let i = allMessages.length - 1; i >= 0; i--) {
+      const message = allMessages[i];
+      if (
+        message.content.type === 'context/dynamic' ||
+        message.content.type === 'context/dynamic-form' ||
+        message.content.type === 'sumo-search/report'
+      ) {
+        try {
+          const contextData = JSON.parse(message.content.payload as string);
+          // Extract subjects from context data
+          return contextData.subjects || contextData.entityId || null;
+        } catch (error) {
+          // Continue searching if JSON parse fails
+          continue;
+        }
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Get current robot from conversation history
+   * Used by intent parser for context
+   */
+  getCurrentRobot(conversationId: string): string | null {
+    const messages = this.chatConversationListService.getFilteredMessages(
+      conversationId,
+      {},
+    );
+
+    // Look for the most recent robot message
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const message = messages[i];
+      if (message.fromRole === UserRole.ROBOT) {
+        return message.authorUserId || 'unknown-robot';
+      }
+    }
+
+    return null;
   }
 
   /**

@@ -56,10 +56,13 @@ export class SumoReportMultiJobExecutor
       const baseParams = this.parseBaseParameters(intentData);
 
       // 2. Send immediate acknowledgment
-      await this.chatManagerService.addSystemMessage(conversationId, {
-        type: 'text/plain',
-        payload: `🔄 **Sumo Analysis Request Received**\n\nForm ID: ${baseParams.formId}\nDate Range: ${baseParams.startDate} to ${baseParams.endDate}\n\nStarting multiple reports...`,
-      });
+      await this.chatManagerService.addMessageSystemNotification(
+        conversationId,
+        {
+          type: 'text/plain',
+          payload: `🔄 **Sumo Analysis Request Received**\n\nForm ID: ${baseParams.formId}\nDate Range: ${baseParams.startDate} to ${baseParams.endDate}\n\nStarting multiple reports...`,
+        },
+      );
 
       // 3. Run all three reports in parallel
       const [submitActionData, submissionData, submitActionsSelectedData] =
@@ -128,7 +131,7 @@ ${submitActionAnalysis.slice(0, 200)}...
 *Multi-report analysis completed successfully.*`;
 
       // 8. Send final message
-      await this.chatManagerService.addRobotMessage(
+      await this.chatManagerService.addMessageResponseFromRobot(
         conversationId,
         {
           type: 'text/plain',
@@ -142,10 +145,13 @@ ${submitActionAnalysis.slice(0, 200)}...
       this.logger.error(`Sumo analysis job execution failed: ${error.message}`);
 
       // Send error as system message
-      await this.chatManagerService.addSystemMessage(conversationId, {
-        type: 'text/plain',
-        payload: `❌ **Sumo Analysis Error**: ${error.message}`,
-      });
+      await this.chatManagerService.addMessageSystemNotification(
+        conversationId,
+        {
+          type: 'text/plain',
+          payload: `❌ **Sumo Analysis Error**: ${error.message}`,
+        },
+      );
     }
   }
 
@@ -216,20 +222,19 @@ Provide a comprehensive analysis comparing these three reports. Highlight key in
     robotContext: string,
     reportData: MultiReportData,
   ): Promise<void> {
-    // Send context to robot (robot-only message)
-    await this.chatManagerService.addMessageContextNoResponse(conversationId, {
+    // Send context to robot
+    await this.chatManagerService.addMessageAsContext(conversationId, {
       type: 'context/document',
       payload: robotContext,
     });
 
     // Send prompt to robot for response
-    await this.chatManagerService.addMessageWithRobotResponse(
+    await this.chatManagerService.addMessageRequestRobotResponse(
       conversationId,
       {
-        type: 'text/markdown',
+        type: 'text/plain',
         payload: `Please analyze the Sumo Logic reports for Form ${reportData.submitActionData.records?.[0]?.formId || 'Unknown'} and provide insights on the submit action and submission data patterns.`,
       },
-      RobotName.KNOBBY_OPENAI_SEARCH,
     );
   }
 }

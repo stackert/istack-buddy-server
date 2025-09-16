@@ -38,10 +38,13 @@ export class SumoReportSingleJobExecutor
       const queryParams = this.parseQueryParameters(intentData);
 
       // 2. Send immediate acknowledgment
-      await this.chatManagerService.addSystemMessage(conversationId, {
-        type: 'text/plain',
-        payload: `🔄 **Sumo Report Request Received**\n\nQuery: ${queryParams.queryName}\nForm ID: ${queryParams.subject.formId}\nSubmit Action Type: ${queryParams.subject.submitActionType}\nDate Range: ${queryParams.subject.startDate} to ${queryParams.subject.endDate}\n\nSubmitting job...`,
-      });
+      await this.chatManagerService.addMessageSystemNotification(
+        conversationId,
+        {
+          type: 'text/plain',
+          payload: `🔄 **Sumo Report Request Received**\n\nQuery: ${queryParams.queryName}\nForm ID: ${queryParams.subject.formId}\nSubmit Action Type: ${queryParams.subject.submitActionType}\nDate Range: ${queryParams.subject.startDate} to ${queryParams.subject.endDate}\n\nSubmitting job...`,
+        },
+      );
 
       // 3. Submit single job and fetch data
       const fileId = await this.submitAndFetchData(queryParams);
@@ -70,10 +73,13 @@ export class SumoReportSingleJobExecutor
       this.logger.error(`Sumo report job execution failed: ${error.message}`);
 
       // Send error as system message
-      await this.chatManagerService.addSystemMessage(conversationId, {
-        type: 'text/plain',
-        payload: `❌ **Sumo Report Error**: ${error.message}`,
-      });
+      await this.chatManagerService.addMessageSystemNotification(
+        conversationId,
+        {
+          type: 'text/plain',
+          payload: `❌ **Sumo Report Error**: ${error.message}`,
+        },
+      );
     }
   }
 
@@ -118,7 +124,7 @@ ${observationText}
 *Report generated successfully.*`;
 
       // Send completion message
-      await this.chatManagerService.addRobotMessage(
+      await this.chatManagerService.addMessageResponseFromRobot(
         conversationId,
         {
           type: 'text/plain',

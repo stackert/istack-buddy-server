@@ -287,10 +287,13 @@ export class DevDebugChatClientController {
       };
 
       // Add intent to conversation first (so it appears in chat)
-      await this.chatManagerService.addSystemMessage(conversationId, {
-        type: 'text/plain',
-        payload: `🎯 **Intent Submitted**: ${intentResult.intent}\n\`\`\`json\n${JSON.stringify(intentResult.intentData, null, 2)}\n\`\`\``,
-      });
+      await this.chatManagerService.addMessageSystemNotification(
+        conversationId,
+        {
+          type: 'text/plain',
+          payload: `🎯 **Intent Submitted**: ${intentResult.intent}\n\`\`\`json\n${JSON.stringify(intentResult.intentData, null, 2)}\n\`\`\``,
+        },
+      );
 
       // Route through intent router (no callbacks needed)
       await this.intentRouterService.routeIntent(intentDataWithConversation);

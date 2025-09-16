@@ -45,10 +45,13 @@ export class KnowledgeBaseJobExecutor implements IntentHandler {
 
     try {
       // Send immediate acknowledgment
-      await this.chatManagerService.addSystemMessage(conversationId, {
-        type: 'text/plain',
-        payload: `🔄 **Knowledge Base Search Request Received**\n\nSearching for: ${intentData.originalUserPrompt}\nProcessing query...`,
-      });
+      await this.chatManagerService.addMessageSystemNotification(
+        conversationId,
+        {
+          type: 'text/plain',
+          payload: `🔄 **Knowledge Base Search Request Received**\n\nSearching for: ${intentData.originalUserPrompt}\nProcessing query...`,
+        },
+      );
 
       // 1. Fetch preQuery using service wrapper
       const query = intentData.originalUserPrompt;
@@ -76,13 +79,20 @@ export class KnowledgeBaseJobExecutor implements IntentHandler {
         intentData.originalUserPrompt,
       );
 
-      // 5. For dev/debug only: Send robot prompt to conversation for debugging
-      if (process.env.NODE_ENV === 'development') {
-        await this.chatManagerService.addMessageUserOnly(conversationId, {
-          type: 'context/document',
-          payload: robotPrompt,
-        });
-      }
+      // 5. Add context for robot processing
+      await this.chatManagerService.addMessageAsContext(conversationId, {
+        type: 'context/document',
+        payload: robotPrompt,
+      });
+
+      // 6. Send robot prompt to get user-facing response
+      await this.chatManagerService.addMessageRequestRobotResponse(
+        conversationId,
+        {
+          type: 'text/plain',
+          payload: `Please analyze these knowledge base search results and provide a helpful summary for the user's query: "${intentData.originalUserPrompt}"`,
+        },
+      );
 
       this.logger.log('Knowledge base search workflow completed');
     } catch (error) {
@@ -289,7 +299,7 @@ ${structuredData}
 \`\`\``;
 
     // Send single markdown message (user-only)
-    await this.chatManagerService.addMessageUserOnly(conversationId, {
+    await this.chatManagerService.addMessageSystemNotification(conversationId, {
       type: 'text/markdown',
       payload: combinedMarkdown,
     });
@@ -389,7 +399,7 @@ ${structuredData}
     this.logger.log('Sending prompt to KnobbyOpenAiSearch robot via callbacks');
 
     // Add the prompt to conversation as context
-    await this.chatManagerService.addMessageUserOnly(conversationId, {
+    await this.chatManagerService.addMessageAsContext(conversationId, {
       type: 'context/document',
       payload: robotPrompt,
     });

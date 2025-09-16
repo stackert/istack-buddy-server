@@ -40,10 +40,13 @@ export class ContextDynamicJobExecutor implements IntentHandler {
       // Send immediate acknowledgment to BOTH dev/debug AND Slack
       const ackMessage = `🔄 **Context Dynamic Request Received**\n\nProcessing: ${intentData.originalUserPrompt}\nFetching data...`;
 
-      await this.chatManagerService.addSystemMessage(conversationId, {
-        type: 'text/plain',
-        payload: ackMessage,
-      });
+      await this.chatManagerService.addMessageSystemNotification(
+        conversationId,
+        {
+          type: 'text/plain',
+          payload: ackMessage,
+        },
+      );
 
       const subIntent = intentData.subIntents?.[0];
       const subjects = intentData.subjects || {};
@@ -106,7 +109,7 @@ export class ContextDynamicJobExecutor implements IntentHandler {
     );
 
     // Send the context as a structured message
-    await this.chatManagerService.addContext(conversationId, {
+    await this.chatManagerService.addMessageAsContext(conversationId, {
       type: 'context/dynamic-form',
       payload: {
         formRecord: form,
@@ -121,7 +124,7 @@ export class ContextDynamicJobExecutor implements IntentHandler {
     });
 
     // Also send a human-readable summary
-    await this.chatManagerService.addSystemMessage(conversationId, {
+    await this.chatManagerService.addMessageSystemNotification(conversationId, {
       type: 'text/plain',
       payload: contextSummary,
     });
@@ -266,7 +269,7 @@ export class ContextDynamicJobExecutor implements IntentHandler {
     );
 
     // Send to dev/debug conversation
-    await this.chatManagerService.addSystemMessage(conversationId, {
+    await this.chatManagerService.addMessageSystemNotification(conversationId, {
       type: 'text/plain',
       payload: richFormContextMessage,
     });
@@ -395,11 +398,7 @@ export class ContextDynamicJobExecutor implements IntentHandler {
       }),
     };
 
-    await this.chatManagerService.addRobotMessage(
-      conversationId,
-      content,
-      'context-dynamic-robot',
-    );
+    await this.chatManagerService.addMessageAsContext(conversationId, content);
 
     this.logger.log(
       `Sent ${entityType} context data to conversation ${conversationId}`,
