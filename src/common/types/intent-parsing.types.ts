@@ -6,21 +6,27 @@ export interface IntentParsingResponse {
 }
 
 export interface IntentData {
+  conversationId: string; // REQUIRED - never have intent without conversation
   originalUserPrompt: string;
-  subIntents: string[]; // MISSING from current types - MUST ADD
+  subIntents: string[];
   subjects?: {
     formId?: string[];
     submissionId?: string[];
+    submitActionId?: string[];
+    submitActionType?: string[];
+    accountId?: string[];
+    authProviderId?: string[];
     case?: string[];
     jira?: string[];
-    account?: string[];
-    authProvider?: string[];
-    startDate?: string[];
-    endDate?: string[];
-    // Additional subjects may be added as needed
+    // NOTE: startDate/endDate moved to separate dateRange object per API spec
     [key: string]: string[] | undefined;
   };
-  [key: string]: any; // Allow additional robot-specific parameters
+  dateRange?: {
+    startDate?: string; // ISO8601 format in separate DateRangeDto
+    endDate?: string; // ISO8601 format in separate DateRangeDto
+  };
+  // NOTE: currentRobot, lastRobot retrieved from conversation.getCurrentRobot()
+  [key: string]: any; // Allow additional parameters
 }
 
 export interface IntentParsingError {

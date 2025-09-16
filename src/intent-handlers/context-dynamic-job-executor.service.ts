@@ -28,38 +28,21 @@ export class ContextDynamicJobExecutor implements IntentHandler {
     ];
   }
 
-  async executeIntent(
-    intentData: any,
-    callbacks: IStreamingCallbacks,
-  ): Promise<void> {
+  async executeIntent(intentData: any): Promise<void> {
     this.logger.log('Starting context-dynamic workflow');
 
-    const conversationId = (callbacks as any).conversationId;
+    const conversationId = intentData.conversationId;
     if (!conversationId) {
-      throw new Error('conversationId is required in callbacks');
+      throw new Error('conversationId is required in intentData');
     }
 
     try {
       // Send immediate acknowledgment to BOTH dev/debug AND Slack
       const ackMessage = `🔄 **Context Dynamic Request Received**\n\nProcessing: ${intentData.originalUserPrompt}\nFetching data...`;
 
-      await this.chatManagerService.addMessage({
-        conversationId,
-        fromUserId: 'context-dynamic-robot',
-        content: {
-          type: 'text/plain',
-          payload: ackMessage,
-        },
-        fromRole: UserRole.ROBOT,
-        toRole: UserRole.USER,
-      });
-
-      // ALSO send acknowledgment to Slack via callbacks
-      await callbacks.onFullMessageReceived({
-        content: {
-          type: 'text/plain',
-          payload: ackMessage,
-        },
+      await this.chatManagerService.addSystemMessage(conversationId, {
+        type: 'text/plain',
+        payload: ackMessage,
       });
 
       const subIntent = intentData.subIntents?.[0];
@@ -67,27 +50,16 @@ export class ContextDynamicJobExecutor implements IntentHandler {
 
       switch (subIntent) {
         case 'getFormContext':
-          await this.handleFormContext(
-            subjects,
-            conversationId,
-            intentData,
-            callbacks,
-          );
+          await this.handleFormContext(subjects, conversationId, intentData);
           break;
         case 'getAccountContext':
-          await this.handleAccountContext(
-            subjects,
-            conversationId,
-            intentData,
-            callbacks,
-          );
+          await this.handleAccountContext(subjects, conversationId, intentData);
           break;
         case 'getAuthProviderContext':
           await this.handleAuthProviderContext(
             subjects,
             conversationId,
             intentData,
-            callbacks,
           );
           break;
         default:
@@ -95,7 +67,15 @@ export class ContextDynamicJobExecutor implements IntentHandler {
       }
     } catch (error) {
       this.logger.error(`Context-dynamic workflow failed: ${error.message}`);
-      callbacks.onError?.(error);
+
+      // Send error to conversation
+      await this.chatManagerService.addMessageErrorNotification(
+        conversationId,
+        {
+          type: 'text/plain',
+          payload: `❌ **Context Dynamic Error**: ${error.message}`,
+        },
+      );
     }
   }
 
@@ -108,16 +88,13 @@ export class ContextDynamicJobExecutor implements IntentHandler {
     const form = formContext.data || formContext.form;
 
     if (!form) {
-      await this.chatManagerService.addMessage({
-        content: {
+      await this.chatManagerService.addMessageErrorNotification(
+        conversationId,
+        {
           type: 'text/plain',
           payload: `No form context found for formId: ${formId}`,
         },
-        conversationId: conversationId,
-        fromUserId: null,
-        fromRole: UserRole.SYSTEM,
-        toRole: UserRole.USER,
-      });
+      );
       return;
     }
 
@@ -129,36 +106,24 @@ export class ContextDynamicJobExecutor implements IntentHandler {
     );
 
     // Send the context as a structured message
-    await this.chatManagerService.addMessage({
-      content: {
-        type: 'context/dynamic-form',
-        payload: {
-          formRecord: form,
-          submitActionIds: form.submitActions?.map((action: any) =>
-            action.submitActionId?.toString(),
-          ),
-          emails: [
-            ...(form.confirmationEmails?.map((email: any) => email.name) || []),
-            ...(form.notificationEmails?.map((email: any) => email.name) || []),
-          ],
-        },
+    await this.chatManagerService.addContext(conversationId, {
+      type: 'context/dynamic-form',
+      payload: {
+        formRecord: form,
+        submitActionIds: form.submitActions?.map((action: any) =>
+          action.submitActionId?.toString(),
+        ),
+        emails: [
+          ...(form.confirmationEmails?.map((email: any) => email.name) || []),
+          ...(form.notificationEmails?.map((email: any) => email.name) || []),
+        ],
       },
-      conversationId: conversationId,
-      fromUserId: null,
-      fromRole: UserRole.SYSTEM,
-      toRole: UserRole.USER,
     });
 
     // Also send a human-readable summary
-    await this.chatManagerService.addMessage({
-      content: {
-        type: 'text/plain',
-        payload: contextSummary,
-      },
-      conversationId: conversationId,
-      fromUserId: null,
-      fromRole: UserRole.SYSTEM,
-      toRole: UserRole.USER,
+    await this.chatManagerService.addSystemMessage(conversationId, {
+      type: 'text/plain',
+      payload: contextSummary,
     });
 
     this.logger.log(
@@ -262,7 +227,6 @@ export class ContextDynamicJobExecutor implements IntentHandler {
     subjects: any,
     conversationId: string,
     intentData: any,
-    callbacks: any,
   ): Promise<void> {
     const formIdString = subjects.formId?.[0];
 
@@ -302,31 +266,18 @@ export class ContextDynamicJobExecutor implements IntentHandler {
     );
 
     // Send to dev/debug conversation
-    await this.chatManagerService.addMessage({
-      conversationId,
-      fromUserId: 'context-dynamic-robot',
-      content: {
-        type: 'text/plain',
-        payload: richFormContextMessage,
-      },
-      fromRole: UserRole.SYSTEM,
-      toRole: UserRole.USER,
+    await this.chatManagerService.addSystemMessage(conversationId, {
+      type: 'text/plain',
+      payload: richFormContextMessage,
     });
 
-    // ALSO send rich data to Slack via callbacks
-    await callbacks.onFullMessageReceived({
-      content: {
-        type: 'text/plain',
-        payload: richFormContextMessage,
-      },
-    });
+    // Note: Message sent via addMessage() will be broadcasted to all clients including Slack
   }
 
   private async handleAccountContext(
     subjects: any,
     conversationId: string,
     intentData: any,
-    callbacks: any,
   ): Promise<void> {
     const accountIdString = subjects.accountId?.[0];
 
@@ -377,7 +328,6 @@ export class ContextDynamicJobExecutor implements IntentHandler {
     subjects: any,
     conversationId: string,
     intentData: any,
-    callbacks: any,
   ): Promise<void> {
     const authProviderIdString = subjects.authProviderId?.[0];
 
@@ -445,13 +395,11 @@ export class ContextDynamicJobExecutor implements IntentHandler {
       }),
     };
 
-    await this.chatManagerService.addMessage({
+    await this.chatManagerService.addRobotMessage(
       conversationId,
-      fromUserId: 'context-dynamic-robot',
       content,
-      fromRole: UserRole.ROBOT,
-      toRole: UserRole.USER,
-    });
+      'context-dynamic-robot',
+    );
 
     this.logger.log(
       `Sent ${entityType} context data to conversation ${conversationId}`,

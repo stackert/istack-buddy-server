@@ -35,28 +35,19 @@ export class KnowledgeBaseJobExecutor implements IntentHandler {
     ];
   }
 
-  async executeIntent(
-    intentData: any,
-    callbacks: IStreamingCallbacks,
-  ): Promise<void> {
+  async executeIntent(intentData: any): Promise<void> {
     this.logger.log('Starting knowledge base search workflow');
 
-    const conversationId = callbacks.conversationId;
+    const conversationId = intentData.conversationId;
     if (!conversationId) {
-      throw new Error('conversationId is required in callbacks');
+      throw new Error('conversationId is required in intentData');
     }
 
     try {
       // Send immediate acknowledgment
-      await this.chatManagerService.addMessage({
-        conversationId,
-        fromUserId: 'knowledge-base-robot',
-        content: {
-          type: 'text/plain',
-          payload: `🔄 **Knowledge Base Search Request Received**\n\nSearching for: ${intentData.originalUserPrompt}\nProcessing query...`,
-        },
-        fromRole: UserRole.ROBOT,
-        toRole: UserRole.USER,
+      await this.chatManagerService.addSystemMessage(conversationId, {
+        type: 'text/plain',
+        payload: `🔄 **Knowledge Base Search Request Received**\n\nSearching for: ${intentData.originalUserPrompt}\nProcessing query...`,
       });
 
       // 1. Fetch preQuery using service wrapper
@@ -96,7 +87,15 @@ export class KnowledgeBaseJobExecutor implements IntentHandler {
       this.logger.log('Knowledge base search workflow completed');
     } catch (error) {
       this.logger.error(`Knowledge base search failed: ${error.message}`);
-      callbacks.onError?.(error);
+
+      // Send error to conversation
+      await this.chatManagerService.addMessageErrorNotification(
+        conversationId,
+        {
+          type: 'text/plain',
+          payload: `❌ **Knowledge Base Search Error**: ${error.message}`,
+        },
+      );
     }
   }
 

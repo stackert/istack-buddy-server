@@ -1,7 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { IntentHandler } from '../interfaces/intent-handler.interface';
-import { IntentParsingResponse } from '../types/intent-parsing.types';
-import { IStreamingCallbacks } from '../../robots/types';
+import {
+  IntentParsingResponse,
+  IntentData,
+} from '../types/intent-parsing.types';
 
 @Injectable()
 export class IntentRouterService {
@@ -20,18 +22,19 @@ export class IntentRouterService {
 
   /**
    * Route intent to appropriate intent handler
+   * conversationId comes from intentData.conversationId
    */
   async routeIntent(
-    intentResult: IntentParsingResponse,
-    callbacks: IStreamingCallbacks,
+    intentData: IntentData & { intent: string },
   ): Promise<void> {
-    const { intent, intentData } = intentResult;
+    const { intent } = intentData;
 
     this.logger.log(`=== INTENT ROUTER: Processing intent '${intent}' ===`);
     this.logger.log(
       `Available handlers: [${Array.from(this.intentHandlers.keys()).join(', ')}]`,
     );
     this.logger.log(`Intent data: ${JSON.stringify(intentData, null, 2)}`);
+    this.logger.log(`Total registered handlers: ${this.intentHandlers.size}`);
 
     // Check if we have a specialized intent handler
     const handler = this.intentHandlers.get(intent);
@@ -40,11 +43,16 @@ export class IntentRouterService {
       this.logger.log(
         `✅ FOUND INTENT HANDLER: Routing intent '${intent}' to intent handler`,
       );
-      await handler.executeIntent(intentData, callbacks);
+      // Handler will send its own acknowledgment and messages
+      await handler.executeIntent(intentData);
     } else {
       this.logger.error(
         `❌ NO INTENT HANDLER: No handler registered for intent '${intent}'`,
       );
+      this.logger.error(
+        `Available intents: ${Array.from(this.intentHandlers.keys()).join(', ')}`,
+      );
+      this.logger.error(`Requested intent: '${intent}'`);
       throw new Error(`No intent handler registered for intent: ${intent}`);
     }
   }

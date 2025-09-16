@@ -9,7 +9,10 @@ import {
   STORAGE_CLASS,
 } from '../file-manager/file-manager.service';
 import { IntentRouterService } from '../common/services/intent-router.service';
-import { IntentParsingResponse } from '../common/types/intent-parsing.types';
+import {
+  IntentParsingResponse,
+  IntentData,
+} from '../common/types/intent-parsing.types';
 
 @Injectable()
 export class DevDebugService {
@@ -220,19 +223,17 @@ export class DevDebugService {
 
     try {
       // Create intent data for Sumo report
-      const intentResult: IntentParsingResponse = {
-        devDebugRecommendedExecutor: 'SumoReportSingleJobExecutor',
-        devDebugRecommendedRobot: 'SlackyOpenAiAgent',
-        intent: 'generateSumoReport',
-        intentData: {
-          originalUserPrompt:
-            'Generate Sumo report for form 6276978 from Sept 1-4',
-          subIntents: ['searchSumoLogSubmissionErrors'],
-          subjects: {
-            formId: ['6276978'],
-            startDate: ['2025-09-01'],
-            endDate: ['2025-09-04'],
-          },
+      const intentData: IntentData = {
+        conversationId: 'dev-debug-test-conversation',
+        originalUserPrompt:
+          'Generate Sumo report for form 6276978 from Sept 1-4',
+        subIntents: ['submitActionReport'],
+        subjects: {
+          formId: ['6276978'],
+        },
+        dateRange: {
+          startDate: '2025-09-01',
+          endDate: '2025-09-04',
         },
       };
 
@@ -259,11 +260,15 @@ export class DevDebugService {
         'Testing intent router with Sumo report intent',
         'DevDebugService.runSumoReport',
         undefined,
-        { intent: intentResult.intent },
+        { intent: intentData.originalUserPrompt },
       );
 
       // Route through intent router (should call SumoReportJobExecutor)
-      await this.intentRouterService.routeIntent(intentResult, noOpCallbacks);
+      const intentDataWithIntent = {
+        ...intentData,
+        intent: 'generateSumoReport',
+      };
+      await this.intentRouterService.routeIntent(intentDataWithIntent);
 
       return {
         success: true,

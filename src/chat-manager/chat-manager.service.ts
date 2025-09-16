@@ -37,6 +37,18 @@ import {
   Participant,
 } from './interfaces/message.interface';
 
+// Client Registration Interfaces
+interface ConversationClient {
+  type: 'slack' | 'websocket';
+  conversationId: string;
+  clientId: string;
+  sendMessage: (content: { type: 'text'; payload: string }) => Promise<void>;
+  decorateMessage: (message: IConversationMessage) => {
+    type: 'text';
+    payload: string;
+  };
+}
+
 @Injectable()
 export class ChatManagerService {
   private readonly logger = new Logger(ChatManagerService.name);
@@ -46,6 +58,9 @@ export class ChatManagerService {
   private participants: Map<string, Participant[]> = new Map();
   private conversationFormIds: Map<string, string> = new Map(); // Store formId associations
   private gateway: any; // Will be set by the gateway
+
+  // Client Registration System - track all clients per conversation
+  private conversationClients: Map<string, ConversationClient[]> = new Map();
   private readonly intentParsingService: IntentParsingService;
 
   constructor(
@@ -226,7 +241,13 @@ export class ChatManagerService {
         );
       } else {
         // Route through intent router (handles both intent handlers and robots)
-        await this.intentRouterService.routeIntent(intentResult, callbacks);
+        // Add intent and conversationId to intentData and route
+        const intentDataWithConversation = {
+          ...intentResult.intentData,
+          intent: intentResult.intent,
+          conversationId: conversationId,
+        };
+        await this.intentRouterService.routeIntent(intentDataWithConversation);
       }
     } catch (error) {
       this.logger.error(
@@ -372,14 +393,167 @@ export class ChatManagerService {
   }
 
   /**
-   * Add a message to a conversation
-   * This is the core method - all messages go through here
-   *
-   * @deprecated Use addMessageContextNoResponse() for robot-only messages or addMessageWithRobotResponse() for robot conversations instead
+   * ConversationManager Methods - as specified in the plan
    */
-  async addMessage<
-    T extends TConversationMessageContent = TConversationMessageContent,
-  >(createMessageDto: CreateMessageDto): Promise<IConversationMessage<T>> {
+
+  /**
+   * Send system message (acknowledgments, status updates, progress notifications)
+   * Role: SYSTEM → USER
+   */
+  async addSystemMessage(
+    conversationId: string,
+    content: TConversationMessageContent,
+  ): Promise<void> {
+    // 1. Store message
+    const message = await this.storeMessage({
+      conversationId,
+      fromUserId: 'system',
+      content,
+      fromRole: UserRole.SYSTEM,
+      toRole: UserRole.USER,
+    });
+
+    // 2. Broadcast to all clients
+    await this.broadcastMessage(message);
+  }
+
+  /**
+   * Add context for robot processing
+   * Role: SYSTEM → ROBOT
+   */
+  async addContext(
+    conversationId: string,
+    content: TConversationMessageContent,
+  ): Promise<void> {
+    // 1. Store message
+    const message = await this.storeMessage({
+      conversationId,
+      fromUserId: 'system',
+      content,
+      fromRole: UserRole.SYSTEM,
+      toRole: UserRole.ROBOT,
+    });
+
+    // 2. Broadcast to all clients
+    await this.broadcastMessage(message);
+  }
+
+  /**
+   * Add robot prompt (triggers robot response)
+   * Role: SYSTEM → ROBOT
+   */
+  async addRobotPrompt(
+    conversationId: string,
+    content: TConversationMessageContent,
+  ): Promise<void> {
+    // 1. Store message
+    const message = await this.storeMessage({
+      conversationId,
+      fromUserId: 'system',
+      content,
+      fromRole: UserRole.SYSTEM,
+      toRole: UserRole.ROBOT,
+    });
+
+    // 2. Broadcast to all clients
+    await this.broadcastMessage(message);
+
+    // TODO: Trigger robot response processing
+  }
+
+  /**
+   * Add robot response message - new conversation method
+   * Role: ROBOT → USER
+   */
+  async addRobotMessage(
+    conversationId: string,
+    content: TConversationMessageContent,
+    fromUserId: string = 'robot',
+  ): Promise<void> {
+    // 1. Store message
+    const message = await this.storeMessage({
+      conversationId,
+      fromUserId,
+      content,
+      fromRole: UserRole.ROBOT,
+      toRole: UserRole.USER,
+    });
+
+    // 2. Broadcast to all clients
+    await this.broadcastMessage(message);
+  }
+
+  /**
+   * Add error notification message
+   * Role: SYSTEM → USER
+   */
+  async addMessageErrorNotification(
+    conversationId: string,
+    content: TConversationMessageContent,
+  ): Promise<void> {
+    // 1. Store message
+    const message = await this.storeMessage({
+      conversationId,
+      fromUserId: 'system-error',
+      content,
+      fromRole: UserRole.SYSTEM,
+      toRole: UserRole.USER,
+    });
+
+    // 2. Broadcast to all clients
+    await this.broadcastMessage(message);
+  }
+
+  /**
+   * Unified message broadcasting to ALL clients (Slack + WebSocket)
+   * ONLY broadcasts - does NOT store messages
+   */
+  private async broadcastMessage(message: IConversationMessage): Promise<void> {
+    // Get all registered clients for this conversation
+    const clients = this.conversationClients.get(message.conversationId) || [];
+
+    // Apply system filter to determine which clients should receive this message
+    const filteredClients = clients.filter((client) =>
+      this.systemMessageFilter(message, client),
+    );
+
+    // Broadcast to each filtered client with decoration
+    await Promise.all(
+      filteredClients.map(async (client) => {
+        try {
+          const decoratedMessage = client.decorateMessage(message);
+          await client.sendMessage(decoratedMessage);
+        } catch (error) {
+          this.logger.error(
+            `Failed to send message to ${client.type} client: ${error.message}`,
+          );
+        }
+      }),
+    );
+
+    this.logger.debug(
+      `Message broadcasted to ${filteredClients.length}/${clients.length} clients for conversation ${message.conversationId}`,
+    );
+  }
+
+  /**
+   * System filter - determines which clients should receive which messages
+   * No-op for now - ALL MESSAGES GO TO ALL CLIENTS
+   */
+  private systemMessageFilter(
+    message: IConversationMessage,
+    client: ConversationClient,
+  ): boolean {
+    // No-op passthrough filter - all messages go to all clients
+    return true;
+  }
+
+  /**
+   * Private method to store message - INTERNAL USE ONLY
+   */
+  private async storeMessage(
+    createMessageDto: CreateMessageDto,
+  ): Promise<IConversationMessage> {
     const messageId = uuidv4();
     const now = new Date();
 
@@ -392,18 +566,16 @@ export class ChatManagerService {
       createMessageDto.fromRole,
     );
 
-    const message: IConversationMessage<T> = {
+    const message: IConversationMessage = {
       id: messageId,
-      content: createMessageDto.content as T, // Content is already properly structured
+      content: createMessageDto.content,
       conversationId: createMessageDto.conversationId,
       authorUserId: createMessageDto.fromUserId,
       fromRole: createMessageDto.fromRole,
       toRole: createMessageDto.toRole,
       threadId: createMessageDto.threadId,
       originalMessageId: createMessageDto.originalMessageId,
-      createdAt: now, // this is 'our' time - the message may have a different creation time
-      // using our time makes sense.  The calling code should be guarding
-      // against create time overwrite - if that turns out to a an issue
+      createdAt: now,
       updatedAt: now,
     };
 
@@ -416,28 +588,109 @@ export class ChatManagerService {
     // Update conversation activity
     await this.updateConversationActivity(createMessageDto.conversationId);
 
-    // Broadcast message to WebSocket subscribers
-    if (this.gateway) {
-      this.gateway.broadcastToConversation(
-        createMessageDto.conversationId,
-        'new_message',
-        {
-          message,
-          timestamp: now.toISOString(),
-        },
-      );
-    }
     return message;
   }
 
   /**
+   * Register Slack client for conversation
+   * Called automatically when Slack message is received
+   */
+  private registerSlackClient(
+    conversationId: string,
+    slackCallback: (content: {
+      type: 'text';
+      payload: string;
+    }) => Promise<void>,
+  ): void {
+    const clients = this.conversationClients.get(conversationId) || [];
+
+    // Remove existing Slack client if any
+    const filteredClients = clients.filter((client) => client.type !== 'slack');
+
+    // Add new Slack client
+    const slackClient: ConversationClient = {
+      type: 'slack',
+      conversationId,
+      clientId: `slack-${conversationId}`,
+      sendMessage: slackCallback,
+      decorateMessage: (message: IConversationMessage) => {
+        // No-op passthrough decoration for now
+        return {
+          type: 'text',
+          payload: message.content.payload as string,
+        };
+      },
+    };
+
+    filteredClients.push(slackClient);
+    this.conversationClients.set(conversationId, filteredClients);
+
+    this.logger.debug(
+      `Registered Slack client for conversation ${conversationId}`,
+    );
+  }
+
+  /**
+   * Register WebSocket client for conversation
+   * Called when WebSocket client joins room
+   */
+  public registerWebSocketClient(
+    conversationId: string,
+    clientId: string,
+  ): void {
+    const clients = this.conversationClients.get(conversationId) || [];
+
+    // Remove existing WebSocket client with same clientId
+    const filteredClients = clients.filter(
+      (client) =>
+        !(client.type === 'websocket' && client.clientId === clientId),
+    );
+
+    // Add new WebSocket client
+    const wsClient: ConversationClient = {
+      type: 'websocket',
+      conversationId,
+      clientId,
+      sendMessage: async (content: { type: 'text'; payload: string }) => {
+        // Send via WebSocket gateway
+        if (this.gateway) {
+          this.gateway.broadcastToConversation(conversationId, 'new_message', {
+            message: {
+              content: { type: content.type, payload: content.payload },
+              conversationId,
+              createdAt: new Date(),
+            },
+            timestamp: new Date().toISOString(),
+          });
+        }
+      },
+      decorateMessage: (message: IConversationMessage) => {
+        // No-op passthrough decoration for now
+        return {
+          type: 'text',
+          payload: message.content.payload as string,
+        };
+      },
+    };
+
+    filteredClients.push(wsClient);
+    this.conversationClients.set(conversationId, filteredClients);
+
+    this.logger.debug(
+      `Registered WebSocket client ${clientId} for conversation ${conversationId}`,
+    );
+  }
+
+  /**
    * Legacy method for backward compatibility
-   * Redirects to addMessage
+   * Uses private _addMessageToStorage
    */
   async createMessage<
     T extends TConversationMessageContent = TConversationMessageContent,
   >(createMessageDto: CreateMessageDto): Promise<IConversationMessage<T>> {
-    return this.addMessage<T>(createMessageDto);
+    return this.storeMessage(createMessageDto) as Promise<
+      IConversationMessage<T>
+    >;
   }
 
   /**
@@ -449,7 +702,7 @@ export class ChatManagerService {
     content: TConversationMessageContent,
     fromRole: UserRole = UserRole.SYSTEM,
   ): Promise<IConversationMessage> {
-    return this.addMessage({
+    return this.storeMessage({
       conversationId,
       content,
       fromUserId: null,
@@ -468,7 +721,7 @@ export class ChatManagerService {
     content: TConversationMessageContent,
     fromRole: UserRole = UserRole.SYSTEM,
   ): Promise<IConversationMessage> {
-    return this.addMessage({
+    return this.storeMessage({
       conversationId,
       content,
       fromUserId: null,
@@ -487,17 +740,15 @@ export class ChatManagerService {
       | TConversationMessageContentString
       | TConversationMessageContentMarkdown,
     robotName: RobotName,
-    callbacks?: Partial<IStreamingCallbacks>,
   ): Promise<IConversationMessage> {
     // Add the user message first
-    const userMessage =
-      await this.addMessage<TConversationMessageContentString>({
-        conversationId,
-        content,
-        fromUserId: null,
-        fromRole: UserRole.USER,
-        toRole: UserRole.ROBOT,
-      });
+    const userMessage = await this.storeMessage({
+      conversationId,
+      content,
+      fromUserId: null,
+      fromRole: UserRole.USER,
+      toRole: UserRole.ROBOT,
+    });
 
     // Get the specified robot
     const robot = this.robotService.getRobotByName(robotName);
@@ -508,28 +759,22 @@ export class ChatManagerService {
     // Create enhanced callbacks for robot response
     const robotCallbacks: IStreamingCallbacks = {
       conversationId,
-      onStreamStart: callbacks?.onStreamStart || (() => {}),
-      onStreamChunkReceived: callbacks?.onStreamChunkReceived || (() => {}),
-      onStreamFinished: callbacks?.onStreamFinished || (() => {}),
+      onStreamStart: () => {},
+      onStreamChunkReceived: () => {},
+      onStreamFinished: () => {},
       onFullMessageReceived: async (message) => {
         // Save robot response to conversation
-        await this.addMessage({
+        await this.storeMessage({
           content: message.content,
           conversationId,
           fromUserId: null,
           fromRole: UserRole.ROBOT,
           toRole: UserRole.USER,
         });
-        // Call custom callback if provided
-        if (callbacks?.onFullMessageReceived) {
-          callbacks.onFullMessageReceived(message);
-        }
       },
-      onError:
-        callbacks?.onError ||
-        ((error) => {
-          this.logger.error(`Robot ${robotName} error:`, error);
-        }),
+      onError: (error) => {
+        this.logger.error(`Robot ${robotName} error:`, error);
+      },
     };
 
     // Trigger robot response
@@ -553,8 +798,13 @@ export class ChatManagerService {
       payload: string;
     }) => Promise<void>,
   ): Promise<IConversationMessage> {
+    // Register Slack client for this conversation
+    if (slackResponseCallback) {
+      this.registerSlackClient(conversationId, slackResponseCallback);
+    }
+
     // Add the user message to the conversation
-    const userMessage = await this.addUserMessage(
+    const userMessage = await this.addMessageFromUser(
       conversationId,
       content.payload,
       'cx-slack-robot',
@@ -592,10 +842,13 @@ export class ChatManagerService {
         this.logger.log(
           `Intent parsing succeeded with intent: ${(intentResult as IntentParsingResponse).intent} (debug recommends: ${(intentResult as IntentParsingResponse).devDebugRecommendedExecutor})`,
         );
-        await this.intentRouterService.routeIntent(
-          intentResult,
-          slackCallbacks,
-        );
+        // Add intent and conversationId to intentData and route
+        const intentDataWithConversation = {
+          ...intentResult.intentData,
+          intent: intentResult.intent,
+          conversationId: conversationId,
+        };
+        await this.intentRouterService.routeIntent(intentDataWithConversation);
       }
     } catch (error) {
       this.logger.error(
@@ -755,7 +1008,7 @@ export class ChatManagerService {
     content: { type: 'text'; payload: string },
   ): Promise<IConversationMessage> {
     // Add the user message to the conversation
-    const userMessage = await this.addUserMessage(
+    const userMessage = await this.addMessageFromUser(
       conversationId,
       content.payload,
       'form-marv-user',
@@ -815,7 +1068,7 @@ export class ChatManagerService {
     content: string,
     robotName: string,
   ): Promise<IConversationMessage> {
-    const result = await this.addMessage({
+    const result = await this.storeMessage({
       conversationId,
       fromUserId: robotName,
       content: {
@@ -832,14 +1085,15 @@ export class ChatManagerService {
   /**
    * Add a user message to a conversation
    */
-  async addUserMessage(
+  async addMessageFromUser(
     conversationId: string,
     content: string,
     userId: string,
     fromRole: UserRole = UserRole.USER,
     toRole: UserRole = UserRole.USER,
   ): Promise<IConversationMessage> {
-    const result = await this.addMessage({
+    // Store message
+    const message = await this.storeMessage({
       conversationId,
       fromUserId: userId,
       content: {
@@ -850,7 +1104,58 @@ export class ChatManagerService {
       toRole,
     });
 
-    return result;
+    // Broadcast to all clients immediately (echo/acknowledge)
+    await this.broadcastMessage(message);
+
+    return message;
+  }
+
+  /**
+   * Process user message: Add to conversation, parse intent, add intent, route
+   * This is the centralized method that implements the flow you specified
+   */
+  async processUserMessage(
+    conversationId: string,
+    messageText: string,
+    userId: string = 'user',
+  ): Promise<void> {
+    // STEP 1: GET MESSAGE, ADD TO CONVERSATION, BROADCAST
+    await this.addMessageFromUser(conversationId, messageText, userId);
+
+    // STEP 2: PARSE INTENT
+    const intentResult =
+      await this.intentParsingService.parsePromptIntent(messageText);
+
+    if (!('error' in intentResult)) {
+      // STEP 3: ADD INTENT TO CONVERSATION, BROADCAST
+      await this.addSystemMessage(conversationId, {
+        type: 'text/plain',
+        payload: `🎯 **Intent Parsed**: ${intentResult.intent}\nSubIntents: ${intentResult.intentData.subIntents?.join(', ') || 'none'}`,
+      });
+
+      // STEP 4: ROUTE INTENT
+      const intentDataWithConversation = {
+        ...intentResult.intentData,
+        intent: intentResult.intent,
+        conversationId: conversationId,
+      };
+
+      await this.intentRouterService.routeIntent(intentDataWithConversation);
+    }
+  }
+
+  /**
+   * Parse intent from message text
+   */
+  async parseIntentFromMessage(messageText: string) {
+    return this.intentParsingService.parsePromptIntent(messageText);
+  }
+
+  /**
+   * Route intent using intent router
+   */
+  async routeIntent(intentData: any) {
+    return this.intentRouterService.routeIntent(intentData);
   }
 
   /**

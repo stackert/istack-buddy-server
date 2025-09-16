@@ -13,6 +13,7 @@ export interface SumoJobParams {
   subject: {
     formId?: string;
     submitActionId?: string;
+    submitActionType?: string;
     submissionId?: string;
     startDate: string;
     endDate: string;

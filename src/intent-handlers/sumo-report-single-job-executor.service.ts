@@ -28,12 +28,9 @@ export class SumoReportSingleJobExecutor
     ];
   }
 
-  async executeIntent(
-    intentData: IntentData,
-    callbacks: IStreamingCallbacks,
-  ): Promise<void> {
-    // Get conversation ID from callbacks
-    const conversationId = callbacks.conversationId;
+  async executeIntent(intentData: IntentData): Promise<void> {
+    // Get conversation ID from intentData
+    const conversationId = intentData.conversationId;
     this.logger.log(`Using conversation ID: ${conversationId}`);
 
     try {
@@ -41,15 +38,9 @@ export class SumoReportSingleJobExecutor
       const queryParams = this.parseQueryParameters(intentData);
 
       // 2. Send immediate acknowledgment
-      await this.chatManagerService.addMessage({
-        conversationId,
-        fromUserId: 'sumo-report-robot',
-        content: {
-          type: 'text/plain',
-          payload: `🔄 **Sumo Report Request Received**\n\nQuery: ${queryParams.queryName}\nForm ID: ${queryParams.subject.formId}\nDate Range: ${queryParams.subject.startDate} to ${queryParams.subject.endDate}\n\nSubmitting job...`,
-        },
-        fromRole: UserRole.ROBOT,
-        toRole: UserRole.USER,
+      await this.chatManagerService.addSystemMessage(conversationId, {
+        type: 'text/plain',
+        payload: `🔄 **Sumo Report Request Received**\n\nQuery: ${queryParams.queryName}\nForm ID: ${queryParams.subject.formId}\nSubmit Action Type: ${queryParams.subject.submitActionType}\nDate Range: ${queryParams.subject.startDate} to ${queryParams.subject.endDate}\n\nSubmitting job...`,
       });
 
       // 3. Submit single job and fetch data
@@ -74,11 +65,15 @@ export class SumoReportSingleJobExecutor
         processedData,
         conversationId,
         intentData.originalUserPrompt,
-        callbacks,
       );
     } catch (error) {
       this.logger.error(`Sumo report job execution failed: ${error.message}`);
-      callbacks.onError?.(error);
+
+      // Send error as system message
+      await this.chatManagerService.addSystemMessage(conversationId, {
+        type: 'text/plain',
+        payload: `❌ **Sumo Report Error**: ${error.message}`,
+      });
     }
   }
 
@@ -88,9 +83,10 @@ export class SumoReportSingleJobExecutor
       subject: {
         formId: intentData.subjects?.formId?.[0] || '',
         submitActionId: intentData.subjects?.submitActionId?.[0] || '',
+        submitActionType: intentData.subjects?.submitActionType?.[0] || '',
         submissionId: intentData.subjects?.submissionId?.[0] || '',
-        startDate: intentData.subjects?.startDate?.[0] || '',
-        endDate: intentData.subjects?.endDate?.[0] || '',
+        startDate: intentData.dateRange?.startDate || '',
+        endDate: intentData.dateRange?.endDate || '',
       },
     };
   }
@@ -100,7 +96,6 @@ export class SumoReportSingleJobExecutor
     processedData: any,
     conversationId: string,
     originalQuery: string,
-    callbacks: IStreamingCallbacks,
   ): Promise<void> {
     try {
       const observationText = await this.runObservationAnalysis(processedData);
@@ -109,17 +104,8 @@ export class SumoReportSingleJobExecutor
       const recordCount = processedData.records?.length || 0;
       const isSmallContext = recordCount <= 1;
 
-      if (isSmallContext) {
-        // Small context: send analysis directly to user via callbacks
-        await callbacks.onFullMessageReceived({
-          content: {
-            type: 'text/plain',
-            payload: `## Sumo Logic Report Results\n\n**Query:** "${originalQuery}"\n\n**📊 Analysis:**\n${observationText}\n\n**📁 Download File:**\n[Download Report Data](${fileLink})\n\n*Report generated successfully.*`,
-          },
-        });
-      } else {
-        // Large context goes to user as combined markdown message
-        const combinedMessage = `## Sumo Logic Report Results
+      // Send results message to conversation (works for both small and large context)
+      const combinedMessage = `## Sumo Logic Report Results
 
 **Query:** "${originalQuery}"
 
@@ -131,13 +117,15 @@ ${observationText}
 
 *Report generated successfully.*`;
 
-        await callbacks.onFullMessageReceived({
-          content: {
-            type: 'text/plain',
-            payload: combinedMessage,
-          },
-        });
-      }
+      // Send completion message
+      await this.chatManagerService.addRobotMessage(
+        conversationId,
+        {
+          type: 'text/plain',
+          payload: combinedMessage,
+        },
+        'sumo-report-robot',
+      );
 
       this.logger.log(
         `Sent combined results message to conversation ${conversationId} (toRole: ${isSmallContext ? 'ROBOT' : 'USER'})`,

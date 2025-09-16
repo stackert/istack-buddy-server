@@ -46,12 +46,9 @@ export class SumoReportMultiJobExecutor
     ];
   }
 
-  async executeIntent(
-    intentData: IntentData,
-    callbacks: IStreamingCallbacks,
-  ): Promise<void> {
-    // Get conversation ID from callbacks
-    const conversationId = callbacks.conversationId;
+  async executeIntent(intentData: IntentData): Promise<void> {
+    // Get conversation ID from intentData
+    const conversationId = intentData.conversationId;
     this.logger.log(`Using conversation ID: ${conversationId}`);
 
     try {
@@ -59,15 +56,9 @@ export class SumoReportMultiJobExecutor
       const baseParams = this.parseBaseParameters(intentData);
 
       // 2. Send immediate acknowledgment
-      await this.chatManagerService.addMessage({
-        conversationId,
-        fromUserId: 'sumo-analysis-robot',
-        content: {
-          type: 'text/plain',
-          payload: `🔄 **Sumo Analysis Request Received**\n\nForm ID: ${baseParams.formId}\nDate Range: ${baseParams.startDate} to ${baseParams.endDate}\n\nStarting multiple reports...`,
-        },
-        fromRole: UserRole.ROBOT,
-        toRole: UserRole.USER,
+      await this.chatManagerService.addSystemMessage(conversationId, {
+        type: 'text/plain',
+        payload: `🔄 **Sumo Analysis Request Received**\n\nForm ID: ${baseParams.formId}\nDate Range: ${baseParams.startDate} to ${baseParams.endDate}\n\nStarting multiple reports...`,
       });
 
       // 3. Run all three reports in parallel
@@ -136,34 +127,33 @@ ${submitActionAnalysis.slice(0, 200)}...
 
 *Multi-report analysis completed successfully.*`;
 
-      // 8. Send final message via callbacks (works for both dev debug and Slack)
-      await callbacks.onFullMessageReceived({
-        content: {
+      // 8. Send final message
+      await this.chatManagerService.addRobotMessage(
+        conversationId,
+        {
           type: 'text/plain',
           payload: finalMessage,
         },
-      });
-
-      // 9. For dev/debug: Also send to conversation directly
-      if (process.env.NODE_ENV === 'development') {
-        await this.chatManagerService.addMessageUserOnly(conversationId, {
-          type: 'text/markdown',
-          payload: finalMessage,
-        });
-      }
+        'sumo-analysis-robot',
+      );
 
       this.logger.log('Multi-report analysis completed successfully');
     } catch (error) {
       this.logger.error(`Sumo analysis job execution failed: ${error.message}`);
-      callbacks.onError?.(error);
+
+      // Send error as system message
+      await this.chatManagerService.addSystemMessage(conversationId, {
+        type: 'text/plain',
+        payload: `❌ **Sumo Analysis Error**: ${error.message}`,
+      });
     }
   }
 
   private parseBaseParameters(intentData: IntentData) {
     return {
       formId: intentData.subjects?.formId?.[0],
-      startDate: intentData.subjects?.startDate?.[0],
-      endDate: intentData.subjects?.endDate?.[0],
+      startDate: intentData.dateRange?.startDate,
+      endDate: intentData.dateRange?.endDate,
     };
   }
 

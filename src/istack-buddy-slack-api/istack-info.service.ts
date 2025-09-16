@@ -286,12 +286,37 @@ export class IStackInfoService implements OnModuleDestroy {
       request: SumoJobSubmissionRequest,
     ): Promise<SumoJobSubmissionResponse> => {
       this.logger.debug(
-        `Submitting Sumo query: ${request.queryName} for ${request.subject}`,
+        `Submitting Sumo query: ${request.queryName} for ${JSON.stringify(request.subject, null, 2)}`,
       );
+      // Transform the request to match the API specification
+      const apiRequest = {
+        queryName: request.queryName,
+        subjects: {
+          ...(request.subject.formId && { formId: [request.subject.formId] }),
+          ...(request.subject.submitActionId && {
+            submitActionId: [request.subject.submitActionId],
+          }),
+          ...(request.subject.submitActionType && {
+            submitActionType: [request.subject.submitActionType],
+          }),
+          ...(request.subject.submissionId && {
+            submissionId: [request.subject.submissionId],
+          }),
+        },
+        dateRange: {
+          startDate: request.subject.startDate,
+          endDate: request.subject.endDate,
+        },
+      };
+
+      this.logger.debug(
+        `Transformed API request: ${JSON.stringify(apiRequest, null, 2)}`,
+      );
+
       return this.makeRequest<SumoJobSubmissionResponse>(
         'POST',
         '/information-services/context-sumo-report/query/submit',
-        request,
+        apiRequest,
       );
     },
 

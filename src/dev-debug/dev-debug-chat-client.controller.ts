@@ -266,9 +266,11 @@ export class DevDebugChatClientController {
       const intentResult: IntentParsingResponse = {
         intent: body.intent,
         intentData: {
+          conversationId: conversationId,
           originalUserPrompt: body.originalUserPrompt,
           subIntents: body.subIntents,
           subjects: body.subjects,
+          dateRange: body.dateRange,
         },
       };
 
@@ -277,15 +279,21 @@ export class DevDebugChatClientController {
         `Intent result: ${JSON.stringify(intentResult, null, 2)}`,
       );
 
-      // Create streaming callbacks for the conversation
-      const callbacks =
-        this.chatManagerService.createConversationCallbacks(conversationId);
+      // Add intent and conversationId to intentData and route directly
+      const intentDataWithConversation = {
+        ...intentResult.intentData,
+        intent: intentResult.intent,
+        conversationId: conversationId,
+      };
 
-      // Add conversation ID to callbacks so intent handler can access it
-      (callbacks as any).conversationId = conversationId;
+      // Add intent to conversation first (so it appears in chat)
+      await this.chatManagerService.addSystemMessage(conversationId, {
+        type: 'text/plain',
+        payload: `🎯 **Intent Submitted**: ${intentResult.intent}\n\`\`\`json\n${JSON.stringify(intentResult.intentData, null, 2)}\n\`\`\``,
+      });
 
-      // Route through intent router (EXACT same call as working code)
-      await this.intentRouterService.routeIntent(intentResult, callbacks);
+      // Route through intent router (no callbacks needed)
+      await this.intentRouterService.routeIntent(intentDataWithConversation);
 
       return {
         success: true,
@@ -323,45 +331,17 @@ export class DevDebugChatClientController {
         return { success: false, error: 'Message is required' };
       }
 
-      // Parse intent for debugging
-      const intentResult =
-        await this.intentParsingService.parsePromptIntent(message);
-      let intentParsing: any = {};
-
-      if (!isIntentParsingError(intentResult)) {
-        const successResult = intentResult as IntentParsingResponse;
-        intentParsing = {
-          success: true,
-          devDebugRecommendedExecutor:
-            successResult.devDebugRecommendedExecutor,
-          devDebugRecommendedRobot: successResult.devDebugRecommendedRobot,
-          intent: successResult.intent,
-          subIntents: successResult.intentData.subIntents || [],
-          subjects: successResult.intentData.subjects || {},
-          originalUserPrompt: successResult.intentData.originalUserPrompt,
-        };
-      } else {
-        const errorResult = intentResult as IntentParsingError;
-        intentParsing = {
-          success: false,
-          error: errorResult.error,
-          reason: errorResult.reason,
-        };
-      }
-
-      // Send message through proper intent parsing pathway WITHOUT callback
-      // Let the normal WebSocket system handle robot responses
-      const userMessage = await this.chatManagerService.addMessageFromSlack(
+      // Use centralized service method that does: Get message → Broadcast → Parse intent → Add intent → Broadcast → Route
+      await this.chatManagerService.processUserMessage(
         conversationId,
-        { type: 'text', payload: message },
-        undefined, // No callback - use WebSocket broadcasting
+        message,
+        'dev-debug-user',
       );
 
       return {
         success: true,
-        messageId: userMessage.id,
         conversationId,
-        intentParsing,
+        message: 'Message processed through centralized flow',
         timestamp: new Date().toISOString(),
       };
     } catch (error) {
@@ -1000,9 +980,11 @@ export class DevDebugChatClientController {
                     intent: "generateSumoAnalysis",
                     subIntents: ["multiReportAnalysis"],
                     subjects: {
-                        formId: ["5894350"],
-                        startDate: ["2025-09-14"],
-                        endDate: ["2025-09-15"]
+                        formId: ["5894350"]
+                    },
+                    dateRange: {
+                        startDate: "2025-09-14",
+                        endDate: "2025-09-15"
                     },
                     originalUserPrompt: "Run comprehensive Sumo analysis comparing submit actions and form submissions"
                 },
@@ -1010,9 +992,11 @@ export class DevDebugChatClientController {
                     intent: "generateSumoReport",
                     subIntents: ["submissionCreatedForForm"],
                     subjects: {
-                        formId: ["5894350"],
-                        startDate: ["2025-09-14"],
-                        endDate: ["2025-09-15"]
+                        formId: ["5894350"]
+                    },
+                    dateRange: {
+                        startDate: "2025-09-14",
+                        endDate: "2025-09-15"
                     },
                     originalUserPrompt: "Generate Sumo report for form submission tracking"
                 },
@@ -1021,8 +1005,11 @@ export class DevDebugChatClientController {
                     subIntents: ["submitActionReport"],
                     subjects: {
                         formId: ["5894350"],
-                        startDate: ["2025-09-14"],
-                        endDate: ["2025-09-15"]
+                        submitActionType: ["default"]
+                    },
+                    dateRange: {
+                        startDate: "2025-09-14",
+                        endDate: "2025-09-15"
                     },
                     originalUserPrompt: "Generate Sumo report for submit action analysis"
                 },
@@ -1030,9 +1017,11 @@ export class DevDebugChatClientController {
                     intent: "generateSumoReport",
                     subIntents: ["submitActionSelectedForExecution"],
                     subjects: {
-                        formId: ["5894350"],
-                        startDate: ["2025-09-14"],
-                        endDate: ["2025-09-15"]
+                        formId: ["5894350"]
+                    },
+                    dateRange: {
+                        startDate: "2025-09-14",
+                        endDate: "2025-09-15"
                     },
                     originalUserPrompt: "Generate Sumo report for submit actions selected for execution"
                 },
@@ -1040,9 +1029,11 @@ export class DevDebugChatClientController {
                     intent: "generateSumoReport",
                     subIntents: ["authProviderMetrics"],
                     subjects: {
-                        authProviderId: ["2175"],
-                        startDate: ["2025-09-14"],
-                        endDate: ["2025-09-15"]
+                        authProviderId: ["2175"]
+                    },
+                    dateRange: {
+                        startDate: "2025-09-14",
+                        endDate: "2025-09-15"
                     },
                     originalUserPrompt: "Generate Sumo report for auth provider metrics"
                 },

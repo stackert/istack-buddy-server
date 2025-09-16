@@ -83,6 +83,12 @@ export class ChatManagerGateway
         joinData,
       );
 
+      // Register WebSocket client for message broadcasting
+      this.chatManagerService.registerWebSocketClient(
+        conversationId,
+        client.id,
+      );
+
       // Notify others in the room
       client.to(conversationId).emit('user_joined', {
         conversationId,
@@ -143,49 +149,25 @@ export class ChatManagerGateway
       clientId: client.id,
     });
 
-    const message =
-      await this.chatManagerService.createMessage(createMessageDto);
-
-    // _TMC_
-    `
-        The issue is:
-        - We 'accept' the message
-        - We 'broadcast' message
-        - We delegate/process message
-        
-        Desired Flow 
-        - Accept message
-        - delegate/process message
-      
-        as part of the 'accept' the message becomes part of the ApplicationConversation
-        as such all 'subscribers' will get the message
-
-
-        Are we depending on client to filter?  Eg - put message in the chat conversation
-        and client knows 'this' user is customer and therefore does not see certain messages?
-
-        Do we create 'user-facing' conversations and only add user facing messages it it?
-        We could allow cx-agent to move/copy message from one conversation to another
-        This would make it easier to manage.  We could put rule this conversation is filtered
-        for participant only? and make customer conversation more restrictive?
-
-        That would be we need 'conversation' type/filter? and the conversation creation level.
-
-        This is the better solution but difficult to implement.
-        
-      `;
-
-    // Broadcast message to all users in the conversation
-    this.server
-      .to(createMessageDto.conversationId)
-      .emit('new_message', message);
-
-    // Delegate robot handling to conversation manager
-    if (createMessageDto.toRole === 'robot') {
-      await this.chatManagerService.handleRobotMessage(createMessageDto);
+    // Use centralized service method that does: Get message → Broadcast → Parse intent → Add intent → Broadcast → Route
+    if (createMessageDto.fromRole === UserRole.USER) {
+      await this.chatManagerService.processUserMessage(
+        createMessageDto.conversationId,
+        createMessageDto.content.payload as string,
+        createMessageDto.fromUserId || 'user',
+      );
+    } else {
+      // Non-user messages just get added to conversation
+      await this.chatManagerService.addMessageFromUser(
+        createMessageDto.conversationId,
+        createMessageDto.content.payload as string,
+        createMessageDto.fromUserId || 'user',
+        createMessageDto.fromRole,
+        createMessageDto.toRole,
+      );
     }
 
-    return message;
+    return { success: true };
   }
 
   @SubscribeMessage('typing_start')

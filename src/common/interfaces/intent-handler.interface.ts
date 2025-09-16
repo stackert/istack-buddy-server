@@ -1,5 +1,4 @@
 import { IntentData, RobotIntent } from '../types/intent-parsing.types';
-import { IStreamingCallbacks } from '../../robots/types';
 
 /**
  * Interface for intent handlers that can process intents
@@ -12,10 +11,9 @@ export interface IntentHandler {
   getSupportedIntents(): RobotIntent[];
 
   /**
-   * Execute the intent with provided data and callbacks
+   * Execute the intent with provided data
+   * conversationId comes from intentData.conversationId
+   * No callbacks - all messages go through conversation.addMessage*() methods
    */
-  executeIntent(
-    intentData: IntentData,
-    callbacks: IStreamingCallbacks,
-  ): Promise<void>;
+  executeIntent(intentData: IntentData): Promise<void>;
 }
