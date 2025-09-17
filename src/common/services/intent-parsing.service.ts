@@ -47,7 +47,7 @@ export class IntentParsingService {
    */
   public async parsePromptIntent(
     messageText: string,
-    conversationContext?: { currentRobot?: string },
+    conversationContext?: { currentRobot?: string; lastRobotMessage?: string },
   ): Promise<IntentParsingResult> {
     try {
       this.logger.debug(
@@ -71,6 +71,15 @@ export class IntentParsingService {
 Message: "${messageText}"
 
 ${conversationContext?.currentRobot ? `Current conversation robot: ${conversationContext.currentRobot}` : ''}
+
+${
+  conversationContext?.lastRobotMessage
+    ? `_ROBOT_LAST_RESPONSE_START_
+Instructions: If the robot's last response is a continuation question, please route to last robot.
+${conversationContext.lastRobotMessage}
+_ROBOT_LAST_RESPONSE_END_`
+    : ''
+}
 
 Respond with ONLY a valid JSON object (no markdown, no explanation) containing:
 - intent: string (exact intent name)

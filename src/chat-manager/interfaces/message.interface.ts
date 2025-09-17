@@ -1,4 +1,8 @@
-import { MessageType, UserRole } from '../dto/create-message.dto';
+import {
+  MessageType,
+  UserRole,
+  ConversationParticipantRole,
+} from '../dto/create-message.dto';
 import { TConversationMessageContent } from '../../ConversationLists/types';
 
 export interface IConversationMessage<T = TConversationMessageContent> {
@@ -10,6 +14,7 @@ export interface IConversationMessage<T = TConversationMessageContent> {
   toRole: UserRole;
   threadId?: string;
   originalMessageId?: string;
+  participantVisibility?: ConversationParticipantRole[];
   createdAt: Date;
   updatedAt: Date;
 }

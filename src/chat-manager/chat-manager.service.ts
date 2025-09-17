@@ -24,6 +24,7 @@ import {
   MessageType,
   UserRole,
   RobotName,
+  ConversationParticipantRole,
 } from './dto/create-message.dto';
 import { GetMessagesDto } from './dto/get-messages.dto';
 import { JoinRoomDto } from './dto/join-room.dto';
@@ -374,25 +375,6 @@ export class ChatManagerService {
   }
 
   /**
-   * Generate MD5 hash for message content to detect duplicates
-   */
-  private generateMessageContentHash(
-    createMessageDto: CreateMessageDto,
-  ): string {
-    const contentToHash = {
-      content: createMessageDto.content,
-      conversationId: createMessageDto.conversationId,
-      fromUserId: createMessageDto.fromUserId,
-      fromRole: createMessageDto.fromRole,
-      toRole: createMessageDto.toRole,
-    };
-
-    return createHash('md5')
-      .update(JSON.stringify(contentToHash))
-      .digest('hex');
-  }
-
-  /**
    * ConversationManager Methods - as specified in the plan
    */
 
@@ -403,6 +385,10 @@ export class ChatManagerService {
   async addMessageSystemNotification(
     conversationId: string,
     content: TConversationMessageContent,
+    participantVisibility: ConversationParticipantRole[] = [
+      ConversationParticipantRole.SYSTEM_DEBUG,
+      ConversationParticipantRole.SYSTEM_CONVERSATION_MANAGER,
+    ],
   ): Promise<void> {
     // 1. Store message
     const message = await this.storeMessage({
@@ -411,6 +397,7 @@ export class ChatManagerService {
       content,
       fromRole: UserRole.SYSTEM,
       toRole: UserRole.USER,
+      participantVisibility,
     });
 
     // 2. Broadcast to all clients
@@ -432,6 +419,7 @@ export class ChatManagerService {
       content,
       fromRole: UserRole.SYSTEM,
       toRole: UserRole.ROBOT,
+      participantVisibility: [ConversationParticipantRole.VISIBLE_TO_ALL],
     });
 
     // 2. Broadcast to all clients
@@ -481,6 +469,7 @@ export class ChatManagerService {
       content,
       fromRole: UserRole.ROBOT,
       toRole: UserRole.USER,
+      participantVisibility: [ConversationParticipantRole.VISIBLE_TO_ALL],
     });
 
     // 2. Broadcast to all clients
@@ -579,6 +568,7 @@ export class ChatManagerService {
       toRole: createMessageDto.toRole,
       threadId: createMessageDto.threadId,
       originalMessageId: createMessageDto.originalMessageId,
+      participantVisibility: createMessageDto.participantVisibility,
       createdAt: now,
       updatedAt: now,
     };
@@ -789,6 +779,9 @@ export class ChatManagerService {
         this.logger.error(`Robot ${robotName} error:`, error);
       },
     };
+    const x = this.chatConversationListService
+      .getConversationById(conversationId)
+      ?.getFilteredRobotMessages();
 
     // Trigger robot response with conversation history
     await (robot as any).acceptMessageStreamResponse(
@@ -797,7 +790,9 @@ export class ChatManagerService {
       () => {
         const conversationList =
           this.chatConversationListService.getConversationById(conversationId);
-        return conversationList ? conversationList.getAllChatMessages() : [];
+        return conversationList
+          ? conversationList.getFilteredRobotMessages()
+          : [];
       },
     );
 
@@ -1120,6 +1115,7 @@ export class ChatManagerService {
       },
       fromRole,
       toRole,
+      participantVisibility: [ConversationParticipantRole.VISIBLE_TO_ALL],
     });
 
     // Broadcast to all clients immediately (echo/acknowledge)
@@ -1143,6 +1139,7 @@ export class ChatManagerService {
     // STEP 2: PARSE INTENT (with conversation context)
     const conversationContext = {
       currentRobot: this.getCurrentRobot(conversationId) || undefined,
+      lastRobotMessage: this.getLastRobotMessage(conversationId) || undefined,
     };
 
     const intentResult = await this.intentParsingService.parsePromptIntent(
@@ -1259,6 +1256,32 @@ export class ChatManagerService {
       const message = messages[i];
       if (message.fromRole === UserRole.ROBOT) {
         return message.authorUserId || 'unknown-robot';
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Get the last robot message from conversation
+   * Returns the most recent message from a robot
+   */
+  getLastRobotMessage(conversationId: string): string | null {
+    const messages = this.chatConversationListService.getFilteredMessages(
+      conversationId,
+      {},
+    );
+
+    // Look for the most recent robot message to user
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const message = messages[i];
+      if (
+        message.fromRole === UserRole.ROBOT &&
+        message.toRole === UserRole.USER
+      ) {
+        return typeof message.content.payload === 'string'
+          ? message.content.payload
+          : JSON.stringify(message.content.payload);
       }
     }
 
@@ -1787,17 +1810,5 @@ export class ChatManagerService {
         timestamp: now.toISOString(),
       });
     }
-  }
-
-  private isMessageVisibleToUser(
-    message: IConversationMessage,
-    userId: string,
-  ): boolean {
-    // Simple visibility logic - can be enhanced based on your requirements
-    return (
-      message.authorUserId === userId ||
-      message.toRole === UserRole.USER ||
-      message.fromRole === UserRole.USER
-    );
   }
 }

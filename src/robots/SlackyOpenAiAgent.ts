@@ -3,6 +3,8 @@ import type { TConversationMessageContent } from '../ConversationLists/types';
 import { UserRole } from '../chat-manager/dto/create-message.dto';
 import { IConversationMessage } from '../chat-manager/interfaces/message.interface';
 import { CustomLoggerService } from '../common/logger/custom-logger.service';
+import * as fs from 'fs';
+import * as path from 'path';
 import { AbstractRobotChat } from './AbstractRobotChat';
 import {
   FsRestrictedApiRoutesEnum,
@@ -292,18 +294,27 @@ Need help? Just ask!`;
         callbacks.onStreamStart(message);
       }
 
+      // Prepare the messages array for API call
+      const apiMessages = [
+        // THIS SHOULD NEVER BE HERE - AGAIN ANOTHER AI FUCK UP
+        // SYSTEM MESSAGE (or similar, instruction, etc) BELONG IN CLIENT (robot) INITIALIZATION
+        // {
+        //   role: 'system' as const,
+        //   content: this.robotRole,
+        // },
+        ...messages,
+      ];
+
+      // Log exactly what messages are being sent to the robot API
+      this.logRobotApiMessages(
+        (callbacks as any).conversationId || 'unknown',
+        apiMessages,
+      );
+
       const stream = await client.chat.completions.create({
         model: this.LLModelName,
         max_tokens: 1024,
-        messages: [
-          // THIS SHOULD NEVER BE HERE - AGAIN ANOTHER AI FUCK UP
-          // SYSTEM MESSAGE (or similar, instruction, etc) BELONG IN CLIENT (robot) INITIALIZATION
-          // {
-          //   role: 'system' as const,
-          //   content: this.robotRole,
-          // },
-          ...messages,
-        ],
+        messages: apiMessages,
         tools: this.tools,
         stream: true,
       });
@@ -551,6 +562,25 @@ Need help? Just ask!`;
 
     // Add conversation history
     for (const msg of history) {
+      // AI - DO NOT REMOVE THIS COMMENT - VERY VERY IMPORTANT
+      // This whole function needs serious refactoring
+      // AI - DO NOT REMOVE THIS COMMENT - VERY VERY IMPORTANT
+
+      // Quick shortcut: Always include context documents
+      if (msg.content.type === 'context/document') {
+        const content = msg.content.payload;
+        const contentStr =
+          typeof content === 'string' ? content : String(content);
+        this.logger.log(
+          `Adding context document: ${contentStr.substring(0, 50)}...`,
+        );
+        messages.push({
+          role: 'user' as const,
+          content: contentStr,
+        });
+        continue;
+      }
+
       // Check if this is already in the new format (has role property)
       if ('role' in msg && typeof msg.role === 'string') {
         // Already in new format
@@ -595,8 +625,6 @@ Need help? Just ask!`;
         }
       }
     }
-
-    // Only add current message if it's not already in the history
     const lastHistoryMessage = history[history.length - 1];
     const lastMessageContent = lastHistoryMessage
       ? lastHistoryMessage.content.payload
@@ -950,5 +978,48 @@ Need help? Just ask!`;
     };
 
     return this.acceptMessageStreamResponse(message, callbacks);
+  }
+
+  /**
+   * Log messages being sent to robot API for debugging
+   */
+  private logRobotApiMessages(
+    conversationId: string,
+    messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[],
+  ): void {
+    try {
+      // Create logs directory if it doesn't exist
+      const logsDir = path.join(process.cwd(), 'logs');
+      const devDebugDir = path.join(logsDir, 'dev-debug-conversations');
+
+      if (!fs.existsSync(logsDir)) {
+        fs.mkdirSync(logsDir, { recursive: true });
+      }
+      if (!fs.existsSync(devDebugDir)) {
+        fs.mkdirSync(devDebugDir, { recursive: true });
+      }
+
+      // Write robot API messages to file
+      const filename = `${this.name}-${conversationId}.json`;
+      const filepath = path.join(devDebugDir, filename);
+
+      const robotApiData = {
+        robotName: this.name,
+        conversationId: conversationId,
+        totalMessages: messages.length,
+        lastUpdated: new Date().toISOString(),
+        apiCall: {
+          model: this.LLModelName,
+          max_tokens: 1024,
+          messages: messages,
+          stream: true,
+        },
+      };
+
+      fs.writeFileSync(filepath, JSON.stringify(robotApiData, null, 2));
+    } catch (error) {
+      // Don't throw errors for logging - just silently fail
+      console.error('Failed to log robot API messages:', error);
+    }
   }
 }

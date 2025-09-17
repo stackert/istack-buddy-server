@@ -21,6 +21,17 @@ export enum UserRole {
   SYSTEM = 'system', // Replaces SYSTEM_DEBUG
 }
 
+export enum ConversationParticipantRole {
+  CX_AGENT = 'cx:agent',
+  CX_SUPERVISOR = 'cx:supervisor',
+  CX_CUSTOMER = 'cx:customer',
+  SYSTEM = 'system',
+  ROBOT_ALL = 'robot:all',
+  SYSTEM_DEBUG = 'system:debug',
+  SYSTEM_CONVERSATION_MANAGER = 'system:conversation:manager',
+  VISIBLE_TO_ALL = 'visible-to-all',
+}
+
 export enum RobotName {
   AGENT_ROBOT_PARROT = 'AgentRobotParrot',
   SLACKY_OPENAI_AGENT = 'SlackyOpenAiAgent',
@@ -55,4 +66,8 @@ export class CreateMessageDto {
   @IsString()
   @IsOptional()
   originalMessageId?: string;
+
+  @IsEnum(ConversationParticipantRole, { each: true })
+  @IsOptional()
+  participantVisibility?: ConversationParticipantRole[];
 }

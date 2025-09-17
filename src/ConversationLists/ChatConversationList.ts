@@ -1,5 +1,11 @@
 import { IConversationMessage } from '../chat-manager/interfaces/message.interface';
-import { MessageType, UserRole } from '../chat-manager/dto/create-message.dto';
+import {
+  MessageType,
+  UserRole,
+  ConversationParticipantRole,
+} from '../chat-manager/dto/create-message.dto';
+import * as fs from 'fs';
+import * as path from 'path';
 
 /**
  * Concrete conversation list implementation for chat messages
@@ -8,6 +14,7 @@ import { MessageType, UserRole } from '../chat-manager/dto/create-message.dto';
  */
 export class ChatConversationList {
   private messages: IConversationMessage[] = [];
+  private conversationId?: string;
 
   constructor() {}
 
@@ -18,6 +25,14 @@ export class ChatConversationList {
    */
   addChatMessage(message: IConversationMessage): string {
     this.messages.push(message);
+
+    // Set conversationId from first message if not set
+    if (!this.conversationId && message.conversationId) {
+      this.conversationId = message.conversationId;
+    }
+
+    // Log all messages to file for debugging
+    this.logMessagesToFile();
 
     return message.id;
   }
@@ -33,13 +48,41 @@ export class ChatConversationList {
   }
 
   /**
-   * Get all robot messages in the conversation
-   * Returns messages to/from any known robots (matches original ChatManagerService logic)
-   * @returns Array of robot messages
+   * Get messages visible to robots
+   * Uses participantVisibility to determine which messages robots should see
+   * Falls back to role-based filtering if participantVisibility is not set
+   * @returns Array of messages visible to robots
    */
   getFilteredRobotMessages(): IConversationMessage[] {
     return this.getAllChatMessages().filter((msg: IConversationMessage) => {
-      return msg.fromRole === UserRole.ROBOT;
+      // ALWAYS include context documents regardless of visibility/roles
+      if (msg.content.type === 'context/document') {
+        return true;
+      }
+
+      // If participantVisibility is explicitly set, use it
+      if (msg.participantVisibility && msg.participantVisibility.length > 0) {
+        return (
+          msg.participantVisibility.includes(
+            ConversationParticipantRole.ROBOT_ALL,
+          ) ||
+          msg.participantVisibility.includes(
+            ConversationParticipantRole.VISIBLE_TO_ALL,
+          )
+        );
+      }
+
+      // Fallback to role-based filtering for backward compatibility
+      return (
+        // User messages (original requests)
+        (msg.fromRole === UserRole.USER && msg.toRole === UserRole.USER) ||
+        // Context messages for robots
+        (msg.fromRole === UserRole.SYSTEM && msg.toRole === UserRole.ROBOT) ||
+        // Messages directed to robots
+        (msg.fromRole === UserRole.USER && msg.toRole === UserRole.ROBOT) ||
+        // Previous robot responses (for continuity)
+        (msg.fromRole === UserRole.ROBOT && msg.toRole === UserRole.USER)
+      );
     });
   }
 
@@ -165,5 +208,54 @@ export class ChatConversationList {
     const initialLength = this.messages.length;
     this.messages = this.messages.filter((msg) => msg.id !== messageId);
     return this.messages.length < initialLength;
+  }
+
+  /**
+   * Log all messages to file for debugging
+   * Creates logs/dev-debug-conversations/messages-{conversationId}.json
+   */
+  private logMessagesToFile(): void {
+    if (!this.conversationId) {
+      return;
+    }
+
+    try {
+      // Create logs directory if it doesn't exist
+      const logsDir = path.join(process.cwd(), 'logs');
+      const devDebugDir = path.join(logsDir, 'dev-debug-conversations');
+
+      if (!fs.existsSync(logsDir)) {
+        fs.mkdirSync(logsDir, { recursive: true });
+      }
+      if (!fs.existsSync(devDebugDir)) {
+        fs.mkdirSync(devDebugDir, { recursive: true });
+      }
+
+      // Write all messages to file (overwrite each time)
+      const filename = `messages-${this.conversationId}.json`;
+      const filepath = path.join(devDebugDir, filename);
+
+      const messagesData = {
+        conversationId: this.conversationId,
+        totalMessages: this.messages.length,
+        lastUpdated: new Date().toISOString(),
+        messages: this.messages.map((msg) => ({
+          id: msg.id,
+          conversationId: msg.conversationId,
+          authorUserId: msg.authorUserId,
+          fromRole: msg.fromRole,
+          toRole: msg.toRole,
+          content: msg.content,
+          participantVisibility: msg.participantVisibility,
+          createdAt: msg.createdAt,
+          threadId: msg.threadId,
+        })),
+      };
+
+      fs.writeFileSync(filepath, JSON.stringify(messagesData, null, 2));
+    } catch (error) {
+      // Don't throw errors for logging - just silently fail
+      console.error('Failed to log conversation messages:', error);
+    }
   }
 }

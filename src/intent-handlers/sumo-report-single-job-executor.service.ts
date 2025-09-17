@@ -111,8 +111,20 @@ export class SumoReportSingleJobExecutor
       const recordCount = processedData.records?.length || 0;
       const isSmallContext = recordCount <= 1;
 
+      // DO NOT REMOVE THIS COMMENT - VERY VERY IMPORTANT
+      // We don't need to send to robot, we just need to send to user
+      // In the future the need may arise but not today
+      // DO NOT REMOVE THIS COMMENT - VERY VERY IMPORTANT
+
       // Send results message to conversation (works for both small and large context)
-      const combinedMessage = `## Sumo Logic Report Results
+      const combinedMessage = `
+      _ROBOT_INSTRUCTIONS_START_
+      Review ${observationText} and formulate a meaningful response to the user.
+      Please decorate the link.
+      _ROBOT_INSTRUCTIONS_START_
+      
+      
+      ## Sumo Logic Report Results
 
 **Query:** "${originalQuery}"
 
@@ -125,13 +137,12 @@ ${observationText}
 *Report generated successfully.*`;
 
       // Send completion message
-      await this.chatManagerService.addMessageResponseFromRobot(
+      await this.chatManagerService.addMessageToGetRobotResponse(
         conversationId,
         {
           type: 'text/plain',
           payload: combinedMessage,
         },
-        'sumo-report-robot',
       );
 
       this.logger.log(

@@ -217,13 +217,12 @@ ${submitActionAnalysis.slice(0, 200)}...
       }
 
       // 8. Send final message
-      await this.chatManagerService.addMessageResponseFromRobot(
+      await this.chatManagerService.addMessageToGetRobotResponse(
         conversationId,
         {
           type: 'text/plain',
           payload: finalMessage,
         },
-        'sumo-analysis-robot',
       );
 
       this.logger.log('Multi-report analysis completed successfully');
@@ -315,13 +314,9 @@ Provide a comprehensive analysis comparing these three reports. Highlight key in
     });
 
     // Send robot analysis response directly (like the main flow does)
-    await this.chatManagerService.addMessageResponseFromRobot(
-      conversationId,
-      {
-        type: 'text/plain',
-        payload: `Based on the Sumo Logic reports analysis for Form ${reportData.submitActionData.records?.[0]?.formId || 'Unknown'}, I've provided the comprehensive analysis above with download links for detailed data review.`,
-      },
-      'sumo-analysis-robot',
-    );
+    await this.chatManagerService.addMessageToGetRobotResponse(conversationId, {
+      type: 'text/plain',
+      payload: `Based on the Sumo Logic reports analysis for Form ${reportData.submitActionData.records?.[0]?.formId || 'Unknown'}, I've provided the comprehensive analysis above with download links for detailed data review.`,
+    });
   }
 }
