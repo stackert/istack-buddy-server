@@ -762,7 +762,14 @@ export class ChatManagerService {
         console.log('onStreamStart', message);
       },
       onStreamChunkReceived: (chunk) => {
-        console.log('onStreamChunkReceived', chunk);
+        // Stream chunks to WebSocket clients
+        if (chunk && chunk.trim() && this.getGateway()) {
+          this.getGateway().broadcastToConversation(
+            conversationId,
+            'robot_chunk',
+            { chunk },
+          );
+        }
       },
       onStreamFinished: (message) => {
         console.log('onStreamFinished', message);
