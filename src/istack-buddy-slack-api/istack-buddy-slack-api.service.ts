@@ -194,27 +194,26 @@ export class IstackBuddySlackApiService implements OnModuleDestroy {
       try {
         this.logger.log('Starting intent parsing for Slack...');
 
-        const intentResult = await this.intentParsingService.parsePromptIntent(
-          event.text,
-          { currentRobot: undefined },
-        );
+        // const intentResult = await this.intentParsingService.parsePromptIntent(
+        //   event.text,
+        //   { currentRobot: undefined },
+        // );
 
-        this.logger.log(
-          `Intent parsing completed: ${JSON.stringify(intentResult)}`,
-        );
+        // this.logger.log(
+        //   `Intent parsing completed: ${JSON.stringify(intentResult)}`,
+        // );
 
-        // Send parsed intent to Slack for debugging
-        let debugMessage: string;
-        if ('error' in intentResult) {
-          debugMessage = `**Intent Parsing Failed:**\n\`\`\`json\n${JSON.stringify(intentResult, null, 2)}\n\`\`\``;
-        } else {
-          debugMessage = `**Intent Parsed Successfully:**\n\`\`\`json\n${JSON.stringify(intentResult, null, 2)}\n\`\`\``;
-        }
+        // let debugMessage: string;
+        // if ('error' in intentResult) {
+        //   debugMessage = `**Intent Parsing Failed:**\n\`\`\`json\n${JSON.stringify(intentResult, null, 2)}\n\`\`\``;
+        // } else {
+        //   debugMessage = `**Intent Parsed Successfully:**\n\`\`\`json\n${JSON.stringify(intentResult, null, 2)}\n\`\`\``;
+        // }
 
-        await conversationRecord.sendConversationResponseToSlack({
-          type: 'text',
-          payload: debugMessage,
-        });
+        // await conversationRecord.sendConversationResponseToSlack({
+        //   type: 'text',
+        //   payload: debugMessage,
+        // });
 
         // Now actually process the intent via ChatManager
         this.logger.log('Processing intent via ChatManager...');
@@ -224,14 +223,19 @@ export class IstackBuddySlackApiService implements OnModuleDestroy {
           conversationRecord.sendConversationResponseToSlack,
         );
       } catch (intentError) {
-        this.logger.error('Error in Slack intent processing:', intentError);
-        this.logger.error('Error stack:', intentError.stack);
-        this.logger.error('Error name:', intentError.name);
-        this.logger.error('Error message:', intentError.message);
-        await conversationRecord.sendConversationResponseToSlack({
-          type: 'text',
-          payload: `**Intent Processing Error:**\n\`\`\`\nError: ${intentError.message}\nType: ${intentError.name}\nStack: ${intentError.stack?.substring(0, 500)}\n\`\`\``,
-        });
+        this.logger.error('Error Intent:', intentError);
+
+        //   await conversationRecord.sendConversationResponseToSlack({
+        //   type: 'text',
+        //   payload: `**Intent Processing Error:**\n\`\`\`\nError: ${intentError.message}\nType: ${intentError.name}\nStack: ${intentError.stack?.substring(0, 500)}\n\`\`\``,
+        // });
+
+        const errorMessageText = `**Intent Processing Error:**\n\`\`\`\nError: ${intentError.message}\nType: ${intentError.name}\nStack: ${intentError.stack?.substring(0, 500)}\n\`\`\``;
+        await this.chatManagerService.addMessageFromSlack(
+          conversationRecord.internalConversationId,
+          { type: 'text', payload: errorMessageText },
+          conversationRecord.sendConversationResponseToSlack,
+        );
       }
     } catch (error) {
       this.logger.error('Error handling app mention:', error);
@@ -240,6 +244,7 @@ export class IstackBuddySlackApiService implements OnModuleDestroy {
       try {
         const responseThreadTs = event.thread_ts || event.ts;
         await this.sendSlackMessage(
+          // maybe it's necessary to send directly to slack in this case?
           `Sorry, I encountered an error processing your request: ${error instanceof Error ? error.message : 'Unknown error'}`,
           event.channel,
           responseThreadTs,

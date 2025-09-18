@@ -1,30 +1,24 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { createHash } from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
+import { IntentParsingService } from '../common/services/intent-parsing.service';
+import { IntentRouterService } from '../common/services/intent-router.service';
+import { IntentParsingResponse } from '../common/types/intent-parsing.types';
 import { ChatConversationListService } from '../ConversationLists/ChatConversationListService';
 import {
-  TConversationMessageContentString,
-  TConversationMessageContentMarkdown,
   TConversationMessageContent,
+  TConversationMessageContentMarkdown,
+  TConversationMessageContentString,
+  TConversationMessageUserIntent,
 } from '../ConversationLists/types';
 import { RobotService } from '../robots/robot.service';
 import {
   IStreamingCallbacks,
   TStreamingCallbackMessageOnFullMessageReceived,
 } from '../robots/types';
-import { IntentParsingService } from '../common/services/intent-parsing.service';
-import { IntentRouterService } from '../common/services/intent-router.service';
 import {
-  IntentParsingResult,
-  IntentParsingResponse,
-  IntentParsingError,
-} from '../common/types/intent-parsing.types';
-import {
-  CreateMessageDto,
-  MessageType,
-  UserRole,
-  RobotName,
   ConversationParticipantRole,
+  CreateMessageDto,
+  UserRole,
 } from './dto/create-message.dto';
 import { GetMessagesDto } from './dto/get-messages.dto';
 import { JoinRoomDto } from './dto/join-room.dto';
@@ -223,11 +217,12 @@ export class ChatManagerService {
 
     try {
       // Step 1: Parse intent to determine appropriate robot
-      const intentResult = await this.intentParsingService.parsePromptIntent(
-        userMessage,
-        { currentRobot: undefined }, // Could be enhanced with conversation context
-      );
 
+      const intentResult = await this.parseIntentFromUserMessage(userMessage, {
+        currentRobot: '',
+        lastRobotMessageText: '',
+        conversationId: conversationId,
+      });
       // Step 2: Extract intent data from parsing result
       let intentData: any = null;
 
@@ -397,7 +392,7 @@ export class ChatManagerService {
    */
   async addMessageSystemNotification(
     conversationId: string,
-    content: TConversationMessageContent,
+    content: TConversationMessageContent | TConversationMessageUserIntent,
     participantVisibility: ConversationParticipantRole[] = [
       ConversationParticipantRole.SYSTEM_DEBUG,
       ConversationParticipantRole.SYSTEM_CONVERSATION_MANAGER,
@@ -544,10 +539,26 @@ export class ChatManagerService {
             const decoratedMessage = client.decorateMessage(message);
 
             this.logger.debug(
-              `Sending to Slack client ${client.clientId}: message ${JSON.stringify(message)}`,
+              `${client.type} client ${client.clientId} accepted message  ${JSON.stringify(message)}`,
             );
-
-            await client.sendMessage(decoratedMessage);
+            if (message.content.type === 'system/user-intent') {
+              this.logger.debug(
+                `${client.type} client ${client.clientId} accepted message ${JSON.stringify(message)}`,
+              );
+              const m = {
+                ...message,
+                content: {
+                  type: 'text/plain',
+                  payload:
+                    '```json\n' +
+                    JSON.stringify(message.content.payload) +
+                    '\n```',
+                },
+              };
+              await client.sendMessage(m.content as any);
+            } else {
+              await client.sendMessage(decoratedMessage);
+            }
           } else {
             this.logger.debug(
               `${client.type} client ${client.clientId} rejected message ${message.id}`,
@@ -929,17 +940,14 @@ export class ChatManagerService {
     // Trigger intent processing (similar to handleRobotMessage)
     try {
       // Step 1: Parse intent to determine appropriate handler/robot
-      const intentResult = await this.intentParsingService.parsePromptIntent(
+      const intentResult = await this.parseIntentFromUserMessage(
         content.payload,
-        { currentRobot: undefined },
+        {
+          currentRobot: '',
+          lastRobotMessageText: '',
+          conversationId: conversationId,
+        },
       );
-
-      // Step 2: Create callbacks for Slack integration
-      const slackCallbacks = this.createSlackCallbacks(
-        conversationId,
-        slackResponseCallback,
-      );
-
       // Step 3: Route intent through intent router or fallback to SlackyOpenAiAgent
       if ('error' in intentResult) {
         // Intent parsing failed, fallback to SlackyOpenAiAgent
@@ -1233,6 +1241,33 @@ export class ChatManagerService {
   }
 
   /**
+   * Parse intent from message text
+   */
+  async parseIntentFromUserMessage(
+    messageText: string,
+    conversationContext: {
+      currentRobot: string;
+      lastRobotMessageText: string;
+      conversationId: string;
+    },
+  ) {
+    const intentResult = await this.intentParsingService.parsePromptIntent(
+      messageText,
+      conversationContext,
+    );
+
+    await this.addMessageSystemNotification(
+      conversationContext.conversationId,
+      {
+        type: 'system/user-intent',
+        payload: intentResult,
+      },
+    );
+
+    return intentResult;
+  }
+
+  /**
    * Process user message: Add to conversation, parse intent, add intent, route
    * This is the centralized method that implements the flow you specified
    */
@@ -1246,11 +1281,12 @@ export class ChatManagerService {
 
     // STEP 2: PARSE INTENT (with conversation context)
     const conversationContext = {
-      currentRobot: this.getCurrentRobot(conversationId) || undefined,
-      lastRobotMessage: this.getLastRobotMessage(conversationId) || undefined,
+      currentRobot: this.getCurrentRobot(conversationId) || '',
+      lastRobotMessageText: this.getLastRobotMessage(conversationId) || '',
+      conversationId: conversationId,
     };
 
-    const intentResult = await this.intentParsingService.parsePromptIntent(
+    const intentResult = await this.parseIntentFromUserMessage(
       messageText,
       conversationContext,
     );
@@ -1271,13 +1307,6 @@ export class ChatManagerService {
 
       await this.intentRouterService.routeIntent(intentDataWithConversation);
     }
-  }
-
-  /**
-   * Parse intent from message text
-   */
-  async parseIntentFromMessage(messageText: string) {
-    return this.intentParsingService.parsePromptIntent(messageText);
   }
 
   /**

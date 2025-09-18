@@ -47,7 +47,10 @@ export class IntentParsingService {
    */
   public async parsePromptIntent(
     messageText: string,
-    conversationContext?: { currentRobot?: string; lastRobotMessage?: string },
+    conversationContext?: {
+      currentRobot?: string;
+      lastRobotMessageText?: string;
+    },
   ): Promise<IntentParsingResult> {
     try {
       this.logger.debug(
@@ -73,10 +76,10 @@ Message: "${messageText}"
 ${conversationContext?.currentRobot ? `Current conversation robot: ${conversationContext.currentRobot}` : ''}
 
 ${
-  conversationContext?.lastRobotMessage
+  conversationContext?.lastRobotMessageText
     ? `_ROBOT_LAST_RESPONSE_START_
 Instructions: If the robot's last response is a continuation question, please route to last robot.
-${conversationContext.lastRobotMessage}
+${conversationContext.lastRobotMessageText}
 _ROBOT_LAST_RESPONSE_END_`
     : ''
 }

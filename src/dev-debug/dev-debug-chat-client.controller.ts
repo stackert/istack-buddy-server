@@ -224,7 +224,6 @@ export class DevDebugChatClientController {
           _debug: {
             contentType: msg.content?.type || 'unknown',
             hasPayload: !!msg.content?.payload,
-            payloadLength: msg.content?.payload?.length || 0,
           },
         })),
       };
