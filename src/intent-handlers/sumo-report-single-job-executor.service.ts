@@ -121,7 +121,7 @@ export class SumoReportSingleJobExecutor
       _ROBOT_INSTRUCTIONS_START_
       Review ${observationText} and formulate a meaningful response to the user.
       Please decorate the link.
-      _ROBOT_INSTRUCTIONS_START_
+      _ROBOT_INSTRUCTIONS_END_
       
       
       ## Sumo Logic Report Results

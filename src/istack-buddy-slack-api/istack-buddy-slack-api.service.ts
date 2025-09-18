@@ -494,17 +494,12 @@ export class IstackBuddySlackApiService implements OnModuleDestroy {
     threadTs: string,
   ): (content: { type: 'text'; payload: string }) => Promise<void> {
     return async (content: { type: 'text'; payload: string }) => {
-      // Only send to Slack if we have actual content
-      if (content.payload && content.payload.trim()) {
-        // Send message to Slack
-        await this.sendSlackMessage(
-          content.payload,
-          channel,
-          threadTs, // this is what creates the thread
-        );
-      } else {
-        this.logger.warn('Skipping empty message response to Slack');
-      }
+      // Send message to Slack (filtering now handled at broadcast level)
+      await this.sendSlackMessage(
+        content.payload,
+        channel,
+        threadTs, // this is what creates the thread
+      );
     };
   }
 

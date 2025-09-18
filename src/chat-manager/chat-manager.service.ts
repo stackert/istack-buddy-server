@@ -48,6 +48,7 @@ interface ConversationClient {
     type: 'text';
     payload: string;
   };
+  isMessageFilterAccepted: (message: IConversationMessage) => boolean;
 }
 
 @Injectable()
@@ -114,16 +115,20 @@ export class ChatManagerService {
 
         // Create final robot message and broadcast through gateway
         if (accumulatedContent && accumulatedContent.trim()) {
-          const robotMessage = await this.createMessage({
-            conversationId: conversationId,
-            fromUserId: 'anthropic-marv-robot',
-            content: {
-              type: 'text/plain',
-              payload: accumulatedContent,
+          const robotMessage = await this.createMessage(
+            {
+              conversationId: conversationId,
+              content: {
+                type: 'text/plain',
+                payload: accumulatedContent,
+              },
             },
-            fromRole: UserRole.ROBOT,
-            toRole: UserRole.USER,
-          });
+            {
+              fromUserId: 'anthropic-marv-robot',
+              fromRole: UserRole.ROBOT,
+              toRole: UserRole.USER,
+            },
+          );
 
           // Broadcast robot response and completion through gateway
           if (this.getGateway()) {
@@ -144,16 +149,20 @@ export class ChatManagerService {
         message: TStreamingCallbackMessageOnFullMessageReceived,
       ) => {
         // Create and send message for dev/debug
-        const fullMessage = await this.createMessage({
-          conversationId: conversationId,
-          fromUserId: 'intent-handler-robot',
-          content: {
-            type: 'text/plain',
-            payload: message.content.payload,
+        const fullMessage = await this.createMessage(
+          {
+            conversationId: conversationId,
+            content: {
+              type: 'text/plain',
+              payload: message.content.payload,
+            },
           },
-          fromRole: UserRole.ROBOT,
-          toRole: UserRole.USER,
-        });
+          {
+            fromUserId: 'intent-handler-robot',
+            fromRole: UserRole.ROBOT,
+            toRole: UserRole.USER,
+          },
+        );
 
         // Broadcast message through gateway for dev/debug
         if (this.getGateway()) {
@@ -167,16 +176,20 @@ export class ChatManagerService {
         // The actual error message will be sent below
 
         // Create error message and broadcast through gateway
-        const errorMessage = await this.createMessage({
-          conversationId: conversationId,
-          fromUserId: 'anthropic-marv-robot',
-          content: {
-            type: 'text/plain',
-            payload: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        const errorMessage = await this.createMessage(
+          {
+            conversationId: conversationId,
+            content: {
+              type: 'text/plain',
+              payload: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            },
           },
-          fromRole: UserRole.USER,
-          toRole: UserRole.USER,
-        });
+          {
+            fromUserId: 'anthropic-marv-robot',
+            fromRole: UserRole.USER,
+            toRole: UserRole.USER,
+          },
+        );
 
         // Broadcast error message and completion through gateway
         if (this.getGateway()) {
@@ -285,20 +298,20 @@ export class ChatManagerService {
       }
 
       // Create conversation message in the correct format
-      const conversationMessage: IConversationMessage<TConversationMessageContentString> =
+      const conversationMessage = await this.createMessage(
         {
-          id: uuidv4(),
+          conversationId: conversationId,
           content: {
             type: 'text/plain',
             payload: userMessage,
           },
-          conversationId: conversationId,
-          authorUserId: 'form-marv-user',
+        },
+        {
+          fromUserId: 'form-marv-user',
           fromRole: UserRole.USER,
           toRole: UserRole.USER,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        };
+        },
+      );
 
       // Get conversation history for context using the robot's transformer
       const getHistory = () => {
@@ -390,18 +403,21 @@ export class ChatManagerService {
       ConversationParticipantRole.SYSTEM_CONVERSATION_MANAGER,
     ],
   ): Promise<void> {
-    // 1. Store message
-    const message = await this.storeMessage({
-      conversationId,
-      fromUserId: 'system',
-      content,
-      fromRole: UserRole.SYSTEM,
-      toRole: UserRole.USER,
-      participantVisibility,
-    });
+    // 1. CREATE
+    const message = await this.createMessage(
+      { conversationId, content },
+      {
+        fromUserId: 'system',
+        fromRole: UserRole.SYSTEM,
+        toRole: UserRole.USER,
+        intendedVisibility: participantVisibility,
+      },
+    );
 
-    // 2. Broadcast to all clients
-    await this.broadcastMessage(message);
+    // 2. OVERRIDE/MODIFY - SET VISIBILITY (already set via intendedVisibility)
+
+    // 3. STORE
+    await this.storeMessage(message);
   }
 
   /**
@@ -412,18 +428,21 @@ export class ChatManagerService {
     conversationId: string,
     content: TConversationMessageContent,
   ): Promise<void> {
-    // 1. Store message
-    const message = await this.storeMessage({
-      conversationId,
-      fromUserId: 'system',
-      content,
-      fromRole: UserRole.SYSTEM,
-      toRole: UserRole.ROBOT,
-      participantVisibility: [ConversationParticipantRole.VISIBLE_TO_ALL],
-    });
+    // 1. CREATE
+    const message = await this.createMessage(
+      { conversationId, content },
+      {
+        fromUserId: 'system',
+        fromRole: UserRole.SYSTEM,
+        toRole: UserRole.ROBOT,
+        intendedVisibility: [ConversationParticipantRole.VISIBLE_TO_ALL],
+      },
+    );
 
-    // 2. Broadcast to all clients
-    await this.broadcastMessage(message);
+    // 2. OVERRIDE/MODIFY - SET VISIBILITY (already set via intendedVisibility)
+
+    // 3. STORE
+    await this.storeMessage(message);
   }
 
   /**
@@ -462,18 +481,21 @@ export class ChatManagerService {
     content: TConversationMessageContent,
     fromUserId: string = 'robot',
   ): Promise<void> {
-    // 1. Store message
-    const message = await this.storeMessage({
-      conversationId,
-      fromUserId,
-      content,
-      fromRole: UserRole.ROBOT,
-      toRole: UserRole.USER,
-      participantVisibility: [ConversationParticipantRole.VISIBLE_TO_ALL],
-    });
+    // 1. CREATE
+    const message = await this.createMessage(
+      { conversationId, content },
+      {
+        fromUserId,
+        fromRole: UserRole.ROBOT,
+        toRole: UserRole.USER,
+        intendedVisibility: [ConversationParticipantRole.VISIBLE_TO_ALL],
+      },
+    );
 
-    // 2. Broadcast to all clients
-    await this.broadcastMessage(message);
+    // 2. OVERRIDE/MODIFY - SET VISIBILITY (already set via intendedVisibility)
+
+    // 3. STORE
+    await this.storeMessage(message);
   }
 
   /**
@@ -484,17 +506,21 @@ export class ChatManagerService {
     conversationId: string,
     content: TConversationMessageContent,
   ): Promise<void> {
-    // 1. Store message
-    const message = await this.storeMessage({
-      conversationId,
-      fromUserId: 'system-error',
-      content,
-      fromRole: UserRole.SYSTEM,
-      toRole: UserRole.USER,
-    });
+    // 1. CREATE
+    const message = await this.createMessage(
+      { conversationId, content },
+      {
+        fromUserId: 'system-error',
+        fromRole: UserRole.SYSTEM,
+        toRole: UserRole.USER,
+        intendedVisibility: [ConversationParticipantRole.VISIBLE_TO_ALL],
+      },
+    );
 
-    // 2. Broadcast to all clients
-    await this.broadcastMessage(message);
+    // 2. OVERRIDE/MODIFY - SET VISIBILITY (already set via intendedVisibility)
+
+    // 3. STORE
+    await this.storeMessage(message);
   }
 
   /**
@@ -514,8 +540,19 @@ export class ChatManagerService {
     await Promise.all(
       filteredClients.map(async (client) => {
         try {
-          const decoratedMessage = client.decorateMessage(message);
-          await client.sendMessage(decoratedMessage);
+          if (client.isMessageFilterAccepted(message)) {
+            const decoratedMessage = client.decorateMessage(message);
+
+            this.logger.debug(
+              `Sending to Slack client ${client.clientId}: message ${JSON.stringify(message)}`,
+            );
+
+            await client.sendMessage(decoratedMessage);
+          } else {
+            this.logger.debug(
+              `${client.type} client ${client.clientId} rejected message ${message.id}`,
+            );
+          }
         } catch (error) {
           this.logger.error(
             `Failed to send message to ${client.type} client: ${error.message}`,
@@ -545,42 +582,45 @@ export class ChatManagerService {
    * Private method to store message - INTERNAL USE ONLY
    */
   private async storeMessage(
-    createMessageDto: CreateMessageDto,
+    messageOrDto: IConversationMessage | CreateMessageDto,
   ): Promise<IConversationMessage> {
-    const messageId = uuidv4();
-    const now = new Date();
+    let message: IConversationMessage;
+
+    // Handle both IConversationMessage and CreateMessageDto for backward compatibility
+    if ('id' in messageOrDto) {
+      // Already a message object
+      message = messageOrDto as IConversationMessage;
+    } else {
+      // Create message from DTO
+      message = await this.createMessage(
+        {
+          conversationId: messageOrDto.conversationId,
+          content: messageOrDto.content,
+        },
+        messageOrDto,
+      );
+    }
 
     // Ensure conversation exists using centralized method
     await this.ensureConversationExists(
-      createMessageDto.conversationId,
-      `Conversation ${createMessageDto.conversationId}`,
-      `Auto-created conversation for ${createMessageDto.conversationId}`,
-      createMessageDto.fromUserId as string,
-      createMessageDto.fromRole,
+      message.conversationId,
+      `Conversation ${message.conversationId}`,
+      `Auto-created conversation for ${message.conversationId}`,
+      message.authorUserId as string,
+      message.fromRole,
     );
-
-    const message: IConversationMessage = {
-      id: messageId,
-      content: createMessageDto.content,
-      conversationId: createMessageDto.conversationId,
-      authorUserId: createMessageDto.fromUserId,
-      fromRole: createMessageDto.fromRole,
-      toRole: createMessageDto.toRole,
-      threadId: createMessageDto.threadId,
-      originalMessageId: createMessageDto.originalMessageId,
-      participantVisibility: createMessageDto.participantVisibility,
-      createdAt: now,
-      updatedAt: now,
-    };
 
     // Store the message in the chat conversation list service
     this.chatConversationListService.addMessageToConversation(
-      createMessageDto.conversationId,
+      message.conversationId,
       message,
     );
 
     // Update conversation activity
-    await this.updateConversationActivity(createMessageDto.conversationId);
+    await this.updateConversationActivity(message.conversationId);
+
+    // Auto-broadcast all stored messages
+    await this.broadcastMessage(message);
 
     return message;
   }
@@ -613,6 +653,12 @@ export class ChatManagerService {
           type: 'text',
           payload: message.content.payload as string,
         };
+      },
+      isMessageFilterAccepted: (message: IConversationMessage) => {
+        // Temporarily disable filtering to debug message delivery
+        // const payload = message.content.payload as string;
+        // return !!(payload && payload.trim());
+        return true;
       },
     };
 
@@ -665,6 +711,10 @@ export class ChatManagerService {
           payload: message.content.payload as string,
         };
       },
+      isMessageFilterAccepted: (message: IConversationMessage) => {
+        // WebSocket clients accept all messages
+        return true;
+      },
     };
 
     filteredClients.push(wsClient);
@@ -681,10 +731,29 @@ export class ChatManagerService {
    */
   async createMessage<
     T extends TConversationMessageContent = TConversationMessageContent,
-  >(createMessageDto: CreateMessageDto): Promise<IConversationMessage<T>> {
-    return this.storeMessage(createMessageDto) as Promise<
-      IConversationMessage<T>
-    >;
+  >(
+    required: { conversationId: string; content: TConversationMessageContent },
+    overrides: Partial<CreateMessageDto> = {},
+  ): Promise<IConversationMessage<T>> {
+    // Create message object with defaults + overrides
+    const messageId = uuidv4();
+    const now = new Date();
+
+    const message: IConversationMessage = {
+      id: messageId,
+      content: required.content,
+      conversationId: required.conversationId,
+      authorUserId: overrides.fromUserId || null,
+      fromRole: overrides.fromRole || UserRole.USER,
+      toRole: overrides.toRole || UserRole.USER,
+      threadId: overrides.threadId,
+      originalMessageId: overrides.originalMessageId,
+      participantVisibility: overrides.intendedVisibility || [],
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    return message as IConversationMessage<T>;
   }
 
   /**
@@ -696,13 +765,22 @@ export class ChatManagerService {
     content: TConversationMessageContent,
     fromRole: UserRole = UserRole.SYSTEM,
   ): Promise<IConversationMessage> {
-    return this.storeMessage({
-      conversationId,
-      content,
-      fromUserId: null,
-      fromRole,
-      toRole: UserRole.USER, // User sees, robot doesn't
-    });
+    // 1. CREATE
+    const message = await this.createMessage(
+      { conversationId, content },
+      {
+        fromUserId: null,
+        fromRole,
+        toRole: UserRole.USER,
+        intendedVisibility: [ConversationParticipantRole.VISIBLE_TO_ALL],
+      },
+    );
+
+    // 2. OVERRIDE/MODIFY - SET VISIBILITY (already set via intendedVisibility)
+
+    // 3. STORE
+    await this.storeMessage(message);
+    return message;
   }
 
   /**
@@ -715,13 +793,22 @@ export class ChatManagerService {
     content: TConversationMessageContent,
     fromRole: UserRole = UserRole.SYSTEM,
   ): Promise<IConversationMessage> {
-    return this.storeMessage({
-      conversationId,
-      content,
-      fromUserId: null,
-      fromRole,
-      toRole: UserRole.ROBOT, // Robot sees, user doesn't
-    });
+    // 1. CREATE
+    const message = await this.createMessage(
+      { conversationId, content },
+      {
+        fromUserId: null,
+        fromRole,
+        toRole: UserRole.ROBOT,
+        intendedVisibility: [ConversationParticipantRole.ROBOT_ALL],
+      },
+    );
+
+    // 2. OVERRIDE/MODIFY - SET VISIBILITY (already set via intendedVisibility)
+
+    // 3. STORE
+    await this.storeMessage(message);
+    return message;
   }
 
   /**
@@ -738,14 +825,21 @@ export class ChatManagerService {
     const robotName =
       this.getCurrentRobot(conversationId) || 'SlackyOpenAiAgent';
 
-    // Add the user message first
-    const userMessage = await this.storeMessage({
-      conversationId,
-      content,
-      fromUserId: null,
-      fromRole: UserRole.USER,
-      toRole: UserRole.ROBOT,
-    });
+    // 1. CREATE
+    const userMessage = await this.createMessage(
+      { conversationId, content },
+      {
+        fromUserId: null,
+        fromRole: UserRole.USER,
+        toRole: UserRole.ROBOT,
+        intendedVisibility: [ConversationParticipantRole.VISIBLE_TO_ALL],
+      },
+    );
+
+    // 2. OVERRIDE/MODIFY - SET VISIBILITY (already set via intendedVisibility)
+
+    // 3. STORE
+    await this.storeMessage(userMessage);
 
     // Get the specified robot
     const robot = this.robotService.getRobotByName(robotName);
@@ -967,19 +1061,20 @@ export class ChatManagerService {
     const conversationHistory = await this.getLastMessages(conversationId, 20);
 
     // Create message for robot
-    const message: IConversationMessage<TConversationMessageContentString> = {
-      id: uuidv4(),
-      conversationId,
-      content: {
-        type: 'text/plain',
-        payload: messagePayload,
+    const message = await this.createMessage(
+      {
+        conversationId,
+        content: {
+          type: 'text/plain',
+          payload: messagePayload,
+        },
       },
-      authorUserId: 'cx-slack-robot',
-      fromRole: UserRole.USER,
-      toRole: UserRole.USER,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
+      {
+        fromUserId: 'cx-slack-robot',
+        fromRole: UserRole.USER,
+        toRole: UserRole.USER,
+      },
+    );
 
     // Create internal callback that handles robot responses
     const internalRobotCallback = async (
@@ -1013,7 +1108,7 @@ export class ChatManagerService {
 
     // Trigger robot response
     await robot.acceptMessageMultiPartResponse(
-      message,
+      message as IConversationMessage<TConversationMessageContentString>,
       internalRobotCallback,
       () => conversationHistory,
     );
@@ -1112,21 +1207,27 @@ export class ChatManagerService {
     fromRole: UserRole = UserRole.USER,
     toRole: UserRole = UserRole.USER,
   ): Promise<IConversationMessage> {
-    // Store message
-    const message = await this.storeMessage({
-      conversationId,
-      fromUserId: userId,
-      content: {
-        type: 'text/plain',
-        payload: content,
+    // 1. CREATE
+    const message = await this.createMessage(
+      {
+        conversationId,
+        content: {
+          type: 'text/plain',
+          payload: content,
+        },
       },
-      fromRole,
-      toRole,
-      participantVisibility: [ConversationParticipantRole.VISIBLE_TO_ALL],
-    });
+      {
+        fromUserId: userId,
+        fromRole,
+        toRole,
+        intendedVisibility: [ConversationParticipantRole.VISIBLE_TO_ALL],
+      },
+    );
 
-    // Broadcast to all clients immediately (echo/acknowledge)
-    await this.broadcastMessage(message);
+    // 2. OVERRIDE/MODIFY - SET VISIBILITY (already set via intendedVisibility)
+
+    // 3. STORE
+    await this.storeMessage(message);
 
     return message;
   }

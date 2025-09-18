@@ -70,4 +70,8 @@ export class CreateMessageDto {
   @IsEnum(ConversationParticipantRole, { each: true })
   @IsOptional()
   participantVisibility?: ConversationParticipantRole[];
+
+  @IsEnum(ConversationParticipantRole, { each: true })
+  @IsOptional()
+  intendedVisibility?: ConversationParticipantRole[];
 }

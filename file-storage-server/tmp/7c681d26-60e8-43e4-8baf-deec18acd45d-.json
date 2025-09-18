@@ -1,0 +1,267 @@
+{
+  "executedQuery": "_sourceCategory=formstack/prod/*\n| json field=_raw \"message\"\n| json field=_raw \"context.submissionId\" as submissionId\n| json field=_raw \"context.formId\" as formId\n| where %\"message\" = \"Submission created on {formId}.\" AND formId = 5894350",
+  "recordSchema": {
+    "message": {
+      "type": "string",
+      "example": "Submission created on {formId}."
+    },
+    "submissionId": {
+      "type": "number",
+      "example": 1381565628
+    },
+    "isPartialSubmission": {
+      "type": "boolean",
+      "example": false
+    },
+    "submissionMethod": {
+      "type": "string",
+      "example": "web"
+    },
+    "formId": {
+      "type": "string",
+      "example": "5894350"
+    },
+    "accountId": {
+      "type": "string",
+      "example": "995011"
+    },
+    "submissionNonce": {
+      "type": "null",
+      "example": null
+    },
+    "submissionChecksum": {
+      "type": "string",
+      "example": "fe0967ac1a13f31c83fb289fcc85b2e5bac2bddb7af03ec502..."
+    },
+    "event": {
+      "type": "string",
+      "example": "submission_created"
+    },
+    "sessionId": {
+      "type": "string",
+      "example": ""
+    },
+    "errorId": {
+      "type": "string",
+      "example": "07783478d51e2209c048"
+    },
+    "datetime": {
+      "type": "string",
+      "example": "2025-09-17T12:55:06.583234-04:00"
+    },
+    "referrer": {
+      "type": "string",
+      "example": "https://erewhon.formstack.com/forms/mileage_form"
+    },
+    "ip": {
+      "type": "string",
+      "example": "198.2.54.250"
+    },
+    "_validationNote": "To validate results, run the executedQuery directly in Sumo Logic"
+  },
+  "records": [
+    {
+      "message": "Submission created on {formId}.",
+      "submissionId": 1381565628,
+      "isPartialSubmission": false,
+      "submissionMethod": "web",
+      "formId": "5894350",
+      "accountId": "995011",
+      "submissionNonce": null,
+      "submissionChecksum": "fe0967ac1a13f31c83fb289fcc85b2e5bac2bddb7af03ec5023db41da11272d2",
+      "event": "submission_created",
+      "sessionId": "",
+      "errorId": "07783478d51e2209c048",
+      "datetime": "2025-09-17T12:55:06.583234-04:00",
+      "referrer": "https://erewhon.formstack.com/forms/mileage_form",
+      "ip": "198.2.54.250"
+    },
+    {
+      "message": "Submission created on {formId}.",
+      "submissionId": 1381540577,
+      "isPartialSubmission": false,
+      "submissionMethod": "web",
+      "formId": "5894350",
+      "accountId": "995011",
+      "submissionNonce": null,
+      "submissionChecksum": "2bf6d208427792be9412e394f7b491f00e70dcad42d4303528c6683b1f363024",
+      "event": "submission_created",
+      "sessionId": "",
+      "errorId": "b8792c2621c1bf9b9302",
+      "datetime": "2025-09-17T11:55:59.741590-04:00",
+      "referrer": "https://erewhon.formstack.com/forms/mileage_form",
+      "ip": "198.2.54.250"
+    },
+    {
+      "message": "Submission created on {formId}.",
+      "submissionId": 1381539892,
+      "isPartialSubmission": false,
+      "submissionMethod": "web",
+      "formId": "5894350",
+      "accountId": "995011",
+      "submissionNonce": null,
+      "submissionChecksum": "dc22109a5e171587fea3ae3c7cb02b7a6997ce551c54dc2576cfcfd7996a365f",
+      "event": "submission_created",
+      "sessionId": "",
+      "errorId": "fa2c5654618780e138e7",
+      "datetime": "2025-09-17T11:54:23.911321-04:00",
+      "referrer": "https://erewhon.formstack.com/forms/mileage_form",
+      "ip": "198.2.54.250"
+    },
+    {
+      "message": "Submission created on {formId}.",
+      "submissionId": 1381539248,
+      "isPartialSubmission": false,
+      "submissionMethod": "web",
+      "formId": "5894350",
+      "accountId": "995011",
+      "submissionNonce": null,
+      "submissionChecksum": "4ff1462e915ad32568b9c7354410ebb2692eaba1e40e279d7efdbb5c35902ccb",
+      "event": "submission_created",
+      "sessionId": "",
+      "errorId": "6967045355f67caeb695",
+      "datetime": "2025-09-17T11:52:49.668848-04:00",
+      "referrer": "https://erewhon.formstack.com/forms/mileage_form",
+      "ip": "198.2.54.250"
+    },
+    {
+      "message": "Submission created on {formId}.",
+      "submissionId": 1381538915,
+      "isPartialSubmission": false,
+      "submissionMethod": "web",
+      "formId": "5894350",
+      "accountId": "995011",
+      "submissionNonce": null,
+      "submissionChecksum": "d53b1c4257f0354595630a23de1598380ad19d9cea0e6e2d99b54261225d3ef6",
+      "event": "submission_created",
+      "sessionId": "",
+      "errorId": "e340511c661ab40615b6",
+      "datetime": "2025-09-17T11:52:01.600373-04:00",
+      "referrer": "https://erewhon.formstack.com/forms/mileage_form",
+      "ip": "198.2.54.250"
+    },
+    {
+      "message": "Submission created on {formId}.",
+      "submissionId": 1381538667,
+      "isPartialSubmission": false,
+      "submissionMethod": "web",
+      "formId": "5894350",
+      "accountId": "995011",
+      "submissionNonce": null,
+      "submissionChecksum": "2696532d3e99f49b46b81f66c01ecc9167b1784d30b8d9e13ea16e3576d37ffe",
+      "event": "submission_created",
+      "sessionId": "",
+      "errorId": "2c596f500b63bfa9231c",
+      "datetime": "2025-09-17T11:51:21.772610-04:00",
+      "referrer": "https://erewhon.formstack.com/forms/mileage_form",
+      "ip": "198.2.54.250"
+    },
+    {
+      "message": "Submission created on {formId}.",
+      "submissionId": 1381538310,
+      "isPartialSubmission": false,
+      "submissionMethod": "web",
+      "formId": "5894350",
+      "accountId": "995011",
+      "submissionNonce": null,
+      "submissionChecksum": "5147986e8884ee7b4515674bd9fad5a80c278fc5297020408ab265dcba171162",
+      "event": "submission_created",
+      "sessionId": "",
+      "errorId": "bc1a17ad70c55d60d0d9",
+      "datetime": "2025-09-17T11:50:33.828664-04:00",
+      "referrer": "https://erewhon.formstack.com/forms/mileage_form",
+      "ip": "198.2.54.250"
+    },
+    {
+      "message": "Submission created on {formId}.",
+      "submissionId": 1381527958,
+      "isPartialSubmission": false,
+      "submissionMethod": "web",
+      "formId": "5894350",
+      "accountId": "995011",
+      "submissionNonce": null,
+      "submissionChecksum": "b34019570be2e0ab98245f7922632def30c8ae7450ac26cc5e8b4ff1cbe3722b",
+      "event": "submission_created",
+      "sessionId": "",
+      "errorId": "55fee3365752764e4b8b",
+      "datetime": "2025-09-17T11:25:44.083052-04:00",
+      "referrer": "https://erewhon.formstack.com/forms/mileage_form",
+      "ip": "76.80.178.122"
+    },
+    {
+      "message": "Submission created on {formId}.",
+      "submissionId": 1381401227,
+      "isPartialSubmission": false,
+      "submissionMethod": "web",
+      "formId": "5894350",
+      "accountId": "995011",
+      "submissionNonce": null,
+      "submissionChecksum": "66cea0436ef099d2162fe09454066e8f3c62992b3a6aac215de383d083b3b751",
+      "event": "submission_created",
+      "sessionId": "",
+      "errorId": "dfaa6078e19e5913fcae",
+      "datetime": "2025-09-16T23:47:32.239480-04:00",
+      "referrer": "https://erewhon.formstack.com/forms/mileage_form",
+      "ip": "76.83.40.66"
+    },
+    {
+      "message": "Submission created on {formId}.",
+      "submissionId": 1381355463,
+      "isPartialSubmission": false,
+      "submissionMethod": "web",
+      "formId": "5894350",
+      "accountId": "995011",
+      "submissionNonce": null,
+      "submissionChecksum": "aa3dd7492aedb17b94dd026b2e5ec83fa864b6f18dbc73c247bc02a1efda2d83",
+      "event": "submission_created",
+      "sessionId": "",
+      "errorId": "7f09398bfe8562978fe2",
+      "datetime": "2025-09-16T19:45:34.865370-04:00",
+      "referrer": "https://erewhon.formstack.com/forms/mileage_form",
+      "ip": "172.56.120.109"
+    },
+    {
+      "message": "Submission created on {formId}.",
+      "submissionId": 1381292739,
+      "isPartialSubmission": false,
+      "submissionMethod": "web",
+      "formId": "5894350",
+      "accountId": "995011",
+      "submissionNonce": null,
+      "submissionChecksum": "0ed65d02961b7981fe92e016817665c2bc6bd36fd754a6045604fe39fde6ee12",
+      "event": "submission_created",
+      "sessionId": "",
+      "errorId": "a44f5ee0c4a2f9bbbb87",
+      "datetime": "2025-09-16T16:16:35.208591-04:00",
+      "referrer": "https://erewhon.formstack.com/forms/mileage_form",
+      "ip": "174.221.165.196"
+    },
+    {
+      "message": "Submission created on {formId}.",
+      "submissionId": 1381229320,
+      "isPartialSubmission": false,
+      "submissionMethod": "web",
+      "formId": "5894350",
+      "accountId": "995011",
+      "submissionNonce": null,
+      "submissionChecksum": "48964bdc8604eccd67d6258ce92ff4da35425eee391cb2af4c98a340dff13678",
+      "event": "submission_created",
+      "sessionId": "",
+      "errorId": "faa118cffecca49d1405",
+      "datetime": "2025-09-16T13:49:22.252904-04:00",
+      "referrer": "https://erewhon.formstack.com/forms/mileage_form",
+      "ip": "174.193.197.84"
+    }
+  ],
+  "messageCount": 12,
+  "queryName": "submissionCreatedForForm",
+  "arguments": [
+    "formId",
+    "submissionId"
+  ],
+  "timeRange": {
+    "from": "2025-09-16T17:41:48.605Z",
+    "to": "2025-09-17T17:41:48.605Z"
+  },
+  "validationNote": "To validate results, run the executedQuery directly in Sumo Logic"
+}
