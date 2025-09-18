@@ -541,7 +541,7 @@ export class ChatManagerService {
             this.logger.debug(
               `${client.type} client ${client.clientId} accepted message  ${JSON.stringify(message)}`,
             );
-            if (message.content.type === 'system/user-intent') {
+            if (false && message.content.type === 'system/user-intent') {
               this.logger.debug(
                 `${client.type} client ${client.clientId} accepted message ${JSON.stringify(message)}`,
               );
@@ -659,7 +659,16 @@ export class ChatManagerService {
       clientId: `slack-${conversationId}`,
       sendMessage: slackCallback,
       decorateMessage: (message: IConversationMessage) => {
-        // No-op passthrough decoration for now
+        // Handle system/user-intent messages specially for Slack
+        if (message.content.type === 'system/user-intent') {
+          return {
+            type: 'text',
+            payload:
+              '```json\n' + JSON.stringify(message.content.payload) + '\n```',
+          };
+        }
+
+        // No-op passthrough decoration for other messages
         return {
           type: 'text',
           payload: message.content.payload as string,

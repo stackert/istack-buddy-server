@@ -765,9 +765,20 @@ export class DevDebugChatClientController {
             const timeStr = new Date(message.createdAt).toLocaleTimeString();
             const actualContentType = message.content?.type || 'unknown';
             const debugContentType = message._debug ? message._debug.contentType : 'text/plain';
-            const payloadLength = (message.content?.payload || '').length;
             
-            let displayContent = message.content.payload || message.content || 'No content';
+            // Handle content based on type
+            let displayContent;
+            let payloadLength;
+            
+            if (message.content?.type === 'text/plain') {
+                // Convert text/plain to markdown
+                displayContent = message.content.payload || 'No content';
+                payloadLength = (displayContent || '').length;
+            } else {
+                // Convert non-text/plain to JSON
+                displayContent = JSON.stringify(message.content?.payload || message.content || 'No content', null, 2);
+                payloadLength = displayContent.length;
+            }
             
             // Add debug label for context/document messages
             let debugLabel = '';
@@ -778,7 +789,6 @@ export class DevDebugChatClientController {
             // Convert ALL messages to markdown (client-side assumption)
             let isMarkdownContent = false;
             console.log('Message content type:', message.content?.type);
-            console.log('Content payload preview:', (message.content?.payload || '').substring(0, 100));
             
             // Render all messages as markdown
             if (typeof marked !== 'undefined') {
@@ -807,7 +817,7 @@ export class DevDebugChatClientController {
             messageDiv.innerHTML = \`
                 \${debugLabel}
                 <div class="message-header">
-                    \${message.fromRole} → \${message.toRole} (\${timeStr})
+                    \${message.fromRole || 'unknown'} → \${message.toRole || 'unknown'} (\${timeStr})
                     <span style="font-size: 10px; color: #666; margin-left: 10px;">
                         [\${actualContentType}] \${payloadLength} chars
                     </span>
