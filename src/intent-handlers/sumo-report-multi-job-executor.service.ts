@@ -168,12 +168,17 @@ export class SumoReportMultiJobExecutor
       );
 
       // 7. For dev/debug: Send prompt to conversation instead of robot
-      await this.chatManagerService.addMessageUserOnly(conversationId, {
-        type: 'text/markdown',
-        payload:
-          'For dev/debug we are sending the prompt to conversation and not robot' +
-          analysisPrompt.slice(0, 100),
-      });
+      await this.chatManagerService.addMessageUserOnly(
+        conversationId,
+        {
+          type: 'text/markdown',
+          payload:
+            'For dev/debug we are sending the prompt to conversation and not robot' +
+            analysisPrompt.slice(0, 100),
+        },
+        UserRole.SYSTEM,
+        'sumo-multi-executor@system.com',
+      );
 
       // 8. Check if we have any failures and create appropriate message
       const hasFailures =

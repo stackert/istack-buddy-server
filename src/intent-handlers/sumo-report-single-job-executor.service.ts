@@ -41,8 +41,8 @@ export class SumoReportSingleJobExecutor
       await this.chatManagerService.addMessageSystemNotification(
         conversationId,
         {
-          type: 'text/plain',
-          payload: `🔄 **Sumo Report Request Received**\n\nQuery: ${queryParams.queryName}\nForm ID: ${queryParams.subject.formId}\nSubmit Action Type: ${queryParams.subject.submitActionType}\nDate Range: ${queryParams.subject.startDate} to ${queryParams.subject.endDate}\n\nSubmitting job...`,
+          type: 'text/markdown',
+          payload: `🔄 **Sumo Report Request Received**\n\nQuery: ${queryParams.queryName}\nForm ID: ${queryParams.subject.formId || '[none]'}\nSubmit Action Type: ${queryParams.subject.submitActionType || '[none]'}\nSubmission ID: ${queryParams.subject.submissionId || '[none]'}\nDate Range: ${queryParams.subject.startDate || '[none]'} to ${queryParams.subject.endDate || '[none]'}\n\nSubmitting job...`,
         },
       );
 
@@ -140,7 +140,7 @@ ${observationText}
       await this.chatManagerService.addMessageToGetRobotResponse(
         conversationId,
         {
-          type: 'text/plain',
+          type: 'text/markdown',
           payload: combinedMessage,
         },
       );

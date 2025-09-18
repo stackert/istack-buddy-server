@@ -16,7 +16,8 @@ type TConversationMessageContentMediaTypes =
   | 'sumo-search/report'
   | 'sumo-syntax/query'
   | 'sumo-syntax/validation'
-  | 'system/user-intent';
+  | 'system/user-intent'
+  | 'system/robot-prompt';
 
 type TConversationMessageContentTypes<
   MEDIA_TYPE extends TConversationMessageContentMediaTypes,
@@ -34,6 +35,11 @@ type TConversationMessageContentString = TConversationMessageContentTypes<
 type TConversationMessageUserIntent = TConversationMessageContentTypes<
   'system/user-intent',
   object
+>;
+
+type TConversationMessageRobotPrompt = TConversationMessageContentTypes<
+  'system/robot-prompt',
+  string
 >;
 
 type TConversationMessageContentMarkdown = TConversationMessageContentTypes<
@@ -148,7 +154,8 @@ type TConversationMessageContent =
   | TConversationMessageContentSumoSearchReport
   | TConversationMessageContentSumoSyntaxQuery
   | TConversationMessageContentSumoSyntaxValidation
-  | TConversationMessageUserIntent;
+  | TConversationMessageUserIntent
+  | TConversationMessageRobotPrompt;
 
 // Base message structure - T can be any content type
 type TConversationListMessage<T = TConversationMessageContent> = {
@@ -187,6 +194,7 @@ export type {
   TConversationMessageContentSumoSyntaxQuery,
   TConversationMessageContentSumoSyntaxValidation,
   TConversationMessageUserIntent,
+  TConversationMessageRobotPrompt,
   // Message types
   TConversationListMessage,
   TConversationTextMessage,

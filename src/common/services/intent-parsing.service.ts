@@ -112,7 +112,7 @@ IMPORTANT: Follow the harvest guidelines above for extracting subjects and dates
 
 Example response formats:
 General assistance: {"intent":"assistUser","intentData":{"originalUserPrompt":"hello","subIntents":["generalAssistance"],"subjects":null},"devDebugRecommendedExecutor":"N/A","devDebugRecommendedRobot":"SlackyOpenAiAgent"}
-Submission report with dates: {"intent":"generateSumoReport","intentData":{"originalUserPrompt":"submission report for form 12345","subIntents":["submissionCreatedForForm"],"subjects":{"formId":["12345"],"startDate":["TODAY_START_ISO8601"],"endDate":["TODAY_END_ISO8601"]}},"devDebugRecommendedExecutor":"SumoReportSingleJobExecutor","devDebugRecommendedRobot":"SlackyOpenAiAgent"}`,
+Submission report with dates: {"intent":"generateSumoReport","intentData":{"originalUserPrompt":"submission report for form 12345","subIntents":["submissionCreatedForForm"],"subjects":{"formId":["12345"]},"dateRange":{"startDate":"TODAY_START_ISO8601","endDate":"TODAY_END_ISO8601"}},"devDebugRecommendedExecutor":"SumoReportSingleJobExecutor","devDebugRecommendedRobot":"SlackyOpenAiAgent"}`,
           },
         ],
         temperature: 0.1,
@@ -229,8 +229,9 @@ Extract any entity IDs mentioned in the query:
 
 # Date Harvest
 HARVEST DATES (for Sumo queries):
-- "past week" → startDate: 7 days ago, endDate: today
-- Return as: {"startDate": ["2025-09-01"], "endDate": ["2025-09-05"]}`;
+- "past week" → startDate: 7 days ago, endDate: today  
+- Return as: {"startDate": "2025-09-01", "endDate": "2025-09-05"}
+- CRITICAL: Dates go in dateRange object, NOT in subjects`;
     }
   }
 

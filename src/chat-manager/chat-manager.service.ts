@@ -38,10 +38,7 @@ interface ConversationClient {
   conversationId: string;
   clientId: string;
   sendMessage: (content: { type: 'text'; payload: string }) => Promise<void>;
-  decorateMessage: (message: IConversationMessage) => {
-    type: 'text';
-    payload: string;
-  };
+  decorateMessage: (message: IConversationMessage) => IConversationMessage;
   isMessageFilterAccepted: (message: IConversationMessage) => boolean;
 }
 
@@ -402,7 +399,7 @@ export class ChatManagerService {
     const message = await this.createMessage(
       { conversationId, content },
       {
-        fromUserId: 'system',
+        fromUserId: 'chat-manager@system.com',
         fromRole: UserRole.SYSTEM,
         toRole: UserRole.USER,
         intendedVisibility: participantVisibility,
@@ -427,7 +424,7 @@ export class ChatManagerService {
     const message = await this.createMessage(
       { conversationId, content },
       {
-        fromUserId: 'system',
+        fromUserId: 'chat-manager@system.com',
         fromRole: UserRole.SYSTEM,
         toRole: UserRole.ROBOT,
         intendedVisibility: [ConversationParticipantRole.VISIBLE_TO_ALL],
@@ -474,7 +471,7 @@ export class ChatManagerService {
   async addMessageResponseFromRobot(
     conversationId: string,
     content: TConversationMessageContent,
-    fromUserId: string = 'robot',
+    fromUserId: string,
   ): Promise<void> {
     // 1. CREATE
     const message = await this.createMessage(
@@ -505,7 +502,7 @@ export class ChatManagerService {
     const message = await this.createMessage(
       { conversationId, content },
       {
-        fromUserId: 'system-error',
+        fromUserId: 'chat-manager@system.com',
         fromRole: UserRole.SYSTEM,
         toRole: UserRole.USER,
         intendedVisibility: [ConversationParticipantRole.VISIBLE_TO_ALL],
@@ -541,24 +538,10 @@ export class ChatManagerService {
             this.logger.debug(
               `${client.type} client ${client.clientId} accepted message  ${JSON.stringify(message)}`,
             );
-            if (false && message.content.type === 'system/user-intent') {
-              this.logger.debug(
-                `${client.type} client ${client.clientId} accepted message ${JSON.stringify(message)}`,
-              );
-              const m = {
-                ...message,
-                content: {
-                  type: 'text/plain',
-                  payload:
-                    '```json\n' +
-                    JSON.stringify(message.content.payload) +
-                    '\n```',
-                },
-              };
-              await client.sendMessage(m.content as any);
-            } else {
-              await client.sendMessage(decoratedMessage);
-            }
+            await client.sendMessage({
+              type: 'text',
+              payload: decoratedMessage.content.payload as string,
+            });
           } else {
             this.logger.debug(
               `${client.type} client ${client.clientId} rejected message ${message.id}`,
@@ -637,6 +620,28 @@ export class ChatManagerService {
   }
 
   /**
+   * Convert standard markdown to Slack-compatible format
+   */
+  private convertMarkdownToSlack(markdown: string): string {
+    return (
+      markdown
+        // Headers: ### Header → *Header*
+        .replace(/^### (.*?)$/gm, '*$1*')
+        .replace(/^## (.*?)$/gm, '*$1*')
+        .replace(/^# (.*?)$/gm, '*$1*')
+        // Bold: **text** → *text*
+        .replace(/\*\*(.*?)\*\*/g, '*$1*')
+        // Italic: __text__ → _text_
+        .replace(/__(.*?)__/g, '_$1_')
+        // Bullet points: - item → • item
+        .replace(/^- (.*?)$/gm, '• $1')
+        // Remove extra markdown artifacts
+        .replace(/^\s*\*\s*$/gm, '') // Remove standalone asterisks
+        .replace(/^\s*#\s*$/gm, '')
+    ); // Remove standalone hashes
+  }
+
+  /**
    * Register Slack client for conversation
    * Called automatically when Slack message is received
    */
@@ -658,21 +663,59 @@ export class ChatManagerService {
       conversationId,
       clientId: `slack-${conversationId}`,
       sendMessage: slackCallback,
-      decorateMessage: (message: IConversationMessage) => {
+      decorateMessage: (
+        message: IConversationMessage,
+      ): IConversationMessage => {
         // Handle system/user-intent messages specially for Slack
         if (message.content.type === 'system/user-intent') {
           return {
-            type: 'text',
-            payload:
-              '```json\n' + JSON.stringify(message.content.payload) + '\n```',
+            ...message,
+            content: {
+              type: 'text/plain',
+              payload:
+                '```json\n' + JSON.stringify(message.content.payload) + '\n```',
+            },
+          };
+        }
+
+        // Handle system/robot-prompt messages as clickable link
+        if (message.content.type === 'system/robot-prompt') {
+          return {
+            ...message,
+            content: {
+              type: 'text/plain',
+              payload: `[robot prompt] http://localhost:3500/get-message?messageId=${message.id}`,
+            },
+          };
+        }
+
+        // Replace Slack user's own messages with '[Your Message]' to avoid echo
+        if (message.authorUserId === 'slack-service@istack-buddy.com') {
+          return {
+            ...message,
+            content: {
+              type: 'text/plain',
+              payload: '[Your Message]',
+            },
+          };
+        }
+
+        // Convert markdown to Slack format for text/markdown messages
+        if (message.content.type === 'text/markdown') {
+          const slackMarkdown = this.convertMarkdownToSlack(
+            message.content.payload as string,
+          );
+          return {
+            ...message,
+            content: {
+              type: 'text/plain',
+              payload: slackMarkdown,
+            },
           };
         }
 
         // No-op passthrough decoration for other messages
-        return {
-          type: 'text',
-          payload: message.content.payload as string,
-        };
+        return message;
       },
       isMessageFilterAccepted: (message: IConversationMessage) => {
         // Temporarily disable filtering to debug message delivery
@@ -726,10 +769,7 @@ export class ChatManagerService {
       },
       decorateMessage: (message: IConversationMessage) => {
         // No-op passthrough decoration for now
-        return {
-          type: 'text',
-          payload: message.content.payload as string,
-        };
+        return message;
       },
       isMessageFilterAccepted: (message: IConversationMessage) => {
         // WebSocket clients accept all messages
@@ -784,12 +824,13 @@ export class ChatManagerService {
     conversationId: string,
     content: TConversationMessageContent,
     fromRole: UserRole = UserRole.SYSTEM,
+    fromUserId: string,
   ): Promise<IConversationMessage> {
     // 1. CREATE
     const message = await this.createMessage(
       { conversationId, content },
       {
-        fromUserId: null,
+        fromUserId,
         fromRole,
         toRole: UserRole.USER,
         intendedVisibility: [ConversationParticipantRole.VISIBLE_TO_ALL],
@@ -817,7 +858,7 @@ export class ChatManagerService {
     const message = await this.createMessage(
       { conversationId, content },
       {
-        fromUserId: null,
+        fromUserId: 'chat-manager@system.com',
         fromRole,
         toRole: UserRole.ROBOT,
         intendedVisibility: [ConversationParticipantRole.ROBOT_ALL],
@@ -847,12 +888,21 @@ export class ChatManagerService {
 
     // 1. CREATE
     const userMessage = await this.createMessage(
-      { conversationId, content },
       {
-        fromUserId: null,
-        fromRole: UserRole.USER,
+        conversationId,
+        content: {
+          type: 'system/robot-prompt',
+          payload: content.payload,
+        },
+      },
+      {
+        fromUserId: 'chat-manager@system.com',
+        fromRole: UserRole.SYSTEM,
         toRole: UserRole.ROBOT,
-        intendedVisibility: [ConversationParticipantRole.VISIBLE_TO_ALL],
+        intendedVisibility: [
+          ConversationParticipantRole.SYSTEM_DEBUG,
+          ConversationParticipantRole.ROBOT_ALL,
+        ],
       },
     );
 
@@ -941,7 +991,7 @@ export class ChatManagerService {
     const userMessage = await this.addMessageFromUser(
       conversationId,
       content.payload,
-      'cx-slack-robot',
+      'slack-service@istack-buddy.com',
       UserRole.USER,
       UserRole.USER,
     );
