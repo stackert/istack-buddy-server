@@ -43,7 +43,7 @@ export class ContextDynamicJobExecutor implements IntentHandler {
       await this.chatManagerService.addMessageSystemNotification(
         conversationId,
         {
-          type: 'text/plain',
+          type: 'text/markdown',
           payload: ackMessage,
         },
       );
@@ -75,63 +75,11 @@ export class ContextDynamicJobExecutor implements IntentHandler {
       await this.chatManagerService.addMessageErrorNotification(
         conversationId,
         {
-          type: 'text/plain',
+          type: 'text/markdown',
           payload: `❌ **Context Dynamic Error**: ${error.message}`,
         },
       );
     }
-  }
-
-  private async sendFormContextToConversation(
-    formContext: any,
-    conversationId: string,
-    originalPrompt: string,
-    formId: string,
-  ): Promise<void> {
-    const form = formContext.data || formContext.form;
-
-    if (!form) {
-      await this.chatManagerService.addMessageErrorNotification(
-        conversationId,
-        {
-          type: 'text/plain',
-          payload: `No form context found for formId: ${formId}`,
-        },
-      );
-      return;
-    }
-
-    // Create a structured summary of the form context
-    const contextSummary = this.formatFormContextSummary(
-      form,
-      originalPrompt,
-      formId,
-    );
-
-    // Send the context as a structured message
-    await this.chatManagerService.addMessageAsContext(conversationId, {
-      type: 'context/dynamic-form',
-      payload: {
-        formRecord: form,
-        submitActionIds: form.submitActions?.map((action: any) =>
-          action.submitActionId?.toString(),
-        ),
-        emails: [
-          ...(form.confirmationEmails?.map((email: any) => email.name) || []),
-          ...(form.notificationEmails?.map((email: any) => email.name) || []),
-        ],
-      },
-    });
-
-    // Also send a human-readable summary
-    await this.chatManagerService.addMessageSystemNotification(conversationId, {
-      type: 'text/plain',
-      payload: contextSummary,
-    });
-
-    this.logger.log(
-      `Sent form context for formId: ${form.formId} to conversation ${conversationId}`,
-    );
   }
 
   private formatFormContextSummary(
@@ -139,7 +87,7 @@ export class ContextDynamicJobExecutor implements IntentHandler {
     originalPrompt: string,
     actualFormId: string,
   ): string {
-    const form = formContext.data || formContext;
+    const form = formContext.form;
     const {
       activeAuthProviderName,
       protectionType,
@@ -167,9 +115,10 @@ export class ContextDynamicJobExecutor implements IntentHandler {
       submitActions.forEach((action: any) => {
         const status = action.isActive ? '✅' : '❌';
         const logic = action.hasLogic ? ' (with logic)' : '';
-        summary += `  - ${status} ${action.name} (${action.submitActionId})\n`;
+        summary += `  - ${status} ${action.name} (${action.type}) (**${action.submitActionId}**)${logic}\n`;
       });
       summary += `\n`;
+      summary += `*Legend: ✅/❌ = active status, name = submit action name, type = submit action type (webhook, email, etc.), **ID** = submit action ID, (with logic) = has conditional logic*\n\n`;
     }
 
     // Confirmation Emails
@@ -177,7 +126,7 @@ export class ContextDynamicJobExecutor implements IntentHandler {
       summary += `confirmationEmails:\n`;
       confirmationEmails.forEach((email: any) => {
         const logic = email.hasLogic ? ' (with logic)' : '';
-        summary += `  - ${email.name} (${email.confirmationEmailId})${logic}\n`;
+        summary += `  - ${email.name} (**${email.confirmationEmailId}**)${logic}\n`;
       });
       summary += `\n`;
     }
@@ -187,7 +136,7 @@ export class ContextDynamicJobExecutor implements IntentHandler {
       summary += `notificationEmails:\n`;
       notificationEmails.forEach((email: any) => {
         const logic = email.hasLogic ? ' (with logic)' : '';
-        summary += `  - ${email.name} (${email.notificationEmailId})${logic}\n`;
+        summary += `  - ${email.name} (**${email.notificationEmailId}**)${logic}\n`;
       });
       summary += `\n`;
     }
@@ -197,7 +146,7 @@ export class ContextDynamicJobExecutor implements IntentHandler {
       summary += `formPlugins:\n`;
       formPlugins.forEach((plugin: any) => {
         const status = plugin.isActive ? '✅' : '❌';
-        summary += `  - ${status} ${plugin.type} (${plugin.formPluginId})\n`;
+        summary += `  - ${status} ${plugin.type} (**${plugin.formPluginId}**)\n`;
       });
       summary += `\n`;
     }
@@ -207,7 +156,7 @@ export class ContextDynamicJobExecutor implements IntentHandler {
       summary += `smartLists:\n`;
       smartLists.forEach((list: any) => {
         const fieldCount = list.fieldIds?.length || 0;
-        summary += `  - ${list.name} (${list.smartListId}) - ${fieldCount} fields\n`;
+        summary += `  - ${list.name} (**${list.smartListId}**) - ${fieldCount} fields\n`;
       });
       summary += `\n`;
     }
@@ -215,15 +164,6 @@ export class ContextDynamicJobExecutor implements IntentHandler {
     summary += `*Form context retrieved successfully.*`;
 
     return summary;
-  }
-
-  private formatFormContextMessage(
-    formContext: any,
-    originalPrompt: string,
-    formId: string,
-  ): string {
-    // Use the same detailed formatting as the conversation message
-    return this.formatFormContextSummary(formContext, originalPrompt, formId);
   }
 
   private async handleFormContext(
@@ -265,12 +205,12 @@ export class ContextDynamicJobExecutor implements IntentHandler {
     );
 
     this.logger.log(
-      `FORMATTED MESSAGE: ${richFormContextMessage.substring(0, 200)}...`,
+      `FORMATTED MESSAGE (context-dynamic-form): ${richFormContextMessage}...`,
     );
 
     // Send to dev/debug conversation
     await this.chatManagerService.addMessageSystemNotification(conversationId, {
-      type: 'text/plain',
+      type: 'text/markdown',
       payload: richFormContextMessage,
     });
 
@@ -303,19 +243,6 @@ export class ContextDynamicJobExecutor implements IntentHandler {
     // Fetch account context using service wrapper
     const accountContext =
       await this.iStackInfoService.contextDynamic.getAccount(accountId);
-
-    // Send account context via callbacks (works for both dev debug and Slack)
-    const accountContextMessage = `## 🏢 Account Context Retrieved
-
-**Account ID:** ${accountId}
-**Query:** "${intentData.originalUserPrompt}"
-
-**Account Details:**
-- Name: ${accountContext.data?.accountName || 'N/A'}
-- Status: ${accountContext.data?.status || 'N/A'}
-- Plan: ${accountContext.data?.plan || 'N/A'}
-
-*Account context retrieved successfully.*`;
 
     // Send account context directly to conversation
     await this.sendContextToConversation(

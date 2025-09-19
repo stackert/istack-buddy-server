@@ -639,6 +639,8 @@ export class ChatManagerService {
         .replace(/\*\*(.*?)\*\*/g, '*$1*')
         // Italic: __text__ → _text_
         .replace(/__(.*?)__/g, '_$1_')
+        // Links: [text](url) → <url|text>
+        .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<$2|$1>')
         // Bullet points: - item → • item
         .replace(/^- (.*?)$/gm, '• $1')
         // Remove extra markdown artifacts
@@ -714,7 +716,7 @@ export class ChatManagerService {
         }
 
         // Convert markdown to Slack format for text/markdown messages
-        if (true || message.content.type === 'text/markdown') {
+        if (message.content.type === 'text/markdown') {
           const slackMarkdown =
             '' +
             'REFORMATTED: ' +

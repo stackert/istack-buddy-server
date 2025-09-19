@@ -59,7 +59,7 @@ export class SumoReportMultiJobExecutor
       await this.chatManagerService.addMessageSystemNotification(
         conversationId,
         {
-          type: 'text/plain',
+          type: 'text/markdown',
           payload: `🔄 **Sumo Analysis Request Received**\n\nForm ID: ${baseParams.formId}\nDate Range: ${baseParams.startDate} to ${baseParams.endDate}\n\nStarting multiple reports...`,
         },
       );
@@ -102,7 +102,7 @@ export class SumoReportMultiJobExecutor
       await this.chatManagerService.addMessageSystemNotification(
         conversationId,
         {
-          type: 'text/plain',
+          type: 'text/markdown',
           payload: `**Sumo report files generated, doing more analysis please wait...**\n\n- Submit Actions: ${submitActionData?.processedData.records?.length || 0} records\n- Submissions: ${submissionData?.processedData.records?.length || 0} records\n- Submit Actions Selected: ${submitActionsSelectedData?.processedData.records?.length || 0} records\n\nAnalyzing data...`,
         },
       );
@@ -208,7 +208,7 @@ ${submitActionsSelectedData ? `- [Submit Actions Selected Report](${reportData.s
         // All successful - normal message
         finalMessage = `## 📊 Sumo Logic Multi-Report Analysis Complete
 
-**Original Query:** "${intentData.originalUserPrompt}"
+**Original Query:** "${intentData.originalUserPrompt}plain"
 
 **📁 Download Links:**
 - [Submit Actions Report](${reportData.submitActionFileLink}) - ${submitActionData.processedData.records?.length || 0} records
@@ -225,7 +225,7 @@ ${submitActionAnalysis.slice(0, 200)}...
       await this.chatManagerService.addMessageToGetRobotResponse(
         conversationId,
         {
-          type: 'text/plain',
+          type: 'text/markdown',
           payload: finalMessage,
         },
       );
@@ -238,7 +238,7 @@ ${submitActionAnalysis.slice(0, 200)}...
       await this.chatManagerService.addMessageSystemNotification(
         conversationId,
         {
-          type: 'text/plain',
+          type: 'text/markdown',
           payload: `❌ **Sumo Analysis Error**: ${error.message}`,
         },
       );
@@ -303,25 +303,5 @@ ${submitActionsSelectedAnalysis}
 
 ## Instructions
 Provide a comprehensive analysis comparing these three reports. Highlight key insights, correlations, and any anomalies. Mention that detailed data is available in the provided file links and that the user can ask follow-up questions about the analysis.`;
-  }
-
-  private async sendPromptToRobot(
-    // KEEP THIS  - when we are ready to go to prod we will do final testing and use this
-
-    conversationId: string,
-    robotContext: string,
-    reportData: MultiReportData,
-  ): Promise<void> {
-    // Send context to robot
-    await this.chatManagerService.addMessageAsContext(conversationId, {
-      type: 'context/document',
-      payload: robotContext,
-    });
-
-    // Send robot analysis response directly (like the main flow does)
-    await this.chatManagerService.addMessageToGetRobotResponse(conversationId, {
-      type: 'text/plain',
-      payload: `Based on the Sumo Logic reports analysis for Form ${reportData.submitActionData.records?.[0]?.formId || 'Unknown'}, I've provided the comprehensive analysis above with download links for detailed data review.`,
-    });
   }
 }

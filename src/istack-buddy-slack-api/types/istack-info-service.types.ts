@@ -142,7 +142,7 @@ export interface AccountContextResponse extends ContextDynamicResponse {
 
 export interface FormContextResponse extends ContextDynamicResponse {
   entityType: 'form';
-  data: {
+  form: {
     formId: string;
     formName: string;
     status: string;
