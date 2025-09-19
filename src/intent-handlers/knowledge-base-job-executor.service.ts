@@ -1,21 +1,44 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ChatManagerService } from '../chat-manager/chat-manager.service';
 import { IntentHandler } from '../common/interfaces/intent-handler.interface';
 import { RobotIntent } from '../common/types/intent-parsing.types';
 import { IStackInfoService } from '../istack-buddy-slack-api/istack-info.service';
+import * as fs from 'fs/promises';
+import * as path from 'path';
 import { RobotService } from '../robots/robot.service';
 import { IStreamingCallbacks } from '../robots/types';
 import { RobotName, UserRole } from '../chat-manager/dto/create-message.dto';
 import { TConversationMessageContentMarkdown } from '../ConversationLists/types';
 
 @Injectable()
-export class KnowledgeBaseJobExecutor implements IntentHandler {
+export class KnowledgeBaseJobExecutor implements IntentHandler, OnModuleInit {
   private readonly logger = new Logger(KnowledgeBaseJobExecutor.name);
+  private robotPromptTemplate: string = '';
   constructor(
     private readonly chatManagerService: ChatManagerService,
     private readonly robotService: RobotService,
     private readonly iStackInfoService: IStackInfoService,
   ) {}
+
+  async onModuleInit() {
+    try {
+      const promptPath = path.join(
+        process.cwd(),
+        'CONTEXT-DOCUMENTS',
+        'search-results',
+        'top-search-pre-prompty.md',
+      );
+      this.robotPromptTemplate = await fs.readFile(promptPath, 'utf8');
+      this.logger.log(
+        'Knowledge base robot prompt template loaded successfully',
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to load robot prompt template: ${error.message}`,
+      );
+      throw error; // Fail to start if we can't load the prompt
+    }
+  }
 
   getSupportedIntents(): RobotIntent[] {
     return [
@@ -82,7 +105,7 @@ export class KnowledgeBaseJobExecutor implements IntentHandler {
         conversationId,
         {
           type: 'text/plain',
-          payload: `Please analyze the knowledge base search results and provide a helpful answer to: "${intentData.originalUserPrompt}"`,
+          payload: this.robotPromptTemplate,
         },
       );
 
@@ -212,8 +235,9 @@ ${result.aiTechnicalObservation || 'No technical observation available'}
 channelId: ${result.channelId || 'Unknown'}
 confidence: ${result.confidence || 'Unknown'}
 citations: {
-  text: ${result.citations?.text || 'No citation'}
-  link: ${result.citations?.link || 'No link'}
+  text: "${result.citations?.text || ''}"
+  conversation: "${result.citations?.conversation || ''}"
+  link: "${result.citations?.link || ''}"
 }
 
 __${searchType}.${knowledgeBase}[${index}]_END__
@@ -242,8 +266,9 @@ ${result.aiTechnicalObservation || 'No technical observation available'}
 channelId: ${result.channelId || 'Unknown'}
 confidence: ${result.confidence || 'Unknown'}
 citations: {
-  text: ${result.citations?.text || 'No citation'}
-  link: ${result.citations?.link || 'No link'}
+  text: "${result.citations?.text || ''}"
+  conversation: "${result.citations?.conversation || ''}"
+  link: "${result.citations?.link || ''}"
 }
 
 __individualSearch.${knowledgeBase}[${index}]_END__

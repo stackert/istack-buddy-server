@@ -218,22 +218,11 @@ Submission report with dates: {"intent":"generateSumoReport","intentData":{"orig
         fs.readFile(dateHarvestPath, 'utf8'),
       ]);
 
-      return `${subjectContent}\n\n${dateContent}`;
+      const currentDate = new Date().toISOString();
+      return `${subjectContent}\n\n${dateContent}\n\n_DATE_NOW_START_\n${currentDate}\n_DATE_NOW_END_`;
     } catch (error) {
       this.logger.error(`Failed to load harvest guidelines: ${error.message}`);
-      // Fallback to basic guidelines
-      return `# Subject Harvest
-HARVEST SUBJECT IDS:
-Extract any entity IDs mentioned in the query:
-- Supported entities: account:accountId, authProvider:authProviderId, form:formId, submission:submissionId, submitAction:submitActionId, case:caseId, jira:jiraTicketId
-- Return as object: {"formId": ["1234"], "submissionId": ["12304"]}
-- If no subjects found, return null 'subjects: null'
-
-# Date Harvest
-HARVEST DATES (for Sumo queries):
-- "past week" → startDate: 7 days ago, endDate: today  
-- Return as: {"startDate": "2025-09-01", "endDate": "2025-09-05"}
-- CRITICAL: Dates go in dateRange object, NOT in subjects`;
+      throw error;
     }
   }
 

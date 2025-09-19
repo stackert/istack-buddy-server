@@ -704,6 +704,17 @@ export class ChatManagerService {
           };
         }
 
+        // Handle context/document messages as clickable link
+        if (message.content.type === 'context/document') {
+          return {
+            ...message,
+            content: {
+              type: 'text/plain',
+              payload: `[robot context document] http://localhost:3500/get-message?messageId=${message.id}`,
+            },
+          };
+        }
+
         // Replace Slack user's own messages with '[Your Message]' to avoid echo
         if (message.authorUserId === 'slack-service@istack-buddy.com') {
           return {
