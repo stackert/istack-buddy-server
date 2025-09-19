@@ -107,6 +107,8 @@ KNOWLEDGE BASE SUBINTENTS (for searchKnowledgeBase intent):
 
 CONTEXT DYNAMIC SUBINTENTS (for getContextDynamic intent):
 - "getFormContext": For retrieving live form configuration and settings
+- "getAccountContext": For retrieving account details and configuration 
+- "getAuthProviderContext": For retrieving authentication provider settings
 
 IMPORTANT: Follow the harvest guidelines above for extracting subjects and dates. Only use the specified entity types and patterns from the guidelines.
 

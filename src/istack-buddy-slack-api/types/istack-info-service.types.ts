@@ -131,7 +131,7 @@ export interface ContextDynamicResponse {
 
 export interface AccountContextResponse extends ContextDynamicResponse {
   entityType: 'account';
-  data: {
+  account: {
     accountId: string;
     accountName: string;
     plan: string;
@@ -154,7 +154,7 @@ export interface FormContextResponse extends ContextDynamicResponse {
 
 export interface AuthProviderContextResponse extends ContextDynamicResponse {
   entityType: 'authProvider';
-  data: {
+  authProvider: {
     authProviderId: string;
     providerType: string;
     configuration: any;

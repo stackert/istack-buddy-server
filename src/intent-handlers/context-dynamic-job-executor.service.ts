@@ -161,7 +161,76 @@ export class ContextDynamicJobExecutor implements IntentHandler {
       summary += `\n`;
     }
 
-    summary += `*Form context retrieved successfully.*`;
+    summary += `*Form context retrieved successfully.*\n\n`;
+    summary += `\`\`\`\nNote: Context-Dynamic queries use Databricks as its data store. Databricks is known to have up to 24 hour lag time.\n\`\`\``;
+
+    return summary;
+  }
+
+  private formatAccountContextSummary(
+    accountContext: any,
+    originalPrompt: string,
+    actualAccountId: string,
+  ): string {
+    const {
+      accountId,
+      parentAccountId,
+      fsidOrganizationId,
+      max_forms,
+      max_submissions,
+      isActive,
+    } = accountContext;
+
+    let summary = `🏢 **Account Context for Account ${actualAccountId}**\n\n`;
+    summary += `**User Query:** ${originalPrompt}\n\n`;
+
+    // Basic account info
+    summary += `**Account Details:**\n`;
+    summary += `- Account ID: **${accountId}**\n`;
+    summary += `- Status: ${isActive ? '✅ Active' : '❌ Inactive'}\n`;
+
+    if (parentAccountId && parentAccountId !== 0) {
+      summary += `- Parent Account: **${parentAccountId}**\n`;
+    }
+
+    if (fsidOrganizationId && fsidOrganizationId.trim() !== '') {
+      summary += `- Organization ID: **${fsidOrganizationId}**\n`;
+    }
+
+    summary += `\n**Limits:**\n`;
+    summary += `- Maximum Forms: **${max_forms?.toLocaleString() || 'N/A'}**\n`;
+    summary += `- Maximum Submissions: **${max_submissions?.toLocaleString() || 'N/A'}**\n`;
+
+    summary += `\n*Account context retrieved successfully.*\n\n`;
+    summary += `\`\`\`\nNote: Context-Dynamic queries use Databricks as its data store. Databricks is known to have up to 24 hour lag time.\n\`\`\``;
+
+    return summary;
+  }
+
+  private formatAuthProviderContextSummary(
+    authProviderContext: any,
+    originalPrompt: string,
+    actualAuthProviderId: string,
+  ): string {
+    const { authProviderId, name, type } = authProviderContext;
+
+    let summary = `🔐 **Auth Provider Context for Provider ${actualAuthProviderId}**\n\n`;
+    summary += `**User Query:** ${originalPrompt}\n\n`;
+
+    // Basic auth provider info
+    summary += `**Auth Provider Details:**\n`;
+    summary += `- Auth Provider ID: **${authProviderId}**\n`;
+
+    if (name) {
+      summary += `- Name: **${name}**\n`;
+    }
+
+    if (type) {
+      summary += `- Type: **${type.toUpperCase()}**\n`;
+    }
+
+    summary += `\n*Auth provider context retrieved successfully.*\n\n`;
+    summary += `\`\`\`\nNote: Context-Dynamic queries use Databricks as its data store. Databricks is known to have up to 24 hour lag time.\n\`\`\``;
 
     return summary;
   }
@@ -244,14 +313,29 @@ export class ContextDynamicJobExecutor implements IntentHandler {
     const accountContext =
       await this.iStackInfoService.contextDynamic.getAccount(accountId);
 
-    // Send account context directly to conversation
-    await this.sendContextToConversation(
-      accountContext,
-      conversationId,
+    // Send formatted account context to BOTH dev/debug AND Slack
+    const account = accountContext.account || accountContext;
+    this.logger.log(
+      `EXTRACTED ACCOUNT DATA: ${JSON.stringify(account, null, 2)}`,
+    );
+
+    const richAccountContextMessage = this.formatAccountContextSummary(
+      account,
       intentData.originalUserPrompt,
-      'account',
       accountId.toString(),
     );
+
+    this.logger.log(
+      `FORMATTED MESSAGE (context-dynamic-account): ${richAccountContextMessage.substring(0, 200)}...`,
+    );
+
+    // Send to dev/debug conversation
+    await this.chatManagerService.addMessageSystemNotification(conversationId, {
+      type: 'text/markdown',
+      payload: richAccountContextMessage,
+    });
+
+    // Note: Message sent via addMessage() will be broadcasted to all clients including Slack
   }
 
   private async handleAuthProviderContext(
@@ -285,26 +369,31 @@ export class ContextDynamicJobExecutor implements IntentHandler {
         authProviderId,
       );
 
-    // Send auth provider context via callbacks (works for both dev debug and Slack)
-    const authProviderContextMessage = `## 🔐 Auth Provider Context Retrieved
-
-**Auth Provider ID:** ${authProviderId}
-**Query:** "${intentData.originalUserPrompt}"
-
-**Auth Provider Details:**
-- Type: ${authProviderContext.data?.providerType || 'N/A'}
-- Status: ${authProviderContext.data?.status || 'N/A'}
-
-*Auth provider context retrieved successfully.*`;
-
-    // Send auth provider context directly to conversation
-    await this.sendContextToConversation(
-      authProviderContext,
-      conversationId,
-      intentData.originalUserPrompt,
-      'auth provider',
-      authProviderId.toString(),
+    // Send formatted auth provider context to BOTH dev/debug AND Slack
+    const authProvider =
+      authProviderContext.authProvider || authProviderContext;
+    this.logger.log(
+      `EXTRACTED AUTH PROVIDER DATA: ${JSON.stringify(authProvider, null, 2)}`,
     );
+
+    const richAuthProviderContextMessage =
+      this.formatAuthProviderContextSummary(
+        authProvider,
+        intentData.originalUserPrompt,
+        authProviderId.toString(),
+      );
+
+    this.logger.log(
+      `FORMATTED MESSAGE (context-dynamic-auth-provider): ${richAuthProviderContextMessage.substring(0, 200)}...`,
+    );
+
+    // Send to dev/debug conversation
+    await this.chatManagerService.addMessageSystemNotification(conversationId, {
+      type: 'text/markdown',
+      payload: richAuthProviderContextMessage,
+    });
+
+    // Note: Message sent via addMessage() will be broadcasted to all clients including Slack
   }
 
   private async sendContextToConversation(

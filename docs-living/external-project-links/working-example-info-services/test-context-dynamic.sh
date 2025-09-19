@@ -5,9 +5,9 @@
 # Environment Variables: ACCOUNT_ID, AUTH_PROVIDER_ID, FORM_ID (defaults to 1)
 
 set -e  # Exit on error
-
+#192.168.1.3
 # Configuration
-BASE_URL=${1:-"http://192.168.1.4:3505"}
+BASE_URL=${1:-"http://192.168.1.3:3505"}
 AUTH_TOKEN="istack-buddy-dev-token-2024"
 API_BASE="$BASE_URL/information-services/context-dynamic"
 
