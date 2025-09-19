@@ -42,7 +42,15 @@ export class SumoReportSingleJobExecutor
         conversationId,
         {
           type: 'text/markdown',
-          payload: `🔄 **Sumo Report Request Received**\n\nQuery: ${queryParams.queryName}\nForm ID: ${queryParams.subject.formId || '[none]'}\nSubmit Action Type: ${queryParams.subject.submitActionType || '[none]'}\nSubmission ID: ${queryParams.subject.submissionId || '[none]'}\nDate Range: ${queryParams.subject.startDate || '[none]'} to ${queryParams.subject.endDate || '[none]'}\n\nSubmitting job...`,
+          payload: `🔄  *Sumo Report Request Received* 
+          
+          Query: *${queryParams.queryName}*
+          Form ID: *${queryParams.subject.formId || '[none]'}*
+          Submit Action Type: *${queryParams.subject.submitActionType || '[none]'}*
+          Auth Provider ID: *${queryParams.subject.authProviderId || '[none]'}*
+          Submission ID: *${queryParams.subject.submissionId || '[none]'}*
+          Date Range: *${queryParams.subject.startDate || '[none]'}* to *${queryParams.subject.endDate || '[none]'}*
+          Submitting job...`,
         },
       );
 
@@ -120,18 +128,18 @@ export class SumoReportSingleJobExecutor
       const combinedMessage = `
       _ROBOT_INSTRUCTIONS_START_
       Review ${observationText} and formulate a meaningful response to the user.
-      Please decorate the link.
+      Please decorate the response suitable for slack formatting.
       _ROBOT_INSTRUCTIONS_END_
       
       
-      ## Sumo Logic Report Results
+## Sumo Logic Report Results:
 
 **Query:** "${originalQuery}"
 
-**📊 Analysis Summary:**
+📊*Analysis Summary*:
 ${observationText}
 
-**📁 Download File:**
+📁 *Download File*:
 [Download Report Data](${fileLink})
 
 *Report generated successfully.*`;

@@ -1,14 +1,11 @@
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
-import * as fs from 'fs';
-import * as jwt from 'jsonwebtoken';
-import * as path from 'path';
 import { AuthorizationPermissionsService } from '../authorization-permissions/authorization-permissions.service';
 import { ChatManagerService } from '../chat-manager/chat-manager.service';
 import { UserRole } from '../chat-manager/dto/create-message.dto';
-import { UserProfileService } from '../user-profile/user-profile.service';
-import { KnowledgeBaseService } from './knowledge-base.service';
 import { IntentParsingService } from '../common/services/intent-parsing.service';
+import { UserProfileService } from '../user-profile/user-profile.service';
 import * as helpers from './helpers';
+import { KnowledgeBaseService } from './knowledge-base.service';
 
 // Interface for storing Slack conversation mapping and callback
 interface TSlackInterfaceRecord {

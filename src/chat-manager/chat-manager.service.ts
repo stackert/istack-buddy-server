@@ -473,9 +473,15 @@ export class ChatManagerService {
     content: TConversationMessageContent,
     fromUserId: string,
   ): Promise<void> {
+    // Force all robot responses to be markdown (robots should only send text)
+    const robotContent: TConversationMessageContentMarkdown = {
+      type: 'text/markdown',
+      payload: content.payload as string, // Robot responses are always text
+    };
+
     // 1. CREATE
     const message = await this.createMessage(
-      { conversationId, content },
+      { conversationId, content: robotContent },
       {
         fromUserId,
         fromRole: UserRole.ROBOT,
@@ -663,6 +669,13 @@ export class ChatManagerService {
       conversationId,
       clientId: `slack-${conversationId}`,
       sendMessage: slackCallback,
+      // @ts-ignore - debugging formatting issues
+      _decorateMessage: (
+        message: IConversationMessage,
+      ): IConversationMessage => {
+        return message;
+      },
+      // @ts-ignore - debugging formatting issues
       decorateMessage: (
         message: IConversationMessage,
       ): IConversationMessage => {
@@ -701,14 +714,15 @@ export class ChatManagerService {
         }
 
         // Convert markdown to Slack format for text/markdown messages
-        if (message.content.type === 'text/markdown') {
-          const slackMarkdown = this.convertMarkdownToSlack(
-            message.content.payload as string,
-          );
+        if (true || message.content.type === 'text/markdown') {
+          const slackMarkdown =
+            '' +
+            'REFORMATTED: ' +
+            this.convertMarkdownToSlack(message.content.payload as string);
           return {
             ...message,
             content: {
-              type: 'text/plain',
+              type: 'text/markdown',
               payload: slackMarkdown,
             },
           };
@@ -1354,7 +1368,7 @@ export class ChatManagerService {
       // STEP 3: ADD INTENT TO CONVERSATION, BROADCAST
       await this.addMessageSystemNotification(conversationId, {
         type: 'text/plain',
-        payload: `🎯 **Intent Parsed**: ${intentResult.intent}\nSubIntents: ${intentResult.intentData.subIntents?.join(', ') || 'none'}`,
+        payload: `${JSON.stringify(intentResult)}`,
       });
 
       // STEP 4: ROUTE INTENT
