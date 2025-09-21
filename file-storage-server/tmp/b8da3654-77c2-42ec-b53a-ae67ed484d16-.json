@@ -1,0 +1,20 @@
+{
+  "executedQuery": "_sourceCategory=formstack/prod/*\n| json field=_raw \"message\"\n| json field=_raw \"context.submitActionId\" as submitActionId\n| json field=_raw \"context.submissionId\" as submissionId\n| json field=_raw \"context.formId\" as formId\n| json field=_raw \"context.type\" as type\n| where %\"message\" = \"SubmitAction {type} run for {submissionId}\" AND formId = 5894350 AND type = \"default\"",
+  "recordSchema": {
+    "_validationNote": "To validate results, run the executedQuery directly in Sumo Logic"
+  },
+  "records": [],
+  "messageCount": 0,
+  "queryName": "submitActionReport",
+  "arguments": [
+    "submitActionId",
+    "submissionId",
+    "submitActionType",
+    "formId"
+  ],
+  "timeRange": {
+    "from": "2025-09-21T04:00:01.000Z",
+    "to": "2025-09-22T03:59:59.000Z"
+  },
+  "validationNote": "To validate results, run the executedQuery directly in Sumo Logic"
+}

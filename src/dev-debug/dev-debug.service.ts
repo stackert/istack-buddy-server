@@ -235,6 +235,7 @@ export class DevDebugService {
           startDate: '2025-09-01',
           endDate: '2025-09-04',
         },
+        isConversationContinuation: false,
       };
 
       // NoOp callbacks

@@ -92,8 +92,14 @@ export class SumoReportSingleJobExecutor
   }
 
   private parseQueryParameters(intentData: IntentData): SumoJobParams {
+    // Ensure subIntents array exists and has at least one element
+    const subIntents = intentData.subIntents || [];
+    if (subIntents.length === 0) {
+      throw new Error('No sub-intents provided in intent data');
+    }
+
     return {
-      queryName: this.mapSubIntentToQueryName(intentData.subIntents[0]),
+      queryName: this.mapSubIntentToQueryName(subIntents[0]),
       subject: {
         formId: intentData.subjects?.formId?.[0] || '',
         submitActionId: intentData.subjects?.submitActionId?.[0] || '',

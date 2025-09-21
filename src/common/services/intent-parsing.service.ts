@@ -1,15 +1,47 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { OpenAI } from 'openai';
-import { promises as fs } from 'fs';
+import { readFileSync } from 'fs';
 import { join } from 'path';
 import {
-  IntentParsingResult,
-  IntentParsingResponse,
-  IntentParsingError,
   IntentData,
-  RobotIntent,
+  IntentParsingError,
+  IntentParsingResponse,
+  IntentParsingResult,
+  PreviousConversationContext,
   RobotIntentRegistry,
 } from '../types/intent-parsing.types';
+
+// Load intent parsing prompt and harvest guidelines at module level (build time)
+let INTENT_PARSE_PROMPT: string;
+let HARVEST_DATES_CONTENT: string;
+let HARVEST_SUBJECTS_CONTENT: string;
+
+try {
+  INTENT_PARSE_PROMPT = readFileSync(
+    join(process.cwd(), 'CONTEXT-DOCUMENTS', 'INTENT_PARSE.md'),
+    'utf-8',
+  );
+} catch (error) {
+  throw new Error(`Failed to load INTENT_PARSE.md: ${error.message}`);
+}
+
+try {
+  HARVEST_DATES_CONTENT = readFileSync(
+    join(process.cwd(), 'CONTEXT-DOCUMENTS', 'HARVEST_DATES_SUMO.md'),
+    'utf-8',
+  );
+} catch (error) {
+  throw new Error(`Failed to load HARVEST_DATES_SUMO.md: ${error.message}`);
+}
+
+try {
+  HARVEST_SUBJECTS_CONTENT = readFileSync(
+    join(process.cwd(), 'CONTEXT-DOCUMENTS', 'HARVEST_SUBJECTS.md'),
+    'utf-8',
+  );
+} catch (error) {
+  throw new Error(`Failed to load HARVEST_SUBJECTS.md: ${error.message}`);
+}
 
 @Injectable()
 export class IntentParsingService {
@@ -47,224 +79,132 @@ export class IntentParsingService {
    */
   public async parsePromptIntent(
     messageText: string,
-    conversationContext?: {
-      currentRobot?: string;
-      lastRobotMessageText?: string;
-    },
+    previousConversationContext?: PreviousConversationContext,
   ): Promise<IntentParsingResult> {
-    try {
-      this.logger.debug(
-        `Parsing intent for message: ${messageText.substring(0, 100)}...`,
-      );
+    const promptText = this.buildPrompt(
+      messageText,
+      previousConversationContext,
+    );
+    const result = await this.executePrompt(promptText);
 
-      // Build dynamic prompt combining base + personality + robot intent segments + subject harvest guidelines
-      const systemPrompt = await this.buildSystemPrompt();
+    // Merge subjects for conversation continuations
+    if (
+      'intentData' in result &&
+      result.intentData.isConversationContinuation &&
+      previousConversationContext?.lastIntent?.intentData?.subjects
+    ) {
+      // Check if subjects is null, empty object, or has empty arrays
+      const hasEmptySubjects =
+        result.intentData.subjects === null ||
+        (result.intentData.subjects &&
+          Object.keys(result.intentData.subjects).length === 0) ||
+        (result.intentData.subjects &&
+          Object.values(result.intentData.subjects).every(
+            (arr) => !arr || arr.length === 0,
+          ));
 
-      const completion = await this.openai.chat.completions.create({
-        model: 'gpt-4o',
-        messages: [
-          {
-            role: 'system',
-            content: systemPrompt,
-          },
-          {
-            role: 'user',
-            content: `Parse this user message and determine the appropriate robot and intent:
-
-Message: "${messageText}"
-
-${conversationContext?.currentRobot ? `Current conversation robot: ${conversationContext.currentRobot}` : ''}
-
-${
-  conversationContext?.lastRobotMessageText
-    ? `_ROBOT_LAST_RESPONSE_START_
-Instructions: If the robot's last response is a continuation question, please route to last robot.
-${conversationContext.lastRobotMessageText}
-_ROBOT_LAST_RESPONSE_END_`
-    : ''
-}
-
-Respond with ONLY a valid JSON object (no markdown, no explanation) containing:
-- intent: string (exact intent name)
-- intentData: object with originalUserPrompt, subIntents array, and subjects object (following Subject Harvest guidelines above)
-- devDebugRecommendedExecutor: string (suggested executor class name)
-- devDebugRecommendedRobot: string (fallback robot name)
-
-Available intents: generateSumoReport, generateSumoAnalysis, searchKnowledgeBase, getContextDynamic, assistUser
-Available executors: SumoReportSingleJobExecutor, SumoReportMultiJobExecutor, KnowledgeBaseJobExecutor, ContextDynamicJobExecutor
-Available robots: SlackyOpenAiAgent, AnthropicMarv, KnobbyOpenAiSearch
-
-SUMO REPORT SUBINTENTS (for generateSumoReport intent):
-- "submitActionReport": For analyzing submit action execution, webhooks, integrations
-- "submissionCreatedForForm": For tracking form submissions, submission reports, submission data
-- "submitActionsSelectedForExecution": For internal analysis only
-
-SUMO ANALYSIS SUBINTENTS (for generateSumoAnalysis intent):
-- "multiReportAnalysis": For comprehensive analysis combining multiple Sumo reports
-
-KNOWLEDGE BASE SUBINTENTS (for searchKnowledgeBase intent):
-- "topResults": For searching knowledge base documents and Slack conversations
-
-CONTEXT DYNAMIC SUBINTENTS (for getContextDynamic intent):
-- "getFormContext": For retrieving live form configuration and settings
-- "getAccountContext": For retrieving account details and configuration 
-- "getAuthProviderContext": For retrieving authentication provider settings
-
-IMPORTANT: Follow the harvest guidelines above for extracting subjects and dates. Only use the specified entity types and patterns from the guidelines.
-
-Example response formats:
-General assistance: {"intent":"assistUser","intentData":{"originalUserPrompt":"hello","subIntents":["generalAssistance"],"subjects":null},"devDebugRecommendedExecutor":"N/A","devDebugRecommendedRobot":"SlackyOpenAiAgent"}
-Submission report with dates: {"intent":"generateSumoReport","intentData":{"originalUserPrompt":"submission report for form 12345","subIntents":["submissionCreatedForForm"],"subjects":{"formId":["12345"]},"dateRange":{"startDate":"TODAY_START_ISO8601","endDate":"TODAY_END_ISO8601"}},"devDebugRecommendedExecutor":"SumoReportSingleJobExecutor","devDebugRecommendedRobot":"SlackyOpenAiAgent"}`,
-          },
-        ],
-        temperature: 0.1,
-        max_tokens: 1000,
-      });
-
-      const responseContent = completion.choices[0]?.message?.content;
-      if (!responseContent) {
-        return this.createError(
-          'No response from OpenAI',
-          'Empty response received',
-        );
+      if (hasEmptySubjects) {
+        result.intentData.subjects =
+          previousConversationContext.lastIntent.intentData.subjects;
       }
-
-      // Parse the JSON response (handle markdown-wrapped JSON)
-      let parsedResponse: any;
-      try {
-        // First try direct JSON parsing
-        parsedResponse = JSON.parse(responseContent);
-      } catch (parseError) {
-        // If direct parsing fails, try to extract JSON from markdown blocks
-        try {
-          const jsonMatch = responseContent.match(
-            /```(?:json)?\s*(\{[\s\S]*?\})\s*```/,
-          );
-          if (jsonMatch && jsonMatch[1]) {
-            parsedResponse = JSON.parse(jsonMatch[1]);
-            this.logger.debug(
-              'Successfully extracted JSON from markdown block',
-            );
-          } else {
-            throw new Error('No JSON block found in response');
-          }
-        } catch (secondParseError) {
-          this.logger.error(
-            `Failed to parse OpenAI response: ${responseContent}`,
-          );
-          this.logger.error('Original parse error:', parseError.message);
-          this.logger.error(
-            'Markdown extraction error:',
-            secondParseError.message,
-          );
-          return this.createError(
-            'Invalid JSON response',
-            'Could not parse OpenAI response as JSON',
-          );
-        }
-      }
-
-      // Validate the response structure
-      if (!parsedResponse.intent || !parsedResponse.intentData) {
-        return this.createError(
-          'Invalid response structure',
-          'Missing required fields in response',
-        );
-      }
-
-      // Ensure intentData has required fields
-      const intentData: IntentData = {
-        originalUserPrompt: messageText,
-        subIntents: parsedResponse.intentData.subIntents || [],
-        subjects: parsedResponse.intentData.subjects || {},
-        ...parsedResponse.intentData,
-      };
-
-      const result: IntentParsingResponse = {
-        intent: parsedResponse.intent,
-        intentData,
-        devDebugRecommendedExecutor: parsedResponse.devDebugRecommendedExecutor,
-        devDebugRecommendedRobot: parsedResponse.devDebugRecommendedRobot,
-      };
-
-      this.logger.log(
-        `Parsed intent: ${result.intent} (debug recommends executor: ${result.devDebugRecommendedExecutor})`,
-      );
-      return result;
-    } catch (error) {
-      this.logger.error(`Intent parsing failed: ${error.message}`);
-      return this.createError('Intent parsing failed', error.message);
     }
+
+    return result;
   }
 
   /**
-   * Load harvest guidelines from files
+   * Build intent parsing prompt with conversation context
+   * Maybe not necessary to be public
    */
-  private async loadHarvestGuidelines(): Promise<string> {
-    try {
-      const subjectHarvestPath = join(
-        process.cwd(),
-        'CONTEXT-DOCUMENTS',
-        'HARVEST_SUBJECTS.md',
-      );
-      const dateHarvestPath = join(
-        process.cwd(),
-        'CONTEXT-DOCUMENTS',
-        'HARVEST_DATES_SUMO.md',
-      );
+  public buildPrompt(
+    messageText: string,
+    previousConversationContext?: PreviousConversationContext,
+  ): string {
+    const contextParts = [];
 
-      const [subjectContent, dateContent] = await Promise.all([
-        fs.readFile(subjectHarvestPath, 'utf8'),
-        fs.readFile(dateHarvestPath, 'utf8'),
-      ]);
+    // Add previous interaction context section
+    contextParts.push(
+      this.parseContextPreviousConversation(previousConversationContext),
+    );
 
-      const currentDate = new Date().toISOString();
-      return `${subjectContent}\n\n${dateContent}\n\n_DATE_NOW_START_\n${currentDate}\n_DATE_NOW_END_`;
-    } catch (error) {
-      this.logger.error(`Failed to load harvest guidelines: ${error.message}`);
-      throw error;
-    }
+    // Add current date
+    contextParts.push(this.parseContextTodaysDate());
+
+    // Add all prompt sections to the array
+    contextParts.push(INTENT_PARSE_PROMPT);
+    contextParts.push(this.parseContextHarvestSubjects());
+    contextParts.push(this.parseContextHarvestDates());
+    contextParts.push(this.parseContextUserRequest(messageText));
+
+    // Join all parts
+    return contextParts.join('\n\n');
   }
 
   /**
-   * Build the system prompt by combining base + personality + robot intent segments
+   * Parse previous conversation context into formatted string
    */
-  private async buildSystemPrompt(): Promise<string> {
-    const harvestGuidelines = await this.loadHarvestGuidelines();
+  private parseContextPreviousConversation(
+    previousConversationContext?: PreviousConversationContext,
+  ): string {
+    // Quick return for no context
+    if (!previousConversationContext) {
+      return `_PREVIOUS_INTERACTION_START_
+No Previous Conversation Context - Likely new conversation
+_PREVIOUS_INTERACTION_END_`;
+    }
 
-    const basePrompt = `You are an intelligent intent parsing system for iStackBuddy, a specialized AI assistant for Intellistack Forms Core troubleshooting.
+    // Handle populated context
+    const lastRobotResponse = previousConversationContext.lastRobotMessageText;
+    const lastIntent = JSON.stringify(
+      previousConversationContext.lastIntent,
+      null,
+      2,
+    );
+    const lastRobotName =
+      previousConversationContext.lastIntent?.devDebugRecommendedRobot;
 
-Your task is to analyze user messages and determine:
-1. What specific intent the user has
-2. Extract standardized subjects and dates following the guidelines below
+    return `_PREVIOUS_INTERACTION_START_
+Previous robot name: ${lastRobotName}
+Previous robot response: ${lastRobotResponse}
+Previous intent: ${lastIntent}
+_PREVIOUS_INTERACTION_END_`;
+  }
 
-${harvestGuidelines}
+  /**
+   * Parse today's date into formatted string
+   */
+  private parseContextTodaysDate(): string {
+    const currentDate = new Date().toISOString();
+    return `_TODAYS_DATE_START_
+${currentDate}
+_TODAYS_DATE_END_`;
+  }
 
-Available robots and their intents:`;
+  /**
+   * Parse harvest subjects context into formatted string
+   */
+  private parseContextHarvestSubjects(): string {
+    return `_HARVEST_SUBJECTS_START_
+${HARVEST_SUBJECTS_CONTENT}
+_HARVEST_SUBJECTS_END_`;
+  }
 
-    const personalityPrompt = `
-Be precise and analytical in your intent classification. Focus on:
-- Technical accuracy in robot selection
-- Comprehensive entity extraction
-- Clear intent categorization
+  /**
+   * Parse harvest dates context into formatted string
+   */
+  private parseContextHarvestDates(): string {
+    return `_HARVEST_DATES_START_
+${HARVEST_DATES_CONTENT}
+_HARVEST_DATES_END_`;
+  }
 
-When uncertain, prefer more specific robots over general ones.`;
-
-    // Build robot intent segments
-    const robotIntentSegments = this.robotIntentRegistries
-      .map((registry) => {
-        const intentsDescription = registry.supportedIntents
-          .map(
-            (intent) =>
-              `  - ${intent.intent}: ${intent.description || 'No description'} (subIntents: ${intent.subIntents.join(', ')})`,
-          )
-          .join('\n');
-
-        return `\n**${registry.robotName}**:\n${intentsDescription}`;
-      })
-      .join('\n');
-
-    return `${basePrompt}${robotIntentSegments}\n${personalityPrompt}`;
+  /**
+   * Parse user request context into formatted string
+   */
+  private parseContextUserRequest(messageText: string): string {
+    return `_USER_REQUEST_START_
+${messageText}
+_USER_REQUEST_END_`;
   }
 
   /**
@@ -282,9 +222,47 @@ When uncertain, prefer more specific robots over general ones.`;
   }
 
   /**
-   * Get the system prompt for debugging (without making OpenAI call)
+   * Execute prompt with AI API
    */
-  public async getSystemPromptForDebugging(): Promise<string> {
-    return await this.buildSystemPrompt();
+  public async executePrompt(promptText: string): Promise<IntentParsingResult> {
+    try {
+      this.logger.debug(`Executing prompt with AI API...`);
+
+      const completion = await this.openai.chat.completions.create({
+        model: 'gpt-4o',
+        messages: [{ role: 'user', content: promptText }],
+        temperature: 0.1,
+        max_tokens: 1000,
+        response_format: { type: 'json_object' },
+      });
+
+      const responseText = completion.choices[0]?.message?.content;
+      if (!responseText) {
+        return this.createError(
+          'No response from AI',
+          'Empty response from OpenAI',
+        );
+      }
+
+      // Parse the JSON response
+      const parsedResponse = JSON.parse(responseText);
+
+      // Build the response object
+      const intentResponse: IntentParsingResponse = {
+        intent: parsedResponse.intent,
+        intentData: parsedResponse.intentData,
+        devDebugRecommendedExecutor: parsedResponse.devDebugRecommendedExecutor,
+        devDebugRecommendedRobot: parsedResponse.devDebugRecommendedRobot,
+      };
+
+      this.logger.log(
+        `Parsed intent: ${intentResponse.intent} (debug recommends executor: ${intentResponse.devDebugRecommendedExecutor})`,
+      );
+
+      return intentResponse;
+    } catch (error) {
+      this.logger.error(`AI execution failed: ${error.message}`);
+      return this.createError('AI execution failed', error.message);
+    }
   }
 }

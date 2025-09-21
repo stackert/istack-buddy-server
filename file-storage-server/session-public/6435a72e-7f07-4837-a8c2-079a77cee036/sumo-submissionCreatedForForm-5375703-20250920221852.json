@@ -1,0 +1,18 @@
+{
+  "executedQuery": "_sourceCategory=formstack/prod/*\n| json field=_raw \"message\"\n| json field=_raw \"context.submissionId\" as submissionId\n| json field=_raw \"context.formId\" as formId\n| where %\"message\" = \"Submission created on {formId}.\" AND formId = 5375703",
+  "recordSchema": {
+    "_validationNote": "To validate results, run the executedQuery directly in Sumo Logic"
+  },
+  "records": [],
+  "messageCount": 0,
+  "queryName": "submissionCreatedForForm",
+  "arguments": [
+    "formId",
+    "submissionId"
+  ],
+  "timeRange": {
+    "from": "2025-09-19T15:18:36.663Z",
+    "to": "2025-09-21T03:18:36.663Z"
+  },
+  "validationNote": "To validate results, run the executedQuery directly in Sumo Logic"
+}

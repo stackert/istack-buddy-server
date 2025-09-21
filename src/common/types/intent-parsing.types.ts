@@ -9,6 +9,7 @@ export interface IntentData {
   conversationId: string; // REQUIRED - never have intent without conversation
   originalUserPrompt: string;
   subIntents: string[];
+  isConversationContinuation: boolean; // true if this message is continuing a previous conversation/request
   subjects?: {
     formId?: string[];
     submissionId?: string[];
@@ -57,4 +58,9 @@ export interface RobotIntent {
 export interface RobotIntentRegistry {
   robotName: string;
   supportedIntents: RobotIntent[];
+}
+
+export interface PreviousConversationContext {
+  lastRobotMessageText?: string;
+  lastIntent?: IntentParsingResponse;
 }

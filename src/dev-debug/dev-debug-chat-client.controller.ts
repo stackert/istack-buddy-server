@@ -266,14 +266,23 @@ export class DevDebugChatClientController {
         intent: body.intent,
         intentData: {
           conversationId: conversationId,
-          originalUserPrompt: body.originalUserPrompt,
-          subIntents: body.subIntents,
-          subjects: body.subjects,
-          dateRange: body.dateRange,
+          originalUserPrompt:
+            body.originalUserPrompt || body.intentData?.originalUserPrompt,
+          subIntents: body.subIntents || body.intentData?.subIntents || [],
+          subjects: body.subjects || body.intentData?.subjects,
+          dateRange: body.dateRange || body.intentData?.dateRange,
+          isConversationContinuation:
+            body.isConversationContinuation ||
+            body.intentData?.isConversationContinuation ||
+            false,
         },
       };
 
-      this.logger.log('=== USING EXACT WORKING CODE ===');
+      this.logger.log('=== DEV DEBUG INTENT PROCESSING ===');
+      this.logger.log(`Original body: ${JSON.stringify(body, null, 2)}`);
+      this.logger.log(
+        `Extracted subIntents: ${JSON.stringify(body.subIntents || body.intentData?.subIntents || [], null, 2)}`,
+      );
       this.logger.log(
         `Intent result: ${JSON.stringify(intentResult, null, 2)}`,
       );
@@ -590,33 +599,28 @@ export class DevDebugChatClientController {
             <div class="intent-panel">
                 <h3>🎯 Intent Input</h3>
                 <select id="intent-preset" onchange="loadIntentPreset()" style="margin-bottom: 10px; padding: 8px; width: 100%;">
-                    <option value="sumoAnalysis">Sumo - Multi-Report Analysis</option>
-                    <option value="submitAction">Sumo - Submit Action Analysis</option>
-                    <option value="submissionCreated">Sumo - Form Submission Tracking</option>
-                    <option value="submitActionSelected">Sumo - Submit Action Selection</option>
-                    <option value="authProvider">Sumo - Auth Provider Metrics</option>
-                    <option value="knowledgeBase">Knowledge Base - Top Results</option>
-                    <option value="knowledgeBaseSemantic">Knowledge Base - Semantic Search</option>
-                    <option value="knowledgeBaseKeyword">Knowledge Base - Keyword Search</option>
-                    <option value="knowledgeBaseNoun">Knowledge Base - Noun Search</option>
-                    <option value="knowledgeBaseProperNoun">Knowledge Base - Proper Noun Search</option>
-                    <option value="knowledgeBaseDomain">Knowledge Base - Domain Search</option>
-                    <option value="knowledgeBaseFreeText">Knowledge Base - Free Text Search</option>
-                    <option value="contextDynamic">Context Dynamic - Form</option>
-                    <option value="contextAccount">Context Dynamic - Account</option>
-                    <option value="contextAuthProvider">Context Dynamic - Auth Provider</option>
+                    <option value="generalAssistanceNew">General Assistance - New Conversation</option>
+                    <option value="generalAssistancePrevious">General Assistance - Previous Conversation</option>
+                    <option value="generateSumoReportNew">Generate Sumo Report - New Conversation</option>
+                    <option value="generateSumoReportPrevious">Generate Sumo Report - Previous Conversation</option>
+                    <option value="searchKnowledgeBaseNew">Search Knowledge Base - New Conversation</option>
+                    <option value="searchKnowledgeBasePrevious">Search Knowledge Base - Previous Conversation</option>
+                    <option value="getContextDynamicNew">Get Context Dynamic - New Conversation</option>
+                    <option value="getContextDynamicPrevious">Get Context Dynamic - Previous Conversation</option>
+                    <option value="subjectMergingNoNewSubjects">Subject Merging - No New Subjects</option>
+                    <option value="subjectMergingWithNewSubjects">Subject Merging - With New Subjects</option>
                 </select>
                 <textarea id="intent-input" class="intent-input-box" placeholder="Raw Intent JSON...">{
-  "intent": "generateSumoAnalysis",
-  "subIntents": ["multiReportAnalysis"],
-  "subjects": {
-    "formId": ["5894350"]
+  "intent": "assistUser",
+  "intentData": {
+    "conversationId": "temp-conversation-id",
+    "originalUserPrompt": "Hello, how are you today?",
+    "subIntents": ["generalAssistance"],
+    "subjects": null,
+    "isConversationContinuation": false
   },
-  "dateRange": {
-    "startDate": "2025-09-14",
-    "endDate": "2025-09-15"
-  },
-  "originalUserPrompt": "Run comprehensive Sumo analysis comparing submit actions and form submissions"
+  "devDebugRecommendedExecutor": "N/A",
+  "devDebugRecommendedRobot": "SlackyOpenAiAgent"
 }</textarea>
                 <button class="intent-btn" onclick="sendIntent()">Send Intent</button>
             </div>
@@ -990,160 +994,153 @@ export class DevDebugChatClientController {
             const textarea = document.getElementById('intent-input');
             
             const presets = {
-                sumoAnalysis: {
-                    intent: "generateSumoAnalysis",
-                    subIntents: ["multiReportAnalysis"],
-                    subjects: {
-                        formId: ["5894350"]
+                generalAssistanceNew: {
+                    intent: "assistUser",
+                    intentData: {
+                        conversationId: "temp-conversation-id",
+                        originalUserPrompt: "Hello, how are you today?",
+                        subIntents: ["generalAssistance"],
+                        subjects: null,
+                        isConversationContinuation: false
                     },
-                    dateRange: {
-                        startDate: "2025-09-14",
-                        endDate: "2025-09-15"
-                    },
-                    originalUserPrompt: "Run comprehensive Sumo analysis comparing submit actions and form submissions"
+                    devDebugRecommendedExecutor: "N/A",
+                    devDebugRecommendedRobot: "SlackyOpenAiAgent"
                 },
-                submissionCreated: {
+                generalAssistancePrevious: {
+                    intent: "assistUser",
+                    intentData: {
+                        conversationId: "temp-conversation-id",
+                        originalUserPrompt: "That sounds good, thank you!",
+                        subIntents: ["generalAssistance"],
+                        subjects: null,
+                        isConversationContinuation: true
+                    },
+                    devDebugRecommendedExecutor: "N/A",
+                    devDebugRecommendedRobot: "SlackyOpenAiAgent"
+                },
+                generateSumoReportNew: {
                     intent: "generateSumoReport",
-                    subIntents: ["submissionCreatedForForm"],
-                    subjects: {
-                        formId: ["5894350"]
+                    intentData: {
+                        conversationId: "temp-conversation-id",
+                        originalUserPrompt: "Can you generate a submission report for form 12345 from the past week?",
+                        subIntents: ["submissionCreatedForForm"],
+                        subjects: {
+                            formId: ["12345"]
+                        },
+                        dateRange: {
+                            startDate: "2025-09-13T00:00:00-04:00",
+                            endDate: "2025-09-20T23:59:59-04:00"
+                        },
+                        isConversationContinuation: false
                     },
-                    dateRange: {
-                        startDate: "2025-09-14",
-                        endDate: "2025-09-15"
-                    },
-                    originalUserPrompt: "Generate Sumo report for form submission tracking"
+                    devDebugRecommendedExecutor: "SumoReportSingleJobExecutor",
+                    devDebugRecommendedRobot: "SlackyOpenAiAgent"
                 },
-                submitAction: {
-                    intent: "generateSumoReport", 
-                    subIntents: ["submitActionReport"],
-                    subjects: {
-                        formId: ["5894350"],
-                        submitActionType: ["default"]
-                    },
-                    dateRange: {
-                        startDate: "2025-09-14",
-                        endDate: "2025-09-15"
-                    },
-                    originalUserPrompt: "Generate Sumo report for submit action analysis"
-                },
-                submitActionSelected: {
+                generateSumoReportPrevious: {
                     intent: "generateSumoReport",
-                    subIntents: ["submitActionSelectedForExecution"],
-                    subjects: {
-                        formId: ["5894350"]
+                    intentData: {
+                        conversationId: "temp-conversation-id",
+                        originalUserPrompt: "For the past week",
+                        subIntents: ["submissionCreatedForForm"],
+                        subjects: {
+                            formId: ["12345"]
+                        },
+                        dateRange: {
+                            startDate: "2025-09-13T00:00:00-04:00",
+                            endDate: "2025-09-20T23:59:59-04:00"
+                        },
+                        isConversationContinuation: true
                     },
-                    dateRange: {
-                        startDate: "2025-09-14",
-                        endDate: "2025-09-15"
-                    },
-                    originalUserPrompt: "Generate Sumo report for submit actions selected for execution"
+                    devDebugRecommendedExecutor: "SumoReportSingleJobExecutor",
+                    devDebugRecommendedRobot: "SlackyOpenAiAgent"
                 },
-                authProvider: {
+                searchKnowledgeBaseNew: {
+                    intent: "searchKnowledgeBase",
+                    intentData: {
+                        conversationId: "temp-conversation-id",
+                        originalUserPrompt: "How do I set up form validation rules?",
+                        subIntents: ["topResults"],
+                        subjects: null,
+                        isConversationContinuation: false
+                    },
+                    devDebugRecommendedExecutor: "KnowledgeBaseJobExecutor",
+                    devDebugRecommendedRobot: "KnobbyOpenAiSearch"
+                },
+                searchKnowledgeBasePrevious: {
+                    intent: "searchKnowledgeBase",
+                    intentData: {
+                        conversationId: "temp-conversation-id",
+                        originalUserPrompt: "What about conditional logic?",
+                        subIntents: ["topResults"],
+                        subjects: null,
+                        isConversationContinuation: true
+                    },
+                    devDebugRecommendedExecutor: "KnowledgeBaseJobExecutor",
+                    devDebugRecommendedRobot: "KnobbyOpenAiSearch"
+                },
+                getContextDynamicNew: {
+                    intent: "getContextDynamic",
+                    intentData: {
+                        conversationId: "temp-conversation-id",
+                        originalUserPrompt: "Show me the configuration for form 67890",
+                        subIntents: ["getFormContext"],
+                        subjects: {
+                            formId: ["67890"]
+                        },
+                        isConversationContinuation: false
+                    },
+                    devDebugRecommendedExecutor: "ContextDynamicJobExecutor",
+                    devDebugRecommendedRobot: "SlackyOpenAiAgent"
+                },
+                getContextDynamicPrevious: {
+                    intent: "getContextDynamic",
+                    intentData: {
+                        conversationId: "temp-conversation-id",
+                        originalUserPrompt: "What about the account settings?",
+                        subIntents: ["getFormContext"],
+                        subjects: {
+                            formId: ["67890"]
+                        },
+                        isConversationContinuation: true
+                    },
+                    devDebugRecommendedExecutor: "ContextDynamicJobExecutor",
+                    devDebugRecommendedRobot: "SlackyOpenAiAgent"
+                },
+                subjectMergingNoNewSubjects: {
                     intent: "generateSumoReport",
-                    subIntents: ["authProviderMetrics"],
-                    subjects: {
-                        authProviderId: ["2175"]
+                    intentData: {
+                        conversationId: "temp-conversation-id",
+                        originalUserPrompt: "I need that same report for weekending September 9",
+                        subIntents: ["submissionCreatedForForm"],
+                        subjects: {
+                            formId: ["5375703"]
+                        },
+                        dateRange: {
+                            startDate: "2025-09-03T00:00:00-04:00",
+                            endDate: "2025-09-09T23:59:59-04:00"
+                        },
+                        isConversationContinuation: true
                     },
-                    dateRange: {
-                        startDate: "2025-09-14",
-                        endDate: "2025-09-15"
-                    },
-                    originalUserPrompt: "Generate Sumo report for auth provider metrics"
+                    devDebugRecommendedExecutor: "SumoReportSingleJobExecutor",
+                    devDebugRecommendedRobot: "SlackyOpenAiAgent"
                 },
-                knowledgeBase: {
-                    intent: "searchKnowledgeBase",
-                    subIntents: ["topResults"],
-                    subjects: {
-                        query: ["form"],
-                        minConfidence: ["0.7"],
-                        pageSize: ["10"]
+                subjectMergingWithNewSubjects: {
+                    intent: "generateSumoReport",
+                    intentData: {
+                        conversationId: "temp-conversation-id",
+                        originalUserPrompt: "I need a submissions report for form 999999 for the past week",
+                        subIntents: ["submissionCreatedForForm"],
+                        subjects: {
+                            formId: ["999999"]
+                        },
+                        dateRange: {
+                            startDate: "2025-09-14T00:00:00-04:00",
+                            endDate: "2025-09-20T23:59:59-04:00"
+                        },
+                        isConversationContinuation: false
                     },
-                    originalUserPrompt: "Customer is raised concern that they are unable restored to previously deleted fields.  What can we do? What do we check? Is there anything we can do on our end? What to tell the customer?"
-                },
-                knowledgeBaseSemantic: {
-                    intent: "searchKnowledgeBase",
-                    subIntents: ["semanticSearch"],
-                    subjects: {
-                        query: ["form configuration"],
-                        minConfidence: ["0.7"],
-                        pageSize: ["10"]
-                    },
-                    originalUserPrompt: "How do I configure form fields and validation rules?"
-                },
-                knowledgeBaseKeyword: {
-                    intent: "searchKnowledgeBase",
-                    subIntents: ["keywordSearch"],
-                    subjects: {
-                        query: ["webhook"],
-                        minConfidence: ["0.5"],
-                        pageSize: ["10"]
-                    },
-                    originalUserPrompt: "Search for webhook related documentation"
-                },
-                knowledgeBaseNoun: {
-                    intent: "searchKnowledgeBase",
-                    subIntents: ["nounSearch"],
-                    subjects: {
-                        query: ["submission"],
-                        minConfidence: ["0.6"],
-                        pageSize: ["10"]
-                    },
-                    originalUserPrompt: "Find information about form submissions"
-                },
-                knowledgeBaseProperNoun: {
-                    intent: "searchKnowledgeBase",
-                    subIntents: ["properNounSearch"],
-                    subjects: {
-                        query: ["Salesforce"],
-                        minConfidence: ["0.7"],
-                        pageSize: ["10"]
-                    },
-                    originalUserPrompt: "Find Salesforce integration documentation"
-                },
-                knowledgeBaseDomain: {
-                    intent: "searchKnowledgeBase",
-                    subIntents: ["domainSearch"],
-                    subjects: {
-                        query: ["authentication"],
-                        minConfidence: ["0.7"],
-                        pageSize: ["10"]
-                    },
-                    originalUserPrompt: "Search authentication domain for SSO setup"
-                },
-                knowledgeBaseFreeText: {
-                    intent: "searchKnowledgeBase",
-                    subIntents: ["freeTextSearch"],
-                    subjects: {
-                        query: ["customer cannot see submitted data"],
-                        minConfidence: ["0.5"],
-                        pageSize: ["10"]
-                    },
-                    originalUserPrompt: "Customer cannot see their submitted data in the form"
-                },
-                contextDynamic: {
-                    intent: "getContextDynamic",
-                    subIntents: ["getFormContext"],
-                    subjects: {
-                        formId: ["2606894"]
-                    },
-                    originalUserPrompt: "Get live form context for form 2606894 including submit actions, emails, and configurations"
-                },
-                contextAccount: {
-                    intent: "getContextDynamic",
-                    subIntents: ["getAccountContext"],
-                    subjects: {
-                        accountId: ["995011"]
-                    },
-                    originalUserPrompt: "Get live account context for account 995011 including forms, users, and configurations"
-                },
-                contextAuthProvider: {
-                    intent: "getContextDynamic",
-                    subIntents: ["getAuthProviderContext"],
-                    subjects: {
-                        authProviderId: ["2175"]
-                    },
-                    originalUserPrompt: "Get live auth provider context for auth provider 2175 including configurations and metrics"
+                    devDebugRecommendedExecutor: "SumoReportSingleJobExecutor",
+                    devDebugRecommendedRobot: "SlackyOpenAiAgent"
                 }
             };
             

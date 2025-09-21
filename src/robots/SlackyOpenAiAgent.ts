@@ -938,7 +938,11 @@ Need help? Just ask!`;
    */
   async parsePromptIntent(
     messageText: string,
-    conversationContext?: { currentRobot?: string },
+    conversationContext?: {
+      previousRobot?: string;
+      lastRobotMessageText?: string;
+      lastIntent?: any;
+    },
   ): Promise<IntentParsingResult> {
     this.logger.debug(
       `Parsing intent for message: ${messageText.substring(0, 50)}...`,
