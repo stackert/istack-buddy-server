@@ -255,7 +255,8 @@ export class IstackBuddySlackApiService implements OnModuleDestroy {
 
   /**
    * Handle Slack message events (for command interception)
-   * Currently handles /marv-session command in thread messages only
+   * Only processes shortcode commands (/feedback, /rating, /marv-session)
+   * Does NOT process regular messages - only app mentions should trigger responses
    */
   private async handleMessageEvent(event: any): Promise<void> {
     const simpleEvent = helpers.makeSimplifiedEvent(event);
@@ -276,60 +277,16 @@ export class IstackBuddySlackApiService implements OnModuleDestroy {
         return;
       }
 
-      // For other messages in threads, continue with normal conversation flow
-      let conversationRecord =
-        this.slackThreadToConversationMap[event.thread_ts];
-
-      if (!conversationRecord) {
-        // Create new conversation for existing thread that doesn't have a mapping
-        this.logger.log(
-          `Creating new conversation for existing thread: ${event.thread_ts}`,
-        );
-
-        const conversation = await this.chatManagerService.startConversation({
-          createdBy: event.user,
-          createdByRole: UserRole.USER,
-          title: 'Slack Thread Conversation',
-          description: `Slack conversation from existing thread`,
-          initialParticipants: [event.user],
-        });
-
-        // Create callback function for this specific conversation
-        const sendConversationResponseToSlack =
-          this.createSlackResponseCallback(event.channel, event.thread_ts);
-
-        // Map the Slack thread to conversation record with callback for future lookups
-        conversationRecord = {
-          internalConversationId: conversation.id,
-          slackConversationId: event.thread_ts,
-          sendConversationResponseToSlack,
-        };
-
-        this.slackThreadToConversationMap[event.thread_ts] = conversationRecord;
-      }
-
-      // IMMEDIATE ACKNOWLEDGMENT - Add thinking emoji reaction for thread replies
-      await this.addSlackReaction('thinking_face', event.channel, event.ts);
-
-      await this.chatManagerService.addMessageFromSlack(
-        conversationRecord.internalConversationId,
-        { type: 'text', payload: event.text },
-        conversationRecord.sendConversationResponseToSlack,
+      // IMPORTANT: Do NOT process regular thread messages
+      // Only app mentions should trigger conversation responses
+      // This restores the original behavior where we only respond to mentions
+      this.logger.log(
+        `Ignoring regular thread message (no shortcodes, no mention): "${event.text}"`,
       );
+      return;
     } catch (error) {
       this.logger.error('Error handling message event:', error);
-
-      // Send error message to Slack (in correct thread)
-      try {
-        const responseThreadTs = event.thread_ts || event.ts;
-        await this.sendSlackMessage(
-          `Sorry, I encountered an error processing your request: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          event.channel,
-          responseThreadTs,
-        );
-      } catch (sendError) {
-        this.logger.error('Failed to send error message to Slack:', sendError);
-      }
+      // Don't send error messages for regular thread messages we're ignoring
       throw error;
     }
   }
