@@ -60,8 +60,8 @@ export class AssistUserJobExecutor implements IntentHandler, OnModuleInit {
       await this.chatManagerService.addMessageSystemNotification(
         conversationId,
         {
-          type: 'text/plain',
-          payload: `🔄 **General Assistance Request Received**\n\nProcessing: ${originalPrompt}\nGetting assistance...`,
+          type: 'text/markdown',
+          payload: `**Processing request for:** "${originalPrompt}"`,
         },
       );
 

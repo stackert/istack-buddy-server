@@ -45,11 +45,12 @@ export class SumoReportSingleJobExecutor
           payload: `🔄  *Sumo Report Request Received* 
           
           Query: *${queryParams.queryName}*
-          Form ID: *${queryParams.subject.formId || '[none]'}*
-          Submit Action Type: *${queryParams.subject.submitActionType || '[none]'}*
-          Auth Provider ID: *${queryParams.subject.authProviderId || '[none]'}*
-          Submission ID: *${queryParams.subject.submissionId || '[none]'}*
-          Date Range: *${queryParams.subject.startDate || '[none]'}* to *${queryParams.subject.endDate || '[none]'}*
+          Form ID: *${queryParams.subject.formId || '[any]'}*
+          Submit Action ID: *${queryParams.subject.submitActionId || '[any]'}*
+          Submit Action Type: *${queryParams.subject.submitActionType || '[any]'}*
+          Auth Provider ID: *${queryParams.subject.authProviderId || '[any]'}*
+          Submission ID: *${queryParams.subject.submissionId || '[any]'}*
+          Date Range: *${queryParams.subject.startDate || '[any]'}* to *${queryParams.subject.endDate || '[any]'}*
           Submitting job...`,
         },
       );

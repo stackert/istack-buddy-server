@@ -38,7 +38,10 @@ export class ContextDynamicJobExecutor implements IntentHandler {
 
     try {
       // Send immediate acknowledgment to BOTH dev/debug AND Slack
-      const ackMessage = `🔄 **Context Dynamic Request Received**\n\nProcessing: ${intentData.originalUserPrompt}\nFetching data...`;
+      const cleanPrompt = this.stripMentionFromMessage(
+        intentData.originalUserPrompt,
+      );
+      const ackMessage = `🔄 **Context Dynamic Request Received**\n\nProcessing: **${cleanPrompt}**\nFetching data...`;
 
       await this.chatManagerService.addMessageSystemNotification(
         conversationId,
@@ -99,64 +102,64 @@ export class ContextDynamicJobExecutor implements IntentHandler {
     } = form;
 
     let summary = `📋 **Form Context for Form ${actualFormId}**\n\n`;
-    summary += `**User Query:** ${originalPrompt}\n\n`;
+    summary += `**User Query:** **${originalPrompt}**\n\n`;
 
     // Basic form info
-    summary += `form: ${actualFormId}\n`;
-    summary += `protectionType: ${protectionType}\n`;
+    summary += `**form:** ${actualFormId}\n`;
+    summary += `**protectionType:** ${protectionType}\n`;
     if (activeAuthProviderName) {
-      summary += `activeAuthProvider: ${activeAuthProviderName}\n`;
+      summary += `**activeAuthProvider:** ${activeAuthProviderName}\n`;
     }
     summary += `\n`;
 
     // Submit Actions
     if (submitActions.length > 0) {
-      summary += `submitActions:\n`;
+      summary += `**submitActions:**\n`;
       submitActions.forEach((action: any) => {
         const status = action.isActive ? '✅' : '❌';
         const logic = action.hasLogic ? ' (with logic)' : '';
-        summary += `  - ${status} ${action.name} (${action.type}) (**${action.submitActionId}**)${logic}\n`;
+        summary += `  - ${status} ${action.name} (${action.type}) (submitActionId:${action.submitActionId})${logic}\n`;
       });
       summary += `\n`;
-      summary += `*Legend: ✅/❌ = active status, name = submit action name, type = submit action type (webhook, email, etc.), **ID** = submit action ID, (with logic) = has conditional logic*\n\n`;
+      summary += `*Legend: ✅/❌ = active status, name = submit action name, type = submit action type (webhook, email, etc.), (with logic) = has conditional logic*\n\n`;
     }
 
     // Confirmation Emails
     if (confirmationEmails.length > 0) {
-      summary += `confirmationEmails:\n`;
+      summary += `**confirmationEmails:**\n`;
       confirmationEmails.forEach((email: any) => {
         const logic = email.hasLogic ? ' (with logic)' : '';
-        summary += `  - ${email.name} (**${email.confirmationEmailId}**)${logic}\n`;
+        summary += `  - ${email.name} (confirmationEmailId:${email.confirmationEmailId})${logic}\n`;
       });
       summary += `\n`;
     }
 
     // Notification Emails
     if (notificationEmails.length > 0) {
-      summary += `notificationEmails:\n`;
+      summary += `**notificationEmails:**\n`;
       notificationEmails.forEach((email: any) => {
         const logic = email.hasLogic ? ' (with logic)' : '';
-        summary += `  - ${email.name} (**${email.notificationEmailId}**)${logic}\n`;
+        summary += `  - ${email.name} (notificationEmailId:${email.notificationEmailId})${logic}\n`;
       });
       summary += `\n`;
     }
 
     // Plugins
     if (formPlugins.length > 0) {
-      summary += `formPlugins:\n`;
+      summary += `**formPlugins:**\n`;
       formPlugins.forEach((plugin: any) => {
         const status = plugin.isActive ? '✅' : '❌';
-        summary += `  - ${status} ${plugin.type} (**${plugin.formPluginId}**)\n`;
+        summary += `  - ${status} ${plugin.type} (formPluginId:${plugin.formPluginId})\n`;
       });
       summary += `\n`;
     }
 
     // Smart Lists
     if (smartLists.length > 0) {
-      summary += `smartLists:\n`;
+      summary += `**smartLists:**\n`;
       smartLists.forEach((list: any) => {
         const fieldCount = list.fieldIds?.length || 0;
-        summary += `  - ${list.name} (**${list.smartListId}**) - ${fieldCount} fields\n`;
+        summary += `  - ${list.name} (smartListId:${list.smartListId}) - ${fieldCount} fields\n`;
       });
       summary += `\n`;
     }
@@ -267,9 +270,12 @@ export class ContextDynamicJobExecutor implements IntentHandler {
     const form = formContext.data || formContext;
     this.logger.log(`EXTRACTED FORM DATA: ${JSON.stringify(form, null, 2)}`);
 
+    const cleanPrompt = this.stripMentionFromMessage(
+      intentData.originalUserPrompt,
+    );
     const richFormContextMessage = this.formatFormContextSummary(
       form,
-      intentData.originalUserPrompt,
+      cleanPrompt,
       formId.toString(),
     );
 
@@ -419,5 +425,24 @@ export class ContextDynamicJobExecutor implements IntentHandler {
     this.logger.log(
       `Sent ${entityType} context data to conversation ${conversationId}`,
     );
+  }
+
+  /**
+   * Strip @iStackBuddyChatApp, @iStackBuddy, and ALL Slack mention formats from messages
+   */
+  private stripMentionFromMessage(message: string): string {
+    if (!message) return message;
+
+    // Remove @iStackBuddyChatApp mentions (case insensitive)
+    let cleaned = message.replace(/@iStackBuddyChatApp\s*/gi, '');
+
+    // Remove @iStackBuddy mentions (case insensitive)
+    cleaned = cleaned.replace(/@iStackBuddy\s*/gi, '');
+
+    // Remove ALL Slack mention formats <@U...> (any user ID)
+    cleaned = cleaned.replace(/<@U[A-Z0-9]+>\s*/gi, '');
+
+    // Also remove any leading/trailing whitespace and clean up multiple spaces
+    return cleaned.trim().replace(/\s+/g, ' ');
   }
 }

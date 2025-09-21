@@ -38,7 +38,9 @@ interface ConversationClient {
   conversationId: string;
   clientId: string;
   sendMessage: (content: { type: 'text'; payload: string }) => Promise<void>;
-  decorateMessage: (message: IConversationMessage) => IConversationMessage;
+  decorateMessage: (
+    message: IConversationMessage,
+  ) => IConversationMessage | null;
   isMessageFilterAccepted: (message: IConversationMessage) => boolean;
 }
 
@@ -541,6 +543,14 @@ export class ChatManagerService {
           if (client.isMessageFilterAccepted(message)) {
             const decoratedMessage = client.decorateMessage(message);
 
+            // Skip sending if decorateMessage returns null (filtered out)
+            if (decoratedMessage === null) {
+              this.logger.debug(
+                `${client.type} client ${client.clientId} filtered out message ${message.id}`,
+              );
+              return;
+            }
+
             this.logger.debug(
               `${client.type} client ${client.clientId} accepted message  ${JSON.stringify(message)}`,
             );
@@ -680,15 +690,19 @@ export class ChatManagerService {
       // @ts-ignore - debugging formatting issues
       decorateMessage: (
         message: IConversationMessage,
-      ): IConversationMessage => {
-        // Handle system/user-intent messages specially for Slack
-        if (message.content.type === 'system/user-intent') {
+      ): IConversationMessage | null => {
+        // Handle intent messages (JSON debug messages) with proper formatting
+        const payload = message.content.payload as string;
+        if (
+          payload &&
+          payload.trim().startsWith('{') &&
+          payload.includes('"intent"')
+        ) {
           return {
             ...message,
             content: {
-              type: 'text/plain',
-              payload:
-                '```json\n' + JSON.stringify(message.content.payload) + '\n```',
+              type: 'text/markdown',
+              payload: `\`\`\`json\n${JSON.stringify(JSON.parse(payload), null, 2)}\n\`\`\``,
             },
           };
         }
@@ -715,23 +729,15 @@ export class ChatManagerService {
           };
         }
 
-        // Replace Slack user's own messages with '[Your Message]' to avoid echo
+        // Filter out Slack user's own messages to avoid echo
         if (message.authorUserId === 'slack-service@istack-buddy.com') {
-          return {
-            ...message,
-            content: {
-              type: 'text/plain',
-              payload: '[Your Message]',
-            },
-          };
+          return null; // Return null to filter out the message
         }
 
         // Convert markdown to Slack format for text/markdown messages
         if (message.content.type === 'text/markdown') {
           const slackMarkdown =
-            '' +
-            'REFORMATTED: ' +
-            this.convertMarkdownToSlack(message.content.payload as string);
+            '' + this.convertMarkdownToSlack(message.content.payload as string);
           return {
             ...message,
             content: {
@@ -745,10 +751,10 @@ export class ChatManagerService {
         return message;
       },
       isMessageFilterAccepted: (message: IConversationMessage) => {
-        // Temporarily disable filtering to debug message delivery
-        // const payload = message.content.payload as string;
-        // return !!(payload && payload.trim());
-        return true;
+        const payload = message.content.payload as string;
+
+        // Allow all messages (including intent messages - they will be decorated)
+        return !!(payload && payload.trim());
       },
     };
 
@@ -1014,69 +1020,25 @@ export class ChatManagerService {
       this.registerSlackClient(conversationId, slackResponseCallback);
     }
 
+    // Strip @iStackBuddyChatApp mention from the message
+    const cleanMessage = this.stripMentionFromMessage(content.payload);
+
     // Add the user message to the conversation
     const userMessage = await this.addMessageFromUser(
       conversationId,
-      content.payload,
+      cleanMessage,
       'slack-service@istack-buddy.com',
       UserRole.USER,
       UserRole.USER,
     );
 
-    // Trigger intent processing (similar to handleRobotMessage)
-    try {
-      // Step 1: Parse intent to determine appropriate handler/robot
-      const intentResult = await this.parseIntentFromUserMessage(
-        content.payload,
-        {
-          currentRobot: '',
-          lastRobotMessageText: '',
-          conversationId: conversationId,
-        },
-      );
-      // Step 3: Route intent through intent router or fallback to SlackyOpenAiAgent
-      if ('error' in intentResult) {
-        // Intent parsing failed, fallback to SlackyOpenAiAgent
-        this.logger.warn(
-          `Intent parsing failed: ${intentResult.error}. Falling back to SlackyOpenAiAgent`,
-        );
-        await this.handleSlackyFallback(
-          conversationId,
-          content.payload,
-          slackResponseCallback,
-        );
-      } else {
-        // Route through intent router (handles both intent handlers and robots)
-        this.logger.log(
-          `Intent parsing succeeded with intent: ${(intentResult as IntentParsingResponse).intent} (debug recommends: ${(intentResult as IntentParsingResponse).devDebugRecommendedExecutor})`,
-        );
-        // Add intent and conversationId to intentData and route
-        const intentDataWithConversation = {
-          ...intentResult.intentData,
-          intent: intentResult.intent,
-          conversationId: conversationId,
-        };
-        await this.intentRouterService.routeIntent(intentDataWithConversation);
-      }
-    } catch (error) {
-      this.logger.error(
-        `Error in Slack intent processing for conversation ${conversationId}:`,
-        error,
-      );
-      this.logger.error('Slack intent processing error details:', {
-        errorMessage: error.message,
-        errorName: error.name,
-        errorStack: error.stack,
-        conversationId,
-        messagePayload: content.payload,
-      });
-      // Final fallback to SlackyOpenAiAgent
-      await this.handleSlackyFallback(
-        conversationId,
-        content.payload,
-        slackResponseCallback,
-      );
-    }
+    // Process the message through the centralized intent system
+    await this.processUserMessage(
+      conversationId,
+      cleanMessage,
+      'slack-service@istack-buddy.com',
+    );
+
     return userMessage;
   }
 
@@ -2033,5 +1995,24 @@ export class ChatManagerService {
         timestamp: now.toISOString(),
       });
     }
+  }
+
+  /**
+   * Strip @iStackBuddyChatApp, @iStackBuddy, and ALL Slack mention formats from messages
+   */
+  private stripMentionFromMessage(message: string): string {
+    if (!message) return message;
+
+    // Remove @iStackBuddyChatApp mentions (case insensitive)
+    let cleaned = message.replace(/@iStackBuddyChatApp\s*/gi, '');
+
+    // Remove @iStackBuddy mentions (case insensitive)
+    cleaned = cleaned.replace(/@iStackBuddy\s*/gi, '');
+
+    // Remove ALL Slack mention formats <@U...> (any user ID)
+    cleaned = cleaned.replace(/<@U[A-Z0-9]+>\s*/gi, '');
+
+    // Also remove any leading/trailing whitespace and clean up multiple spaces
+    return cleaned.trim().replace(/\s+/g, ' ');
   }
 }

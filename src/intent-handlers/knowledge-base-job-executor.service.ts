@@ -71,8 +71,8 @@ export class KnowledgeBaseJobExecutor implements IntentHandler, OnModuleInit {
       await this.chatManagerService.addMessageSystemNotification(
         conversationId,
         {
-          type: 'text/plain',
-          payload: `🔄 **Knowledge Base Search Request Received**\n\nSearching for: ${intentData.originalUserPrompt}\nProcessing query...`,
+          type: 'text/markdown',
+          payload: `**Knowledge Base Search Request Received**\n\n**Searching normalized text:** "${intentData.originalUserPrompt}"\nProcessing query...`,
         },
       );
 
