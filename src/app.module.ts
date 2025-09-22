@@ -16,7 +16,6 @@ import { IstackBuddySlackApiModule } from './istack-buddy-slack-api/istack-buddy
 import { RobotModule } from './robots/robot.module';
 import { PublicInterfaceModule } from './public-interface/public-interface.module';
 import { FileManagerModule } from './file-manager/file-manager.module';
-import { JobQueueModule } from './job-queue/job-queue.module';
 
 @Module({
   imports: [
@@ -30,7 +29,6 @@ import { JobQueueModule } from './job-queue/job-queue.module';
     RobotModule,
     PublicInterfaceModule,
     FileManagerModule,
-    JobQueueModule,
   ],
   controllers: [AppController],
   providers: [

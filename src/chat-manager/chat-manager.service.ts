@@ -1299,17 +1299,16 @@ export class ChatManagerService {
       conversationId: string;
     },
   ) {
+    // Convert to PreviousConversationContext format
+    const previousConversationContext = {
+      lastRobotMessageText:
+        conversationContext.lastRobotMessageText || undefined,
+      lastIntent: this.getLastIntent(conversationContext.conversationId),
+    };
+
     const intentResult = await this.intentParsingService.parsePromptIntent(
       messageText,
-      conversationContext,
-    );
-
-    await this.addMessageSystemNotification(
-      conversationContext.conversationId,
-      {
-        type: 'system/user-intent',
-        payload: intentResult,
-      },
+      previousConversationContext,
     );
 
     return intentResult;
@@ -1368,29 +1367,33 @@ export class ChatManagerService {
    * Get last intent from conversation history
    * Used by intent parser for context
    */
-  getLastIntent(conversationId: string): string | null {
+  getLastIntent(conversationId: string): IntentParsingResponse | undefined {
     // Get all messages and filter for intent parsing messages
     const allMessages = this.chatConversationListService.getFilteredMessages(
       conversationId,
       {},
     );
 
-    // Look for the most recent intent parsing message
+    // Look for the most recent intent JSON message
     for (let i = allMessages.length - 1; i >= 0; i--) {
       const message = allMessages[i];
       if (
+        message.fromRole === UserRole.SYSTEM &&
         typeof message.content.payload === 'string' &&
-        message.content.payload.includes('🎯 **Intent Parsed**:')
+        message.content.payload.trim().startsWith('{') &&
+        message.content.payload.includes('"intent"')
       ) {
-        // Extract intent from the payload
-        const match = message.content.payload.match(
-          /Intent Parsed\*\*:\s*(\w+)/,
-        );
-        return match ? match[1] : null;
+        try {
+          const intentJson = JSON.parse(message.content.payload);
+          return intentJson as IntentParsingResponse;
+        } catch (error) {
+          this.logger.warn('Failed to parse intent JSON:', error);
+          continue;
+        }
       }
     }
 
-    return null;
+    return undefined;
   }
 
   /**
