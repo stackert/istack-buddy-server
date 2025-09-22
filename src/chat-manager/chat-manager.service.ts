@@ -67,6 +67,24 @@ export class ChatManagerService {
   }
 
   /**
+   * Get the base URL for generating links with proper fallbacks
+   */
+  private getBaseUrl(): string {
+    // Priority 1: NGROK_URL environment variable
+    if (process.env.NGROK_URL) {
+      return process.env.NGROK_URL.replace(/\/$/, ''); // Remove trailing slash if present
+    }
+
+    // Priority 2: ISTACK_BUDDY_FRONT_END_HOST environment variable
+    if (process.env.ISTACK_BUDDY_FRONT_END_HOST) {
+      return process.env.ISTACK_BUDDY_FRONT_END_HOST.replace(/\/$/, ''); // Remove trailing slash if present
+    }
+
+    // Priority 3: Fallback to localhost for development
+    return 'http://localhost:3500';
+  }
+
+  /**
    * Create conversation callbacks for streaming responses
    * Returns IStreamingCallbacks that add debug messages to the conversation
    */
@@ -693,19 +711,6 @@ export class ChatManagerService {
       ): IConversationMessage | null => {
         // Handle intent messages (JSON debug messages) with proper formatting
         const payload = message.content.payload as string;
-        if (
-          payload &&
-          payload.trim().startsWith('{') &&
-          payload.includes('"intent"')
-        ) {
-          return {
-            ...message,
-            content: {
-              type: 'text/markdown',
-              payload: `\`\`\`json\n${JSON.stringify(JSON.parse(payload), null, 2)}\n\`\`\``,
-            },
-          };
-        }
 
         // Handle system/robot-prompt messages as clickable link
         if (message.content.type === 'system/robot-prompt') {
@@ -713,7 +718,7 @@ export class ChatManagerService {
             ...message,
             content: {
               type: 'text/plain',
-              payload: `[robot prompt] http://localhost:3500/get-message?messageId=${message.id}`,
+              payload: `[robot prompt] ${this.getBaseUrl()}/get-message?messageId=${message.id}`,
             },
           };
         }
@@ -724,14 +729,44 @@ export class ChatManagerService {
             ...message,
             content: {
               type: 'text/plain',
-              payload: `[robot context document] http://localhost:3500/get-message?messageId=${message.id}`,
+              payload: `[robot context document] ${this.getBaseUrl()}/get-message?messageId=${message.id}`,
+            },
+          };
+        }
+
+        // Handle context/document messages as clickable link
+        if (message.content.type === 'system/user-intent') {
+          return {
+            ...message,
+            content: {
+              type: 'text/markdown',
+              payload:
+                '```json\n' +
+                JSON.stringify(message.content.payload, null, 2) +
+                '\n```',
             },
           };
         }
 
         // Filter out Slack user's own messages to avoid echo
         if (message.authorUserId === 'slack-service@istack-buddy.com') {
-          return null; // Return null to filter out the message
+          return {
+            ...message,
+            content: {
+              type: 'text/markdown',
+              payload: `Thank you for your request. 
+              
+              I am working on it. I would like to take this opportunity to explain:
+              1. \@iStackBuddy [your request] (as you just did). iStackBuddy does not listen
+              to every messages sent in a thread.  It responds only to messages sent directly to it.
+              It has visibility only into messages sent to it or sent by it. Happy Stacking.
+
+              2. \@iStackBuddy '/feedback' to provided ANY feedback. iStackBuddy is a community agent.
+              It is only as good as your feedback.  Send corrections, suggestions, bug reports, anything you want.
+              
+              `,
+            },
+          };
         }
 
         // Convert markdown to Slack format for text/markdown messages
@@ -751,10 +786,16 @@ export class ChatManagerService {
         return message;
       },
       isMessageFilterAccepted: (message: IConversationMessage) => {
-        const payload = message.content.payload as string;
+        const payload = message.content.payload;
 
         // Allow all messages (including intent messages - they will be decorated)
-        return !!(payload && payload.trim());
+        // Handle both string and object payloads
+        if (typeof payload === 'string') {
+          return !!(payload && payload.trim());
+        } else if (typeof payload === 'object' && payload !== null) {
+          return true; // Allow object payloads (like system/user-intent)
+        }
+        return false;
       },
     };
 
@@ -1014,7 +1055,7 @@ export class ChatManagerService {
       type: 'text';
       payload: string;
     }) => Promise<void>,
-  ): Promise<IConversationMessage> {
+  ): Promise<void> {
     // Register Slack client for this conversation
     if (slackResponseCallback) {
       this.registerSlackClient(conversationId, slackResponseCallback);
@@ -1024,13 +1065,13 @@ export class ChatManagerService {
     const cleanMessage = this.stripMentionFromMessage(content.payload);
 
     // Add the user message to the conversation
-    const userMessage = await this.addMessageFromUser(
-      conversationId,
-      cleanMessage,
-      'slack-service@istack-buddy.com',
-      UserRole.USER,
-      UserRole.USER,
-    );
+    // const userMessage = await this.addMessageFromUser(
+    //   conversationId,
+    //   cleanMessage,
+    //   'slack-service@istack-buddy.com',
+    //   UserRole.USER,
+    //   UserRole.USER,
+    // );
 
     // Process the message through the centralized intent system
     await this.processUserMessage(
@@ -1038,8 +1079,6 @@ export class ChatManagerService {
       cleanMessage,
       'slack-service@istack-buddy.com',
     );
-
-    return userMessage;
   }
 
   /**
@@ -1341,8 +1380,8 @@ export class ChatManagerService {
     if (!('error' in intentResult)) {
       // STEP 3: ADD INTENT TO CONVERSATION, BROADCAST
       await this.addMessageSystemNotification(conversationId, {
-        type: 'text/plain',
-        payload: `${JSON.stringify(intentResult)}`,
+        type: 'system/user-intent',
+        payload: intentResult,
       });
 
       // STEP 4: ROUTE INTENT

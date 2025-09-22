@@ -136,7 +136,7 @@ export class DevDebugChatManagerController {
 
       // Send message through the addMessageFromSlack pathway (includes intent parsing)
       this.logger.log('Calling ChatManager.addMessageFromSlack...');
-      const userMessage = await this.chatManagerService.addMessageFromSlack(
+      await this.chatManagerService.addMessageFromSlack(
         conversationId,
         { type: 'text', payload: testMessage },
         mockSlackCallback,
@@ -149,7 +149,6 @@ export class DevDebugChatManagerController {
         success: true,
         testMessage: testMessage,
         conversationId: conversationId,
-        userMessageId: userMessage.id,
         duration: `${totalDuration}ms`,
         timestamp: endTime.toISOString(),
         // Intent parsing results
@@ -245,7 +244,7 @@ export class DevDebugChatManagerController {
 
       // Simulate the full Slack flow by calling addMessageFromSlack
       this.logger.log('Calling ChatManager.addMessageFromSlack...');
-      const userMessage = await this.chatManagerService.addMessageFromSlack(
+      await this.chatManagerService.addMessageFromSlack(
         testConversationId,
         { type: 'text', payload: testMessage },
         mockSlackCallback,
@@ -258,7 +257,6 @@ export class DevDebugChatManagerController {
         success: true,
         testMessage: testMessage,
         conversationId: testConversationId,
-        userMessageId: userMessage.id,
         duration: `${totalDuration}ms`,
         timestamp: endTime.toISOString(),
         note: 'Check server logs for robot response details',

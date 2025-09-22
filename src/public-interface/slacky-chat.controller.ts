@@ -96,21 +96,20 @@ export class SlackyChatController {
 
       // Try to get the file from the file manager
       try {
-        const fileContent =
-          await this.fileManagerService.getFileContent(fileId);
+        const fileContent = await this.fileManagerService.get(fileId);
         const fileMetadata =
-          await this.fileManagerService.getFileMetadata(fileId);
+          await this.fileManagerService.getMetaDetails(fileId);
 
         // Determine content type
         const contentType = this.getContentTypeFromFilename(
-          fileMetadata.filename,
+          fileMetadata.fileId,
         );
 
         // Set appropriate headers
         res.setHeader('Content-Type', contentType);
         res.setHeader(
           'Content-Disposition',
-          `inline; filename="${fileMetadata.filename}"`,
+          `inline; filename="${fileMetadata.fileId}"`,
         );
         res.setHeader('Content-Length', fileContent.length.toString());
 
@@ -387,6 +386,6 @@ ${displayContent}
       svg: 'image/svg+xml',
     };
 
-    return contentTypes[ext] || 'application/octet-stream';
+    return contentTypes[ext || ''] || 'application/octet-stream';
   }
 }

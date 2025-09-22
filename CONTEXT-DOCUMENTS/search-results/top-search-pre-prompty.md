@@ -9,7 +9,7 @@ Please include the top 3 search results. It should include full citation, confid
 
 **Source:** [Source Name(Link)], Confidence: {confidenceScore}
 
-The link for context documents should be: http://localhost:3500/get-document?context-document={context-document-id}
+The link for context documents should use the current hosting URL: /get-document?context-document={context-document-id}
 The link for Slack sources should be: {slack-link}
 
 Top three results:
