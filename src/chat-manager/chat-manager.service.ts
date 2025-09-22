@@ -718,7 +718,7 @@ export class ChatManagerService {
             ...message,
             content: {
               type: 'text/plain',
-              payload: `[robot prompt] ${this.getBaseUrl()}/get-message?messageId=${message.id}`,
+              payload: `[robot prompt] ${this.getBaseUrl()}/public/slacky/chat/${message.conversationId}/view-message?messageId=${message.id}`,
             },
           };
         }
@@ -729,12 +729,12 @@ export class ChatManagerService {
             ...message,
             content: {
               type: 'text/plain',
-              payload: `[robot context document] ${this.getBaseUrl()}/get-message?messageId=${message.id}`,
+              payload: `[robot context document] ${this.getBaseUrl()}/public/slacky/chat/${message.conversationId}/view-message?messageId=${message.id}`,
             },
           };
         }
 
-        // Handle context/document messages as clickable link
+        // Handle intent messages (JSON debug messages) with proper formatting
         if (message.content.type === 'system/user-intent') {
           return {
             ...message,
