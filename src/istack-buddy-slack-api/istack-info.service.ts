@@ -19,6 +19,7 @@ import {
   ContextDynamicResponse,
   AccountContextResponse,
   FormContextResponse,
+  FormFieldsObservationsSourceResponse,
   AuthProviderContextResponse,
   SumoJobSubmissionRequest,
   SumoJobSubmissionResponse,
@@ -258,6 +259,17 @@ export class IStackInfoService implements OnModuleDestroy {
       return this.makeRequest<FormContextResponse>(
         'POST',
         '/information-services/context-dynamic/form',
+        { formId },
+      );
+    },
+
+    getFormFieldsObservationsSource: async (
+      formId: number,
+    ): Promise<FormFieldsObservationsSourceResponse> => {
+      this.logger.debug(`Getting form fields observations source: ${formId}`);
+      return this.makeRequest<FormFieldsObservationsSourceResponse>(
+        'POST',
+        '/information-services/context-dynamic/form-fields-observations-source',
         { formId },
       );
     },

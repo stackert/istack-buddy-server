@@ -143,11 +143,189 @@ export interface AccountContextResponse extends ContextDynamicResponse {
 export interface FormContextResponse extends ContextDynamicResponse {
   entityType: 'form';
   form: {
-    formId: string;
-    formName: string;
-    status: string;
-    fields: any[];
-    submitActions: any[];
+    formId: number;
+    id: number;
+    viewkey: string;
+    isShareEnabled: boolean;
+    accountId: number;
+    name: string;
+    alias?: string;
+    templateId?: number;
+    formVersion: number;
+    numOfColumns: number;
+    expirationType: '' | 'date' | 'submissions' | 'inventory_sold_out';
+    isCaptchaEnabled: boolean;
+    timezone: string;
+    language: string;
+    isActive: boolean;
+    created: string;
+    updated: string;
+    viewCount: number;
+    submissionCount: number;
+    submissionUnreadCount: number;
+    lastSubmissionDate: string;
+    isDeleted: boolean;
+    deletedDate?: string;
+    formCreateUserId?: number;
+    formWorkflowType: 'form' | 'workflow';
+    workflowStatus: 'active_accepting' | 'active_not_accepting' | 'draft';
+    workflowIncompleteSubmissionCount: number;
+    activeAuthProviderName: string;
+    protectionType: 'SSO' | 'Password' | 'None';
+    submitActions: Array<{
+      submitActionId: number;
+      name: string;
+      type: string;
+      isActive: boolean;
+      hasLogic: boolean;
+    }>;
+    confirmationEmails: Array<{
+      confirmationEmailId: number;
+      name: string;
+      payloadType: string;
+      hasLogic: boolean;
+    }>;
+    notificationEmails: Array<{
+      notificationEmailId: number;
+      name: string;
+      payloadType: string;
+      hasLogic: boolean;
+    }>;
+    formPlugins: Array<{
+      formPluginId: number;
+      type: string;
+      isActive: boolean;
+    }>;
+    smartLists: Array<{
+      smartListId: number;
+      name: string;
+      fieldIds: number[];
+      useSeparateValues: boolean;
+      useImages: boolean;
+    }>;
+    [key: string]: any;
+  };
+}
+
+export interface FormFieldsObservationsSourceResponse
+  extends ContextDynamicResponse {
+  entityType: 'form';
+  formFieldsObservationsSource: {
+    formId: number;
+    id: number;
+    viewkey: string;
+    isShareEnabled: boolean;
+    accountId: number;
+    name: string;
+    alias?: string;
+    templateId?: number;
+    formVersion: number;
+    numOfColumns: number;
+    expirationType: '' | 'date' | 'submissions' | 'inventory_sold_out';
+    isCaptchaEnabled: boolean;
+    timezone: string;
+    language: string;
+    isActive: boolean;
+    created: string;
+    updated: string;
+    viewCount: number;
+    submissionCount: number;
+    submissionUnreadCount: number;
+    lastSubmissionDate: string;
+    isDeleted: boolean;
+    deletedDate?: string;
+    formCreateUserId?: number;
+    formWorkflowType: 'form' | 'workflow';
+    workflowStatus: 'active_accepting' | 'active_not_accepting' | 'draft';
+    workflowIncompleteSubmissionCount: number;
+    activeAuthProviderName: string;
+    protectionType: 'SSO' | 'Password' | 'None';
+    submitActions: Array<{
+      submitActionId: number;
+      name: string;
+      type: string;
+      isActive: boolean;
+      hasLogic: boolean;
+    }>;
+    confirmationEmails: Array<{
+      confirmationEmailId: number;
+      name: string;
+      payloadType: string;
+      hasLogic: boolean;
+    }>;
+    notificationEmails: Array<{
+      notificationEmailId: number;
+      name: string;
+      payloadType: string;
+      hasLogic: boolean;
+    }>;
+    formPlugins: Array<{
+      formPluginId: number;
+      type: string;
+      isActive: boolean;
+    }>;
+    smartLists: Array<{
+      smartListId: number;
+      name: string;
+      fieldIds: number[];
+      useSeparateValues: boolean;
+      useImages: boolean;
+    }>;
+    viewKey: string;
+    folder: number;
+    version: number;
+    url: string;
+    submissionsCount: number;
+    unreadSubmissionsCount: number;
+    todaySubmissionsCount: number;
+    isEncrypted: boolean;
+    submitButtonTitle: string;
+    isWorkflowForm: boolean;
+    isWorkflowPublished: boolean;
+    hasApprovers: boolean;
+    permissions: number;
+    canEdit: boolean;
+    formExtras: {
+      numberOfColumns: number;
+      fieldLabelsPosition: string;
+      language: string;
+      useCaptcha: boolean;
+      useProgressMeter: boolean;
+      useSaveResume: boolean;
+      useExpiration: boolean;
+      expirationOption: string;
+      disabledMessage: string;
+    };
+    formSettings: {
+      alias: string;
+      timezone: string;
+      isActive: boolean;
+      saveSubmissionsToDatabase: boolean;
+    };
+    fields: Array<{
+      id: number;
+      label: string;
+      labelKey: string;
+      internalLabel: string;
+      supportingText: string;
+      useCallout: boolean;
+      type: string;
+      required: boolean;
+      readOnly: boolean;
+      hidden: boolean;
+      unique: boolean;
+      hideLabel: boolean;
+      displayOrder: number;
+      columnSpan: number;
+      language: string;
+      defaultValue: string;
+      smartListId?: number;
+      logic?: any;
+      numericCalculations?: any;
+      datetimeCalculations?: any;
+      options?: string;
+      attributes: string;
+    }>;
     [key: string]: any;
   };
 }

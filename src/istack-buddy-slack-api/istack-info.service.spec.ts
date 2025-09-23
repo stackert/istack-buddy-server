@@ -12,6 +12,7 @@ import {
   DomainsResponse,
   AccountContextResponse,
   FormContextResponse,
+  FormFieldsObservationsSourceResponse,
   AuthProviderContextResponse,
   SumoJobSubmissionResponse,
   SumoJobStatusResponse,
@@ -468,12 +469,41 @@ describe('IStackInfoService', () => {
         const mockResponse: FormContextResponse = {
           entityType: 'form',
           entityId: '123456',
-          data: {
-            formId: '123456',
-            formName: 'Contact Form',
-            status: 'active',
-            fields: [],
+          form: {
+            formId: 123456,
+            id: 123456,
+            viewkey: 'abc123def456',
+            isShareEnabled: true,
+            accountId: 1000,
+            name: 'Contact Form',
+            alias: 'contact',
+            templateId: 100,
+            formVersion: 1,
+            numOfColumns: 1,
+            expirationType: '',
+            isCaptchaEnabled: false,
+            timezone: 'US/Eastern',
+            language: 'en',
+            isActive: true,
+            created: '2024-01-15T10:30:00Z',
+            updated: '2024-01-20T14:45:00Z',
+            viewCount: 1000,
+            submissionCount: 50,
+            submissionUnreadCount: 5,
+            lastSubmissionDate: '2024-01-20T12:30:00Z',
+            isDeleted: false,
+            deletedDate: null,
+            formCreateUserId: 1000,
+            formWorkflowType: 'form',
+            workflowStatus: 'active_accepting',
+            workflowIncompleteSubmissionCount: 0,
+            activeAuthProviderName: 'SAML Provider',
+            protectionType: 'SSO',
             submitActions: [],
+            confirmationEmails: [],
+            notificationEmails: [],
+            formPlugins: [],
+            smartLists: [],
           },
         };
 
@@ -484,6 +514,95 @@ describe('IStackInfoService', () => {
         expect(mockAxiosInstance.request).toHaveBeenCalledWith({
           method: 'POST',
           url: '/information-services/context-dynamic/form',
+          data: { formId: 123456 },
+        });
+        expect(result).toEqual(mockResponse);
+      });
+    });
+
+    describe('getFormFieldsObservationsSource', () => {
+      it('should get form fields observations source', async () => {
+        const mockResponse: FormFieldsObservationsSourceResponse = {
+          entityType: 'form',
+          entityId: '123456',
+          formFieldsObservationsSource: {
+            formId: 123456,
+            id: 123456,
+            viewkey: 'abc123def456',
+            isShareEnabled: true,
+            accountId: 1000,
+            name: 'Contact Form',
+            alias: 'contact-form',
+            templateId: 100,
+            formVersion: 1,
+            numOfColumns: 1,
+            expirationType: '',
+            isCaptchaEnabled: true,
+            timezone: 'US/Eastern',
+            language: 'en',
+            isActive: true,
+            created: '2024-01-15T10:30:00Z',
+            updated: '2024-01-20T14:45:00Z',
+            viewCount: 1000,
+            submissionCount: 50,
+            submissionUnreadCount: 5,
+            lastSubmissionDate: '2024-01-20T12:30:00Z',
+            isDeleted: false,
+            deletedDate: null,
+            formCreateUserId: 1000,
+            formWorkflowType: 'form',
+            workflowStatus: 'active_accepting',
+            workflowIncompleteSubmissionCount: 0,
+            activeAuthProviderName: 'SAML Provider',
+            protectionType: 'SSO',
+            submitActions: [],
+            confirmationEmails: [],
+            notificationEmails: [],
+            formPlugins: [],
+            smartLists: [],
+            viewKey: 'abc123def456',
+            folder: 100,
+            version: 1,
+            url: 'https://www.formstack.com/forms/abc123def456',
+            submissionsCount: 50,
+            unreadSubmissionsCount: 5,
+            todaySubmissionsCount: 2,
+            isEncrypted: false,
+            submitButtonTitle: 'Submit',
+            isWorkflowForm: false,
+            isWorkflowPublished: false,
+            hasApprovers: false,
+            permissions: 3,
+            canEdit: true,
+            formExtras: {
+              numberOfColumns: 1,
+              fieldLabelsPosition: 'top',
+              language: 'en',
+              useCaptcha: true,
+              useProgressMeter: false,
+              useSaveResume: false,
+              useExpiration: false,
+              expirationOption: '',
+              disabledMessage: '',
+            },
+            formSettings: {
+              alias: 'contact-form',
+              timezone: 'US/Eastern',
+              isActive: true,
+              saveSubmissionsToDatabase: true,
+            },
+            fields: [],
+          },
+        };
+
+        mockAxiosInstance.request.mockResolvedValue({ data: mockResponse });
+
+        const result =
+          await service.contextDynamic.getFormFieldsObservationsSource(123456);
+
+        expect(mockAxiosInstance.request).toHaveBeenCalledWith({
+          method: 'POST',
+          url: '/information-services/context-dynamic/form-fields-observations-source',
           data: { formId: 123456 },
         });
         expect(result).toEqual(mockResponse);

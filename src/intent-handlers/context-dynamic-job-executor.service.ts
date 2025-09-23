@@ -92,6 +92,26 @@ export class ContextDynamicJobExecutor implements IntentHandler {
   ): string {
     const form = formContext.form;
     const {
+      name,
+      alias,
+      formVersion,
+      numOfColumns,
+      expirationType,
+      isCaptchaEnabled,
+      timezone,
+      language,
+      isActive,
+      created,
+      updated,
+      viewCount,
+      submissionCount,
+      submissionUnreadCount,
+      lastSubmissionDate,
+      isDeleted,
+      formCreateUserId,
+      formWorkflowType,
+      workflowStatus,
+      workflowIncompleteSubmissionCount,
       activeAuthProviderName,
       protectionType,
       submitActions = [],
@@ -105,12 +125,126 @@ export class ContextDynamicJobExecutor implements IntentHandler {
     summary += `**User Query:** **${originalPrompt}**\n\n`;
 
     // Basic form info
-    summary += `**form:** ${actualFormId}\n`;
-    summary += `**protectionType:** ${protectionType}\n`;
-    if (activeAuthProviderName) {
-      summary += `**activeAuthProvider:** ${activeAuthProviderName}\n`;
+    summary += `**Form Details:**\n`;
+    summary += `- **ID:** ${actualFormId}\n`;
+    summary += `- **Name:** ${name || 'N/A'}\n`;
+    if (alias) {
+      summary += `- **Alias:** ${alias}\n`;
+    }
+    summary += `- **Version:** ${formVersion || 'N/A'}\n`;
+    summary += `- **Columns:** ${numOfColumns || 'N/A'}\n`;
+    summary += `- **Language:** ${language || 'N/A'}\n`;
+    summary += `- **Timezone:** ${timezone || 'N/A'}\n`;
+    summary += `- **Status:** ${isActive ? '✅ Active' : '❌ Inactive'}\n`;
+    if (isDeleted) {
+      summary += `- **Deleted:** ❌ Yes\n`;
+    }
+
+    // URL and metadata (if available from form-fields-observations-source endpoint)
+    if (form.url) {
+      summary += `- **Form URL:** ${form.url}\n`;
+    }
+    if (form.viewKey) {
+      summary += `- **View Key:** ${form.viewKey}\n`;
+    }
+    if (form.folder) {
+      summary += `- **Folder ID:** ${form.folder}\n`;
     }
     summary += `\n`;
+
+    // Workflow info
+    if (formWorkflowType) {
+      summary += `**Workflow:**\n`;
+      summary += `- **Type:** ${formWorkflowType}\n`;
+      summary += `- **Status:** ${workflowStatus || 'N/A'}\n`;
+      summary += `- **Incomplete Submissions:** ${workflowIncompleteSubmissionCount || 0}\n`;
+      if (form.isWorkflowForm !== undefined) {
+        summary += `- **Workflow Form:** ${form.isWorkflowForm ? '✅ Yes' : '❌ No'}\n`;
+      }
+      if (form.isWorkflowPublished !== undefined) {
+        summary += `- **Workflow Published:** ${form.isWorkflowPublished ? '✅ Yes' : '❌ No'}\n`;
+      }
+      if (form.hasApprovers !== undefined) {
+        summary += `- **Has Approvers:** ${form.hasApprovers ? '✅ Yes' : '❌ No'}\n`;
+      }
+      summary += `\n`;
+    }
+
+    // Statistics
+    summary += `**Statistics:**\n`;
+    summary += `- **Views:** ${viewCount || 0}\n`;
+    summary += `- **Total Submissions:** ${submissionCount || 0}\n`;
+    summary += `- **Unread Submissions:** ${submissionUnreadCount || 0}\n`;
+    if (lastSubmissionDate) {
+      summary += `- **Last Submission:** ${lastSubmissionDate}\n`;
+    }
+
+    // Additional submission stats (if available from form-fields-observations-source endpoint)
+    if (form.submissionsCount !== undefined) {
+      summary += `- **Submissions Count:** ${form.submissionsCount}\n`;
+    }
+    if (form.unreadSubmissionsCount !== undefined) {
+      summary += `- **Unread Submissions:** ${form.unreadSubmissionsCount}\n`;
+    }
+    if (form.todaySubmissionsCount !== undefined) {
+      summary += `- **Today's Submissions:** ${form.todaySubmissionsCount}\n`;
+    }
+    summary += `\n`;
+
+    // Security & Protection
+    summary += `**Security:**\n`;
+    summary += `- **Protection Type:** ${protectionType || 'None'}\n`;
+    if (activeAuthProviderName) {
+      summary += `- **Auth Provider:** ${activeAuthProviderName}\n`;
+    }
+    summary += `- **CAPTCHA:** ${isCaptchaEnabled ? '✅ Enabled' : '❌ Disabled'}\n`;
+    if (expirationType) {
+      summary += `- **Expiration:** ${expirationType}\n`;
+    }
+    summary += `\n`;
+
+    // Form Features & Settings
+    if (form.formExtras) {
+      summary += `**Form Features:**\n`;
+      summary += `- **Save & Resume:** ${form.formExtras.useSaveResume ? '✅ Enabled' : '❌ Disabled'}\n`;
+      summary += `- **Progress Meter:** ${form.formExtras.useProgressMeter ? '✅ Enabled' : '❌ Disabled'}\n`;
+      summary += `- **Field Labels Position:** ${form.formExtras.fieldLabelsPosition || 'N/A'}\n`;
+      if (form.formExtras.disabledMessage) {
+        summary += `- **Disabled Message:** ${form.formExtras.disabledMessage}\n`;
+      }
+      summary += `\n`;
+    }
+
+    // Additional Settings
+    if (
+      form.formSettings ||
+      form.isEncrypted !== undefined ||
+      form.submitButtonTitle
+    ) {
+      summary += `**Additional Settings:**\n`;
+      if (form.isEncrypted !== undefined) {
+        summary += `- **Encrypted:** ${form.isEncrypted ? '✅ Yes' : '❌ No'}\n`;
+      }
+      if (form.submitButtonTitle) {
+        summary += `- **Submit Button:** ${form.submitButtonTitle}\n`;
+      }
+      if (form.formSettings?.saveSubmissionsToDatabase !== undefined) {
+        summary += `- **Save to Database:** ${form.formSettings.saveSubmissionsToDatabase ? '✅ Yes' : '❌ No'}\n`;
+      }
+      summary += `\n`;
+    }
+
+    // Permissions & Access
+    if (form.permissions !== undefined || form.canEdit !== undefined) {
+      summary += `**Permissions:**\n`;
+      if (form.permissions !== undefined) {
+        summary += `- **Permission Level:** ${form.permissions}\n`;
+      }
+      if (form.canEdit !== undefined) {
+        summary += `- **Can Edit:** ${form.canEdit ? '✅ Yes' : '❌ No'}\n`;
+      }
+      summary += `\n`;
+    }
 
     // Submit Actions
     if (submitActions.length > 0) {
@@ -161,6 +295,33 @@ export class ContextDynamicJobExecutor implements IntentHandler {
         const fieldCount = list.fieldIds?.length || 0;
         summary += `  - ${list.name} (smartListId:${list.smartListId}) - ${fieldCount} fields\n`;
       });
+      summary += `\n`;
+    }
+
+    // Field Summary (if available from form-fields-observations-source endpoint)
+    if (form.fields && Array.isArray(form.fields) && form.fields.length > 0) {
+      summary += `**Field Summary:**\n`;
+      const totalFields = form.fields.length;
+      const requiredFields = form.fields.filter((f: any) => f.required).length;
+      const hiddenFields = form.fields.filter((f: any) => f.hidden).length;
+      const readOnlyFields = form.fields.filter((f: any) => f.readOnly).length;
+
+      summary += `- **Total Fields:** ${totalFields}\n`;
+      summary += `- **Required Fields:** ${requiredFields}\n`;
+      summary += `- **Hidden Fields:** ${hiddenFields}\n`;
+      summary += `- **Read-Only Fields:** ${readOnlyFields}\n`;
+
+      // Show field types summary
+      const fieldTypes = form.fields.reduce((acc: any, field: any) => {
+        acc[field.type] = (acc[field.type] || 0) + 1;
+        return acc;
+      }, {});
+
+      if (Object.keys(fieldTypes).length > 0) {
+        summary += `- **Field Types:** ${Object.entries(fieldTypes)
+          .map(([type, count]) => `${type}(${count})`)
+          .join(', ')}\n`;
+      }
       summary += `\n`;
     }
 

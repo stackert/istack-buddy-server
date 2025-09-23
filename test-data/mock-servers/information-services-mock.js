@@ -374,6 +374,32 @@ app.post('/information-services/context-dynamic/form', (req, res) => {
   const mockFormContext = {
     form: {
       formId: formId,
+      id: formId,
+      viewkey: `abc${Math.random().toString(36).substr(2, 9)}def456`,
+      isShareEnabled: true,
+      accountId: Math.floor(Math.random() * 10000) + 1000,
+      name: 'Contact Form',
+      alias: 'contact',
+      templateId: Math.floor(Math.random() * 1000) + 100,
+      formVersion: Math.floor(Math.random() * 5) + 1,
+      numOfColumns: 1,
+      expirationType: '',
+      isCaptchaEnabled: false,
+      timezone: 'US/Eastern',
+      language: 'en',
+      isActive: true,
+      created: '2024-01-15T10:30:00Z',
+      updated: '2024-01-20T14:45:00Z',
+      viewCount: Math.floor(Math.random() * 2000) + 500,
+      submissionCount: Math.floor(Math.random() * 200) + 50,
+      submissionUnreadCount: Math.floor(Math.random() * 10),
+      lastSubmissionDate: '2024-01-20T12:30:00Z',
+      isDeleted: false,
+      deletedDate: null,
+      formCreateUserId: Math.floor(Math.random() * 10000) + 1000,
+      formWorkflowType: 'form',
+      workflowStatus: 'active_accepting',
+      workflowIncompleteSubmissionCount: Math.floor(Math.random() * 10),
       activeAuthProviderName: 'SAML Provider',
       protectionType: 'SSO',
       submitActions: [
@@ -456,6 +482,195 @@ app.post('/information-services/context-dynamic/form', (req, res) => {
   res.json(mockFormContext);
 });
 
+// POST /information-services/context-dynamic/form-fields-observations-source
+app.post(
+  '/information-services/context-dynamic/form-fields-observations-source',
+  (req, res) => {
+    console.log(
+      '📥 Received context-dynamic form-fields-observations-source request:',
+      req.body,
+    );
+
+    const { formId } = req.body;
+
+    if (!formId) {
+      return res.status(400).json({
+        error: 'Bad Request',
+        message: 'formId is required',
+      });
+    }
+
+    // Generate mock form fields observations source data with all new properties
+    const mockFormFieldsObservationsSource = {
+      formFieldsObservationsSource: {
+        formId: formId,
+        id: formId,
+        viewkey: `abc${Math.random().toString(36).substr(2, 9)}def456`,
+        isShareEnabled: true,
+        accountId: Math.floor(Math.random() * 10000) + 1000,
+        name: 'Contact Form',
+        alias: 'contact-form',
+        templateId: Math.floor(Math.random() * 1000) + 100,
+        formVersion: Math.floor(Math.random() * 5) + 1,
+        numOfColumns: 1,
+        expirationType: '',
+        isCaptchaEnabled: true,
+        timezone: 'US/Eastern',
+        language: 'en',
+        isActive: true,
+        created: '2024-01-15T10:30:00Z',
+        updated: '2024-01-20T14:45:00Z',
+        viewCount: Math.floor(Math.random() * 2000) + 500,
+        submissionCount: Math.floor(Math.random() * 200) + 50,
+        submissionUnreadCount: Math.floor(Math.random() * 10),
+        lastSubmissionDate: '2024-01-20T12:30:00Z',
+        isDeleted: false,
+        deletedDate: null,
+        formCreateUserId: Math.floor(Math.random() * 10000) + 1000,
+        formWorkflowType: 'form',
+        workflowStatus: 'active_accepting',
+        workflowIncompleteSubmissionCount: Math.floor(Math.random() * 10),
+        activeAuthProviderName: 'SAML Provider',
+        protectionType: 'SSO',
+        submitActions: [
+          {
+            submitActionId: Math.floor(Math.random() * 1000000) + 100000,
+            name: 'Webhook to CRM',
+            type: 'webhook',
+            isActive: true,
+            hasLogic: false,
+          },
+          {
+            submitActionId: Math.floor(Math.random() * 1000000) + 100000,
+            name: 'Salesforce Integration',
+            type: 'salesforce',
+            isActive: true,
+            hasLogic: true,
+          },
+        ],
+        confirmationEmails: [
+          {
+            confirmationEmailId: Math.floor(Math.random() * 1000000) + 200000,
+            name: 'Thank You Email',
+            payloadType: 'html',
+            hasLogic: true,
+          },
+        ],
+        notificationEmails: [
+          {
+            notificationEmailId: Math.floor(Math.random() * 1000000) + 300000,
+            name: 'Admin Notification',
+            payloadType: 'text',
+            hasLogic: false,
+          },
+        ],
+        formPlugins: [
+          {
+            formPluginId: Math.floor(Math.random() * 1000000) + 400000,
+            type: 'analytics',
+            isActive: true,
+          },
+        ],
+        smartLists: [
+          {
+            smartListId: Math.floor(Math.random() * 1000000) + 500000,
+            name: 'Customer List',
+            fieldIds: [1, 2, 3],
+            useSeparateValues: false,
+            useImages: false,
+          },
+        ],
+        viewKey: `abc${Math.random().toString(36).substr(2, 9)}def456`,
+        folder: Math.floor(Math.random() * 1000) + 100,
+        version: Math.floor(Math.random() * 5) + 1,
+        url: `https://www.formstack.com/forms/abc${Math.random().toString(36).substr(2, 9)}def456`,
+        submissionsCount: Math.floor(Math.random() * 200) + 50,
+        unreadSubmissionsCount: Math.floor(Math.random() * 10),
+        todaySubmissionsCount: Math.floor(Math.random() * 5),
+        isEncrypted: false,
+        submitButtonTitle: 'Submit',
+        isWorkflowForm: false,
+        isWorkflowPublished: false,
+        hasApprovers: false,
+        permissions: 3,
+        canEdit: true,
+        formExtras: {
+          numberOfColumns: 1,
+          fieldLabelsPosition: 'top',
+          language: 'en',
+          useCaptcha: true,
+          useProgressMeter: false,
+          useSaveResume: false,
+          useExpiration: false,
+          expirationOption: '',
+          disabledMessage: '',
+        },
+        formSettings: {
+          alias: 'contact-form',
+          timezone: 'US/Eastern',
+          isActive: true,
+          saveSubmissionsToDatabase: true,
+        },
+        fields: [
+          {
+            id: 1,
+            label: 'Full Name',
+            labelKey: 'full_name',
+            internalLabel: 'full_name_field',
+            supportingText: 'Please enter your full name',
+            useCallout: false,
+            type: 'name',
+            required: true,
+            readOnly: false,
+            hidden: false,
+            unique: false,
+            hideLabel: false,
+            displayOrder: 1,
+            columnSpan: 1,
+            language: 'en',
+            defaultValue: '',
+            smartListId: null,
+            logic: null,
+            numericCalculations: null,
+            datetimeCalculations: null,
+            options: null,
+            attributes: '{}',
+          },
+          {
+            id: 2,
+            label: 'Email Address',
+            labelKey: 'email',
+            internalLabel: 'email_field',
+            supportingText: 'Please enter a valid email address',
+            useCallout: false,
+            type: 'email',
+            required: true,
+            readOnly: false,
+            hidden: false,
+            unique: false,
+            hideLabel: false,
+            displayOrder: 2,
+            columnSpan: 1,
+            language: 'en',
+            defaultValue: '',
+            smartListId: null,
+            logic: null,
+            numericCalculations: null,
+            datetimeCalculations: null,
+            options: null,
+            attributes: '{}',
+          },
+        ],
+      },
+    };
+
+    console.log(
+      `📋 Returning mock form fields observations source for formId: ${formId}`,
+    );
+    res.json(mockFormFieldsObservationsSource);
+  },
+);
+
 // Health check endpoint
 app.get('/information-services/health', (req, res) => {
   res.json({
@@ -488,6 +703,8 @@ app.get('/', (req, res) => {
       'POST /information-services/knowledge-bases/top-results':
         'Knowledge base search',
       'POST /information-services/context-dynamic/form': 'Get form context',
+      'POST /information-services/context-dynamic/form-fields-observations-source':
+        'Get form fields observations source',
       'GET /information-services/health': 'Health check',
     },
     note: 'This mock server simulates the information services API for development purposes',
