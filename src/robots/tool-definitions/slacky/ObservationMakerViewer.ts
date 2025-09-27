@@ -16,14 +16,15 @@ import type {
 export class ObservationMakerViewer extends ObservationMakers.AbstractObservationMaker {
   protected subjectType = EObservationSubjectType.FORM;
   protected observationClass = this.constructor.name;
+  protected observationClassName = this.constructor.name as any;
   protected messagePrimary = 'Observation Viewer';
-  private logItems: IObservationLogItem[] = [];
+  private viewerLogItems: IObservationLogItem[] = [];
 
   constructor() {
     super();
   }
 
-  public getRequiredResources(): string[] {
+  public getRequiredResources(): any {
     return ['formModel'];
   }
 
@@ -32,11 +33,14 @@ export class ObservationMakerViewer extends ObservationMakers.AbstractObservatio
   ): Promise<IObservationResult> {
     // This is a viewer class, not a real observation maker
     // It just displays existing observation results
-    return { isObservationTrue: true, logItems: this.logItems };
+    return {
+      isObservationTrue: true,
+      logItems: this.viewerLogItems,
+    } as IObservationResult;
   }
 
   public setLogItems(logItems: IObservationLogItem[]): void {
-    this.logItems = logItems;
+    this.viewerLogItems = logItems;
   }
 
   /**
@@ -99,13 +103,13 @@ export class ObservationMakerViewer extends ObservationMakers.AbstractObservatio
    * Get all log items
    */
   public getAllLogItems(): any[] {
-    return this.logItems;
+    return this.viewerLogItems;
   }
 
   /**
    * Get the observation class name
    */
-  public getObservationClassName(): string {
+  public getObservationClassName(): any {
     return this.observationClass;
   }
 

@@ -258,13 +258,11 @@ export class ChatManagerService {
 
       // Step 3: Route intent through intent router
       if ('error' in intentResult) {
-        // Fallback to existing robot behavior for errors
-        await this.handleRobotStreamingResponse(
-          conversationId,
-          'AnthropicMarv',
-          userMessage, // userMessage is already the payload string
-          callbacks,
-        );
+        // Send error message instead of falling back to fake robot
+        await this.addMessageErrorNotification(conversationId, {
+          type: 'text/markdown',
+          payload: `❌ **INTENT PARSING ERROR**: ${intentResult.error}`,
+        });
       } else {
         // Route through intent router (handles both intent handlers and robots)
         // Add intent and conversationId to intentData and route
@@ -277,16 +275,14 @@ export class ChatManagerService {
       }
     } catch (error) {
       this.logger.error(
-        `Error in handleRobotMessage: ${error.message}. Falling back to AnthropicMarv`,
+        `Error in handleRobotMessage: ${error.message}. Sending error message to user.`,
       );
 
-      // Fallback to existing behavior on any error
-      await this.handleRobotStreamingResponse(
-        conversationId,
-        'AnthropicMarv',
-        userMessage, // userMessage is already the payload string
-        callbacks,
-      );
+      // Send error message to user instead of falling back to fake robot
+      await this.addMessageErrorNotification(conversationId, {
+        type: 'text/markdown',
+        payload: `❌ **SYSTEM ERROR**: ${error.message}`,
+      });
     }
   }
 
@@ -1137,76 +1133,6 @@ export class ChatManagerService {
         }
       },
     };
-  }
-
-  /**
-   * Fallback to SlackyOpenAiAgent when intent parsing fails
-   */
-  private async handleSlackyFallback(
-    conversationId: string,
-    messagePayload: string,
-    slackResponseCallback?: (content: {
-      type: 'text';
-      payload: string;
-    }) => Promise<void>,
-  ): Promise<void> {
-    const robot = this.robotService.getRobotByName('SlackyOpenAiAgent')!;
-
-    // Get conversation history for context
-    const conversationHistory = await this.getLastMessages(conversationId, 20);
-
-    // Create message for robot
-    const message = await this.createMessage(
-      {
-        conversationId,
-        content: {
-          type: 'text/plain',
-          payload: messagePayload,
-        },
-      },
-      {
-        fromUserId: 'cx-slack-robot',
-        fromRole: UserRole.USER,
-        toRole: UserRole.USER,
-      },
-    );
-
-    // Create internal callback that handles robot responses
-    const internalRobotCallback = async (
-      response: Pick<
-        IConversationMessage<TConversationMessageContentString>,
-        'content'
-      >,
-    ) => {
-      // Defensive check to ensure response has the expected structure
-      if (!response || !response.content || !response.content.payload) {
-        this.logger.error('Invalid robot response structure:', response);
-        return;
-      }
-
-      const responseContent = response.content.payload;
-
-      // Add robot response to conversation history
-      await this.addRobotResponseFromSlack(conversationId, {
-        type: 'text',
-        payload: responseContent,
-      });
-
-      // If Slack callback is provided, send response to Slack
-      if (slackResponseCallback && responseContent && responseContent.trim()) {
-        await slackResponseCallback({
-          type: 'text',
-          payload: responseContent,
-        });
-      }
-    };
-
-    // Trigger robot response
-    await robot.acceptMessageMultiPartResponse(
-      message as IConversationMessage<TConversationMessageContentString>,
-      internalRobotCallback,
-      () => conversationHistory,
-    );
   }
 
   /**

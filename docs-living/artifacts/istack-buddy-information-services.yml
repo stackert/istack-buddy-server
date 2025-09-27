@@ -1,0 +1,2652 @@
+openapi: 3.0.0
+paths:
+  /information-services/knowledge-bases:
+    get:
+      operationId: KnowledgeBasesController_listKnowledgeBases
+      summary: List Knowledge Bases
+      description: Get list of available knowledge bases for search operations
+      parameters: []
+      responses:
+        '200':
+          description: Knowledge bases listed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  knowledgeBases:
+                    type: array
+                    items:
+                      type: string
+                    example:
+                      - SLACK
+                      - CONTEXT-DOCUMENTS
+                      - CONTEXT-DYNAMIC
+      security:
+        - bearer-token: []
+      tags:
+        - Knowledge Base - Meta
+  /information-services/knowledge-bases/channels:
+    get:
+      operationId: KnowledgeBasesController_listChannels
+      summary: List Channels
+      description: Get list of available channels for filtering search scope
+      parameters: []
+      responses:
+        '200':
+          description: Channels listed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  channels:
+                    type: array
+                    items:
+                      type: string
+                    example:
+                      - SLACK:cx-formstack
+                      - SLACK:cx-engineering
+      security:
+        - bearer-token: []
+      tags:
+        - Knowledge Base - Meta
+  /information-services/knowledge-bases/domains:
+    get:
+      operationId: KnowledgeBasesController_listDomains
+      summary: List Domains
+      description: Get list of available domain categories for domain-based searches
+      parameters: []
+      responses:
+        '200':
+          description: Domains listed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  domains:
+                    type: array
+                    items:
+                      type: string
+                    example:
+                      - authentication
+                      - security
+                      - integration
+                      - forms
+                      - api
+      security:
+        - bearer-token: []
+      tags:
+        - Knowledge Base - Meta
+  /information-services/knowledge-bases/preQuery:
+    post:
+      operationId: KnowledgeBasesController_preQuery
+      summary: Pre-process Query
+      description: >-
+        Analyze and enhance a user query by extracting terms, keywords, and
+        metadata.
+            
+            **Primary Use - Search Workflow (Step 1 of 2):**
+            1. Submit raw query text to this endpoint
+            2. Receive structured PreQueryDto with extracted keywords, nouns, domains, etc.
+            3. Pass extracted data to search endpoints (keyword-search, semantic-search, etc.)
+            
+            **🎯 Secondary Use - AI Content Analysis & Annotation:**
+            The `aiTechnicalObservation` field provides intelligent contextual analysis perfect for:
+            - **Paraphrasing** user input with technical accuracy
+            - **Conversation annotation** - tag discussions with rich context
+            - **Content enhancement** - add valuable metadata to conversations
+            - **Context enrichment** - transform basic queries into detailed observations
+            
+            **All Extracted Data:**
+            - AI technical observations (for annotation/paraphrasing)
+            - Normalized text and keywords
+            - Domain and proper noun identification
+            - Query chunking for long inputs
+            - Subject classification and metadata
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PreQueryInputDto'
+      responses:
+        '200':
+          description: Query processed and analyzed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PreQueryDto'
+        '400':
+          description: Invalid query input
+        '401':
+          description: Unauthorized - invalid bearer token
+      security:
+        - bearer-token: []
+      tags:
+        - Knowledge Base - PreQuery
+  /information-services/knowledge-bases/keyword-search:
+    post:
+      operationId: KnowledgeBasesController_keywordSearch
+      summary: Keyword Search
+      description: |-
+        Search knowledge base using keywords extracted from preQuery.
+            
+            **Step 2 of search workflow:** Extract the 'keywords' field from /preQuery response and pass it here with optional search parameters.
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/KeywordSearchInputDto'
+      responses:
+        '200':
+          description: Keyword search completed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: array
+                  items:
+                    type: object
+                example:
+                  SLACK:
+                    - confidence: '0.95'
+                      content: Authentication setup guide...
+                  CONTEXT-DOCUMENTS:
+                    - confidence: '0.87'
+                      content: SAML configuration...
+        '400':
+          description: Invalid input - keywords field required
+        '401':
+          description: Unauthorized - invalid bearer token
+      security:
+        - bearer-token: []
+      tags:
+        - Knowledge Base - Search
+  /information-services/knowledge-bases/noun-search:
+    post:
+      operationId: KnowledgeBasesController_nounSearch
+      summary: Noun Search
+      description: |-
+        Search knowledge base using nouns extracted from preQuery.
+            
+            **Step 2 of search workflow:** Extract the 'nouns' field from /preQuery response and pass it here with optional search parameters.
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NounSearchInputDto'
+      responses:
+        '200':
+          description: Noun search completed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: array
+                  items:
+                    type: object
+                example:
+                  SLACK:
+                    - confidence: '0.92'
+                      content: User management documentation...
+                  CONTEXT-DOCUMENTS:
+                    - confidence: '0.88'
+                      content: System configuration...
+        '400':
+          description: Invalid input - nouns field required
+        '401':
+          description: Unauthorized - invalid bearer token
+      security:
+        - bearer-token: []
+      tags:
+        - Knowledge Base - Search
+  /information-services/knowledge-bases/proper-noun-search:
+    post:
+      operationId: KnowledgeBasesController_properNounSearch
+      summary: Proper Noun Search
+      description: |-
+        Search knowledge base using proper nouns extracted from preQuery.
+            
+            **Step 2 of search workflow:** Extract the 'properNouns' field from /preQuery response and pass it here with optional search parameters.
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProperNounSearchInputDto'
+      responses:
+        '200':
+          description: Proper noun search completed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: array
+                  items:
+                    type: object
+                example:
+                  SLACK:
+                    - confidence: '0.94'
+                      content: SAML integration guide...
+                  CONTEXT-DOCUMENTS:
+                    - confidence: '0.89'
+                      content: OAuth setup documentation...
+        '400':
+          description: Invalid input - properNouns field required
+        '401':
+          description: Unauthorized - invalid bearer token
+      security:
+        - bearer-token: []
+      tags:
+        - Knowledge Base - Search
+  /information-services/knowledge-bases/domain-search:
+    post:
+      operationId: KnowledgeBasesController_domainSearch
+      summary: Domain Search
+      description: |-
+        Search knowledge base using domains extracted from preQuery.
+            
+            **Step 2 of search workflow:** Extract the 'domains' field from /preQuery response and pass it here with optional search parameters.
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DomainSearchInputDto'
+      responses:
+        '200':
+          description: Domain search completed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: array
+                  items:
+                    type: object
+                example:
+                  SLACK:
+                    - confidence: '0.91'
+                      content: Security domain documentation...
+                  CONTEXT-DOCUMENTS:
+                    - confidence: '0.85'
+                      content: Authentication domain guide...
+        '400':
+          description: Invalid input - domains field required
+        '401':
+          description: Unauthorized - invalid bearer token
+      security:
+        - bearer-token: []
+      tags:
+        - Knowledge Base - Search
+  /information-services/knowledge-bases/free-text-search:
+    post:
+      operationId: KnowledgeBasesController_freeTextSearch
+      summary: Free Text Search
+      description: |-
+        Search knowledge base using free text terms extracted from preQuery.
+            
+            **Step 2 of search workflow:** Extract the 'freeText' field from /preQuery response and pass it here with optional search parameters.
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FreeTextSearchInputDto'
+      responses:
+        '200':
+          description: Free text search completed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: array
+                  items:
+                    type: object
+                example:
+                  SLACK:
+                    - confidence: '0.90'
+                      content: Setup and configuration help...
+                  CONTEXT-DOCUMENTS:
+                    - confidence: '0.86'
+                      content: How to configure settings...
+        '400':
+          description: Invalid input - freeText field required
+        '401':
+          description: Unauthorized - invalid bearer token
+      security:
+        - bearer-token: []
+      tags:
+        - Knowledge Base - Search
+  /information-services/knowledge-bases/semantic-search:
+    post:
+      operationId: KnowledgeBasesController_semanticSearch
+      summary: Semantic Search
+      description: |-
+        Search knowledge base using semantic analysis from preQuery.
+            
+            **Step 2 of search workflow:** Extract the 'userPromptText' field from /preQuery response and pass it here with optional search parameters.
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SemanticSearchInputDto'
+      responses:
+        '200':
+          description: Semantic search completed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: array
+                  items:
+                    type: object
+                example:
+                  SLACK:
+                    - confidence: '0.96'
+                      content: Comprehensive authentication guide...
+                  CONTEXT-DOCUMENTS:
+                    - confidence: '0.93'
+                      content: Complete SAML setup tutorial...
+        '400':
+          description: Invalid input - userPromptText field required
+        '401':
+          description: Unauthorized - invalid bearer token
+      security:
+        - bearer-token: []
+      tags:
+        - Knowledge Base - Search
+  /information-services/knowledge-bases/top-results:
+    post:
+      operationId: KnowledgeBasesController_topResults
+      summary: Top Results (All Search Types)
+      description: >-
+        🎯 **Mega Search Endpoint** - Execute ALL applicable searches and return
+        top 1 result from each.
+            
+            **Intelligent Search Detection:**
+            Automatically detects populated fields from preQuery and runs corresponding searches:
+            
+            **Search Types Available:**
+            1. **searchSemantic** (if userPromptText exists) - AI semantic matching
+            2. **searchKeywords** (if keywords exist) - Keyword-based matching  
+            3. **searchNouns** (if nouns exist) - Noun-based matching
+            4. **searchProperNouns** (if properNouns exist) - Proper noun matching
+            5. **searchDomains** (if domains exist) - Domain category matching
+            6. **searchFreeText** (if freeText exists) - Free text matching
+            
+            **Knowledge Bases Searched:**
+            - **SLACK**: All team conversation channels (cx-formstack, cx-documents, cx-fsid, etc.)
+            - **CONTEXT-DOCUMENTS**: All documentation categories (CORE-FORMS-BE/FE, CORE-FSID, etc.)
+            - **Automatically includes**: All 15+ channels from database for comprehensive coverage
+            
+            **Perfect Use Cases:**
+            - Get comprehensive search overview after preQuery analysis
+            - Find best match across all search methodologies  
+            - Compare different search approach results
+            
+            **Typical Workflow:**
+            1. Call `/preQuery` with user question
+            2. Pass full preQuery response to this endpoint
+            3. Receive top results from all applicable search types
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PreQueryDto'
+      responses:
+        '200':
+          description: Top results from all applicable search types with metadata
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  searchSemantic:
+                    type: object
+                    nullable: true
+                    description: AI semantic search results
+                    additionalProperties:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          conversation_id:
+                            type: string
+                            example: conv_123456
+                          conversationText:
+                            type: string
+                            example: >-
+                              Full conversation content about SAML
+                              authentication...
+                          conversationTextNormalized:
+                            type: string
+                            example: Processed conversation text for search...
+                          context_document_id:
+                            type: string
+                            example: doc_789012
+                          contextDocumentText:
+                            type: string
+                            example: Complete document content about authentication...
+                          contextDocumentTextNormalized:
+                            type: string
+                            example: Processed document text for search...
+                          title:
+                            type: string
+                            example: SAML Setup Guide
+                            nullable: true
+                          filePath:
+                            type: string
+                            example: /docs/auth/saml.md
+                            nullable: true
+                          aiTechnicalObservation:
+                            type: string
+                            example: AI-generated contextual insights...
+                            nullable: true
+                          confidence:
+                            type: string
+                            example: '0.95'
+                          channelId:
+                            type: string
+                            example: SLACK:cx-formstack
+                          keywords:
+                            type: array
+                            items:
+                              type: string
+                            example:
+                              - authentication
+                              - saml
+                          nouns:
+                            type: array
+                            items:
+                              type: string
+                            example:
+                              - user
+                              - system
+                          properNouns:
+                            type: array
+                            items:
+                              type: string
+                            example:
+                              - Formstack
+                              - SAML
+                          domains:
+                            type: array
+                            items:
+                              type: string
+                            example:
+                              - BACKEND:AUTH
+                          subjects:
+                            type: object
+                            example:
+                              ticketId: FORM-123
+                          citations:
+                            type: object
+                            properties:
+                              text:
+                                type: string
+                                example: 'conversation: conv_123456'
+                              link:
+                                type: string
+                                example: https://slack.com/archives/...
+                                nullable: true
+                  searchKeywords:
+                    type: object
+                    nullable: true
+                    description: Keyword-based search results
+                    additionalProperties:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/ActualSearchResult'
+                  searchNouns:
+                    type: object
+                    nullable: true
+                    description: Noun-based search results
+                    additionalProperties:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/ActualSearchResult'
+                  searchProperNouns:
+                    type: object
+                    nullable: true
+                    description: Proper noun search results
+                    additionalProperties:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/ActualSearchResult'
+                  searchDomains:
+                    type: object
+                    nullable: true
+                    description: Domain category search results
+                    additionalProperties:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/ActualSearchResult'
+                  searchFreeText:
+                    type: object
+                    nullable: true
+                    description: Free text search results
+                    additionalProperties:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/ActualSearchResult'
+                  searchTypesExecuted:
+                    type: array
+                    items:
+                      type: string
+                    example:
+                      - searchKeywords
+                      - searchNouns
+                      - searchProperNouns
+                    description: >-
+                      List of search types that were executed (had populated
+                      data)
+                  totalSearchTypes:
+                    type: number
+                    example: 3
+                    minimum: 0
+                    maximum: 6
+                    description: Number of search types executed (out of 6 total available)
+        '400':
+          description: >-
+            Invalid preQuery data - ensure preQuery has been populated with
+            analyzed data
+        '401':
+          description: Unauthorized - invalid bearer token
+      security:
+        - bearer-token: []
+      tags:
+        - Knowledge Base - Search
+  /information-services/context-dynamic/account:
+    post:
+      operationId: ContextDynamicController_getAccount
+      summary: Get Account Context
+      description: Retrieve live account details and configuration from Formstack
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountDto'
+      responses:
+        '200':
+          description: Account context retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  account:
+                    type: object
+                    nullable: true
+                    example:
+                      accountId: 12345
+                      name: Example Corp
+                      plan: Enterprise
+        '400':
+          description: Invalid account ID or service error
+        '401':
+          description: Unauthorized - invalid bearer token
+      tags:
+        - Context Dynamic
+      security:
+        - bearer-token: []
+  /information-services/context-dynamic/health:
+    post:
+      operationId: ContextDynamicController_health
+      summary: Health Check
+      description: >-
+        Check service availability for context retrieval - always check before
+        making context requests
+      parameters: []
+      responses:
+        '200':
+          description: Health check completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  healthy:
+                    type: boolean
+                    example: true
+                  database:
+                    type: string
+                    example: Connected
+                  error:
+                    type: string
+                    nullable: true
+      tags:
+        - Context Dynamic
+      security:
+        - bearer-token: []
+  /information-services/context-dynamic/auth-provider:
+    post:
+      operationId: ContextDynamicController_getAuthProvider
+      summary: Get Auth Provider Context
+      description: >-
+        Retrieve live authentication provider details and configuration from
+        Formstack
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthProviderDto'
+      responses:
+        '200':
+          description: Auth provider context retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  authProvider:
+                    type: object
+                    nullable: true
+                    example:
+                      authProviderId: 67890
+                      type: SAML
+                      domain: example.com
+        '400':
+          description: Invalid auth provider ID or service error
+        '401':
+          description: Unauthorized - invalid bearer token
+      tags:
+        - Context Dynamic
+      security:
+        - bearer-token: []
+  /information-services/context-dynamic/form:
+    post:
+      operationId: ContextDynamicController_getForm
+      summary: Get Form Context
+      description: Retrieve live form configuration, fields, and metadata from Formstack
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FormDto'
+      responses:
+        '200':
+          description: Form context retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  form:
+                    type: object
+                    nullable: true
+                    properties:
+                      formId:
+                        type: number
+                        example: 98765
+                      id:
+                        type: number
+                        example: 98765
+                      viewkey:
+                        type: string
+                        example: abc123def456
+                      isShareEnabled:
+                        type: boolean
+                        example: true
+                      accountId:
+                        type: number
+                        example: 12345
+                      name:
+                        type: string
+                        example: Contact Form
+                      alias:
+                        type: string
+                        nullable: true
+                        example: contact
+                      templateId:
+                        type: number
+                        nullable: true
+                        example: 1001
+                      formVersion:
+                        type: number
+                        example: 3
+                      numOfColumns:
+                        type: number
+                        example: 1
+                      expirationType:
+                        type: string
+                        enum:
+                          - ''
+                          - date
+                          - submissions
+                          - inventory_sold_out
+                        example: ''
+                      isCaptchaEnabled:
+                        type: boolean
+                        example: false
+                      timezone:
+                        type: string
+                        example: US/Eastern
+                      language:
+                        type: string
+                        example: en
+                      isActive:
+                        type: boolean
+                        example: true
+                      created:
+                        type: string
+                        format: date-time
+                        example: '2024-01-15T10:30:00Z'
+                      updated:
+                        type: string
+                        format: date-time
+                        example: '2024-01-20T14:45:00Z'
+                      viewCount:
+                        type: number
+                        example: 1250
+                      submissionCount:
+                        type: number
+                        example: 89
+                      submissionUnreadCount:
+                        type: number
+                        example: 3
+                      lastSubmissionDate:
+                        type: string
+                        format: date-time
+                        example: '2024-01-20T12:30:00Z'
+                      isDeleted:
+                        type: boolean
+                        example: false
+                      deletedDate:
+                        type: string
+                        format: date-time
+                        nullable: true
+                        example: null
+                      formCreateUserId:
+                        type: number
+                        nullable: true
+                        example: 5678
+                      formWorkflowType:
+                        type: string
+                        enum:
+                          - form
+                          - workflow
+                        example: form
+                      workflowStatus:
+                        type: string
+                        enum:
+                          - active_accepting
+                          - active_not_accepting
+                          - draft
+                        example: active_accepting
+                      workflowIncompleteSubmissionCount:
+                        type: number
+                        example: 5
+                      activeAuthProviderName:
+                        type: string
+                        example: SAML Provider
+                      protectionType:
+                        type: string
+                        enum:
+                          - SSO
+                          - Password
+                          - None
+                        example: SSO
+                      submitActions:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            submitActionId:
+                              type: number
+                            name:
+                              type: string
+                            type:
+                              type: string
+                            isActive:
+                              type: boolean
+                            hasLogic:
+                              type: boolean
+                      confirmationEmails:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            confirmationEmailId:
+                              type: number
+                            name:
+                              type: string
+                            payloadType:
+                              type: string
+                            hasLogic:
+                              type: boolean
+                      notificationEmails:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            notificationEmailId:
+                              type: number
+                            name:
+                              type: string
+                            payloadType:
+                              type: string
+                            hasLogic:
+                              type: boolean
+                      formPlugins:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            formPluginId:
+                              type: number
+                            type:
+                              type: string
+                            isActive:
+                              type: boolean
+                      smartLists:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            smartListId:
+                              type: string
+                            name:
+                              type: string
+                            fieldIds:
+                              type: array
+                              items:
+                                type: string
+                            useSeparateValues:
+                              type: boolean
+                            useImages:
+                              type: boolean
+        '400':
+          description: Invalid form ID or service error
+        '401':
+          description: Unauthorized - invalid bearer token
+      tags:
+        - Context Dynamic
+      security:
+        - bearer-token: []
+  /information-services/context-dynamic/form-fields-observations-source:
+    post:
+      operationId: ContextDynamicController_getFormFieldsObservationsSource
+      summary: Get Form Fields Observations Source
+      description: >-
+        Retrieve complete form data with all properties from form, field, submit
+        action, confirmation email, notification email, and form plugin tables.
+        All PHP serialized data is converted to JSON objects.
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FormDto'
+      responses:
+        '200':
+          description: Form fields observations source retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: number
+                    example: 5375703
+                  viewkey:
+                    type: string
+                    example: LBnhki7fb4
+                  name:
+                    type: string
+                    example: miscellaneous_broken_logic
+                  alias:
+                    type: string
+                    example: miscellaneous_broken_logic
+                  account:
+                    type: number
+                    example: 886227
+                  folder:
+                    type: number
+                    example: 328139
+                  version:
+                    type: number
+                    example: 4
+                  num_columns:
+                    type: number
+                    example: 1
+                  submit_button_title:
+                    type: string
+                    example: Submit Form
+                  timezone:
+                    type: string
+                    example: US/Eastern
+                  language:
+                    type: string
+                    example: en
+                  active:
+                    type: string
+                    example: '1'
+                  created:
+                    type: string
+                    format: date-time
+                    example: '2023-07-21T04:46:38.000Z'
+                  updated:
+                    type: string
+                    format: date-time
+                    example: '2025-05-06T09:20:17.000Z'
+                  views:
+                    type: number
+                    example: 1209
+                  submissions:
+                    type: number
+                    example: 2
+                  submissions_unread:
+                    type: number
+                    example: 1
+                  last_submission:
+                    type: string
+                    format: date-time
+                    example: '2024-06-27T08:20:01.000Z'
+                  deleted:
+                    type: number
+                    example: 0
+                  deleted_date:
+                    type: string
+                    format: date-time
+                    nullable: true
+                    example: null
+                  creator:
+                    type: number
+                    example: 1410712
+                  type:
+                    type: string
+                    example: form
+                  workflow_status:
+                    type: string
+                    example: draft
+                  workflow_submissions:
+                    type: number
+                    example: 0
+                  incomplete_workflow_submissions:
+                    type: number
+                    example: 0
+                  fields:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          example: '151701616'
+                        form:
+                          type: number
+                          example: 5375703
+                        label:
+                          type: string
+                          example: Date/Time
+                        description:
+                          type: string
+                          nullable: true
+                          example: null
+                        description_callout:
+                          type: number
+                          example: 0
+                        hide_label:
+                          type: string
+                          example: '0'
+                        type:
+                          type: string
+                          example: datetime
+                        options:
+                          type: string
+                          example: ''
+                        default_value:
+                          type: string
+                          example: ''
+                        calculation:
+                          type: string
+                          example: ''
+                        required:
+                          type: string
+                          example: '0'
+                        readonly:
+                          type: string
+                          example: '0'
+                        hidden:
+                          type: string
+                          example: '0'
+                        uniq:
+                          type: string
+                          example: '0'
+                        logic:
+                          type: object
+                          description: >-
+                            Field logic converted from PHP serialized to JSON
+                            object
+                          properties:
+                            action:
+                              type: string
+                              example: Show
+                              description: 'Action to perform: Show, Hide, etc.'
+                            boolean:
+                              type: string
+                              example: AND
+                              description: 'Boolean operator: AND, OR'
+                            fields:
+                              type: array
+                              items:
+                                type: string
+                              example:
+                                - '148456734'
+                                - '156917750'
+                              description: Array of field IDs referenced in logic
+                            checks:
+                              type: array
+                              items:
+                                type: object
+                                properties:
+                                  field:
+                                    type: string
+                                    example: '148456734'
+                                    description: Field ID to check
+                                  condition:
+                                    type: string
+                                    example: '=='
+                                    description: 'Condition operator: ==, !=, >, <, etc.'
+                                  option:
+                                    oneOf:
+                                      - type: string
+                                      - type: number
+                                    example: OptionA
+                                    description: Value to compare against
+                              example:
+                                - field: '148456734'
+                                  condition: '=='
+                                  option: OptionA
+                              description: Array of conditions to check
+                          example:
+                            action: Show
+                            boolean: AND
+                            fields:
+                              - '148456734'
+                            checks:
+                              - field: '148456734'
+                                condition: '=='
+                                option: OptionA
+                        colspan:
+                          type: number
+                          example: 1
+                        sort:
+                          type: number
+                          example: 0
+                        attributes:
+                          type: object
+                          description: >-
+                            Field attributes converted from PHP serialized to
+                            JSON object
+                          example:
+                            language: default
+                            date_format: M d, Y
+                            time_format: h:i A
+                            year_minus: 5
+                            year_plus: 5
+                        deleted:
+                          type: number
+                          example: 0
+                        deleted_date:
+                          type: string
+                          format: date-time
+                          nullable: true
+                          example: null
+                        account:
+                          type: number
+                          nullable: true
+                          example: null
+                        alias:
+                          type: string
+                          nullable: true
+                          example: null
+                  submitActions:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: number
+                          example: 6803746
+                        form:
+                          type: number
+                          example: 5375703
+                        name:
+                          type: string
+                          example: Circular Logic
+                        type:
+                          type: string
+                          example: webhook
+                        logic:
+                          type: object
+                          description: >-
+                            Submit action logic converted from PHP serialized to
+                            JSON object (same structure as field logic)
+                          example:
+                            action: Show
+                            boolean: AND
+                            fields:
+                              - 148456742
+                            checks:
+                              - field: 148456742
+                                condition: '=='
+                                option: OptionA
+                        active:
+                          type: number
+                          example: 1
+                  confirmationEmails:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: number
+                          example: 2711441
+                        form:
+                          type: number
+                          example: 5375703
+                        name:
+                          type: string
+                          example: Circular Logic
+                        to_field:
+                          type: number
+                          example: 156906187
+                        sender:
+                          type: string
+                          example: '"Terary Chambers" <terary@gmail.com>'
+                        subject:
+                          type: string
+                          example: miscellaneous_broken_logic
+                        type:
+                          type: string
+                          example: data
+                        format:
+                          type: string
+                          example: html
+                        hide_empty:
+                          type: string
+                          example: '0'
+                        show_section:
+                          type: string
+                          example: '0'
+                        message:
+                          type: string
+                          example: ''
+                        editor:
+                          type: string
+                          example: wysiwyg
+                        logic:
+                          type: object
+                          description: >-
+                            Confirmation email logic converted from PHP
+                            serialized to JSON object (same structure as field
+                            logic)
+                          example:
+                            action: Show
+                            boolean: AND
+                            fields:
+                              - 148456742
+                            checks:
+                              - field: 148456742
+                                condition: '=='
+                                option: OptionA
+                        delay:
+                          type: string
+                          example: ''
+                        checked_spam:
+                          type: number
+                          example: 0
+                        include_pdf_attachment:
+                          type: number
+                          example: 0
+                        account:
+                          type: number
+                          nullable: true
+                          example: null
+                  notificationEmails:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: number
+                          example: 8450140
+                        form:
+                          type: number
+                          example: 5375703
+                        name:
+                          type: string
+                          example: Circular Logic
+                        to_field:
+                          type: number
+                          example: 156906187
+                        sender:
+                          type: string
+                          example: '"Terary Chambers" <terary@gmail.com>'
+                        subject:
+                          type: string
+                          example: miscellaneous_broken_logic
+                        type:
+                          type: string
+                          example: data
+                        format:
+                          type: string
+                          example: html
+                        hide_empty:
+                          type: string
+                          example: '0'
+                        show_section:
+                          type: string
+                          example: '0'
+                        message:
+                          type: string
+                          example: ''
+                        editor:
+                          type: string
+                          example: wysiwyg
+                        logic:
+                          type: object
+                          description: >-
+                            Notification email logic converted from PHP
+                            serialized to JSON object (same structure as field
+                            logic)
+                          example:
+                            action: Show
+                            boolean: AND
+                            fields:
+                              - 148456742
+                              - 148456734
+                            checks:
+                              - field: 148456742
+                                condition: '=='
+                                option: OptionA
+                              - field: 148456734
+                                condition: '=='
+                                option: OptionA
+                        delay:
+                          type: string
+                          example: ''
+                        checked_spam:
+                          type: number
+                          example: 0
+                        include_pdf_attachment:
+                          type: number
+                          example: 0
+                        account:
+                          type: number
+                          nullable: true
+                          example: null
+                  formPlugins:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: number
+                          example: 12345
+                        form:
+                          type: number
+                          example: 5375703
+                        type:
+                          type: string
+                          example: plugin_type
+                        active:
+                          type: number
+                          example: 1
+                        account:
+                          type: number
+                          nullable: true
+                          example: null
+        '400':
+          description: Invalid form ID or service error
+        '401':
+          description: Unauthorized - invalid bearer token
+      tags:
+        - Context Dynamic
+      security:
+        - bearer-token: []
+  /information-services/context-sumo-report/query/submit:
+    post:
+      operationId: SumoReportController_submitQuery
+      summary: Submit Sumo Logic Query Job
+      description: |-
+        Submit a new asynchronous Sumo Logic query for execution. 
+            
+            **Supported Query Types:**
+            - `submissionCreatedForForm`: Track form submission creation events
+            - `submitActionReport`: Analyze submit action execution details  
+            - `authProviderMetrics`: Monitor authentication provider activity
+            - `submitActionSelectedForExecution`: Track submit actions selected for execution
+            
+            **Date Range Limits:**
+            - Maximum 7 + 1 day (8 days total) per query
+            - Dates cannot be more than 91 days in the past
+            - Dates cannot be more than 1 day in the future
+            - Dates assumed to be Eastern Time (ET)
+            - Default: last 24 hours if no dates provided
+            
+            **Validation:**
+            - Set `isValidationOnly: true` to validate without execution
+            - Returns validation errors as 400 Bad Request
+
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SumoJobSubmissionRequestDto'
+      responses:
+        '201':
+          description: Job submitted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jobId:
+                    type: string
+                    example: '123'
+                  status:
+                    type: string
+                    example: queued
+                  estimatedDuration:
+                    type: string
+                    example: 2-5 minutes
+                  statusUrl:
+                    type: string
+                    example: /context-sumo-report/query/123/status
+        '400':
+          description: Invalid request (validation errors)
+        '401':
+          description: Unauthorized - invalid bearer token
+      security:
+        - bearer-token: []
+      tags:
+        - Sumo Report - Jobs
+  /information-services/context-sumo-report/query/{jobId}/status:
+    get:
+      operationId: SumoReportController_getJobStatus
+      summary: Get Job Status
+      description: Retrieve the current status and progress of a Sumo Logic query job
+      parameters:
+        - name: jobId
+          required: true
+          in: path
+          description: Unique job identifier
+          schema:
+            example: '123'
+            type: string
+      responses:
+        '200':
+          description: Job status retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SumoJobStatusDto'
+        '401':
+          description: Unauthorized - invalid bearer token
+        '404':
+          description: Job not found
+      security:
+        - bearer-token: []
+      tags:
+        - Sumo Report - Jobs
+  /information-services/context-sumo-report/query/{jobId}/results:
+    get:
+      operationId: SumoReportController_getJobResults
+      summary: Get Job Results
+      description: |-
+        Retrieve the results of a completed Sumo Logic query job.
+            
+            **Clean Response Structure (NO raw Sumo Logic data exposed):**
+            - `executedQuery`: The actual Sumo Logic query that was executed  
+            - `recordSchema`: Schema of returned records for validation
+            - `records`: Array of parsed, structured business records
+            - `messageCount`: Total number of records found
+            - `queryName`: Name of the executed query type
+            - `arguments`: List of arguments the query accepts
+            - `timeRange`: UTC time range used for the query
+            - `validationNote`: Instructions for manual validation in Sumo Logic
+            
+            **Security Note:** Raw Sumo Logic message format is NOT exposed via this endpoint.
+
+      parameters:
+        - name: jobId
+          required: true
+          in: path
+          description: Unique job identifier
+          schema:
+            example: '123'
+            type: string
+      responses:
+        '200':
+          description: Job results retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  executedQuery:
+                    type: string
+                    description: The actual Sumo Logic query that was executed
+                    example: >-
+                      _sourceCategory=formstack/prod/* | json field=_raw
+                      "message" | where formId = 4533939
+                  recordSchema:
+                    type: object
+                    description: Schema of returned records for validation
+                    example:
+                      message:
+                        type: string
+                        example: SubmitAction {type} run for {submissionId}
+                      formId:
+                        type: string
+                        example: '4533939'
+                      submitActionId:
+                        type: string
+                        example: '7574231'
+                      _validationNote: >-
+                        To validate results, run the executedQuery directly in
+                        Sumo Logic
+                  records:
+                    type: array
+                    description: >-
+                      Array of parsed, structured business records (NO raw Sumo
+                      Logic data)
+                    items:
+                      type: object
+                      example:
+                        message: SubmitAction {type} run for {submissionId}
+                        submitActionId: '7574231'
+                        submissionId: '1378187770'
+                        formId: '4533939'
+                        type: webhook
+                        accountId: '648537'
+                        datetime: '2025-09-06T08:29:19.467703-04:00'
+                  messageCount:
+                    type: number
+                    description: Total number of records returned
+                    example: 9
+                  queryName:
+                    type: string
+                    description: Name of the executed query type
+                    example: submitActionReport
+                  arguments:
+                    type: array
+                    description: List of arguments the query accepts
+                    items:
+                      type: string
+                    example:
+                      - submitActionId
+                      - submissionId
+                      - submitActionType
+                      - startDate
+                      - endDate
+                  timeRange:
+                    type: object
+                    description: UTC time range used for the query
+                    properties:
+                      from:
+                        type: string
+                        format: date-time
+                        example: '2025-09-05T04:00:01.000Z'
+                      to:
+                        type: string
+                        format: date-time
+                        example: '2025-09-07T03:59:59.000Z'
+                  validationNote:
+                    type: string
+                    description: Instructions for manual validation
+                    example: >-
+                      To validate results, run the executedQuery directly in
+                      Sumo Logic
+                required:
+                  - executedQuery
+                  - recordSchema
+                  - records
+                  - messageCount
+                  - validationNote
+        '400':
+          description: Job not completed or still running
+        '404':
+          description: Job or results not found
+      security:
+        - bearer-token: []
+      tags:
+        - Sumo Report - Jobs
+  /information-services/context-sumo-report/query/{jobId}:
+    delete:
+      operationId: SumoReportController_cancelJob
+      summary: Cancel Job
+      description: Cancel a running or queued Sumo Logic query job
+      parameters:
+        - name: jobId
+          required: true
+          in: path
+          description: Unique job identifier
+          schema:
+            example: '123'
+            type: string
+      responses:
+        '200':
+          description: Job cancelled successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  cancelled:
+                    type: boolean
+                    example: true
+        '401':
+          description: Unauthorized - invalid bearer token
+        '404':
+          description: Job not found
+      security:
+        - bearer-token: []
+      tags:
+        - Sumo Report - Jobs
+  /information-services/context-sumo-report/query/jobs:
+    get:
+      operationId: SumoReportController_listJobs
+      summary: List Jobs
+      description: Retrieve list of recent Sumo Logic query jobs with their current status
+      parameters:
+        - name: limit
+          required: false
+          in: query
+          description: Maximum number of jobs to return
+          schema:
+            example: 50
+            type: number
+      responses:
+        '200':
+          description: Jobs listed successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+      security:
+        - bearer-token: []
+      tags:
+        - Sumo Report - Jobs
+  /information-services/context-sumo-report/query-list:
+    get:
+      operationId: SumoReportController_getQueryList
+      summary: Get Available Queries
+      description: List all available Sumo Logic query types with descriptions
+      parameters:
+        - name: outputType
+          required: false
+          in: query
+          description: Format type for descriptions
+          schema:
+            enum:
+              - human
+              - AI
+            type: string
+      responses:
+        '200':
+          description: Available queries retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueryListResponseDto'
+      security:
+        - bearer-token: []
+      tags:
+        - Sumo Report - Metadata
+  /information-services/context-sumo-report/known-messages:
+    get:
+      operationId: SumoReportController_getKnownMessages
+      summary: Get Known Messages
+      description: Retrieve list of valid Sumo Logic message patterns for use in queries
+      parameters: []
+      responses:
+        '200':
+          description: Known messages retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  messages:
+                    type: array
+                    items:
+                      type: string
+                    example:
+                      - Submission created on {formId}.
+                      - SubmitAction {type} run for {submissionId}
+                  count:
+                    type: number
+                    example: 25
+                  description:
+                    type: string
+      security:
+        - bearer-token: []
+      tags:
+        - Sumo Report - Metadata
+  /information-services/context-sumo-report/submit-action-types:
+    get:
+      operationId: SumoReportController_getSubmitActionTypes
+      summary: Get Submit Action Types
+      description: Retrieve list of valid submit action types grouped by execution behavior
+      parameters: []
+      responses:
+        '200':
+          description: Submit action types retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  types:
+                    type: object
+                    properties:
+                      blocking:
+                        type: array
+                        items:
+                          type: string
+                        example:
+                          - paypal
+                          - stripe
+                          - webhook
+                      nonBlocking:
+                        type: array
+                        items:
+                          type: string
+                        example:
+                          - salesforce
+                          - hubspot
+                      uploadFocused:
+                        type: array
+                        items:
+                          type: string
+                        example:
+                          - dropbox
+                          - googledrive
+                  totalCount:
+                    type: number
+                    example: 44
+                  description:
+                    type: string
+      security:
+        - bearer-token: []
+      tags:
+        - Sumo Report - Metadata
+  /information-services/context-sumo-report/status:
+    get:
+      operationId: SumoReportController_getStatus
+      summary: Get Service Status
+      description: Check the health and status of the Sumo Logic service and queue
+      parameters: []
+      responses:
+        '200':
+          description: Service status retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: operational
+                  message:
+                    type: string
+                    example: Sumo Logic service is running
+      security:
+        - bearer-token: []
+      tags:
+        - Sumo Report - Jobs
+  /information-services/context-sumo-report/files/{fileId}:
+    get:
+      operationId: SumoReportController_getFile
+      summary: Download File
+      description: Download a query result file by its unique file ID
+      parameters:
+        - name: fileId
+          required: true
+          in: path
+          description: Unique file identifier
+          schema:
+            example: abc123
+            type: string
+      responses:
+        '200':
+          description: File downloaded successfully
+          content:
+            application/json:
+              schema:
+                type: object
+            text/plain:
+              schema:
+                type: string
+        '401':
+          description: Unauthorized - invalid bearer token
+        '404':
+          description: File not found
+      security:
+        - bearer-token: []
+      tags:
+        - Sumo Report - Files
+    delete:
+      operationId: SumoReportController_deleteFile
+      summary: Delete File
+      description: Delete a query result file by its unique file ID
+      parameters:
+        - name: fileId
+          required: true
+          in: path
+          description: Unique file identifier
+          schema:
+            example: abc123
+            type: string
+      responses:
+        '200':
+          description: File deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted:
+                    type: boolean
+                    example: true
+        '401':
+          description: Unauthorized - invalid bearer token
+        '404':
+          description: File not found
+      security:
+        - bearer-token: []
+      tags:
+        - Sumo Report - Files
+  /information-services/context-sumo-report/files:
+    get:
+      operationId: SumoReportController_listFiles
+      summary: List Files
+      description: List stored result files with optional filtering by job ID or category
+      parameters:
+        - name: jobId
+          required: false
+          in: query
+          description: Filter by job ID
+          schema:
+            type: string
+        - name: category
+          required: false
+          in: query
+          description: Filter by file category
+          schema:
+            type: string
+        - name: includeExpired
+          required: false
+          in: query
+          description: Include expired files
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Files listed successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    fileId:
+                      type: string
+                    fileName:
+                      type: string
+                    size:
+                      type: number
+                    createdAt:
+                      type: string
+                      format: date-time
+                    jobId:
+                      type: string
+                      nullable: true
+      security:
+        - bearer-token: []
+      tags:
+        - Sumo Report - Files
+  /information-services/context-sumo-syntax/estimate:
+    post:
+      operationId: SumoSyntaxController_estimateQuerySyntax
+      summary: Estimate Query Syntax
+      description: |-
+        Generate Sumo Logic query syntax from natural language description.
+            
+            **Features:**
+            - Convert natural language to Sumo Logic syntax
+            - Modify existing queries with instructions
+            - AI-powered query optimization suggestions
+            - Confidence scoring for estimations
+            
+            **Note:** This endpoint only estimates queries - it does NOT execute them.
+            Use the `/context-sumo-report/query/submit` endpoint to actually run queries.
+
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SyntaxEstimationRequestDto'
+      responses:
+        '200':
+          description: Query syntax estimated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SyntaxEstimationResponseDto'
+        '400':
+          description: Invalid input or estimation failed
+        '401':
+          description: Unauthorized - invalid bearer token
+      tags:
+        - Sumo Logic Syntax
+      security:
+        - bearer-token: []
+info:
+  title: iStack Buddy - Information Services API
+  description: |2-
+
+          Comprehensive API for iStack Buddy Information Services including:
+          
+          ## Sumo Logic Integration (/context-sumo-report)
+          **Execute known/stored queries only** - Submit job → Poll status → Fetch results
+          - **Submission Created Reports**: Track form submission creation events
+          - **Submit Action Reports**: Analyze submit action execution details and performance
+          - **Auth Provider Reports**: Monitor authentication provider activity and errors
+          
+          ## Sumo Query Syntax Help (/context-sumo-syntax) 
+          - **Syntax Estimation**: Get help writing Sumo syntax or troubleshooting queries
+          
+          ## Knowledge Base Search (/knowledge-bases)
+          **Two-step AI-powered search workflow** - Analyze → Search
+          - 🎯 **PreQuery Analysis**: AI content analysis, paraphrasing, conversation annotation 🎯
+          - **Keyword Search**: Match extracted keywords from conversations/docs
+          - **Semantic Search**: AI-powered meaning-based search
+          - **Domain Search**: Search by technical domain categories
+          - **Metadata Endpoints**: Available channels, domains, knowledge bases
+          
+          ## Context Dynamic (/context-dynamic) 
+          **Live Formstack entity retrieval** - ⚠️ Keeps office hours, check health first
+          - **Account Context**: Get live account details and settings
+          - **Form Context**: Get live form configuration and metadata
+          - **Auth Provider Context**: Get live authentication provider details
+          - **Health Check**: Verify service availability before other requests
+          
+          ## Authentication
+          All endpoints require Bearer token authentication.
+
+  version: 1.0.0
+  contact: {}
+tags:
+  - name: Knowledge Base - PreQuery
+    description: |2-
+
+            **AI-Powered Query Analysis & Content Enhancement**
+            
+            **Primary Use: Search Workflow Foundation**
+            Analyze raw text and extract structured data for use with search endpoints.
+            
+            **🎯 Secondary Use: AI Content Analysis & Annotation**
+            The `aiTechnicalObservation` field provides intelligent contextual analysis perfect for:
+            - **Paraphrasing** - Get intelligent summaries and rewording of user input
+            - **Conversation Annotation** - Tag discussions with rich technical context
+            - **Content Enhancement** - Add valuable metadata to conversations and documents
+            - **Context Enrichment** - Transform raw queries into detailed technical observations
+
+  - name: Knowledge Base - Search
+    description: |2-
+
+            **Execute Searches Using PreQuery Data**
+            
+            **Step 2 of search workflow:** Use extracted data from `/preQuery` with these specialized search endpoints.
+            
+            **Available Search Types:**
+            - **Keyword Search** - Match extracted keywords
+            - **Noun Search** - Match extracted nouns  
+            - **Proper Noun Search** - Match extracted proper nouns (brands, technologies)
+            - **Domain Search** - Match domain categories (authentication, security, etc.)
+            - **Free Text Search** - Match free text terms
+            - **Semantic Search** - AI-powered semantic matching
+            
+            **Knowledge Bases Searched:**
+            - **SLACK** - Internal team conversations and discussions  
+            - **CONTEXT-DOCUMENTS** - Technical documentation and guides
+
+  - name: Knowledge Base - Meta
+    description: |2-
+
+            **System Metadata and Configuration**
+            
+            Retrieve available channels, domains, and knowledge base listings for configuration and discovery.
+
+  - name: Sumo Report - Jobs
+    description: |2-
+
+            **Asynchronous Query Execution Workflow**
+            
+            **Step-by-step process:**
+            A) **Submit Job** (`/query/submit`) - Submit known query with parameters
+            B) **Poll Status** (`/query/:jobId/status`) - Check job progress until completed  
+            C) **Fetch Results** (`/query/:jobId/results`) - Download structured results
+            
+            **Important:** Only executes **known/stored queries** - see `/query-list` for available reports.
+            Cannot execute custom or ad-hoc queries for security reasons.
+
+  - name: Sumo Report - Metadata
+    description: |2-
+
+            **Query Discovery & Validation Support**
+            
+            Endpoints to discover available queries and validate input parameters before job submission.
+
+  - name: Sumo Report - Files
+    description: |2-
+
+            **Result File Management**
+            
+            Manage and retrieve query result files with TTL-based cleanup and metadata tracking.
+
+  - name: Sumo Logic Syntax
+    description: |2-
+
+            **AI-Powered Query Syntax Help**
+            
+            Get assistance with writing Sumo Logic syntax or troubleshooting existing queries.
+            
+            **Note:** This service only **estimates** and **helps** with query syntax - it does NOT execute queries.
+            Use `/context-sumo-report` endpoints to execute actual queries.
+
+  - name: Context Dynamic
+    description: |2-
+
+            **Live context retrieval** for Formstack entities in real-time.
+            
+            ⚠️ **Important:** This service keeps office hours and may be offline outside business hours.
+            **Always check** `/health` endpoint before making context requests.
+            
+            **Available Context Types:**
+            - **Account** - Get live account details and settings
+            - **Form** - Get live form configuration and metadata  
+            - **Auth Provider** - Get live authentication provider details
+            - **Health** - Service availability check (check first!)
+
+servers:
+  - url: http://localhost:3505
+    description: Development Server
+components:
+  securitySchemes:
+    bearer-token:
+      scheme: bearer
+      bearerFormat: JWT
+      type: http
+      name: Authorization
+      description: Enter your bearer token
+      in: header
+  schemas:
+    PreQueryInputDto:
+      type: object
+      properties:
+        query:
+          type: string
+          description: Raw user query text to be analyzed and processed
+          example: How do I set up SAML authentication?
+          maxLength: 1000
+        minConfidence:
+          type: number
+          description: Minimum confidence threshold for search results (0.0 to 1.0)
+          example: 0.7
+          minimum: 0
+          maximum: 1
+        pageSize:
+          type: number
+          description: Maximum number of results to return per knowledge base (max 25)
+          example: 10
+          minimum: 1
+          maximum: 25
+      required:
+        - query
+    QueryChunkDto:
+      type: object
+      properties:
+        index:
+          type: number
+          description: Chunk index (order in the original query)
+          example: 0
+        chunk_text:
+          type: string
+          description: Text content of this query chunk
+          example: How do I set up SAML authentication?
+        chunk_embedding:
+          description: Embedding vector for this chunk (for semantic search)
+          example:
+            - 0.1
+            - -0.2
+            - 0.5
+          type: array
+          items:
+            type: number
+      required:
+        - index
+        - chunk_text
+        - chunk_embedding
+    PreQueryDto:
+      type: object
+      properties:
+        query:
+          type: string
+          description: Raw input query text to be analyzed and processed
+          example: How do I set up authentication with SAML?
+          maxLength: 1000
+        minConfidence:
+          type: number
+          description: Minimum confidence threshold for search results (0.0 to 1.0)
+          example: 0.7
+          minimum: 0
+          maximum: 1
+        pageSize:
+          type: number
+          description: Maximum number of results to return per knowledge base (max 25)
+          example: 10
+          minimum: 1
+          maximum: 25
+        originalText:
+          type: object
+          description: Original query text as processed
+          example: How do I set up SAML authentication?
+        chunks:
+          description: Query chunks for embedding search (populated automatically)
+          type: array
+          items:
+            $ref: '#/components/schemas/QueryChunkDto'
+        normalizedText:
+          type: object
+          description: AI-normalized version of the query text
+          example: setup SAML authentication configuration
+        aiTechnicalObservation:
+          type: object
+          description: >-
+            🎯 AI-generated technical observations - Perfect for paraphrasing,
+            conversation annotation, and context enrichment
+          example: >-
+            Query relates to enterprise authentication setup requiring SAML
+            protocol configuration for single sign-on integration with identity
+            providers like Active Directory or Okta
+        keywords:
+          description: Extracted keywords for keyword-based search
+          example:
+            - setup
+            - authentication
+            - configure
+            - enable
+          type: array
+          items:
+            type: string
+        nouns:
+          description: Extracted nouns for noun-based search
+          example:
+            - user
+            - password
+            - system
+            - configuration
+          type: array
+          items:
+            type: string
+        properNouns:
+          description: Extracted proper nouns for proper noun search
+          example:
+            - SAML
+            - OAuth
+            - ActiveDirectory
+            - Microsoft
+          type: array
+          items:
+            type: string
+        domains:
+          description: Identified domain categories for domain search
+          example:
+            - authentication
+            - security
+            - integration
+          type: array
+          items:
+            type: string
+        isWordSearch:
+          type: object
+          description: Whether this query is suitable for word-based search
+          example: true
+        applicableKnowledgeBase:
+          description: Knowledge bases applicable for this query
+          example:
+            - SLACK
+            - CONTEXT-DOCUMENTS
+          type: array
+          items:
+            type: string
+        subjects:
+          type: object
+          description: Extracted subjects and categories
+          example:
+            authentication: SAML
+            protocol: SSO
+        userPromptText:
+          type: string
+          description: User prompt text for semantic search (populated from original query)
+          example: How do I set up SAML authentication?
+        freeText:
+          description: Free text terms for text-based search
+          example:
+            - setup
+            - configure
+            - enable
+          type: array
+          items:
+            type: string
+        channelIds:
+          description: Channel IDs to limit knowledge base search scope
+          example:
+            - C1234567890
+            - C0987654321
+          type: array
+          items:
+            type: string
+        maxConfidence:
+          type: number
+          description: Maximum confidence threshold for result filtering (0.0 to 1.0)
+          example: 1
+          minimum: 0
+          maximum: 1
+        limit:
+          type: number
+          description: 'Maximum number of results to return (default: 10)'
+          example: 10
+          minimum: 1
+    KeywordSearchInputDto:
+      type: object
+      properties:
+        keywords:
+          description: Keywords from preQuery (required)
+          example:
+            - authentication
+            - login
+            - security
+          type: array
+          items:
+            type: string
+        channelIds:
+          description: Channel IDs to limit search scope
+          example:
+            - C1234567890
+          type: array
+          items:
+            type: string
+        maxConfidence:
+          type: number
+          description: Maximum confidence threshold (0.0 to 1.0)
+          example: 1
+          minimum: 0
+          maximum: 1
+        limit:
+          type: number
+          description: 'Maximum number of results (default: 10)'
+          example: 10
+          minimum: 1
+      required:
+        - keywords
+    NounSearchInputDto:
+      type: object
+      properties:
+        nouns:
+          description: Nouns from preQuery (required)
+          example:
+            - user
+            - password
+            - system
+          type: array
+          items:
+            type: string
+        channelIds:
+          description: Channel IDs to limit search scope
+          example:
+            - C1234567890
+          type: array
+          items:
+            type: string
+        maxConfidence:
+          type: number
+          description: Maximum confidence threshold (0.0 to 1.0)
+          example: 1
+          minimum: 0
+          maximum: 1
+        limit:
+          type: number
+          description: 'Maximum number of results (default: 10)'
+          example: 10
+          minimum: 1
+      required:
+        - nouns
+    ProperNounSearchInputDto:
+      type: object
+      properties:
+        properNouns:
+          description: Proper nouns from preQuery (required)
+          example:
+            - SAML
+            - OAuth
+            - ActiveDirectory
+          type: array
+          items:
+            type: string
+        channelIds:
+          description: Channel IDs to limit search scope
+          example:
+            - C1234567890
+          type: array
+          items:
+            type: string
+        maxConfidence:
+          type: number
+          description: Maximum confidence threshold (0.0 to 1.0)
+          example: 1
+          minimum: 0
+          maximum: 1
+        limit:
+          type: number
+          description: 'Maximum number of results (default: 10)'
+          example: 10
+          minimum: 1
+      required:
+        - properNouns
+    DomainSearchInputDto:
+      type: object
+      properties:
+        domains:
+          description: Domains from preQuery (required)
+          example:
+            - authentication
+            - security
+            - integration
+          type: array
+          items:
+            type: string
+        channelIds:
+          description: Channel IDs to limit search scope
+          example:
+            - C1234567890
+          type: array
+          items:
+            type: string
+        maxConfidence:
+          type: number
+          description: Maximum confidence threshold (0.0 to 1.0)
+          example: 1
+          minimum: 0
+          maximum: 1
+        limit:
+          type: number
+          description: 'Maximum number of results (default: 10)'
+          example: 10
+          minimum: 1
+      required:
+        - domains
+    FreeTextSearchInputDto:
+      type: object
+      properties:
+        freeText:
+          description: Free text terms from preQuery (required)
+          example:
+            - setup
+            - configure
+            - enable
+          type: array
+          items:
+            type: string
+        channelIds:
+          description: Channel IDs to limit search scope
+          example:
+            - C1234567890
+          type: array
+          items:
+            type: string
+        maxConfidence:
+          type: number
+          description: Maximum confidence threshold (0.0 to 1.0)
+          example: 1
+          minimum: 0
+          maximum: 1
+        limit:
+          type: number
+          description: 'Maximum number of results (default: 10)'
+          example: 10
+          minimum: 1
+      required:
+        - freeText
+    SemanticSearchInputDto:
+      type: object
+      properties:
+        userPromptText:
+          type: string
+          description: User prompt text from preQuery (required)
+          example: How do I set up SAML authentication?
+        channelIds:
+          description: Channel IDs to limit search scope
+          example:
+            - C1234567890
+          type: array
+          items:
+            type: string
+        maxConfidence:
+          type: number
+          description: Maximum confidence threshold (0.0 to 1.0)
+          example: 1
+          minimum: 0
+          maximum: 1
+        limit:
+          type: number
+          description: 'Maximum number of results (default: 10)'
+          example: 10
+          minimum: 1
+      required:
+        - userPromptText
+    AccountDto:
+      type: object
+      properties:
+        accountId:
+          type: number
+          description: Formstack account ID
+          example: 12345
+          minimum: 1
+      required:
+        - accountId
+    AuthProviderDto:
+      type: object
+      properties:
+        authProviderId:
+          type: number
+          description: Formstack authentication provider ID
+          example: 11111
+          minimum: 1
+      required:
+        - authProviderId
+    FormDto:
+      type: object
+      properties:
+        formId:
+          type: number
+          description: Formstack form ID
+          example: 67890
+          minimum: 1
+      required:
+        - formId
+    EntitySubjectsDto:
+      type: object
+      properties:
+        submitActionId:
+          description: Submit action IDs for filtering
+          example:
+            - '12345'
+            - '67890'
+          type: array
+          items:
+            type: string
+        submitActionType:
+          description: Types of submit actions (webhook, salesforce, stripe, etc.)
+          example:
+            - webhook
+            - salesforce
+          type: array
+          items:
+            type: string
+        formId:
+          description: Form IDs for filtering
+          example:
+            - '67890'
+            - '11111'
+          type: array
+          items:
+            type: string
+        submissionId:
+          description: Submission IDs for filtering
+          example:
+            - '11111'
+            - '22222'
+          type: array
+          items:
+            type: string
+        authProviderId:
+          description: Authentication provider IDs
+          example:
+            - '22222'
+            - '33333'
+          type: array
+          items:
+            type: string
+        accountId:
+          description: Account IDs for filtering
+          example:
+            - '33333'
+            - '44444'
+          type: array
+          items:
+            type: string
+        message:
+          description: Specific Sumo Logic messages to filter on
+          example:
+            - Submission created on {formId}.
+            - Authentication failed for {authProviderId}.
+          type: array
+          items:
+            type: string
+    DateRangeDto:
+      type: object
+      properties:
+        startDate:
+          type: string
+          description: >-
+            Start date in Eastern Time (YYYY-MM-DD, YYYY-MM-DD HH:MM:SS, or ISO
+            8601)
+          example: '2024-01-01'
+        endDate:
+          type: string
+          description: >-
+            End date in Eastern Time (YYYY-MM-DD, YYYY-MM-DD HH:MM:SS, or ISO
+            8601)
+          example: '2024-01-07'
+    SumoJobSubmissionRequestDto:
+      type: object
+      properties:
+        queryName:
+          type: string
+          description: Name of the Sumo Logic query to execute
+          example: submissionCreatedForForm
+          enum:
+            - submissionCreatedForForm
+            - submitActionReport
+            - authProviderMetrics
+            - submitActionSelectedForExecution
+        subjects:
+          description: >-
+            Entity subjects for filtering - ONLY entity IDs with unique
+            identifiers (arrays for consistency)
+          allOf:
+            - $ref: '#/components/schemas/EntitySubjectsDto'
+        dateRange:
+          description: Date range for time-based filtering (separate from entity subjects)
+          allOf:
+            - $ref: '#/components/schemas/DateRangeDto'
+        isValidationOnly:
+          type: boolean
+          description: Only validate request without executing query
+          example: false
+        notificationOptions:
+          type: object
+          description: Notification options for job completion
+          properties:
+            webhook:
+              type: string
+              description: Webhook URL for job completion notification
+              example: https://example.com/webhook
+            clientPayloadString:
+              type: string
+              description: Custom payload string (max 5120 bytes)
+              example: user-tracking-id-12345
+      required:
+        - queryName
+    SumoJobStatusDto:
+      type: object
+      properties:
+        jobId:
+          type: string
+          description: Unique job identifier
+          example: '123'
+        status:
+          type: string
+          description: Current job status
+          enum:
+            - queued
+            - submitted
+            - running
+            - completed
+            - failed
+            - cancelled
+            - timeout
+        queryName:
+          type: string
+          description: Name of the query being executed
+          example: submissionCreatedForForm
+        createdAt:
+          type: string
+          description: Job creation timestamp
+          format: date-time
+        startedAt:
+          type: string
+          description: Job start timestamp
+          format: date-time
+        completedAt:
+          type: string
+          description: Job completion timestamp
+          format: date-time
+        estimatedTimeRemaining:
+          type: string
+          description: Estimated time remaining for job completion
+          example: 2-5 minutes
+        progress:
+          type: number
+          description: Job progress percentage (0-100)
+          example: 75
+          minimum: 0
+          maximum: 100
+        error:
+          type: string
+          description: Error message if job failed
+        resultFileUrl:
+          type: string
+          description: URL to retrieve job results when completed
+          example: /context-sumo-report/files/123/results
+        clientPayloadString:
+          type: string
+          description: Custom client payload string provided during submission
+      required:
+        - jobId
+        - status
+        - queryName
+        - createdAt
+    QueryListResponseDto:
+      type: object
+      properties:
+        outputType:
+          type: string
+          description: Output format type
+          enum:
+            - human
+            - AI
+          example: human
+        queries:
+          type: array
+          description: List of available queries
+          items:
+            type: object
+            properties:
+              queryName:
+                type: string
+                example: submissionCreatedForForm
+              descriptionForHuman:
+                type: string
+                example: Track form submission creation events
+              descriptionForAi:
+                type: string
+                example: Detailed AI description...
+      required:
+        - outputType
+        - queries
+    SyntaxEstimationRequestDto:
+      type: object
+      properties:
+        input:
+          type: string
+          description: >-
+            Natural language description of desired query or existing query with
+            modification instructions
+          example: Show me all failed submissions for form 12345 in the last 24 hours
+          maxLength: 1000
+      required:
+        - input
+    SyntaxEstimationResponseDto:
+      type: object
+      properties:
+        estimatedQuery:
+          type: string
+          description: Estimated Sumo Logic query syntax
+          example: >-
+            _sourceCategory=formstack/prod/* | json field=_raw "context.formId"
+            as formId | where formId = 12345 AND status = "failed"
+        confidence:
+          type: string
+          description: Confidence level of the estimation
+          enum:
+            - low
+            - medium
+            - high
+          example: medium
+        notes:
+          type: string
+          description: Additional notes about the estimation
+          example: Query optimized for performance with standard field extractions
+      required:
+        - estimatedQuery

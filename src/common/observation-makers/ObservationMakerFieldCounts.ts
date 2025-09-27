@@ -39,6 +39,7 @@ const fieldTypes = '';
 class ObservationMakerFieldCounts extends ObservationMakers.AbstractObservationMaker {
   protected subjectType = EObservationSubjectType.FORM;
   protected observationClass = this.constructor.name;
+  protected observationClassName = this.constructor.name as any;
   protected messagePrimary = 'Field Counts Observation';
   private fieldByTypeCounts: Record<TFsFieldType, TCountRecord>;
   private otherCounts: Record<TOtherCountIndex, TCountRecord> = {} as Record<
@@ -72,7 +73,7 @@ class ObservationMakerFieldCounts extends ObservationMakers.AbstractObservationM
     );
   }
 
-  getRequiredResources(): string[] {
+  getRequiredResources(): any {
     return ['formModel'];
   }
 
@@ -243,7 +244,7 @@ class ObservationMakerFieldCounts extends ObservationMakers.AbstractObservationM
     );
     logItems.push(allFieldCountLogItems);
 
-    return { isObservationTrue: true, logItems };
+    return { logItems } as IObservationResult;
   }
 }
 export { ObservationMakerFieldCounts };

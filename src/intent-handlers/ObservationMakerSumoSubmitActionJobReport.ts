@@ -49,9 +49,11 @@ interface ISumoSubmitActionQuery {
 class ObservationMakerSumoSubmitActionJobReport extends ObservationMakers.AbstractObservationMaker {
   protected subjectType = SUMO_REPORT_SUBMIT_ACTION as any;
   protected observationClass = 'ObservationMakerSumoSubmitActionJobReport';
+  protected observationClassName =
+    'ObservationMakerSumoSubmitActionJobReport' as any;
   protected messagePrimary = 'Submit Action Job Report Analysis';
 
-  getRequiredResources(): string[] {
+  getRequiredResources(): any {
     return ['sumoNamedQuery'];
   }
 
@@ -69,7 +71,7 @@ class ObservationMakerSumoSubmitActionJobReport extends ObservationMakers.Abstra
         relatedEntityIds: [],
       });
       logItems.push(logItem);
-      return { isObservationTrue: false, logItems };
+      return { isObservationTrue: false, logItems } as IObservationResult;
     }
 
     // Total number of records
@@ -112,7 +114,7 @@ class ObservationMakerSumoSubmitActionJobReport extends ObservationMakers.Abstra
     });
     logItems.push(formLogItem);
 
-    return { isObservationTrue: true, logItems };
+    return { isObservationTrue: true, logItems } as IObservationResult;
   }
 
   private analyzeSubmitActionTypes(

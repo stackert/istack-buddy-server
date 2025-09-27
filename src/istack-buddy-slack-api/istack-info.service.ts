@@ -263,9 +263,11 @@ export class IStackInfoService implements OnModuleDestroy {
       );
     },
 
-    getFormFieldsObservationsSource: async (
-      formId: number,
-    ): Promise<FormFieldsObservationsSourceResponse> => {
+    getFormFieldsObservationsSource: async ({
+      formId,
+    }: {
+      formId: number;
+    }): Promise<any> => {
       this.logger.debug(`Getting form fields observations source: ${formId}`);
       return this.makeRequest<FormFieldsObservationsSourceResponse>(
         'POST',
@@ -636,6 +638,19 @@ export class IStackInfoService implements OnModuleDestroy {
     } catch (error) {
       this.logger.error(`Request failed: ${method} ${endpoint}`, error.message);
       throw error;
+    }
+  }
+
+  /**
+   * Check if the API server is online and responding
+   */
+  async checkHealth(): Promise<boolean> {
+    try {
+      const response = await this.makeRequest<HealthResponse>('GET', '/health');
+      return response.healthy === true;
+    } catch (error) {
+      this.logger.error(`Health check failed: ${error.message}`);
+      return false;
     }
   }
 

@@ -5,6 +5,7 @@ import { SumoReportMultiJobExecutor } from '../../intent-handlers/sumo-report-mu
 import { KnowledgeBaseJobExecutor } from '../../intent-handlers/knowledge-base-job-executor.service';
 import { ContextDynamicJobExecutor } from '../../intent-handlers/context-dynamic-job-executor.service';
 import { AssistUserJobExecutor } from '../../intent-handlers/assist-user-job-executor.service';
+import { ObservationJobExecutor } from '../../intent-handlers/observation-job-executor.service';
 import { IntentHandler } from '../interfaces/intent-handler.interface';
 
 @Injectable()
@@ -18,6 +19,7 @@ export class IntentHandlerRegistryService implements OnModuleInit {
     private readonly knowledgeBaseExecutor: KnowledgeBaseJobExecutor,
     private readonly contextDynamicExecutor: ContextDynamicJobExecutor,
     private readonly assistUserExecutor: AssistUserJobExecutor,
+    private readonly observationExecutor: ObservationJobExecutor,
   ) {}
 
   onModuleInit() {
@@ -27,6 +29,7 @@ export class IntentHandlerRegistryService implements OnModuleInit {
     this.registerHandler(this.knowledgeBaseExecutor);
     this.registerHandler(this.contextDynamicExecutor);
     this.registerHandler(this.assistUserExecutor);
+    this.registerHandler(this.observationExecutor);
     this.logger.log('Intent handler registration completed');
   }
 

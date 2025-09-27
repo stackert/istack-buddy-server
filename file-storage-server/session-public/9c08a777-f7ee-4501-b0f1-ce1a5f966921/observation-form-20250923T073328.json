@@ -1,0 +1,47 @@
+{
+  "target": {
+    "type": "form",
+    "id": "5375703"
+  },
+  "observations": [
+    {
+      "level": "info",
+      "message": "Form observation analysis started",
+      "details": {
+        "formId": "5375703"
+      }
+    },
+    {
+      "level": "info",
+      "message": "Form has multiple fields with various configurations",
+      "details": {
+        "fieldCount": 5
+      }
+    },
+    {
+      "level": "warn",
+      "message": "Some fields have duplicate labels",
+      "details": {
+        "duplicateLabels": [
+          "Name",
+          "Email"
+        ]
+      }
+    },
+    {
+      "level": "info",
+      "message": "Form uses standard validation rules",
+      "details": {
+        "validationRules": [
+          "required",
+          "email"
+        ]
+      }
+    }
+  ],
+  "summary": "Form 5375703 analysis complete. Found 4 observations including field configurations, validation rules, and potential issues.",
+  "timestamp": "2025-09-23T07:33:28.553Z",
+  "sessionId": "9c08a777-f7ee-4501-b0f1-ce1a5f966921",
+  "conversationId": "9c08a777-f7ee-4501-b0f1-ce1a5f966921",
+  "filePath": ""
+}

@@ -46,6 +46,7 @@ interface ISumoNamedQuery {
 class ObservationMakerSumoReport extends ObservationMakers.AbstractObservationMaker {
   protected subjectType = SUMO_REPORT_SUBMISSION_CREATION as any; // Custom subject type for Sumo reports
   protected observationClass = 'ObservationMakerSumoReport';
+  protected observationClassName = 'ObservationMakerSumoReport' as any;
   protected messagePrimary = 'Sumo Report Analysis';
 
   // Remove field type counting - not needed for submission analysis
@@ -54,7 +55,7 @@ class ObservationMakerSumoReport extends ObservationMakers.AbstractObservationMa
     super();
   }
 
-  getRequiredResources(): string[] {
+  getRequiredResources(): any {
     return ['sumoNamedQuery'];
   }
 
@@ -71,7 +72,7 @@ class ObservationMakerSumoReport extends ObservationMakers.AbstractObservationMa
         relatedEntityIds: [],
       });
       logItems.push(logItem);
-      return { isObservationTrue: false, logItems };
+      return { isObservationTrue: false, logItems } as IObservationResult;
     }
 
     // Skip schema analysis - only focus on submission-specific metrics
@@ -87,7 +88,7 @@ class ObservationMakerSumoReport extends ObservationMakers.AbstractObservationMa
     // Generate summary observations
     this.generateSummaryObservations(sumoQuery, context, logItems);
 
-    return { isObservationTrue: true, logItems };
+    return { isObservationTrue: true, logItems } as IObservationResult;
   }
 
   private analyzeSubmissionMetrics(

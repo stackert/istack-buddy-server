@@ -37,6 +37,7 @@ const fieldTypes = '';
 class ObservationMakerCalculationValidation extends ObservationMakers.AbstractObservationMaker {
   protected subjectType = EObservationSubjectType.FIELD;
   protected observationClass = this.constructor.name;
+  protected observationClassName = this.constructor.name as any;
   protected messagePrimary = 'Field Calculation Validation';
   private otherCounts: Record<TOtherCountIndex, TCountRecord> = {} as Record<
     TOtherCountIndex,
@@ -57,7 +58,7 @@ class ObservationMakerCalculationValidation extends ObservationMakers.AbstractOb
     );
   }
 
-  getRequiredResources(): string[] {
+  getRequiredResources(): any {
     return ['formModel'];
   }
 
@@ -174,7 +175,7 @@ class ObservationMakerCalculationValidation extends ObservationMakers.AbstractOb
     isObservationTrue =
       this.otherCounts['_FIELDS_WITH_CALCULATION_ERRORS_'].count > 0;
 
-    return { isObservationTrue, logItems };
+    return { isObservationTrue, logItems } as IObservationResult;
   }
 }
 export { ObservationMakerCalculationValidation };
