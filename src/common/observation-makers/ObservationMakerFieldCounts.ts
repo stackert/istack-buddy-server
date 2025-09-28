@@ -242,7 +242,7 @@ class ObservationMakerFieldCounts extends ObservationMakers.AbstractObservationM
     );
     logItems.push(allFieldCountLogItems);
 
-    return { logItems } as IObservationResult;
+    return { isObservationTrue: true, logItems } as IObservationResult;
   }
 }
 export { ObservationMakerFieldCounts };

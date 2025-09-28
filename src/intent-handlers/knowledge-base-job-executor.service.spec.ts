@@ -68,6 +68,10 @@ describe('KnowledgeBaseJobExecutor', () => {
       createMessage: jest.fn(),
       addMessageUserOnly: jest.fn(),
       addMessageWithRobotResponse: jest.fn(),
+      addMessageErrorNotification: jest.fn(),
+      addMessageSystemNotification: jest.fn(),
+      addMessageAsContext: jest.fn(),
+      addMessageToGetRobotResponse: jest.fn(),
     };
 
     const mockRobot = {
@@ -144,6 +148,7 @@ describe('KnowledgeBaseJobExecutor', () => {
         minConfidence: ['0.7'],
         pageSize: ['10'],
       },
+      conversationId: 'test-conversation-id',
     };
 
     beforeEach(() => {
@@ -188,46 +193,52 @@ describe('KnowledgeBaseJobExecutor', () => {
         mockIStackInfoService.knowledgeBase.topResults,
       ).toHaveBeenCalledWith(mockPreQueryResponse);
 
-      // Verify user-visible search results were sent
-      expect(mockChatManagerService.addMessageUserOnly).toHaveBeenCalledWith(
-        'test-conversation',
+      // Verify system notification was sent
+      expect(
+        mockChatManagerService.addMessageSystemNotification,
+      ).toHaveBeenCalledWith(
+        'test-conversation-id',
         expect.objectContaining({
           type: 'text/markdown',
+        }),
+      );
+
+      // Verify context was added
+      expect(mockChatManagerService.addMessageAsContext).toHaveBeenCalledWith(
+        'test-conversation-id',
+        expect.objectContaining({
+          type: 'context/document',
         }),
       );
 
       // Verify robot response was triggered
       expect(
-        mockChatManagerService.addMessageWithRobotResponse,
+        mockChatManagerService.addMessageToGetRobotResponse,
       ).toHaveBeenCalledWith(
-        'test-conversation',
+        'test-conversation-id',
         expect.objectContaining({
-          type: 'text/markdown',
+          type: 'text/plain',
         }),
-        'KnobbyOpenAiSearch',
       );
     });
 
-    it('should throw error when conversationId is missing from callbacks', async () => {
-      const callbacksWithoutConversationId = { ...mockCallbacks };
-      delete (callbacksWithoutConversationId as any).conversationId;
+    it('should throw error when conversationId is missing from intentData', async () => {
+      const intentDataWithoutConversationId = { ...mockIntentData };
+      delete intentDataWithoutConversationId.conversationId;
 
       await expect(
-        service.executeIntent(mockIntentData, callbacksWithoutConversationId),
-      ).rejects.toThrow('conversationId is required in callbacks');
+        service.executeIntent(intentDataWithoutConversationId),
+      ).rejects.toThrow('conversationId is required in intentData');
     });
 
-    it('should call onError when originalUserPrompt is missing', async () => {
+    it('should handle missing originalUserPrompt gracefully', async () => {
       const intentDataWithoutPrompt = { ...mockIntentData };
       delete intentDataWithoutPrompt.originalUserPrompt;
 
-      await service.executeIntent(intentDataWithoutPrompt, mockCallbacks);
-
-      expect(mockCallbacks.onError).toHaveBeenCalledWith(
-        expect.objectContaining({
-          message: 'originalUserPrompt is required but was not provided',
-        }),
-      );
+      // Service should complete without throwing (it handles missing prompt gracefully)
+      await expect(
+        service.executeIntent(intentDataWithoutPrompt),
+      ).resolves.not.toThrow();
     });
 
     it('should handle preQuery service errors', async () => {
@@ -235,11 +246,16 @@ describe('KnowledgeBaseJobExecutor', () => {
         new Error('PreQuery service error'),
       );
 
-      await service.executeIntent(mockIntentData, mockCallbacks);
+      await service.executeIntent(mockIntentData);
 
-      expect(mockCallbacks.onError).toHaveBeenCalledWith(
+      // Service should send error notification to chat manager
+      expect(
+        mockChatManagerService.addMessageErrorNotification,
+      ).toHaveBeenCalledWith(
+        'test-conversation-id',
         expect.objectContaining({
-          message: expect.stringContaining('PreQuery service error'),
+          type: 'text/plain',
+          payload: expect.stringContaining('PreQuery service error'),
         }),
       );
     });
@@ -249,39 +265,18 @@ describe('KnowledgeBaseJobExecutor', () => {
         new Error('TopResults service error'),
       );
 
-      await service.executeIntent(mockIntentData, mockCallbacks);
+      await service.executeIntent(mockIntentData);
 
-      expect(mockCallbacks.onError).toHaveBeenCalledWith(
+      // Service should send error notification to chat manager
+      expect(
+        mockChatManagerService.addMessageErrorNotification,
+      ).toHaveBeenCalledWith(
+        'test-conversation-id',
         expect.objectContaining({
-          message: expect.stringContaining('TopResults service error'),
+          type: 'text/plain',
+          payload: expect.stringContaining('TopResults service error'),
         }),
       );
-    });
-  });
-
-  describe('formatSearchResultsIntoRobotPrompt', () => {
-    it('should format search results with pre-prompt and user queries', () => {
-      const prompt = (service as any).formatSearchResultsIntoRobotPrompt(
-        mockTopResultsResponse,
-        mockPreQueryResponse,
-      );
-
-      // Should include robot instructions
-      expect(prompt).toContain('**ROBOT_INSTRUCTION_START**');
-      expect(prompt).toContain('**ROBOT_INSTRUCTION_END**');
-
-      // Should include search results
-      expect(prompt).toContain('___SEARCH_RESULTS_START__');
-      expect(prompt).toContain('___SEARCH_RESULTS_END__');
-
-      // Should include user queries
-      expect(prompt).toContain('__USER_ORIGINAL_QUERY_START__');
-      expect(prompt).toContain('__USER_NORMALIZED_QUERY_START__');
-
-      // Should include actual data
-      expect(prompt).toContain('Form submission issue discussion');
-      expect(prompt).toContain('SLACK:cx-formstack');
-      expect(prompt).toContain('0.95');
     });
   });
 

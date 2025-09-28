@@ -4,6 +4,7 @@ import { ChatManagerService } from '../chat-manager/chat-manager.service';
 import { AuthorizationPermissionsService } from '../authorization-permissions/authorization-permissions.service';
 import { UserProfileService } from '../user-profile/user-profile.service';
 import { KnowledgeBaseService } from './knowledge-base.service';
+import { IntentParsingService } from '../common/services/intent-parsing.service';
 import { CustomLoggerService } from '../common/logger/custom-logger.service';
 import * as helpers from './helpers';
 import {
@@ -27,6 +28,7 @@ describe('IstackBuddySlackApiService', () => {
   let authPermissionsService: jest.Mocked<AuthorizationPermissionsService>;
   let userProfileService: jest.Mocked<UserProfileService>;
   let knowledgeBaseService: jest.Mocked<KnowledgeBaseService>;
+  let intentParsingService: jest.Mocked<IntentParsingService>;
   let logger: MockLoggerService;
 
   const mockHelpers = helpers as jest.Mocked<typeof helpers>;
@@ -98,6 +100,12 @@ describe('IstackBuddySlackApiService', () => {
           },
         },
         {
+          provide: IntentParsingService,
+          useValue: {
+            parseIntentFromUserMessage: jest.fn(),
+          },
+        },
+        {
           provide: CustomLoggerService,
           useValue: mockLogger,
         },
@@ -111,6 +119,7 @@ describe('IstackBuddySlackApiService', () => {
     authPermissionsService = module.get(AuthorizationPermissionsService);
     userProfileService = module.get(UserProfileService);
     knowledgeBaseService = module.get(KnowledgeBaseService);
+    intentParsingService = module.get(IntentParsingService);
     logger = module.get(CustomLoggerService);
 
     // Mock fetch globally to prevent real HTTP calls
@@ -291,7 +300,7 @@ describe('IstackBuddySlackApiService', () => {
       expect(res.json).toHaveBeenCalledWith({ status: 'ok' });
     });
 
-    it('should handle message events in threads with conversation mapping', async () => {
+    it('should ignore regular thread messages (no short codes, no mention)', async () => {
       const req = mockSlackEvents.request(
         mockSlackEvents.message('regular message', {
           thread_ts: '1234567890.123455',
@@ -323,14 +332,11 @@ describe('IstackBuddySlackApiService', () => {
 
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith({ status: 'ok' });
-      expect(chatManagerService.addMessageFromSlack).toHaveBeenCalledWith(
-        'test-conversation-id',
-        { type: 'text', payload: 'regular message' },
-        expect.any(Function),
-      );
+      // Service should NOT call addMessageFromSlack for regular thread messages
+      expect(chatManagerService.addMessageFromSlack).not.toHaveBeenCalled();
     });
 
-    it('should handle message events with unknown thread mapping', async () => {
+    it('should ignore regular thread messages with unknown thread mapping', async () => {
       const req = mockSlackEvents.request(
         mockSlackEvents.message('message in unknown thread', {
           thread_ts: '1234567890.999999',
@@ -372,13 +378,8 @@ describe('IstackBuddySlackApiService', () => {
 
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith({ status: 'ok' });
-      expect(chatManagerService.startConversation).toHaveBeenCalledWith({
-        createdBy: 'test-user',
-        createdByRole: 'user',
-        title: 'Slack Thread Conversation',
-        description: 'Slack conversation from existing thread',
-        initialParticipants: ['test-user'],
-      });
+      // Service should NOT call startConversation for regular thread messages
+      expect(chatManagerService.startConversation).not.toHaveBeenCalled();
     });
 
     it('should ignore non-thread message events', async () => {

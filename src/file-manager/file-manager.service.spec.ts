@@ -14,6 +14,7 @@ mockFs.promises = {
   unlink: jest.fn(),
   access: jest.fn(),
   readdir: jest.fn(),
+  mkdir: jest.fn(),
 };
 
 // Fix the global path mock to include extname

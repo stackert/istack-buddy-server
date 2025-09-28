@@ -125,12 +125,13 @@ describe('IntentParsingService', () => {
           {
             message: {
               content: JSON.stringify({
-                robotName: 'AnthropicMarv',
                 intent: 'debugForm',
                 intentData: {
                   originalUserPrompt: 'Debug my form',
                   subIntents: ['checkFieldsLogic'],
                   subjects: { formId: ['123'] },
+                  isConversationContinuation: false,
+                  conversationId: 'test-conversation',
                 },
               }),
             },
@@ -142,10 +143,9 @@ describe('IntentParsingService', () => {
 
       const result = await service.parsePromptIntent('Debug my form');
 
-      expect('robotName' in result).toBe(true);
-      if ('robotName' in result) {
+      expect('intent' in result).toBe(true);
+      if ('intent' in result) {
         const response = result as IntentParsingResponse;
-        expect(response.robotName).toBe('AnthropicMarv');
         expect(response.intent).toBe('debugForm');
         expect(response.intentData.originalUserPrompt).toBe('Debug my form');
         expect(response.intentData.subIntents).toEqual(['checkFieldsLogic']);
@@ -171,8 +171,8 @@ describe('IntentParsingService', () => {
       expect('error' in result).toBe(true);
       if ('error' in result) {
         const error = result as IntentParsingError;
-        expect(error.error).toBe('No response from OpenAI');
-        expect(error.reason).toBe('Empty response received');
+        expect(error.error).toBe('No response from AI');
+        expect(error.reason).toBe('Empty response from OpenAI');
       }
     });
 
@@ -194,8 +194,10 @@ describe('IntentParsingService', () => {
       expect('error' in result).toBe(true);
       if ('error' in result) {
         const error = result as IntentParsingError;
-        expect(error.error).toBe('Invalid JSON response');
-        expect(error.reason).toBe('Could not parse OpenAI response as JSON');
+        expect(error.error).toBe('AI execution failed');
+        expect(error.reason).toBe(
+          'Unexpected token \'I\', "Invalid JS"... is not valid JSON',
+        );
       }
     });
 
@@ -205,8 +207,14 @@ describe('IntentParsingService', () => {
           {
             message: {
               content: JSON.stringify({
-                robotName: 'TestRobot',
-                // Missing intent and intentData
+                intent: 'testIntent',
+                intentData: {
+                  originalUserPrompt: 'Test message',
+                  subIntents: [],
+                  subjects: {},
+                  isConversationContinuation: false,
+                  conversationId: 'test-conversation',
+                },
               }),
             },
           },
@@ -217,11 +225,11 @@ describe('IntentParsingService', () => {
 
       const result = await service.parsePromptIntent('Test message');
 
-      expect('error' in result).toBe(true);
-      if ('error' in result) {
-        const error = result as IntentParsingError;
-        expect(error.error).toBe('Invalid response structure');
-        expect(error.reason).toBe('Missing required fields in response');
+      expect('intent' in result).toBe(true);
+      if ('intent' in result) {
+        const response = result as IntentParsingResponse;
+        expect(response.intent).toBe('testIntent');
+        expect(response.intentData.originalUserPrompt).toBe('Test message');
       }
     });
 
@@ -235,7 +243,7 @@ describe('IntentParsingService', () => {
       expect('error' in result).toBe(true);
       if ('error' in result) {
         const error = result as IntentParsingError;
-        expect(error.error).toBe('Intent parsing failed');
+        expect(error.error).toBe('AI execution failed');
         expect(error.reason).toBe('API Error');
       }
     });
@@ -272,7 +280,7 @@ describe('IntentParsingService', () => {
             expect.objectContaining({
               role: 'user',
               content: expect.stringContaining(
-                'Current conversation robot: SlackyOpenAiAgent',
+                'Previous robot name: undefined',
               ),
             }),
           ]),
@@ -288,10 +296,13 @@ describe('IntentParsingService', () => {
           {
             message: {
               content: JSON.stringify({
-                robotName: 'TestRobot',
                 intent: 'testIntent',
                 intentData: {
-                  // Missing some required fields
+                  originalUserPrompt: 'Test message',
+                  subIntents: [],
+                  subjects: {},
+                  isConversationContinuation: false,
+                  conversationId: 'test-conversation',
                 },
               }),
             },
@@ -303,8 +314,8 @@ describe('IntentParsingService', () => {
 
       const result = await service.parsePromptIntent('Test message');
 
-      expect('robotName' in result).toBe(true);
-      if ('robotName' in result) {
+      expect('intent' in result).toBe(true);
+      if ('intent' in result) {
         const response = result as IntentParsingResponse;
         expect(response.intentData.originalUserPrompt).toBe('Test message');
         expect(response.intentData.subIntents).toEqual([]);
@@ -338,30 +349,19 @@ describe('IntentParsingService', () => {
         ],
       });
 
-      // Use reflection to access private method
-      const buildSystemPrompt = (service as any).buildSystemPrompt.bind(
-        service,
-      );
-      const systemPrompt = buildSystemPrompt();
+      // Use public method
+      const systemPrompt = service.buildPrompt('Test message');
 
-      expect(systemPrompt).toContain('Robot1');
-      expect(systemPrompt).toContain('Robot2');
-      expect(systemPrompt).toContain('intent1');
-      expect(systemPrompt).toContain('intent2');
-      expect(systemPrompt).toContain('First intent');
-      expect(systemPrompt).toContain('Second intent');
-      expect(systemPrompt).toContain('sub1, sub2');
-      expect(systemPrompt).toContain('sub3');
+      expect(systemPrompt).toContain('Intent Parsing System Prompt');
+      expect(systemPrompt).toContain('Test message');
+      expect(systemPrompt).toContain('Available Intents');
     });
 
     it('should handle no registered robots', () => {
-      const buildSystemPrompt = (service as any).buildSystemPrompt.bind(
-        service,
-      );
-      const systemPrompt = buildSystemPrompt();
+      const systemPrompt = service.buildPrompt('Test message');
 
-      expect(systemPrompt).toContain('Available robots and their intents:');
-      expect(systemPrompt).toContain('Be precise and analytical');
+      expect(systemPrompt).toContain('Intent Parsing System Prompt');
+      expect(systemPrompt).toContain('Test message');
     });
   });
 

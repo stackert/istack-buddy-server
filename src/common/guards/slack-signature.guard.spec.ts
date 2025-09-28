@@ -43,6 +43,9 @@ describe('SlackSignatureGuard', () => {
 
   it('should throw UnauthorizedException when raw body is missing', () => {
     process.env.SLACK_SIGNING_SECRET = 'test-secret';
+    // Set NODE_ENV to production to disable development mode behavior
+    const originalNodeEnv = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'production';
 
     const mockContext = {
       switchToHttp: () => ({
@@ -54,6 +57,9 @@ describe('SlackSignatureGuard', () => {
     } as ExecutionContext;
 
     expect(() => guard.canActivate(mockContext)).toThrow(UnauthorizedException);
+
+    // Restore original NODE_ENV
+    process.env.NODE_ENV = originalNodeEnv;
   });
 
   it('should throw UnauthorizedException when Slack signature headers are missing', () => {

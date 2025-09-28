@@ -87,7 +87,7 @@ export class ObservationMakerViewer extends ObservationMakers.AbstractObservatio
    * Get only warning and error log items
    */
   public getWarningsAndErrors(): any[] {
-    return this.logItems.filter(
+    return this.viewerLogItems.filter(
       (item) => item.logLevel === 'warn' || item.logLevel === 'error',
     );
   }
@@ -96,7 +96,7 @@ export class ObservationMakerViewer extends ObservationMakers.AbstractObservatio
    * Get log items by level
    */
   public getLogItemsByLevel(level: string): any[] {
-    return this.logItems.filter((item) => item.logLevel === level);
+    return this.viewerLogItems.filter((item) => item.logLevel === level);
   }
 
   /**
@@ -151,17 +151,17 @@ export class ObservationMakerViewer extends ObservationMakers.AbstractObservatio
    * Format all log items for Slack display (including info and debug)
    */
   public formatAllForSlack(): string {
-    if (this.logItems.length === 0) {
+    if (this.viewerLogItems.length === 0) {
       return '📝 *No log items found*';
     }
 
-    let formatted = `📊 *All Log Items (${this.logItems.length} total):*\n\n`;
+    let formatted = `📊 *All Log Items (${this.viewerLogItems.length} total):*\n\n`;
 
-    this.logItems.forEach((item, index) => {
+    this.viewerLogItems.forEach((item, index) => {
       const emoji = this.getEmojiForLevel(item.logLevel);
       const level = item.logLevel.toUpperCase();
 
-      formatted += `${emoji} *${level}* (${index + 1}/${this.logItems.length})\n`;
+      formatted += `${emoji} *${level}* (${index + 1}/${this.viewerLogItems.length})\n`;
 
       // Use messageSecondary as the primary message (capped at 150 characters)
       if (item.messageSecondary) {
@@ -211,17 +211,17 @@ export class ObservationMakerViewer extends ObservationMakers.AbstractObservatio
    * Get summary statistics
    */
   public getSummary(): string {
-    const total = this.logItems.length;
-    const errors = this.logItems.filter(
+    const total = this.viewerLogItems.length;
+    const errors = this.viewerLogItems.filter(
       (item) => item.logLevel === 'error',
     ).length;
-    const warnings = this.logItems.filter(
+    const warnings = this.viewerLogItems.filter(
       (item) => item.logLevel === 'warn',
     ).length;
-    const info = this.logItems.filter(
+    const info = this.viewerLogItems.filter(
       (item) => item.logLevel === 'info',
     ).length;
-    const debug = this.logItems.filter(
+    const debug = this.viewerLogItems.filter(
       (item) => item.logLevel === 'debug',
     ).length;
 

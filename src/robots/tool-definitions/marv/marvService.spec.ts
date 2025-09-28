@@ -764,10 +764,10 @@ describe('MarvService', () => {
 
       expect(mockApiClient.refreshApiKeyFromEnvironment).toHaveBeenCalled();
       expect(mockApiClient.getFormJson).toHaveBeenCalledWith('form123');
-      expect(Models.FsModelForm).toHaveBeenCalledWith(
-        { ...mockFormData, fields: mockFormData.fields },
-        { fieldModelVersion: 'v2' },
-      );
+      expect(Models.FsModelForm).toHaveBeenCalledWith({
+        ...mockFormData,
+        fields: mockFormData.fields,
+      });
       expect(mockObservationMaker.makeObservation).toHaveBeenCalledWith({
         resources: { formModel: mockFormModel },
       });
@@ -815,10 +815,10 @@ describe('MarvService', () => {
 
       expect(mockApiClient.refreshApiKeyFromEnvironment).toHaveBeenCalled();
       expect(mockApiClient.getFormJson).toHaveBeenCalledWith('form123');
-      expect(Models.FsModelForm).toHaveBeenCalledWith(
-        { ...mockFormData, fields: mockFormData.fields },
-        { fieldModelVersion: 'v2' },
-      );
+      expect(Models.FsModelForm).toHaveBeenCalledWith({
+        ...mockFormData,
+        fields: mockFormData.fields,
+      });
       expect(mockObservationMaker.makeObservation).toHaveBeenCalledWith({
         resources: { formModel: mockFormModel },
       });

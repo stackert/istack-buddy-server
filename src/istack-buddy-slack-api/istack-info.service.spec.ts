@@ -598,7 +598,9 @@ describe('IStackInfoService', () => {
         mockAxiosInstance.request.mockResolvedValue({ data: mockResponse });
 
         const result =
-          await service.contextDynamic.getFormFieldsObservationsSource(123456);
+          await service.contextDynamic.getFormFieldsObservationsSource({
+            formId: 123456,
+          });
 
         expect(mockAxiosInstance.request).toHaveBeenCalledWith({
           method: 'POST',
@@ -667,9 +669,11 @@ describe('IStackInfoService', () => {
 
         const request = {
           queryName: 'searchSumoLogSubmissionErrors',
-          subject: 'formId:123456',
-          startDate: '2025-01-01',
-          endDate: '2025-01-07',
+          subjects: { formId: ['123456'] },
+          dateRange: {
+            startDate: '2025-01-01',
+            endDate: '2025-01-07',
+          },
         };
 
         const result = await service.sumoReport.submitQuery(request);

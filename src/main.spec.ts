@@ -338,6 +338,7 @@ describe('Main Bootstrap Function', () => {
       expect(callOrder).toEqual([
         'create',
         'use',
+        'use',
         'enableCors',
         'use',
         'use',
@@ -356,7 +357,7 @@ describe('Main Bootstrap Function', () => {
       // Verify all major bootstrap steps were called
       expect(mockNestFactory.create).toHaveBeenCalledTimes(1);
       expect(mockApp.enableCors).toHaveBeenCalledTimes(1);
-      expect(mockApp.use).toHaveBeenCalledTimes(6);
+      expect(mockApp.use).toHaveBeenCalledTimes(7);
       expect(mockSwaggerModule.createDocument).toHaveBeenCalledTimes(1);
       expect(mockSwaggerModule.setup).toHaveBeenCalledTimes(1);
       expect(mockApp.listen).toHaveBeenCalledTimes(1);
@@ -406,7 +407,7 @@ describe('Main Bootstrap Function', () => {
       await bootstrap();
 
       // Should have 6 middleware calls: Slack webhook + cookie parser + 4 static file serving
-      expect(mockApp.use).toHaveBeenCalledTimes(6);
+      expect(mockApp.use).toHaveBeenCalledTimes(7);
 
       // Check Slack webhook middleware
       const slackCall = mockApp.use.mock.calls.find(
@@ -433,8 +434,8 @@ describe('Main Bootstrap Function', () => {
     it('should execute verify function and store raw body', async () => {
       await bootstrap();
 
-      // Get the verify function that was passed to express.json
-      const verifyFunction = mockJson.mock.calls[0][0]?.verify;
+      // Get the verify function that was passed to express.json (second call has verify)
+      const verifyFunction = mockJson.mock.calls[1][0]?.verify;
       expect(typeof verifyFunction).toBe('function');
 
       // Create mock request and buffer
@@ -455,7 +456,7 @@ describe('Main Bootstrap Function', () => {
     it('should handle different buffer types in verify function', async () => {
       await bootstrap();
 
-      const verifyFunction = mockJson.mock.calls[0][0]?.verify;
+      const verifyFunction = mockJson.mock.calls[1][0]?.verify;
       const mockReq: any = {};
       const mockRes: any = {};
 
