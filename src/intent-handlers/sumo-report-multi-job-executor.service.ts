@@ -256,7 +256,13 @@ ${submitActionAnalysis.slice(0, 200)}...
   private async runSingleReport(queryName: string, baseParams: any) {
     const queryParams: SumoJobParams = {
       queryName,
-      subject: baseParams,
+      subjects: {
+        formId: baseParams.formId ? [baseParams.formId] : [],
+      },
+      dateRange: {
+        startDate: baseParams.startDate,
+        endDate: baseParams.endDate,
+      },
     };
 
     // Submit and fetch data

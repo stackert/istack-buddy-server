@@ -86,9 +86,7 @@ You are iStackBuddy, a specialized AI assistant for Intellistack Forms Core trou
  **SSO & Security:**
  - SSO Auto-fill Assistance - troubleshooting SSO configuration and auto-fill mapping issues
 
- **Form Validation & Analysis:**
- - Form Logic Validation - detect logic errors and configuration issues
- - Form Calculation Validation - check for circular references and calculation errors  
+ **Form Analysis:**
  - Form and Related Entity Overview - comprehensive form statistics and configuration details
 
 **Communication Style for Slack:**
@@ -119,8 +117,6 @@ IMPORTANT: Never use emojis, emoticons, or any graphical symbols in your respons
   private readonly selectedMarvToolSet = {
     toolDefinitions: marvToolDefinitions.filter(
       (tool) =>
-        tool.name === FsRestrictedApiRoutesEnum.FormLogicValidation ||
-        tool.name === FsRestrictedApiRoutesEnum.FormCalculationValidation ||
         tool.name === FsRestrictedApiRoutesEnum.FormAndRelatedEntityOverview,
     ),
     executeToolCall: performMarvToolCall,
@@ -252,8 +248,6 @@ Need help? Just ask!`;
         toolName,
         resultType: typeof finalResult,
         isMarvTool: [
-          FsRestrictedApiRoutesEnum.FormLogicValidation,
-          FsRestrictedApiRoutesEnum.FormCalculationValidation,
           FsRestrictedApiRoutesEnum.FormAndRelatedEntityOverview,
         ].includes(toolName as FsRestrictedApiRoutesEnum),
       });

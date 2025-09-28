@@ -45,12 +45,12 @@ export class SumoReportSingleJobExecutor
           payload: `🔄  *Sumo Report Request Received* 
           
           Query: *${queryParams.queryName}*
-          Form ID: *${queryParams.subject.formId || '[any]'}*
-          Submit Action ID: *${queryParams.subject.submitActionId || '[any]'}*
-          Submit Action Type: *${queryParams.subject.submitActionType || '[any]'}*
-          Auth Provider ID: *${queryParams.subject.authProviderId || '[any]'}*
-          Submission ID: *${queryParams.subject.submissionId || '[any]'}*
-          Date Range: *${queryParams.subject.startDate || '[any]'}* to *${queryParams.subject.endDate || '[any]'}*
+          Form ID: *${queryParams.subjects.formId?.[0] || '[any]'}*
+          Submit Action ID: *${queryParams.subjects.submitActionId?.[0] || '[any]'}*
+          Submit Action Type: *${queryParams.subjects.submitActionType?.[0] || '[any]'}*
+          Auth Provider ID: *${queryParams.subjects.authProviderId?.[0] || '[any]'}*
+          Submission ID: *${queryParams.subjects.submissionId?.[0] || '[any]'}*
+          Date Range: *${queryParams.dateRange.startDate || '[any]'}* to *${queryParams.dateRange.endDate || '[any]'}*
           Submitting job...`,
         },
       );
@@ -101,12 +101,14 @@ export class SumoReportSingleJobExecutor
 
     return {
       queryName: this.mapSubIntentToQueryName(subIntents[0]),
-      subject: {
-        formId: intentData.subjects?.formId?.[0] || '',
-        submitActionId: intentData.subjects?.submitActionId?.[0] || '',
-        submitActionType: intentData.subjects?.submitActionType?.[0] || '',
-        submissionId: intentData.subjects?.submissionId?.[0] || '',
-        authProviderId: intentData.subjects?.authProviderId?.[0] || '',
+      subjects: {
+        formId: intentData.subjects?.formId || [],
+        submitActionId: intentData.subjects?.submitActionId || [],
+        submitActionType: intentData.subjects?.submitActionType || [],
+        submissionId: intentData.subjects?.submissionId || [],
+        authProviderId: intentData.subjects?.authProviderId || [],
+      },
+      dateRange: {
         startDate: intentData.dateRange?.startDate || '',
         endDate: intentData.dateRange?.endDate || '',
       },

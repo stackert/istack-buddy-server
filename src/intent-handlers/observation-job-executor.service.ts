@@ -12,7 +12,22 @@ import {
   ObservationMakers,
   IObservationExport,
 } from 'istack-buddy-utilities';
+import { readFileSync } from 'fs';
+import { join } from 'path';
+
 const ObservationMakerReader = ObservationMakers.ObservationsReader;
+
+// Load observation makers documentation at module level (build time)
+let OBSERVATION_MAKERS_CONTENT: string;
+
+try {
+  OBSERVATION_MAKERS_CONTENT = readFileSync(
+    join(process.cwd(), 'CONTEXT-DOCUMENTS', 'OBSERAVATION_MAKERS.md'),
+    'utf-8',
+  );
+} catch (error) {
+  throw new Error(`Failed to load OBSERAVATION_MAKERS.md: ${error.message}`);
+}
 
 @Injectable()
 export class ObservationJobExecutor implements IntentHandler {
@@ -136,6 +151,15 @@ export class ObservationJobExecutor implements IntentHandler {
         },
       );
 
+      // Add observation makers documentation as context
+      await this.chatManagerService.addMessageContextNoResponse(
+        conversationId,
+        {
+          type: 'context/document',
+          payload: OBSERVATION_MAKERS_CONTENT,
+        },
+      );
+
       // Format error groups for display
       const errorGroupText = Object.entries(errorGroups)
         .map(([message, count]) => `  "${message}": ${count}`)
@@ -146,7 +170,7 @@ export class ObservationJobExecutor implements IntentHandler {
         .map(([message, count]) => `  "${message}": ${count}`)
         .join('\n');
 
-      // Send summary to user
+      // Send summary to user via robot response
       const summary = `Observations complete: ${accumulator.logItems.length} total items
 • Errors: ${errors.length}
 • Warnings: ${warnings.length}
@@ -156,11 +180,22 @@ ${errorGroupText ? `Errors by type:\n${errorGroupText}` : ''}
 ${warningGroupText ? `Warnings by type:\n${warningGroupText}` : ''}
 `;
 
-      await this.chatManagerService.addMessageSystemNotification(
+      const userPrompt = intentData.originalUserPrompt || "the user's request";
+      const robotPrompt = `We included the observation results, here some summary information, the user's original prompt, please respond however you see best.
+
+User's original prompt: "${userPrompt}"
+
+Observation Summary:
+${summary}
+
+Please provide a helpful response to the user based on the observation results and their original request.`;
+
+      // Request robot response with the observation prompt
+      await this.chatManagerService.addMessageToGetRobotResponse(
         conversationId,
         {
           type: 'text/plain',
-          payload: summary,
+          payload: robotPrompt,
         },
       );
     } catch (error) {

@@ -343,14 +343,16 @@ export interface AuthProviderContextResponse extends ContextDynamicResponse {
 // Sumo Logic types
 export interface SumoJobSubmissionRequest {
   queryName: string;
-  subject: {
-    formId?: string;
-    submissionId?: string;
-    submitActionId?: string;
-    submitActionType?: string;
-    authProviderId?: string;
-    accountId?: string;
-    message?: string;
+  subjects: {
+    formId?: string[];
+    submissionId?: string[];
+    submitActionId?: string[];
+    submitActionType?: string[];
+    authProviderId?: string[];
+    accountId?: string[];
+    message?: string[];
+  };
+  dateRange?: {
     startDate?: string;
     endDate?: string;
   };

@@ -1,13 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { LoggerModule } from './logger.module';
-import { CustomLoggerService } from './custom-logger.service';
+import { RobotModule } from './robot.module';
+import { RobotService } from './robot.service';
 
-describe('LoggerModule', () => {
+describe('RobotModule', () => {
   let module: TestingModule;
 
   beforeEach(async () => {
     module = await Test.createTestingModule({
-      imports: [LoggerModule],
+      imports: [RobotModule],
     }).compile();
   });
 
@@ -19,8 +19,8 @@ describe('LoggerModule', () => {
     expect(module).toBeDefined();
   });
 
-  it('should have CustomLoggerService', () => {
-    const service = module.get<CustomLoggerService>(CustomLoggerService);
+  it('should have RobotService', () => {
+    const service = module.get<RobotService>(RobotService);
     expect(service).toBeDefined();
   });
 

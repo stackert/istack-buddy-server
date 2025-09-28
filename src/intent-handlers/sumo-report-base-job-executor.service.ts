@@ -10,12 +10,14 @@ import { ObservationMakerSumoSubmitActionJobReport } from './ObservationMakerSum
 
 export interface SumoJobParams {
   queryName: string;
-  subject: {
-    formId?: string;
-    submitActionId?: string;
-    submitActionType?: string;
-    submissionId?: string;
-    authProviderId?: string;
+  subjects: {
+    formId?: string[];
+    submitActionId?: string[];
+    submitActionType?: string[];
+    submissionId?: string[];
+    authProviderId?: string[];
+  };
+  dateRange: {
     startDate: string;
     endDate: string;
   };
@@ -152,9 +154,9 @@ export abstract class SumoReportBaseJobExecutor {
 
     const timestamp = this.formatDateForFilename(new Date().toISOString());
     const identifier =
-      queryParams.subject.formId ||
-      queryParams.subject.submitActionId ||
-      queryParams.subject.submissionId ||
+      queryParams.subjects.formId?.[0] ||
+      queryParams.subjects.submitActionId?.[0] ||
+      queryParams.subjects.submissionId?.[0] ||
       'unknown';
     const filename = `sumo-${queryParams.queryName}-${identifier}-${timestamp}.json`;
 
