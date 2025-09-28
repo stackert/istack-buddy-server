@@ -4,7 +4,14 @@ import { RobotIntent } from '../common/types/intent-parsing.types';
 import { ChatManagerService } from '../chat-manager/chat-manager.service';
 import { IStackInfoService } from '../istack-buddy-slack-api/istack-info.service';
 import { ObservationMakerFieldCounts } from '../common/observation-makers/ObservationMakerFieldCounts';
-import { Models, ELogLevel, ObservationMakers } from 'istack-buddy-utilities';
+import { ObservationMakerLogicValidation } from '../common/observation-makers/ObservationMakerLogicValidation';
+import { ObservationMakerCalculationValidation } from '../common/observation-makers/ObservationMakerCalculationValidation';
+import {
+  Models,
+  ELogLevel,
+  ObservationMakers,
+  IObservationExport,
+} from 'istack-buddy-utilities';
 //  ObservationMakerReader,
 const ObservationMakerReader = ObservationMakers.ObservationsReader;
 
@@ -67,36 +74,88 @@ export class ObservationJobExecutor implements IntentHandler {
       // Create form model directly from the response (not wrapped)
       const formModel = new Models.FsModelForm(formData);
 
-      // Run observation
-      const observationMaker = new ObservationMakerFieldCounts();
-      const context = { resources: { formModel } };
-      const result = await observationMaker.makeObservation(context);
-      const observationExport = observationMaker.toExport();
-      // Create reader to filter log levels
-      const reader =
-        ObservationMakerReader.fromObservationExport(observationExport);
+      // Run all three observation makers
+      const fieldCountsMaker = new ObservationMakerFieldCounts();
+      const logicValidationMaker = new ObservationMakerLogicValidation();
+      const calculationValidationMaker =
+        new ObservationMakerCalculationValidation();
 
+      const context = { resources: { formModel } };
+
+      // Get results from all three
+      const export1 = await fieldCountsMaker.makeObservation(context);
+      const export2 = await logicValidationMaker.makeObservation(context);
+      const export3 = await calculationValidationMaker.makeObservation(context);
+
+      // Accumulate log items properly
+      const accumulator: IObservationExport = {
+        observationMakerClassName: 'Accumulator',
+        logItems: [],
+        exportedAt: new Date().toISOString(),
+        version: '0.0',
+        metadata: undefined,
+      };
+
+      accumulator.logItems = accumulator.logItems.concat(export1.logItems);
+      accumulator.logItems = accumulator.logItems.concat(export2.logItems);
+      accumulator.logItems = accumulator.logItems.concat(export3.logItems);
+
+      // Create reader from accumulated results
+      const reader = ObservationMakerReader.fromObservationExport(accumulator);
       // Filter by log levels using enum
       const errors = reader.filterByLogLevel(ELogLevel.ERROR);
       const warnings = reader.filterByLogLevel(ELogLevel.WARN);
       const info = reader.filterByLogLevel(ELogLevel.INFO);
       const debug = reader.filterByLogLevel(ELogLevel.DEBUG);
 
+      // Group warnings by message type
+      const warningGroups = warnings.reduce(
+        (acc, item) => {
+          const message = item.message;
+          acc[message] = (acc[message] || 0) + 1;
+          return acc;
+        },
+        {} as Record<string, number>,
+      );
+
+      // Group errors by message type
+      const errorGroups = errors.reduce(
+        (acc, item) => {
+          const message = item.message;
+          acc[message] = (acc[message] || 0) + 1;
+          return acc;
+        },
+        {} as Record<string, number>,
+      );
+
       // Send observation results as context to robot (no response solicited)
       await this.chatManagerService.addMessageContextNoResponse(
         conversationId,
         {
           type: 'context/document',
-          payload: JSON.stringify(result.logItems, null, 2),
+          payload: JSON.stringify({ logItems: accumulator.logItems }, null, 2),
         },
       );
 
+      // Format error groups for display
+      const errorGroupText = Object.entries(errorGroups)
+        .map(([message, count]) => `  "${message}": ${count}`)
+        .join('\n');
+
+      // Format warning groups for display
+      const warningGroupText = Object.entries(warningGroups)
+        .map(([message, count]) => `  "${message}": ${count}`)
+        .join('\n');
+
       // Send summary to user
-      const summary = `Observations complete: ${result.logItems.length} total items
+      const summary = `Observations complete: ${accumulator.logItems.length} total items
 • Errors: ${errors.length}
-• Warnings: ${warnings.length}  
+• Warnings: ${warnings.length}
 • Info: ${info.length}
-• Debug: ${debug.length}`;
+• Debug: ${debug.length}
+${errorGroupText ? `Errors by type:\n${errorGroupText}` : ''}
+${warningGroupText ? `Warnings by type:\n${warningGroupText}` : ''}
+`;
 
       await this.chatManagerService.addMessageSystemNotification(
         conversationId,
