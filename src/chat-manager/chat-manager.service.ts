@@ -743,17 +743,13 @@ export class ChatManagerService {
             ...message,
             content: {
               type: 'text/markdown',
-              payload: `Thank you for your request. 
-              
-              I am working on it. I would like to take this opportunity to explain:
-              1. \@iStackBuddy [your request] (as you just did). iStackBuddy does not listen
-              to every messages sent in a thread.  It responds only to messages sent directly to it.
-              It has visibility only into messages sent to it or sent by it. Happy Stacking.
+              payload: `Thank you for your request.
 
-              2. \@iStackBuddy '/feedback' to provided ANY feedback. iStackBuddy is a community agent.
-              It is only as good as your feedback.  Send corrections, suggestions, bug reports, anything you want.
-              
-              `,
+I am working on it. I would like to take this opportunity to explain:
+
+1. I can see *only messages sent to @iStackBuddy*, so to respond please *include it*.
+
+2. */feedback* is your friend. `@iStackBuddy /feedback "say anything you want"` helps teach me, to better help you.`,
             },
           };
         }

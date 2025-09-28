@@ -298,11 +298,11 @@ export class IstackBuddySlackApiService implements OnModuleDestroy {
     message: string,
     channelId: string,
     thread_ts: string,
-  ) {
+  ): Promise<string | null> {
     // Skip sending if message is empty or undefined
     if (!message || !message.trim()) {
       this.logger.warn('Attempted to send empty message to Slack, skipping');
-      return;
+      return null;
     }
 
     try {
@@ -323,6 +323,46 @@ export class IstackBuddySlackApiService implements OnModuleDestroy {
         const responseData = await response.json();
         if (responseData.ok) {
           this.logger.log(`Message sent to Slack channel ${channelId}`);
+          return responseData.ts; // Return the timestamp
+        } else {
+          this.logger.error(`Slack API error: ${responseData.error}`);
+          return null;
+        }
+      } else {
+        this.logger.error(
+          `HTTP error: ${response.status} ${response.statusText}`,
+        );
+        return null;
+      }
+    } catch (error) {
+      this.logger.error('Error sending message to Slack:', error);
+      return null;
+    }
+  }
+
+  private async updateSlackMessage(
+    message: string,
+    channelId: string,
+    timestamp: string,
+  ): Promise<void> {
+    try {
+      const response = await fetch('https://slack.com/api/chat.update', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${process.env.SLACK_BOT_TOKEN}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          channel: channelId,
+          text: message,
+          ts: timestamp,
+        }),
+      });
+
+      if (response.ok) {
+        const responseData = await response.json();
+        if (responseData.ok) {
+          this.logger.log(`Message updated in Slack channel ${channelId}`);
         } else {
           this.logger.error(`Slack API error: ${responseData.error}`);
         }
@@ -332,8 +372,41 @@ export class IstackBuddySlackApiService implements OnModuleDestroy {
         );
       }
     } catch (error) {
-      this.logger.error('Error sending message to Slack:', error);
+      this.logger.error('Error updating message in Slack:', error);
     }
+  }
+
+  /**
+   * Check if a message looks like a final robot response
+   */
+  private isFinalRobotMessage(payload: string): boolean {
+    const text = payload.toLowerCase();
+
+    // Check for patterns that indicate final results
+    const finalPatterns = [
+      'results',
+      'summary:',
+      'analysis complete',
+      'validation results',
+      'no issues found',
+      '✅',
+      '❌',
+      '⚠️',
+      '🔍',
+      '📊',
+      'finished running',
+      'execution complete',
+    ];
+
+    return finalPatterns.some((pattern) => text.includes(pattern));
+  }
+
+  /**
+   * Mark a conversation as complete so the next message will be sent as a new message
+   */
+  public markConversationComplete(conversationId: string): void {
+    this.conversationIsComplete.set(conversationId, true);
+    this.logger.debug(`Marked conversation ${conversationId} as complete`);
   }
 
   /**
@@ -448,17 +521,75 @@ export class IstackBuddySlackApiService implements OnModuleDestroy {
    * @param threadTs The Slack thread timestamp
    * @returns A callback function for sending messages to Slack
    */
+  // Track first message timestamp and content for each conversation
+  private conversationFirstMessage: Map<string, string> = new Map();
+  private conversationMessageContent: Map<string, string> = new Map();
+  private conversationIsComplete: Map<string, boolean> = new Map();
+
   private createSlackResponseCallback(
     channel: string,
     threadTs: string,
   ): (content: { type: 'text'; payload: string }) => Promise<void> {
     return async (content: { type: 'text'; payload: string }) => {
-      // Send message to Slack (filtering now handled at broadcast level)
-      await this.sendSlackMessage(
-        content.payload,
-        channel,
-        threadTs, // this is what creates the thread
-      );
+      const conversationRecord = this.slackThreadToConversationMap[threadTs];
+      const conversationId = conversationRecord?.internalConversationId;
+
+      if (conversationId) {
+        const trackedTimestamp =
+          this.conversationFirstMessage.get(conversationId);
+
+        const isComplete =
+          this.conversationIsComplete.get(conversationId) || false;
+
+        // Check if this looks like a final robot message (contains results, emojis, or "complete")
+        const isFinalMessage = this.isFinalRobotMessage(content.payload);
+
+        if (trackedTimestamp && !isComplete && !isFinalMessage) {
+          // Update existing message by appending
+          this.logger.debug(`APPENDING to Slack message: ${trackedTimestamp}`);
+          const currentContent =
+            this.conversationMessageContent.get(conversationId) || '';
+          const appendedContent = currentContent + '\n' + content.payload;
+          this.conversationMessageContent.set(conversationId, appendedContent);
+          await this.updateSlackMessage(
+            appendedContent,
+            channel,
+            trackedTimestamp,
+          );
+        } else {
+          // Send new message (either first message or final message)
+          this.logger.debug(`SENDING new Slack message`);
+          const messageTs = await this.sendSlackMessage(
+            content.payload,
+            channel,
+            threadTs,
+          );
+          if (messageTs) {
+            if (!trackedTimestamp) {
+              // First message - track it
+              this.conversationFirstMessage.set(conversationId, messageTs);
+              this.conversationMessageContent.set(
+                conversationId,
+                content.payload,
+              );
+              this.logger.debug(
+                `Tracked first message timestamp: ${messageTs}`,
+              );
+            } else if (isFinalMessage) {
+              // Final message - clear tracking
+              this.logger.debug(
+                `Final message sent, clearing tracking for conversation: ${conversationId}`,
+              );
+              this.conversationFirstMessage.delete(conversationId);
+              this.conversationMessageContent.delete(conversationId);
+              this.conversationIsComplete.delete(conversationId);
+            }
+          }
+        }
+      } else {
+        // Fallback to regular send
+        await this.sendSlackMessage(content.payload, channel, threadTs);
+      }
     };
   }
 
