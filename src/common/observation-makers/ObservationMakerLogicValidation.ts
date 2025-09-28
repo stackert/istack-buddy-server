@@ -30,8 +30,6 @@ const otherCountIndexes = [
 
 type TOtherCountIndex = (typeof otherCountIndexes)[number];
 
-const fieldTypes = '';
-
 class ObservationMakerLogicValidation extends ObservationMakers.AbstractObservationMaker {
   protected subjectType = EObservationSubjectType.FIELD;
   protected observationClass = this.constructor.name;

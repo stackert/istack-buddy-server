@@ -12,7 +12,6 @@ import {
   ObservationMakers,
   IObservationExport,
 } from 'istack-buddy-utilities';
-//  ObservationMakerReader,
 const ObservationMakerReader = ObservationMakers.ObservationsReader;
 
 @Injectable()

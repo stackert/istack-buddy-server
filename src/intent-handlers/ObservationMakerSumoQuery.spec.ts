@@ -146,18 +146,6 @@ describe('ObservationMakerSumoReport', () => {
           /^submissionCreatedForForm(:line-item)?$/,
         );
       });
-
-      console.log(
-        '✅ All metrics match the actual data in the large report file:',
-      );
-      console.log(`  - Records: ${expectedRecordCount}`);
-      console.log(`  - Unique IPs: ${expectedUniqueIpCount}`);
-      console.log(
-        `  - Partial submissions: ${partialSubmissions} (${expectedPartialPercentage}%)`,
-      );
-      console.log(`  - Complete submissions: ${completeSubmissions}`);
-      console.log(`  - Unique referrers: ${expectedUniqueReferrerCount}`);
-      console.log(`  - Submission methods: ${expectedMethodCounts}`);
     });
 
     it('should generate accurate metrics that match the actual data in the small report file', async () => {
@@ -287,18 +275,6 @@ describe('ObservationMakerSumoReport', () => {
           /^submissionCreatedForForm(:line-item)?$/,
         );
       });
-
-      console.log(
-        '✅ All metrics match the actual data in the small report file:',
-      );
-      console.log(`  - Records: ${expectedRecordCount}`);
-      console.log(`  - Unique IPs: ${expectedUniqueIpCount}`);
-      console.log(
-        `  - Partial submissions: ${partialSubmissions} (${expectedPartialPercentage}%)`,
-      );
-      console.log(`  - Complete submissions: ${completeSubmissions}`);
-      console.log(`  - Unique referrers: ${expectedUniqueReferrerCount}`);
-      console.log(`  - Submission methods: ${expectedMethodCounts}`);
     });
   });
 });

@@ -255,7 +255,6 @@ export class ChatConversationList {
       fs.writeFileSync(filepath, JSON.stringify(messagesData, null, 2));
     } catch (error) {
       // Don't throw errors for logging - just silently fail
-      console.error('Failed to log conversation messages:', error);
     }
   }
 }

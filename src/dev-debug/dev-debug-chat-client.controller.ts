@@ -440,17 +440,14 @@ export class DevDebugChatClientController {
         
         // Listen for real-time conversation events
         socket.on('conversation_created', (data) => {
-            console.log('New conversation:', data);
             loadConversations();
         });
         
         socket.on('conversation_updated', (data) => {
-            console.log('Conversation updated:', data);
             loadConversations();
         });
         
         socket.on('conversation_robot_changed', (data) => {
-            console.log('Robot changed:', data);
             loadConversations();
         });
         
@@ -665,23 +662,19 @@ export class DevDebugChatClientController {
             userId: userId,
             userRole: 'cx-customer'
         }, (response) => {
-            console.log('Join room response:', response);
             if (response && response.success) {
                 addDebugInfo('WebSocket', 'Successfully joined conversation room', 'success');
             } else {
                 addDebugInfo('WebSocket', 'Failed to join room: ' + (response?.error || 'Unknown error'), 'error');
             }
         });
-        console.log('Joining conversation room:', conversationId, 'as user:', userId);
         
         // Debug: Log all WebSocket events
         socket.onAny((eventName, ...args) => {
-            console.log('WebSocket event:', eventName, args);
         });
         
         // Listen for new messages (both user and robot messages)
         socket.on('new_message', (data) => {
-            console.log('New message received:', data);
             
             // Handle both message formats: direct message or {message, timestamp}
             const message = data.message || data;
@@ -695,7 +688,6 @@ export class DevDebugChatClientController {
         
         // Listen for streaming chunks (real-time robot responses)
         socket.on('robot_chunk', (data) => {
-            console.log('Robot chunk received:', data);
             displayStreamingChunk(data.chunk);
             
             // Update debug panel on first chunk (streaming started)
@@ -706,7 +698,6 @@ export class DevDebugChatClientController {
         
         // Listen for robot completion
         socket.on('robot_complete', (data) => {
-            console.log('Robot completed:', data);
             completeStreaming();
             
             // Update debug panel

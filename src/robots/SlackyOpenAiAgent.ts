@@ -463,16 +463,12 @@ Need help? Just ask!`;
         }
       }
 
-      // Call onStreamFinished with minimal data
+      // Call onStreamFinished with the original message
       if (typeof callbacks.onStreamFinished === 'function') {
-        // @ts-ignore
-        callbacks.onStreamFinished({
-          content: { payload: accumulatedContent, type: 'text/plain' },
-        });
+        callbacks.onStreamFinished(message);
       }
-      // Call onStreamFinished with minimal data
+      // Call onFullMessageReceived with minimal data
       if (typeof callbacks.onFullMessageReceived === 'function') {
-        // @ts-ignore
         callbacks.onFullMessageReceived({
           content: { payload: accumulatedContent, type: 'text/plain' },
         });
@@ -1022,8 +1018,8 @@ Need help? Just ask!`;
 
       fs.writeFileSync(filepath, JSON.stringify(robotApiData, null, 2));
     } catch (error) {
-      // Don't throw errors for logging - just silently fail
-      console.error('Failed to log robot API messages:', error);
+      this.logger.error('Failed to log robot API messages:', error);
+      throw error;
     }
   }
 }

@@ -695,13 +695,6 @@ export class ChatManagerService {
       conversationId,
       clientId: `slack-${conversationId}`,
       sendMessage: slackCallback,
-      // @ts-ignore - debugging formatting issues
-      _decorateMessage: (
-        message: IConversationMessage,
-      ): IConversationMessage => {
-        return message;
-      },
-      // @ts-ignore - debugging formatting issues
       decorateMessage: (
         message: IConversationMessage,
       ): IConversationMessage | null => {
@@ -992,9 +985,7 @@ export class ChatManagerService {
     // Create enhanced callbacks for robot response
     const robotCallbacks: IStreamingCallbacks = {
       conversationId,
-      onStreamStart: (message) => {
-        console.log('onStreamStart', message);
-      },
+      onStreamStart: (message) => {},
       onStreamChunkReceived: (chunk) => {
         // Stream chunks to WebSocket clients
         if (chunk && chunk.trim() && this.getGateway()) {
@@ -1005,9 +996,7 @@ export class ChatManagerService {
           );
         }
       },
-      onStreamFinished: (message) => {
-        console.log('onStreamFinished', message);
-      },
+      onStreamFinished: (message) => {},
       onFullMessageReceived: async (message) => {
         // Add robot response to conversation and broadcast
         await this.addMessageResponseFromRobot(

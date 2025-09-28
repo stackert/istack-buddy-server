@@ -17,13 +17,9 @@ import { IStackInfoService } from './istack-info.service';
           lazyConnect: true,
         });
 
-        redis.on('connect', () => {
-          console.log('Redis connected for IStackInfoService');
-        });
+        redis.on('connect', () => {});
 
-        redis.on('error', (err) => {
-          console.error('Redis connection error for IStackInfoService:', err);
-        });
+        redis.on('error', (err) => {});
 
         return redis;
       },
