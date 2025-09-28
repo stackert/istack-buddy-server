@@ -454,33 +454,6 @@ export class ChatManagerService {
   }
 
   /**
-   * Add robot prompt (triggers robot response)
-   * Role: SYSTEM → ROBOT
-   */
-  async _addMessageRequestRobotResponse(
-    conversationId: string,
-    content: TConversationMessageContent,
-  ): Promise<void> {
-    // Use existing working robot response mechanism
-    const currentRobot =
-      this.getCurrentRobot(conversationId) || 'SlackyOpenAiAgent';
-
-    // Convert content to text/plain for robot processing
-    const robotContent = {
-      type: 'text/plain' as const,
-      payload: content.payload as string,
-    };
-
-    // THIS FUNCTION `_addMessageRequestRobotResponse(` WAS AN AI FUCK UP DOES NOT BELONG IN CODE
-
-    // await this.addMessageToGetRobotResponse(
-    //   conversationId,
-    //   robotContent,
-    //   '',
-    // );
-  }
-
-  /**
    * Add robot response message - new conversation method
    * Role: ROBOT → USER
    */
@@ -749,7 +722,7 @@ I am working on it. I would like to take this opportunity to explain:
 
 1. I can see *only messages sent to @iStackBuddy*, so to respond please *include it*.
 
-2. */feedback* is your friend. `@iStackBuddy /feedback "say anything you want"` helps teach me, to better help you.`,
+2. */feedback* is your friend. \`@iStackBuddy /feedback "say anything you want"\` helps teach me, to better help you.`,
             },
           };
         }
