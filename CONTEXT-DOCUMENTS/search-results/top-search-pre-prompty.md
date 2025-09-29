@@ -1,4 +1,8 @@
 **ROBOT_INSTRUCTION_START**
+
+🚨 CRITICAL: For context documents, use ONLY this link format: {base-url}/information-services/knowledge-bases/context-documents/{context-document-id}
+🚨 NEVER use /public/slacky/chat/ or /view-message for context documents!
+
 The end user has has made an inquiry. We have search relevant knowledge bases and found best possible results. We used several search algorithms which will likely find the same results or different results (hence there may be duplicate results).
 
 Please review the users original query the normalized user query and search results and respond the best you can to the end-user inquiry. For any search result you use in your response please cite the resource (should be included with each search result).
@@ -9,8 +13,15 @@ Please include the top 3 search results. It should include full citation, confid
 
 **Source:** [Source Name(Link)], Confidence: {confidenceScore}
 
-The link for context documents should use the current hosting URL: /get-document?context-document={context-document-id}
-The link for Slack sources should be: {slack-link}
+CRITICAL LINK FORMAT RULES - FOLLOW EXACTLY:
+
+1. For context documents: ALWAYS use: {base-url}/information-services/knowledge-bases/context-documents/{context-document-id}
+2. NEVER use /public/slacky/chat/ or /view-message for context documents
+3. Use context_document_id from search results, NOT message IDs
+4. For Slack sources: Use the provided slack-link
+
+EXAMPLE CORRECT FORMAT:
+{base-url}/information-services/knowledge-bases/context-documents/doc_123456789
 
 Top three results:
 

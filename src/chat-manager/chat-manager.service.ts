@@ -676,36 +676,51 @@ export class ChatManagerService {
 
         // Handle system/robot-prompt messages as clickable link
         if (message.content.type === 'system/robot-prompt') {
+          const shortId = message.id.slice(-4);
+          const url = `${this.getBaseUrl()}/public/slacky/chat/${message.conversationId}/view-message?messageId=${message.id}`;
           return {
             ...message,
             content: {
               type: 'text/plain',
-              payload: `[robot prompt] ${this.getBaseUrl()}/public/slacky/chat/${message.conversationId}/view-message?messageId=${message.id}`,
+              payload: `• Loading <${url}|Robot Prompt ${shortId}>`,
             },
           };
         }
 
         // Handle context/document messages as clickable link
         if (message.content.type === 'context/document') {
+          const shortId = message.id.slice(-4);
+          const url = `${this.getBaseUrl()}/public/slacky/chat/${message.conversationId}/view-message?messageId=${message.id}`;
           return {
             ...message,
             content: {
               type: 'text/plain',
-              payload: `[robot context document] ${this.getBaseUrl()}/public/slacky/chat/${message.conversationId}/view-message?messageId=${message.id}`,
+              payload: `• Loading <${url}|Context Document ${shortId}>`,
             },
           };
         }
 
         // Handle intent messages (JSON debug messages) with proper formatting
         if (message.content.type === 'system/user-intent') {
+          // Comment out JSON display - keeping for reference
+          // return {
+          //   ...message,
+          //   content: {
+          //     type: 'text/markdown',
+          //     payload:
+          //       '```json\n' +
+          //       JSON.stringify(message.content.payload, null, 2) +
+          //       '\n```',
+          //   },
+          // };
+
+          // New intent message format
+          const intentData = message.content.payload as any;
           return {
             ...message,
             content: {
               type: 'text/markdown',
-              payload:
-                '```json\n' +
-                JSON.stringify(message.content.payload, null, 2) +
-                '\n```',
+              payload: `Working on intent: *${intentData.intent}*, subIntent: *${intentData.intentData?.subIntents?.join(', ') || 'none'}*. This will take a couple of minutes, I will ping you when I am done.`,
             },
           };
         }
@@ -716,11 +731,11 @@ export class ChatManagerService {
             ...message,
             content: {
               type: 'text/markdown',
-              payload: `Thank you for your request.
+              payload: `Thank you.  Let me process. FYI:
 
-I am working on it. I would like to take this opportunity to explain:
 
 1. I can see *only messages sent to @iStackBuddy*, so to respond please *include it*.
+
 
 2. */feedback* is your friend. \`@iStackBuddy /feedback "say anything you want"\` helps teach me, to better help you.`,
             },

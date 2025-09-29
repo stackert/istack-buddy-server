@@ -294,6 +294,15 @@ export class IStackInfoService implements OnModuleDestroy {
       ),
   };
 
+  // Context document methods
+  async getContextDocument(documentId: string): Promise<any> {
+    this.logger.debug(`Getting context document: ${documentId}`);
+    return this.makeRequest<any>(
+      'GET',
+      `/information-services/knowledge-bases/context-documents/${documentId}`,
+    );
+  }
+
   // Sumo report methods
   sumoReport = {
     submitQuery: async (

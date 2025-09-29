@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { HttpModule } from '@nestjs/axios';
 import { IstackBuddySlackApiService } from './istack-buddy-slack-api.service';
 import { IstackBuddySlackApiController } from './istack-buddy-slack-api.controller';
+import { KnowledgeBasesController } from './knowledge-bases.controller';
 import { KnowledgeBaseService } from './knowledge-base.service';
 import { ChatManagerModule } from '../chat-manager/chat-manager.module';
 import { AuthenticationModule } from '../authentication/authentication.module';
@@ -19,7 +20,7 @@ import { IntentParsingService } from '../common/services/intent-parsing.service'
     AuthorizationPermissionsModule,
     UserProfileModule,
   ],
-  controllers: [IstackBuddySlackApiController],
+  controllers: [IstackBuddySlackApiController, KnowledgeBasesController],
   providers: [
     IstackBuddySlackApiService,
     KnowledgeBaseService,

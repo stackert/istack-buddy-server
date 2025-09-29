@@ -576,80 +576,6 @@ paths:
         - bearer-token: []
       tags:
         - Knowledge Base - Search
-  /information-services/knowledge-bases/context-documents/{documentId}:
-    get:
-      operationId: KnowledgeBasesController_getContextDocument
-      summary: Get Context Document by ID
-      description: Retrieve a specific context document by its unique document ID
-      parameters:
-        - name: documentId
-          required: true
-          in: path
-          description: Unique context document identifier
-          schema:
-            example: doc_123456789
-            type: string
-      responses:
-        '200':
-          description: Context document retrieved successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  context_document_id:
-                    type: string
-                    example: doc_123456789
-                  context_document_text:
-                    type: string
-                    example: Full document content...
-                  context_document_text_normalized:
-                    type: string
-                    nullable: true
-                    example: Normalized document content...
-                  keywords:
-                    type: string
-                    nullable: true
-                    example: keyword1,keyword2,keyword3
-                  nouns:
-                    type: string
-                    nullable: true
-                    example: noun1,noun2,noun3
-                  domains:
-                    type: string
-                    nullable: true
-                    example: domain1,domain2
-                  proper_nouns:
-                    type: string
-                    nullable: true
-                    example: ProperNoun1,ProperNoun2
-                  estimated_token_count:
-                    type: number
-                    example: 1500
-                  created_at:
-                    type: string
-                    format: date-time
-                    example: '2024-01-15T10:30:00Z'
-                  updated_at:
-                    type: string
-                    format: date-time
-                    example: '2024-01-20T14:45:00Z'
-                  file_path:
-                    type: string
-                    nullable: true
-                    example: core-forms-be/31000-forms-core-be-ingress.md
-                  title:
-                    type: string
-                    nullable: true
-                    example: Forms Core Backend Ingress
-        '401':
-          description: Unauthorized - invalid bearer token
-        '404':
-          description: Context document not found
-      security:
-        - bearer-token: []
-      tags:
-        - Knowledge Base - Context Documents
   /information-services/context-dynamic/account:
     post:
       operationId: ContextDynamicController_getAccount
@@ -2724,3 +2650,68 @@ components:
           example: Query optimized for performance with standard field extractions
       required:
         - estimatedQuery
+  /public/context-documents/{documentId}:
+    get:
+      operationId: ContextDocumentsController_getDocument
+      summary: Get Context Document
+      description: Retrieve a specific context document by its ID
+      parameters:
+        - name: documentId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The unique identifier of the context document
+          example: doc_789012
+      responses:
+        '200':
+          description: Context document retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  documentId:
+                    type: string
+                    example: doc_789012
+                  title:
+                    type: string
+                    example: SAML Setup Guide
+                  content:
+                    type: string
+                    example: Complete document content about authentication...
+                  normalizedContent:
+                    type: string
+                    example: Processed document text for search...
+                  metadata:
+                    type: object
+                    properties:
+                      category:
+                        type: string
+                        example: authentication
+                      lastUpdated:
+                        type: string
+                        format: date-time
+                        example: '2024-01-15T10:30:00Z'
+        '404':
+          description: Context document not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Document not found
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Internal server error
+      tags:
+        - Context Documents

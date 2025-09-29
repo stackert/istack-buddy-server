@@ -21,6 +21,10 @@ export class KnowledgeBaseJobExecutor implements IntentHandler, OnModuleInit {
   ) {}
 
   async onModuleInit() {
+    await this.loadRobotPromptTemplate();
+  }
+
+  private async loadRobotPromptTemplate(): Promise<void> {
     try {
       const promptPath = path.join(
         process.cwd(),
@@ -38,6 +42,29 @@ export class KnowledgeBaseJobExecutor implements IntentHandler, OnModuleInit {
       );
       throw error; // Fail to start if we can't load the prompt
     }
+  }
+
+  /**
+   * Get the base URL for generating links with proper fallbacks
+   */
+  private getBaseUrl(): string {
+    // Priority 1: NGROK_URL environment variable
+    if (process.env.NGROK_URL) {
+      return process.env.NGROK_URL.replace(/\/$/, ''); // Remove trailing slash if present
+    }
+
+    // Priority 2: HOST_URL environment variable
+    if (process.env.HOST_URL) {
+      return process.env.HOST_URL.replace(/\/$/, ''); // Remove trailing slash if present
+    }
+
+    // Priority 3: PORT environment variable
+    if (process.env.PORT) {
+      return `http://localhost:${process.env.PORT}`;
+    }
+
+    // Fallback to default
+    return 'http://localhost:3000';
   }
 
   getSupportedIntents(): RobotIntent[] {
@@ -88,13 +115,23 @@ export class KnowledgeBaseJobExecutor implements IntentHandler, OnModuleInit {
       const subIntent = intentData.subIntents?.[0] || 'topResults';
       const searchResults = await this.fetchSearchResults(preQuery, subIntent);
 
-      // 3. Format search results into robot context
-      const robotContext = this.formatSearchResultsIntoRobotContext(
-        searchResults,
-        preQuery,
+      // 3. Send initial status message
+      await this.chatManagerService.addMessageSystemNotification(
+        conversationId,
+        {
+          type: 'text/markdown',
+          payload: `**Searching knowledge base...**\n\nProcessing your query: "${preQuery.userPromptText || 'knowledge base search'}"\n\nThis may take a moment while we search through documentation and conversations.`,
+        },
       );
 
-      // 4. Add robot context to conversation
+      // 4. Format search results into robot context
+      const robotContext = await this.formatSearchResultsIntoRobotContext(
+        searchResults,
+        preQuery,
+        conversationId,
+      );
+
+      // 5. Add robot context to conversation
       await this.chatManagerService.addMessageAsContext(conversationId, {
         type: 'context/document',
         payload: robotContext,
@@ -183,35 +220,23 @@ export class KnowledgeBaseJobExecutor implements IntentHandler, OnModuleInit {
     }
   }
 
-  private formatSearchResultsIntoRobotContext(
+  private async formatSearchResultsIntoRobotContext(
     searchResults: any,
     preQuery: any,
-  ): string {
+    conversationId: string,
+  ): Promise<string> {
     const searchTypesExecuted = searchResults.searchTypesExecuted || [];
 
-    let prompt = `**ROBOT_INSTRUCTION_START**
-The end user has has made an inquiry. We have search relevant knowledge bases and found best possible results. We used several search algorithms which will likely find the same results or different results (hence there may be duplicate results).
+    // Reload template to get latest changes
+    await this.loadRobotPromptTemplate();
 
-Please review the users original query the normalized user query and search results and respond the best you can to the end-user inquiry. For any search result you use in your response please cite the resource (should be included with each search result).
+    // Get base URL for generating proper links
+    const baseUrl = this.getBaseUrl();
 
-If you find none of the search results are useful - it is ok to ignore. If you are not able to use any of the search results you should say that.
-
-**IMPORTANT** End the response with a positive affirmation 'We appreciate you', 'team work makes dream work', Think of something original. Also, you should ask them to use the istackbuddy /feedback feature
-
-Example Response:
-
-Based on the knowledge base search and a few things I knew already, I think ...
-
-You're the best.
-
-If you benefitted (or did not) from iStackBuddy's search, please responds with
-@iStackBuddy /feedback - 'this was pretty good but..' or 'This was the most awesome ever!'
-
-**ROBOT_INSTRUCTION_END**
-
-___SEARCH_RESULTS_START__
-
-`;
+    // Use the template from the file and replace placeholders
+    let prompt = this.robotPromptTemplate
+      .replace('{base-url}', baseUrl)
+      .replace('{conversation-id}', conversationId);
 
     // Extract key information from search results - handle both formats
     if (searchTypesExecuted.length > 0) {
