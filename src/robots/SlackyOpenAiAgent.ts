@@ -299,6 +299,13 @@ Need help? Just ask!`;
         ...messages,
       ];
 
+      // Log what gets sent to the robot
+      const timestamp = Math.floor(Date.now() / 1000);
+      require('fs').writeFileSync(
+        `logs/robot-debug-logs/${timestamp}.${this.constructor.name}.json`,
+        JSON.stringify(apiMessages, null, 2),
+      );
+
       // Log exactly what messages are being sent to the robot API
       this.logRobotApiMessages(
         (callbacks as any).conversationId || 'unknown',

@@ -529,8 +529,18 @@ export class IstackBuddySlackApiService implements OnModuleDestroy {
   private createSlackResponseCallback(
     channel: string,
     threadTs: string,
-  ): (content: { type: 'text'; payload: string }) => Promise<void> {
-    return async (content: { type: 'text'; payload: string }) => {
+  ): (content: {
+    type: 'text';
+    payload: string;
+    fromRole?: string;
+    toRole?: string;
+  }) => Promise<void> {
+    return async (content: {
+      type: 'text';
+      payload: string;
+      fromRole?: string;
+      toRole?: string;
+    }) => {
       const conversationRecord = this.slackThreadToConversationMap[threadTs];
       const conversationId = conversationRecord?.internalConversationId;
 
@@ -541,8 +551,9 @@ export class IstackBuddySlackApiService implements OnModuleDestroy {
         const isComplete =
           this.conversationIsComplete.get(conversationId) || false;
 
-        // Check if this looks like a final robot message (contains results, emojis, or "complete")
-        const isFinalMessage = this.isFinalRobotMessage(content.payload);
+        // Check if this is a final robot message (robot responding to user)
+        const isFinalMessage =
+          content.fromRole === 'robot' && content.toRole === 'user';
 
         if (trackedTimestamp && !isComplete && !isFinalMessage) {
           // Update existing message by appending

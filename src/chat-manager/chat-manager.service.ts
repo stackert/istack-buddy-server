@@ -37,7 +37,12 @@ interface ConversationClient {
   type: 'slack' | 'websocket';
   conversationId: string;
   clientId: string;
-  sendMessage: (content: { type: 'text'; payload: string }) => Promise<void>;
+  sendMessage: (content: {
+    type: 'text';
+    payload: string;
+    fromRole?: string;
+    toRole?: string;
+  }) => Promise<void>;
   decorateMessage: (
     message: IConversationMessage,
   ) => IConversationMessage | null;
@@ -544,6 +549,8 @@ export class ChatManagerService {
             await client.sendMessage({
               type: 'text',
               payload: decoratedMessage.content.payload as string,
+              fromRole: message.fromRole,
+              toRole: message.toRole,
             });
           } else {
             this.logger.debug(
@@ -801,7 +808,12 @@ export class ChatManagerService {
       type: 'websocket',
       conversationId,
       clientId,
-      sendMessage: async (content: { type: 'text'; payload: string }) => {
+      sendMessage: async (content: {
+        type: 'text';
+        payload: string;
+        fromRole?: string;
+        toRole?: string;
+      }) => {
         // Send via WebSocket gateway
         if (this.gateway) {
           this.gateway.broadcastToConversation(conversationId, 'new_message', {
