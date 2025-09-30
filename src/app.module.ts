@@ -33,7 +33,6 @@ import { FileManagerModule } from './file-manager/file-manager.module';
   controllers: [AppController],
   providers: [
     AppService,
-    // Global interceptors (order matters - correlation first)
     {
       provide: APP_INTERCEPTOR,
       useClass: CorrelationInterceptor,

@@ -108,12 +108,22 @@ export class KnowledgeBaseJobExecutor implements IntentHandler, OnModuleInit {
       if (!query) {
         throw new Error('originalUserPrompt is required but was not provided');
       }
+
       const preQuery =
         await this.iStackInfoService.knowledgeBase.preQuery(query);
 
       // 2. Fetch search results using the specific sub-intent
       const subIntent = intentData.subIntents?.[0] || 'topResults';
       const searchResults = await this.fetchSearchResults(preQuery, subIntent);
+
+      // Log search results to file
+      await this.logSearchResults(
+        conversationId,
+        query,
+        preQuery,
+        subIntent,
+        searchResults,
+      );
 
       // 3. Send initial status message
       await this.chatManagerService.addMessageSystemNotification(
@@ -158,6 +168,96 @@ export class KnowledgeBaseJobExecutor implements IntentHandler, OnModuleInit {
           payload: `❌ **Knowledge Base Search Error**: ${error.message}`,
         },
       );
+    }
+  }
+
+  private async logSearchResults(
+    conversationId: string,
+    query: string,
+    preQuery: any,
+    subIntent: string,
+    searchResults: any,
+  ): Promise<void> {
+    console.log('LOGGING SEARCH RESULTS - CALLED');
+    try {
+      const timestamp = Math.floor(Date.now() / 1000);
+      const logData = {
+        timestamp,
+        conversationId,
+        originalQuery: query,
+        preQuery,
+        searchResults: {
+          subIntent,
+          results: searchResults,
+        },
+      };
+
+      const filename = `${timestamp}.search-results.json`;
+      const filepath = path.join(
+        process.cwd(),
+        'logs',
+        'search-results',
+        filename,
+      );
+
+      // Ensure directory exists
+      await fs.mkdir(path.dirname(filepath), { recursive: true });
+
+      await fs.writeFile(filepath, JSON.stringify(logData, null, 2));
+      this.logger.log(`Search results logged to ${filename}`);
+    } catch (error) {
+      this.logger.error(`Failed to log search results: ${error.message}`);
+    }
+  }
+
+  private buildSearchRequest(preQuery: any, subIntent: string): any {
+    switch (subIntent) {
+      case 'semanticSearch':
+        return {
+          userPromptText: preQuery.userPromptText,
+          maxConfidence: 1.0,
+          limit: 10,
+        };
+
+      case 'keywordSearch':
+        return {
+          keywords: preQuery.keywords || [],
+          maxConfidence: 1.0,
+          limit: 10,
+        };
+
+      case 'nounSearch':
+        return {
+          nouns: preQuery.nouns || [],
+          maxConfidence: 1.0,
+          limit: 10,
+        };
+
+      case 'properNounSearch':
+        return {
+          properNouns: preQuery.properNouns || [],
+          maxConfidence: 1.0,
+          limit: 10,
+        };
+
+      case 'domainSearch':
+        return {
+          domains: preQuery.domains || [],
+          maxConfidence: 1.0,
+          limit: 10,
+        };
+
+      case 'freeTextSearch':
+        return {
+          freeText: preQuery.freeText ||
+            preQuery.keywords || ['text', 'search'],
+          maxConfidence: 1.0,
+          limit: 10,
+        };
+
+      case 'topResults':
+      default:
+        return preQuery;
     }
   }
 
