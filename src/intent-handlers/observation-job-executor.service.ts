@@ -14,6 +14,8 @@ import {
 } from 'istack-buddy-utilities';
 import { readFileSync } from 'fs';
 import { join } from 'path';
+import * as fs from 'fs';
+import * as path from 'path';
 
 const ObservationMakerReader = ObservationMakers.ObservationsReader;
 
@@ -122,7 +124,47 @@ export class ObservationJobExecutor implements IntentHandler {
       const info = reader.filterByLogLevel(ELogLevel.INFO);
       const debug = reader.filterByLogLevel(ELogLevel.DEBUG);
 
-      // Group warnings by message type
+      // Create summary matrix: summaryCounts[logLevel][message] = count
+      const summaryCounts: Record<string, Record<string, number>> = {
+        error: {},
+        warn: {},
+        info: {},
+        debug: {},
+      };
+
+      // Count all observations by log level and message
+      for (const item of accumulator.logItems) {
+        const level = item.logLevel.toLowerCase();
+        const message = item.message;
+        if (!summaryCounts[level]) {
+          summaryCounts[level] = {};
+        }
+        summaryCounts[level][message] =
+          (summaryCounts[level][message] || 0) + 1;
+      }
+
+      // Format summary for display
+      const formatSummarySection = (
+        level: string,
+        counts: Record<string, number>,
+      ): string => {
+        if (Object.keys(counts).length === 0) return '';
+        const entries = Object.entries(counts)
+          .map(([msg, count]) => `  "${msg}": ${count}`)
+          .join('\n');
+        return `\n${level.toUpperCase()}:\n${entries}`;
+      };
+
+      const summaryText = `Observation Summary Matrix:
+Total Observations: ${accumulator.logItems.length}
+By Level:
+- Errors: ${errors.length}
+- Warnings: ${warnings.length}
+- Info: ${info.length}
+- Debug: ${debug.length}
+${formatSummarySection('error', summaryCounts.error)}${formatSummarySection('warn', summaryCounts.warn)}${formatSummarySection('info', summaryCounts.info)}${formatSummarySection('debug', summaryCounts.debug)}`;
+
+      // Group warnings by message type (keep for backward compatibility)
       const warningGroups = warnings.reduce(
         (acc, item) => {
           const message = item.message;
@@ -132,7 +174,7 @@ export class ObservationJobExecutor implements IntentHandler {
         {} as Record<string, number>,
       );
 
-      // Group errors by message type
+      // Group errors by message type (keep for backward compatibility)
       const errorGroups = errors.reduce(
         (acc, item) => {
           const message = item.message;
@@ -142,21 +184,124 @@ export class ObservationJobExecutor implements IntentHandler {
         {} as Record<string, number>,
       );
 
-      // Send observation results as context to robot (no response solicited)
+      // ALWAYS write observation file for user download (simple JSON, not pretty)
+      const observationData = JSON.stringify({
+        logItems: accumulator.logItems,
+      });
+
+      // Write to session-public directory
+      const timestamp = Date.now();
+      const filename = `observations-form-${formId}-${timestamp}.json`;
+      const sessionPublicDir = path.join(
+        'file-storage-server',
+        'session-public',
+        conversationId,
+      );
+
+      // Ensure directory exists
+      fs.mkdirSync(sessionPublicDir, { recursive: true });
+
+      // Write file
+      const filePath = path.join(sessionPublicDir, filename);
+      fs.writeFileSync(filePath, observationData);
+
+      // Generate public URL
+      const baseUrl =
+        process.env.ISTACK_BUDDY_BACKEND_SERVER_BASE_URL ||
+        `http://localhost:${process.env.ISTACK_BUDDY_BACKEND_SERVER_HOST_PORT || 3500}`;
+      const fileLink = `${baseUrl}/files/session-public/${conversationId}/${filename}`;
+
+      this.logger.log(`Observation file written: ${filename}`);
+
+      // ALWAYS add summary matrix to context (regardless of size)
       await this.chatManagerService.addMessageContextNoResponse(
         conversationId,
         {
           type: 'context/document',
-          payload: JSON.stringify({ logItems: accumulator.logItems }, null, 2),
+          payload: summaryText,
         },
       );
 
-      // Add observation makers documentation as context
-      await this.chatManagerService.addMessageContextNoResponse(
+      this.logger.log('Added observation summary matrix to context');
+
+      // Calculate token counts for tiered context logic
+      const allObservationsTokens = Math.ceil(observationData.length / 4);
+      const errorsAndWarningsData = JSON.stringify({
+        logItems: [...errors, ...warnings],
+      });
+      const errorsAndWarningsTokens = Math.ceil(
+        errorsAndWarningsData.length / 4,
+      );
+      const docTokens = Math.ceil(OBSERVATION_MAKERS_CONTENT.length / 4);
+
+      // Get robot's context window size (default to 128000 for GPT-4)
+      const contextWindowSize = 128000;
+      const contextThreshold = contextWindowSize * 0.75; // 75% threshold
+
+      // Tiered context-add logic
+      if (allObservationsTokens + docTokens < contextThreshold) {
+        // Add ALL observations
+        this.logger.log(
+          `Adding all observations to context (${allObservationsTokens} tokens)`,
+        );
+
+        await this.chatManagerService.addMessageContextNoResponse(
+          conversationId,
+          {
+            type: 'context/document',
+            payload: observationData,
+          },
+        );
+
+        await this.chatManagerService.addMessageContextNoResponse(
+          conversationId,
+          {
+            type: 'context/document',
+            payload: OBSERVATION_MAKERS_CONTENT,
+          },
+        );
+      } else if (errorsAndWarningsTokens + docTokens < contextThreshold) {
+        // Add ONLY errors and warnings
+        this.logger.log(
+          `Adding only errors and warnings to context (${errorsAndWarningsTokens} tokens)`,
+        );
+
+        await this.chatManagerService.addMessageContextNoResponse(
+          conversationId,
+          {
+            type: 'context/document',
+            payload: errorsAndWarningsData,
+          },
+        );
+
+        await this.chatManagerService.addMessageContextNoResponse(
+          conversationId,
+          {
+            type: 'context/document',
+            payload: OBSERVATION_MAKERS_CONTENT,
+          },
+        );
+      } else {
+        // No observations in context due to size
+        this.logger.warn(
+          `Observation results too large for context (${allObservationsTokens} tokens). No observations added.`,
+        );
+
+        await this.chatManagerService.addMessageSystemNotification(
+          conversationId,
+          {
+            type: 'text/markdown',
+            payload: `⚠️ No observations added to context due to size (${allObservationsTokens.toLocaleString()} tokens).`,
+          },
+        );
+      }
+
+      // ALWAYS provide link to full observation file
+      await this.chatManagerService.addMessageSystemNotification(
         conversationId,
         {
-          type: 'context/document',
-          payload: OBSERVATION_MAKERS_CONTENT,
+          type: 'text/markdown',
+          payload: `📊 **Full Observation Results:** [Download JSON](${fileLink})`,
         },
       );
 

@@ -31,6 +31,7 @@ import {
   IConversationMessageOpenAI,
   Participant,
 } from './interfaces/message.interface';
+import { AbstractRobotChat } from 'src/robots/AbstractRobotChat';
 
 // Client Registration Interfaces
 interface ConversationClient {
@@ -359,6 +360,14 @@ export class ChatManagerService {
         `Error in handleRobotStreamingResponse for robot ${robotName} in conversation ${conversationId}:`,
         error,
       );
+
+      // Send error notification to user
+      await this.addMessageErrorNotification(conversationId, {
+        type: 'text/markdown',
+        payload: `❌ **Robot Streaming Error (${robotName})**: ${error.message}`,
+      });
+
+      // Also call the callback's onError handler for any additional handling
       await callbacks.onError(error);
     }
   }
@@ -971,7 +980,9 @@ export class ChatManagerService {
     await this.storeMessage(userMessage);
 
     // Get the specified robot
-    const robot = this.robotService.getRobotByName(robotName);
+    const robot = this.robotService.getRobotByName(
+      robotName,
+    ) as AbstractRobotChat;
     if (!robot) {
       throw new Error(
         `Failed to get currentRobot from conversation, robot name: ${robotName}`,
@@ -1001,13 +1012,16 @@ export class ChatManagerService {
           robot.name,
         );
       },
-      onError: (error) => {
+      onError: async (error) => {
         this.logger.error(`Robot ${robotName} error:`, error);
+
+        // Send error notification to user via Slack and WebSocket
+        await this.addMessageErrorNotification(conversationId, {
+          type: 'text/markdown',
+          payload: `❌ **Robot Error (${robotName})**: ${error.message}`,
+        });
       },
     };
-    const x = this.chatConversationListService
-      .getConversationById(conversationId)
-      ?.getFilteredRobotMessages();
 
     // Trigger robot response with conversation history
     await (robot as any).acceptMessageStreamResponse(
