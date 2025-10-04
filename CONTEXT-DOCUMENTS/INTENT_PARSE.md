@@ -71,6 +71,15 @@ Determine if the message continues a previous conversation:
 
 **CRITICAL RULE**: If Previous intent shows "No previous intent - likely new conversation", then isConversationContinuation MUST be false, regardless of how the message sounds.
 
+**CONTINUATION SCENARIOS**:
+
+- User asks for "submission report" or "run submission report" AFTER getting form context → isConversationContinuation: true
+- User asks for "dynamic context" or "form context" AFTER a form analysis → isConversationContinuation: true
+- User asks for "observations" AFTER getting form context → isConversationContinuation: true
+- User asks for "for the past week" or date ranges AFTER a report request → isConversationContinuation: true
+
+**SUBJECT PASS-THROUGH**: When isConversationContinuation is true, ALWAYS pass through subjects from the previous intent if current subjects are null or empty.
+
 ## Response Format
 
 Return ONLY a valid JSON object with this exact structure:
@@ -230,6 +239,28 @@ Return ONLY a valid JSON object with this exact structure:
     "isConversationContinuation": true
   },
   "devDebugRecommendedExecutor": "ContextDynamicJobExecutor",
+  "devDebugRecommendedRobot": "SlackyOpenAiAgent"
+}
+```
+
+### Submission Report Continuation
+
+**Note**: When a user asks for a "submission report" or "run submission report" after getting form context, they want a report for the same form that was just brought into context.
+
+```json
+{
+  "intent": "generateSumoReport",
+  "intentData": {
+    "originalUserPrompt": "run submission report",
+    "subIntents": ["submissionCreatedForForm"],
+    "subjects": { "formId": ["5375703"] },
+    "dateRange": {
+      "startDate": "2025-10-04T00:00:01-04:00",
+      "endDate": "2025-10-04T23:59:59-04:00"
+    },
+    "isConversationContinuation": true
+  },
+  "devDebugRecommendedExecutor": "SumoReportSingleJobExecutor",
   "devDebugRecommendedRobot": "SlackyOpenAiAgent"
 }
 ```

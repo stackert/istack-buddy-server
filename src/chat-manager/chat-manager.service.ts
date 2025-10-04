@@ -1297,10 +1297,38 @@ export class ChatManagerService {
       conversationId: conversationId,
     };
 
+    // Debug: Log conversation context
+    const lastIntent = this.getLastIntent(conversationId);
+    this.logger.log(`=== INTENT PARSING DEBUG ===`);
+    this.logger.log(`ConversationId: ${conversationId}`);
+    this.logger.log(`LastIntent: ${JSON.stringify(lastIntent, null, 2)}`);
+    this.logger.log(`CurrentRobot: ${conversationContext.currentRobot}`);
+    this.logger.log(
+      `LastRobotMessage: ${conversationContext.lastRobotMessageText}`,
+    );
+    this.logger.log(`MessageText: ${messageText}`);
+    this.logger.log(`============================`);
+
     const intentResult = await this.parseIntentFromUserMessage(
       messageText,
       conversationContext,
     );
+
+    // Log intent to file for debugging
+    const timestamp = Math.floor(Date.now() / 1000);
+    const fs = require('fs');
+    const path = require('path');
+
+    // Ensure logs directory exists
+    const logsDir = 'logs/dev-debug-intents';
+    fs.mkdirSync(logsDir, { recursive: true });
+
+    // Write intent to file
+    const filename = `${timestamp}.intent.json`;
+    const filePath = path.join(logsDir, filename);
+    fs.writeFileSync(filePath, JSON.stringify(intentResult, null, 2));
+
+    this.logger.log(`Intent logged to: ${filePath}`);
 
     if (!('error' in intentResult)) {
       // STEP 3: ADD INTENT TO CONVERSATION, BROADCAST
@@ -1338,22 +1366,11 @@ export class ChatManagerService {
       {},
     );
 
-    // Look for the most recent intent JSON message
+    // Look for the most recent intent message
     for (let i = allMessages.length - 1; i >= 0; i--) {
       const message = allMessages[i];
-      if (
-        message.fromRole === UserRole.SYSTEM &&
-        typeof message.content.payload === 'string' &&
-        message.content.payload.trim().startsWith('{') &&
-        message.content.payload.includes('"intent"')
-      ) {
-        try {
-          const intentJson = JSON.parse(message.content.payload);
-          return intentJson as IntentParsingResponse;
-        } catch (error) {
-          this.logger.warn('Failed to parse intent JSON:', error);
-          continue;
-        }
+      if (message.content.type === 'system/user-intent') {
+        return message.content.payload as IntentParsingResponse;
       }
     }
 
