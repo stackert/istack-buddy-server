@@ -736,7 +736,7 @@ export class ChatManagerService {
             ...message,
             content: {
               type: 'text/markdown',
-              payload: `Working on intent: *${intentData.intent}*, subIntent: *${intentData.intentData?.subIntents?.join(', ') || 'none'}*. This will take a couple of minutes, I will ping you when I am done.`,
+              payload: `\nWorking on intent: *${intentData.intent}*, subIntent: *${intentData.intentData?.subIntents?.join(', ') || 'none'}*. This will take a couple of minutes, I will ping you when I am done.\n`,
             },
           };
         }
@@ -749,10 +749,7 @@ export class ChatManagerService {
               type: 'text/markdown',
               payload: `Thank you.  Let me process. FYI:
 
-
 1. I can see *only messages sent to @iStackBuddy*, so to respond please *include it*.
-
-
 2. */feedback* is your friend. \`@iStackBuddy /feedback "say anything you want"\` helps teach me, to better help you.`,
             },
           };

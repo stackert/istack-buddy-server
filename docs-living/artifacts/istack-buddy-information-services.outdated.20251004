@@ -432,7 +432,7 @@ paths:
                         properties:
                           conversation_id:
                             type: string
-                            example: 68579039-fc52-49ee-b855-dc26351b7173
+                            example: conv_123456
                           conversationText:
                             type: string
                             example: >-
@@ -443,7 +443,7 @@ paths:
                             example: Processed conversation text for search...
                           context_document_id:
                             type: string
-                            example: 9837429f-4ecb-4d24-8db9-9652f98d037e
+                            example: doc_789012
                           contextDocumentText:
                             type: string
                             example: Complete document content about authentication...
@@ -504,9 +504,7 @@ paths:
                             properties:
                               text:
                                 type: string
-                                example: >-
-                                  conversation:
-                                  68579039-fc52-49ee-b855-dc26351b7173
+                                example: 'conversation: conv_123456'
                               link:
                                 type: string
                                 example: https://slack.com/archives/...
@@ -589,7 +587,7 @@ paths:
           in: path
           description: Unique context document identifier
           schema:
-            example: 9837429f-4ecb-4d24-8db9-9652f98d037e
+            example: doc_123456789
             type: string
       responses:
         '200':
@@ -601,7 +599,7 @@ paths:
                 properties:
                   context_document_id:
                     type: string
-                    example: 9837429f-4ecb-4d24-8db9-9652f98d037e
+                    example: doc_123456789
                   context_document_text:
                     type: string
                     example: Full document content...
@@ -644,14 +642,14 @@ paths:
                     type: string
                     nullable: true
                     example: Forms Core Backend Ingress
-        '400':
-          description: Invalid document ID format - must be a valid UUID
         '401':
           description: Unauthorized - invalid bearer token
         '404':
           description: Context document not found
       security:
         - bearer-token: []
+      tags:
+        - Knowledge Base - Context Documents
   /information-services/context-dynamic/account:
     post:
       operationId: ContextDynamicController_getAccount
@@ -1432,7 +1430,7 @@ paths:
             **Validation:**
             - Set `isValidationOnly: true` to validate without execution
             - Returns validation errors as 400 Bad Request
-            
+
       parameters: []
       requestBody:
         required: true
@@ -1514,7 +1512,7 @@ paths:
             - `validationNote`: Instructions for manual validation in Sumo Logic
             
             **Security Note:** Raw Sumo Logic message format is NOT exposed via this endpoint.
-            
+
       parameters:
         - name: jobId
           required: true
@@ -1932,7 +1930,7 @@ paths:
             
             **Note:** This endpoint only estimates queries - it does NOT execute them.
             Use the `/context-sumo-report/query/submit` endpoint to actually run queries.
-            
+
       parameters: []
       requestBody:
         required: true
@@ -1987,7 +1985,7 @@ info:
           
           ## Authentication
           All endpoints require Bearer token authentication.
-        
+
   version: 1.0.0
   contact: {}
 tags:
@@ -2005,7 +2003,7 @@ tags:
             - **Conversation Annotation** - Tag discussions with rich technical context
             - **Content Enhancement** - Add valuable metadata to conversations and documents
             - **Context Enrichment** - Transform raw queries into detailed technical observations
-          
+
   - name: Knowledge Base - Search
     description: |2-
 
@@ -2024,14 +2022,14 @@ tags:
             **Knowledge Bases Searched:**
             - **SLACK** - Internal team conversations and discussions  
             - **CONTEXT-DOCUMENTS** - Technical documentation and guides
-          
+
   - name: Knowledge Base - Meta
     description: |2-
 
             **System Metadata and Configuration**
             
             Retrieve available channels, domains, and knowledge base listings for configuration and discovery.
-          
+
   - name: Sumo Report - Jobs
     description: |2-
 
@@ -2044,21 +2042,21 @@ tags:
             
             **Important:** Only executes **known/stored queries** - see `/query-list` for available reports.
             Cannot execute custom or ad-hoc queries for security reasons.
-          
+
   - name: Sumo Report - Metadata
     description: |2-
 
             **Query Discovery & Validation Support**
             
             Endpoints to discover available queries and validate input parameters before job submission.
-          
+
   - name: Sumo Report - Files
     description: |2-
 
             **Result File Management**
             
             Manage and retrieve query result files with TTL-based cleanup and metadata tracking.
-          
+
   - name: Sumo Logic Syntax
     description: |2-
 
@@ -2068,7 +2066,7 @@ tags:
             
             **Note:** This service only **estimates** and **helps** with query syntax - it does NOT execute queries.
             Use `/context-sumo-report` endpoints to execute actual queries.
-          
+
   - name: Context Dynamic
     description: |2-
 
@@ -2082,7 +2080,7 @@ tags:
             - **Form** - Get live form configuration and metadata  
             - **Auth Provider** - Get live authentication provider details
             - **Health** - Service availability check (check first!)
-          
+
 servers:
   - url: http://localhost:3505
     description: Development Server

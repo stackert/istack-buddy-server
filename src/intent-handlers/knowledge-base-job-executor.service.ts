@@ -67,6 +67,22 @@ export class KnowledgeBaseJobExecutor implements IntentHandler, OnModuleInit {
     return 'http://localhost:3000';
   }
 
+  private transformCitationLink(link: string, baseUrl: string): string {
+    if (!link) return '';
+
+    // If it's already a full URL (Slack links), return as-is
+    if (link.startsWith('http')) {
+      return link;
+    }
+
+    // If it's a relative document link, make it point to our server
+    if (link.startsWith('/knowledge-bases/context-documents/')) {
+      return `${baseUrl}/information-services${link}`;
+    }
+
+    return link;
+  }
+
   getSupportedIntents(): RobotIntent[] {
     return [
       {
@@ -99,7 +115,7 @@ export class KnowledgeBaseJobExecutor implements IntentHandler, OnModuleInit {
         conversationId,
         {
           type: 'text/markdown',
-          payload: `**Knowledge Base Search Request Received**\n\n**Searching normalized text:** "${intentData.originalUserPrompt}"\nProcessing query...`,
+          payload: `\n**Knowledge Base Search Request Received**\n\n**Searching normalized text:** "${intentData.originalUserPrompt}"\nProcessing query...`,
         },
       );
 
@@ -130,7 +146,7 @@ export class KnowledgeBaseJobExecutor implements IntentHandler, OnModuleInit {
         conversationId,
         {
           type: 'text/markdown',
-          payload: `**Searching knowledge base...**\n\nProcessing your query: "${preQuery.userPromptText || 'knowledge base search'}"\n\nThis may take a moment while we search through documentation and conversations.`,
+          payload: `**Searching knowledge base...**\n\n**Semantic Search (preQuery.text):** "${preQuery.userPromptText || 'knowledge base search'}"\n\nThis may take a moment while we search through documentation and conversations.`,
         },
       );
 
@@ -362,7 +378,7 @@ confidence: ${result.confidence || 'Unknown'}
 citations: {
   text: "${result.citations?.text || ''}"
   conversation: "${result.citations?.conversation || ''}"
-  link: "${result.citations?.link || ''}"
+  link: "${this.transformCitationLink(result.citations?.link, baseUrl) || ''}"
 }
 
 __${searchType}.${knowledgeBase}[${index}]_END__
@@ -393,7 +409,7 @@ confidence: ${result.confidence || 'Unknown'}
 citations: {
   text: "${result.citations?.text || ''}"
   conversation: "${result.citations?.conversation || ''}"
-  link: "${result.citations?.link || ''}"
+  link: "${this.transformCitationLink(result.citations?.link, baseUrl) || ''}"
 }
 
 __individualSearch.${knowledgeBase}[${index}]_END__
