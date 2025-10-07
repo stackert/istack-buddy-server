@@ -3,10 +3,7 @@
 # Test script for context-dynamic form-fields-observations-source endpoint
 echo "Testing Context Dynamic Form Fields Observations Source Endpoint"
 echo "================================================================="
-# 6221310 <-- calculation anti pattern, numeric
-# 6222493 <-- calculation anti pattern, date
-# 6221303 <-- calculation anti pattern, table
-# 5375703 <-- logic anti pattern
+
 # Call form-fields-observations-source endpoint
 curl -s -X POST "http://192.168.1.3:3505/information-services/context-dynamic/form-fields-observations-source" \
   -H "Content-Type: application/json" \
