@@ -22,6 +22,7 @@ export class SumoReportSingleJobExecutor
           'submissionCreatedForForm',
           'authProviderMetrics',
           'submitActionSelectedForExecution',
+          'theHinkyReport',
         ],
         description: 'Generate single Sumo Logic report',
       },
@@ -122,51 +123,137 @@ export class SumoReportSingleJobExecutor
     originalQuery: string,
   ): Promise<void> {
     try {
+      const recordCount =
+        processedData.records?.length || processedData.messageCount || 0;
+
+      // Check if this is the Hinky report
+      if (processedData.queryName === 'theHinkyReport') {
+        await this.sendHinkyReportResults(
+          fileLink,
+          processedData,
+          conversationId,
+          originalQuery,
+        );
+        return;
+      }
+
+      // Handle all other reports (existing logic)
       const observationText = await this.runObservationAnalysis(processedData);
 
-      // Determine if this is small context (1 record) or large context (>1 record)
-      const recordCount = processedData.records?.length || 0;
-      const isSmallContext = recordCount <= 1;
+      const firstRecord =
+        Array.isArray(processedData.records) && processedData.records.length > 0
+          ? `\n\n📋 First Record:\n\n\`\`\`json\n${JSON.stringify(processedData.records[0], null, 2)}\n\`\`\``
+          : '';
 
-      // DO NOT REMOVE THIS COMMENT - VERY VERY IMPORTANT
-      // We don't need to send to robot, we just need to send to user
-      // In the future the need may arise but not today
-      // DO NOT REMOVE THIS COMMENT - VERY VERY IMPORTANT
+      const timeFrom = processedData.timeRange?.from || '';
+      const timeTo = processedData.timeRange?.to || '';
 
-      // Send results message to conversation (works for both small and large context)
-      const combinedMessage = `
-      _ROBOT_INSTRUCTIONS_START_
-      Review ${observationText} and formulate a meaningful response to the user.
-      Please decorate the response suitable for slack formatting.
-      _ROBOT_INSTRUCTIONS_END_
-      
-      
-## Sumo Logic Report Results:
+      const messageBody =
+        `## Sumo Logic Report Results\n\n` +
+        `**Query Name**: ${processedData.queryName}\n` +
+        (processedData.executedQuery
+          ? `\n🎯 **Executed Query**:\n\n\`\`\`\n${processedData.executedQuery}\n\`\`\`\n`
+          : '') +
+        (timeFrom || timeTo
+          ? `\n🗓️ **Date Range**: ${timeFrom} to ${timeTo}\n`
+          : '') +
+        `\n📊 **Records Found**: ${recordCount}\n` +
+        (observationText
+          ? `\n### Analysis Summary\n${observationText}\n`
+          : '') +
+        `${firstRecord}\n\n` +
+        `📁 **Download File**: [Open results](${fileLink})\n` +
+        `\n*Report generated successfully.*`;
 
-**Query:** "${originalQuery}"
-
-📊*Analysis Summary*:
-${observationText}
-
-📁 *Download File*:
-[Download Report Data](${fileLink})
-
-*Report generated successfully.*`;
-
-      // Send completion message
-      await this.chatManagerService.addMessageToGetRobotResponse(
+      // Send directly to user (do not invoke robot)
+      await this.chatManagerService.addMessageSystemNotification(
         conversationId,
         {
           type: 'text/markdown',
-          payload: combinedMessage,
+          payload: messageBody,
         },
       );
 
       this.logger.log(
-        `Sent combined results message to conversation ${conversationId} (toRole: ${isSmallContext ? 'ROBOT' : 'USER'})`,
+        `Sent Sumo results to user for conversation ${conversationId}`,
       );
     } catch (error) {
       this.logger.error(`Failed to send combined results: ${error.message}`);
+      throw error;
+    }
+  }
+
+  private async sendHinkyReportResults(
+    fileLink: string,
+    processedData: any,
+    conversationId: string,
+    originalQuery: string,
+  ): Promise<void> {
+    try {
+      const recordCount =
+        processedData.records?.length || processedData.messageCount || 0;
+
+      // Send system notification with custom Hinky report message
+      const systemMessage =
+        `## 🔍 Hinky Report Generated\n\n` +
+        `Got the Hinky report and found **${recordCount}** messages. I am now reviewing the contents...\n\n` +
+        `📁 **Download File**: [Open results](${fileLink})\n\n` +
+        `*Analyzing message patterns and relationships...*`;
+
+      await this.chatManagerService.addMessageSystemNotification(
+        conversationId,
+        {
+          type: 'text/markdown',
+          payload: systemMessage,
+        },
+      );
+
+      // Add Hinky report data as context document
+      const hinkyReportDataContext = `
+# HINKY REPORT DATA
+
+**Original User Query:** ${originalQuery}
+
+**Record Count:** ${recordCount}
+
+**Download Link:** ${fileLink}
+
+## Report Data
+
+${JSON.stringify(processedData, null, 2)}
+`;
+
+      await this.chatManagerService.addMessageAsContext(conversationId, {
+        type: 'context/document',
+        payload: hinkyReportDataContext,
+      });
+
+      // Read the Hinky report robot prompt
+      const fs = require('fs');
+      const path = require('path');
+      const hinkyPromptPath = path.join(
+        process.cwd(),
+        'CONTEXT-DOCUMENTS',
+        'HINKY_REPORT.md',
+      );
+      const hinkyPrompt = fs.readFileSync(hinkyPromptPath, 'utf8');
+
+      // Send robot prompt
+      await this.chatManagerService.addMessageToGetRobotResponse(
+        conversationId,
+        {
+          type: 'text/plain',
+          payload: hinkyPrompt,
+        },
+      );
+
+      this.logger.log(
+        `Sent Hinky report results and robot context for conversation ${conversationId}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to send Hinky report results: ${error.message}`,
+      );
       throw error;
     }
   }

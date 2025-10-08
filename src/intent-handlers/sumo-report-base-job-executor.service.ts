@@ -53,6 +53,7 @@ export abstract class SumoReportBaseJobExecutor {
       submissionCreatedForForm: 'submissionCreatedForForm',
       submitActionSelectedForExecution: 'submitActionSelectedForExecution',
       authProviderMetrics: 'authProviderMetrics',
+      theHinkyReport: 'theHinkyReport',
     };
     return mapping[subIntent] || 'submitActionReport';
   }
@@ -80,6 +81,7 @@ export abstract class SumoReportBaseJobExecutor {
       },
       STORAGE_CLASS.TEMP,
     );
+    this.logger.log(`Stored results to TEMP with fileId=${localFileId}`);
 
     return localFileId;
   }
@@ -116,10 +118,37 @@ export abstract class SumoReportBaseJobExecutor {
           }
 
           if (status === 'completed') {
-            // Get results and resolve
-            const resultsResponse =
-              await this.iStackInfoService.sumoReport.jobs.getResults(jobId);
-            resolve(resultsResponse);
+            // Get results with small retry/backoff to handle eventual consistency
+            const maxFetchAttempts = 8;
+            const backoffMs = 750;
+            for (let i = 1; i <= maxFetchAttempts; i++) {
+              try {
+                const resultsResponse =
+                  await this.iStackInfoService.sumoReport.jobs.getResults(
+                    jobId,
+                  );
+                this.logger.log(
+                  `Fetched results for job ${jobId} on attempt ${i} with ${(resultsResponse as any).records?.length || 0} records`,
+                );
+                resolve(resultsResponse);
+                return;
+              } catch (fetchErr: any) {
+                const errMsg = fetchErr?.message || String(fetchErr);
+                this.logger.warn(
+                  `Results fetch not ready (job ${jobId}) attempt ${i}/${maxFetchAttempts}: ${errMsg}`,
+                );
+                if (i === maxFetchAttempts) {
+                  reject(
+                    new Error(
+                      `Results not available after completion (job ${jobId}) after ${maxFetchAttempts} attempts`,
+                    ),
+                  );
+                  return;
+                }
+                // Wait with linear backoff before retrying
+                await new Promise((r) => setTimeout(r, backoffMs * i));
+              }
+            }
           } else if (status === 'failed') {
             reject(new Error(`Sumo job ${jobId} failed`));
           } else if (attempts >= maxAttempts) {
@@ -178,7 +207,11 @@ export abstract class SumoReportBaseJobExecutor {
     const baseUrl =
       process.env.ISTACK_BUDDY_BACKEND_SERVER_BASE_URL ||
       `http://localhost:${process.env.ISTACK_BUDDY_BACKEND_SERVER_HOST_PORT || 3500}`;
-    return `${baseUrl}/files/session-public/${conversationId}/${filename}`;
+    const publicUrl = `${baseUrl}/files/session-public/${conversationId}/${filename}`;
+    this.logger.log(
+      `Moved Sumo results to session-public path=${filePath} url=${publicUrl}`,
+    );
+    return publicUrl;
   }
 
   protected async processJobData(
@@ -186,11 +219,31 @@ export abstract class SumoReportBaseJobExecutor {
     queryName: string,
   ): Promise<ProcessedSumoData> {
     const fileBuffer = await this.fileManagerService.get(fileId);
-    const parsedData = JSON.parse(fileBuffer.toString());
+    const raw = JSON.parse(fileBuffer.toString());
+
+    // Normalize various shapes into a common structure
+    const executedQuery = raw.executedQuery || raw.results?.executedQuery || '';
+    const recordSchema = raw.recordSchema || raw.results?.recordSchema || {};
+    const records = raw.records || raw.results?.records || raw.results || [];
+    const messageCount =
+      raw.messageCount ||
+      raw.recordCount ||
+      (Array.isArray(records) ? records.length : 0);
+    const argumentsList = raw.arguments || raw.results?.arguments || [];
+    const timeRange = raw.timeRange ||
+      raw.results?.timeRange || { from: '', to: '' };
+    const validationNote =
+      raw.validationNote || raw.results?.validationNote || '';
 
     return {
-      ...parsedData,
-      queryName: queryName,
+      executedQuery,
+      recordSchema,
+      records: Array.isArray(records) ? records : [],
+      messageCount,
+      queryName,
+      arguments: Array.isArray(argumentsList) ? argumentsList : [],
+      timeRange,
+      validationNote,
     };
   }
 

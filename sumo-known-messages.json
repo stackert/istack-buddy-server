@@ -1,0 +1,2774 @@
+{
+  "messages": [
+    {
+      "message": "About to run approval action from email for submission {$submissionId}",
+      "sumoEventText": "submission_run_approval_actions",
+      "phpConstantKey": "RUN_APPROVAL_ACTIONS",
+      "fileReferences": [],
+      "aiComments": "Logs when approval actions are initiated from email notifications for form submissions. This occurs when approvers click approval links in email notifications to approve or reject submissions. Includes submission ID for tracking approval workflow efficiency, monitoring email-based approval patterns, and ensuring proper submission approval processing through email interfaces.",
+      "domains": [
+        "BACKEND:WORKFLOW",
+        "BACKEND:EMAILS:NOTIFICATION"
+      ]
+    },
+    {
+      "message": "Account field {field} for {updatedId} changed successfully",
+      "sumoEventText": "account_deactivated",
+      "phpConstantKey": "ACCOUNT_DEACTIVATED",
+      "fileReferences": [],
+      "aiComments": "Logs successful updates to account field values in the system. This occurs when account settings or properties are modified through admin interfaces or API calls. Includes field name and updated ID for tracking account configuration changes, monitoring account management activities, and ensuring proper audit trails for account modifications.",
+      "domains": [
+        "BACKEND:AUTHENTICATION",
+        "API:V2:USER"
+      ]
+    },
+    {
+      "message": "Account WOULD HAVE BEEN Deactivated",
+      "sumoEventText": "account_deactivated",
+      "phpConstantKey": "ACCOUNT_DEACTIVATED",
+      "fileReferences": [
+        "lib/Formstack/WebhookEndpoint/SiftScience.php:51"
+      ],
+      "aiComments": "Logs when account deactivation would have occurred but was prevented by system logic. This occurs during fraud detection or security analysis when accounts are flagged for deactivation but the action is blocked. Includes account details for tracking potential security threats, monitoring fraud prevention effectiveness, and ensuring proper account security management without disrupting legitimate users.",
+      "domains": [
+        "BACKEND:SECURITY",
+        "BACKEND:AUTHENTICATION"
+      ]
+    },
+    {
+      "message": "After syncing form submission counts",
+      "sumoEventText": "ab_form_error",
+      "phpConstantKey": "AB_FORM_ERROR",
+      "fileReferences": [
+        "lib/Formstack/Job/SubmissionCountSyncJob.php:87"
+      ],
+      "aiComments": "Logs completion of form submission count synchronization operations. This occurs when background jobs finish updating form submission counters to ensure data consistency. Includes sync details for tracking submission count accuracy, monitoring data synchronization performance, and ensuring proper form analytics and reporting data integrity across the platform.",
+      "domains": [
+        "BACKEND:ANALYTICS",
+        "BACKEND:QUEUES"
+      ]
+    },
+    {
+      "message": "AiPromptFormCreated for {formId}",
+      "sumoEventText": "",
+      "phpConstantKey": "",
+      "fileReferences": [],
+      "aiComments": "Logs when an AI-generated form is successfully created using AI prompts. This occurs during the AI form creation workflow when users request forms to be generated automatically. Includes form ID, creator details, prompt used, AI response, and success status for tracking AI form generation effectiveness and usage patterns.",
+      "domains": [
+        "FORM-BUILDER:AI",
+        "FORM-BUILDER"
+      ]
+    },
+    {
+      "message": "AmazonS3 failed to get bucket location",
+      "sumoEventText": "s3",
+      "phpConstantKey": "S3",
+      "fileReferences": [
+        "lib/Formstack/Model/SubmitAction/AmazonS3.php:277"
+      ],
+      "aiComments": "Logs when Amazon S3 operations fail to retrieve bucket location information. This occurs during S3 integration operations when the system cannot determine the correct AWS region for bucket operations. Includes S3 error details for tracking S3 integration issues, monitoring AWS service connectivity, and ensuring proper S3 submit action functionality across different AWS regions.",
+      "domains": [
+        "BACKEND:SUBMIT-ACTIONS:AMAZON-S3:UPLOAD-FAILED",
+        "CONNECTIVITY"
+      ]
+    },
+    {
+      "message": "API V2 call to {method}",
+      "sumoEventText": "api_call",
+      "phpConstantKey": "API_CALL",
+      "fileReferences": [],
+      "aiComments": "Logs API V2 endpoint calls made to the Formstack API. This occurs when external applications or integrations make requests to API endpoints. Includes method name and request details for monitoring API usage patterns, performance tracking, and ensuring proper API access control and rate limiting.",
+      "domains": [
+        "API:V2",
+        "BACKEND:INGRESS:API-V2"
+      ]
+    },
+    {
+      "message": "API V2025 call 3",
+      "sumoEventText": "v2025_api_call",
+      "phpConstantKey": "V2025_API_CALL",
+      "fileReferences": [],
+      "aiComments": "Logs API V2025 endpoint calls made to the latest Formstack API version. This occurs when external applications or integrations make requests to the newest API endpoints. Includes method name and request details for monitoring API V2025 usage patterns, tracking API migration progress, and ensuring proper API versioning and backward compatibility management.",
+      "domains": [
+        "API:2025",
+        "BACKEND:INGRESS:API-2025"
+      ]
+    },
+    {
+      "message": "Applying manual SAML settings",
+      "sumoEventText": "auth_provider_saml",
+      "phpConstantKey": "AUTH_PROVIDER_SAML",
+      "fileReferences": [
+        "lib/Formstack/Service/AuthProviderService.php:345"
+      ],
+      "aiComments": "Logs when manual SAML configuration settings are applied to authentication providers. This occurs when administrators manually configure SAML identity provider settings for SSO authentication. Includes SAML configuration details for tracking SSO setup activities, monitoring SAML provider management, and ensuring proper enterprise authentication configuration across different identity providers.",
+      "domains": [
+        "LIVE-FORM:AUTHENTICATION:SAML-CONFIGURATION",
+        "BACKEND:AUTHENTICATION"
+      ]
+    },
+    {
+      "message": "Approval actions run for approved submission: {$submissionId}",
+      "sumoEventText": "submission_run_approval_actions",
+      "phpConstantKey": "RUN_APPROVAL_ACTIONS",
+      "fileReferences": [],
+      "aiComments": "Logs when approval actions are executed for submissions that have been approved. This occurs during the approval workflow when approved submissions trigger subsequent actions or notifications. Includes submission ID for tracking approval workflow completion, monitoring approval action execution, and ensuring proper submission processing after approval decisions are made.",
+      "domains": [
+        "BACKEND:WORKFLOW",
+        "SUBMISSION:EGRESS:SUBMIT-ACTION"
+      ]
+    },
+    {
+      "message": "Approval marked as approved",
+      "sumoEventText": "submission_run_approval_actions",
+      "phpConstantKey": "RUN_APPROVAL_ACTIONS",
+      "fileReferences": [
+        "lib/Formstack/Model/Submission.php:325"
+      ],
+      "aiComments": "Logs when submission approvals are marked as approved in the system. This occurs when approvers approve form submissions through the approval workflow interface. Includes approval details for tracking approval decisions, monitoring approval workflow efficiency, and ensuring proper submission approval status management across different approval processes.",
+      "domains": [
+        "BACKEND:WORKFLOW",
+        "SUBMISSION:VALIDATION"
+      ]
+    },
+    {
+      "message": "Approval successfully added for {submissionApprover} on {submissionId}",
+      "sumoEventText": "submission_run_approval_actions",
+      "phpConstantKey": "RUN_APPROVAL_ACTIONS",
+      "fileReferences": [],
+      "aiComments": "Logs when approval records are successfully added to submissions in the approval workflow. This occurs when approvers are assigned to review specific form submissions. Includes approver and submission IDs for tracking approval assignments, monitoring approval workflow setup, and ensuring proper approval process management and notification delivery to assigned approvers.",
+      "domains": [
+        "BACKEND:WORKFLOW",
+        "BACKEND:EMAILS:NOTIFICATION"
+      ]
+    },
+    {
+      "message": "AuthorizeNetClient API call",
+      "sumoEventText": "api_call",
+      "phpConstantKey": "API_CALL",
+      "fileReferences": [],
+      "aiComments": "Logs API calls made to Authorize.Net payment processing services. This occurs during payment processing operations when the system communicates with Authorize.Net for transaction processing. Includes API call details for tracking payment processing activities, monitoring payment gateway connectivity, and ensuring proper payment transaction handling and security compliance.",
+      "domains": [
+        "BACKEND:SUBMIT-ACTIONS:PAYMENTS",
+        "CONNECTIVITY"
+      ]
+    },
+    {
+      "message": "AuthProvider created",
+      "sumoEventText": "authprovider_user_fetch_exception",
+      "phpConstantKey": "USER_ACTIVITY_AUTHPROVIDER_USER_FETCH_EXCEPTION",
+      "fileReferences": [
+        "lib/Formstack/Service/AuthProviderService.php:83"
+      ],
+      "aiComments": "Logs when authentication providers are successfully created in the system. This occurs when administrators set up new SSO authentication providers for enterprise authentication. Includes provider details for tracking authentication provider setup, monitoring SSO configuration activities, and ensuring proper enterprise authentication infrastructure management across different identity providers.",
+      "domains": [
+        "BACKEND:AUTHENTICATION",
+        "LIVE-FORM:AUTHENTICATION:SSO-SETUP"
+      ]
+    },
+    {
+      "message": "AuthProvider deleted",
+      "sumoEventText": "authprovider_user_fetch_exception",
+      "phpConstantKey": "USER_ACTIVITY_AUTHPROVIDER_USER_FETCH_EXCEPTION",
+      "fileReferences": [
+        "lib/Formstack/Service/AuthProviderService.php:109"
+      ],
+      "aiComments": "Logs when authentication providers are successfully deleted from the system. This occurs when administrators remove SSO authentication providers from enterprise authentication configurations. Includes provider details for tracking authentication provider removal, monitoring SSO configuration changes, and ensuring proper enterprise authentication infrastructure cleanup and security management.",
+      "domains": [
+        "BACKEND:AUTHENTICATION",
+        "LIVE-FORM:AUTHENTICATION:SSO-SETUP"
+      ]
+    },
+    {
+      "message": "Bad emails filtered",
+      "sumoEventText": "",
+      "phpConstantKey": "",
+      "fileReferences": [
+        "lib/Formstack/Job/SendEmailJob.php:560"
+      ],
+      "aiComments": "Logs when invalid email addresses are filtered out during email sending operations. This occurs when the email service validates recipient lists and removes malformed or invalid email addresses before attempting delivery. Includes details about which emails were filtered to help identify data quality issues and prevent delivery failures.",
+      "domains": [
+        "BACKEND:EMAILS",
+        "BACKEND:VALIDATION"
+      ]
+    },
+    {
+      "message": "Before syncing form submission counts",
+      "sumoEventText": "ab_form_error",
+      "phpConstantKey": "AB_FORM_ERROR",
+      "fileReferences": [
+        "lib/Formstack/Job/SubmissionCountSyncJob.php:36"
+      ],
+      "aiComments": "Logs the start of form submission count synchronization operations. This occurs when background jobs begin updating form submission counters to ensure data consistency. Includes sync details for tracking submission count synchronization initiation, monitoring data consistency operations, and ensuring proper form analytics and reporting data integrity across the platform.",
+      "domains": [
+        "BACKEND:ANALYTICS",
+        "BACKEND:QUEUES"
+      ]
+    },
+    {
+      "message": "BoxnetClient API call",
+      "sumoEventText": "api_call",
+      "phpConstantKey": "API_CALL",
+      "fileReferences": [],
+      "aiComments": "Logs API calls made to Box.net cloud storage services. This occurs during Box integration operations when the system communicates with Box for file storage and management. Includes API call details for tracking Box integration activities, monitoring cloud storage connectivity, and ensuring proper file management functionality across Box submit actions and integrations.",
+      "domains": [
+        "FORM-BUILDER:INTEGRATION:BOX",
+        "CONNECTIVITY"
+      ]
+    },
+    {
+      "message": "Bulk Google Sheets Submit Action success",
+      "sumoEventText": "opensearch_index_bulk",
+      "phpConstantKey": "OPENSEARCH_INDEX_BULK",
+      "fileReferences": [
+        "lib/Formstack/Model/SubmitAction/GoogleSpreadsheets.php:1216"
+      ],
+      "aiComments": "Logs successful completion of bulk Google Sheets submit actions for multiple submissions. This occurs when form submissions are processed in batches to write data to Google Sheets spreadsheets. Includes bulk operation details for tracking Google Sheets integration performance, monitoring bulk data processing efficiency, and ensuring proper spreadsheet data synchronization across multiple submissions.",
+      "domains": [
+        "SUBMISSION:EGRESS:SUBMIT-ACTION",
+        "FORM-BUILDER:INTEGRATION:GOOGLE-SHEETS"
+      ]
+    },
+    {
+      "message": "Caching large value",
+      "sumoEventText": "cache_large_object",
+      "phpConstantKey": "CACHE_LARGE_OBJECT",
+      "fileReferences": [
+        "lib/Formstack/Cache/Backend/Redis.php:545"
+      ],
+      "aiComments": "Logs when large data values are cached in the Redis cache system. This occurs when the system stores large objects or data structures in cache for performance optimization. Includes cache details for tracking large object caching patterns, monitoring cache memory usage, and ensuring proper cache performance optimization for large data operations across the platform.",
+      "domains": [
+        "BACKEND:OBSERVABILITY",
+        "BACKEND:THROTTLING"
+      ]
+    },
+    {
+      "message": "Changed state of account addon holding of conversionKit",
+      "sumoEventText": "form_encryption_changed",
+      "phpConstantKey": "FORM_ENCRYPTION_CHANGED",
+      "fileReferences": [],
+      "aiComments": "Logs when the ConversionKit addon state is changed for account addon management. This occurs when administrators enable or disable the ConversionKit integration addon for accounts. Includes addon state details for tracking addon configuration changes, monitoring integration addon usage, and ensuring proper addon lifecycle management across different account configurations.",
+      "domains": [
+        "FORM-BUILDER:INTEGRATION",
+        "BACKEND:AUTHENTICATION"
+      ]
+    },
+    {
+      "message": "Changed state of account addon holding of fieldPrefill",
+      "sumoEventText": "form_encryption_changed",
+      "phpConstantKey": "FORM_ENCRYPTION_CHANGED",
+      "fileReferences": [],
+      "aiComments": "Logs when the Field Prefill addon state is changed for account addon management. This occurs when administrators enable or disable the Field Prefill integration addon for accounts. Includes addon state details for tracking addon configuration changes, monitoring field prefill functionality usage, and ensuring proper addon lifecycle management across different account configurations.",
+      "domains": [
+        "FORM-BUILDER:INTEGRATION",
+        "FORM-BUILDER:FIELD"
+      ]
+    },
+    {
+      "message": "Changed state of account addon holding of portals",
+      "sumoEventText": "form_encryption_changed",
+      "phpConstantKey": "FORM_ENCRYPTION_CHANGED",
+      "fileReferences": [],
+      "aiComments": "Logs when the Portals addon state is changed for account addon management. This occurs when administrators enable or disable the Portals integration addon for accounts. Includes addon state details for tracking addon configuration changes, monitoring portal functionality usage, and ensuring proper addon lifecycle management across different account configurations.",
+      "domains": [
+        "FORM-BUILDER:INTEGRATION",
+        "BACKEND:AUTHENTICATION"
+      ]
+    },
+    {
+      "message": "Changed state of account addon holding of workflow",
+      "sumoEventText": "form_encryption_changed",
+      "phpConstantKey": "FORM_ENCRYPTION_CHANGED",
+      "fileReferences": [],
+      "aiComments": "Logs when the Workflow addon state is changed for account addon management. This occurs when administrators enable or disable the Workflow integration addon for accounts. Includes addon state details for tracking addon configuration changes, monitoring workflow functionality usage, and ensuring proper addon lifecycle management across different account configurations.",
+      "domains": [
+        "BACKEND:WORKFLOW",
+        "FORM-BUILDER:INTEGRATION"
+      ]
+    },
+    {
+      "message": "Changing Message Visibility Timeout",
+      "sumoEventText": "pusher_message_sent",
+      "phpConstantKey": "PUSHER_MESSAGE_SENT",
+      "fileReferences": [
+        "lib/Formstack/Worker.php:215"
+      ],
+      "aiComments": "Logs when message visibility timeout is changed in the queue system. This occurs when workers adjust the visibility timeout for queue messages to prevent message loss during processing. Includes timeout details for tracking queue message management, monitoring worker message processing efficiency, and ensuring proper queue message lifecycle management across the distributed worker system.",
+      "domains": [
+        "BACKEND:QUEUES",
+        "BACKEND:OBSERVABILITY"
+      ]
+    },
+    {
+      "message": "Checkbox default value is already an array",
+      "sumoEventText": "checkbox_default_value_is_array",
+      "phpConstantKey": "CHECKBOX_DEFAULT_VALUE_IS_ARRAY",
+      "fileReferences": [
+        "lib/Formstack/Dto/Forms/Live/DefaultValue/DefaultValueCheckboxDto.php:27"
+      ],
+      "aiComments": "Logs when checkbox field default values are already in array format during form processing. This occurs when the system processes checkbox field configurations and detects that default values are already properly formatted as arrays. Includes field details for tracking checkbox field processing, monitoring form field configuration handling, and ensuring proper checkbox field data structure management.",
+      "domains": [
+        "FORM-BUILDER:FIELD:CHECKBOX",
+        "SUBMISSION:VALIDATION:FIELD:CHECKBOX"
+      ]
+    },
+    {
+      "message": "Checking for unique values on field {fieldId} for form {formId} took {deltaTimeMilliseconds}",
+      "sumoEventText": "fsid_could_not_add_user_because_email_not_unique",
+      "phpConstantKey": "FSID_COULD_NOT_ADD_USER_BECAUSE_EMAIL_NOT_UNIQUE",
+      "fileReferences": [],
+      "aiComments": "Logs the completion of unique value validation checks for form fields with performance timing. This occurs when the system validates field uniqueness constraints during form submission processing. Includes field ID, form ID, and processing time for tracking field validation performance, monitoring form submission processing efficiency, and ensuring proper field uniqueness constraint enforcement.",
+      "domains": [
+        "SUBMISSION:VALIDATION:UNIQUE-VIOLATION",
+        "FORM-BUILDER:LOGIC:UNIQUE"
+      ]
+    },
+    {
+      "message": "Confirmation Email {confirmationEmailId} created successfully",
+      "sumoEventText": "confirmation_email_created",
+      "phpConstantKey": "USER_ACTIVITY_CONFIRMATION_EMAIL_CREATED",
+      "fileReferences": [],
+      "aiComments": "Logs successful creation of confirmation email configurations for forms. This occurs when users set up confirmation emails to be sent to form submitters after successful submission. Includes confirmation email ID for tracking confirmation email setup activities, monitoring email configuration management, and ensuring proper confirmation email functionality across different form configurations.",
+      "domains": [
+        "FORM-BUILDER:EMAIL:CONFIRMATION",
+        "BACKEND:EMAILS:CONFIRMATION"
+      ]
+    },
+    {
+      "message": "Confirmation Email setting {field} for {confirmationEmailId} changed successfully",
+      "sumoEventText": "confirmation_email_created",
+      "phpConstantKey": "USER_ACTIVITY_CONFIRMATION_EMAIL_CREATED",
+      "fileReferences": [],
+      "aiComments": "Logs successful updates to confirmation email settings for existing confirmation email configurations. This occurs when users modify confirmation email properties such as subject, content, or recipient settings. Includes field name and confirmation email ID for tracking confirmation email configuration changes, monitoring email setting management, and ensuring proper confirmation email functionality updates.",
+      "domains": [
+        "FORM-BUILDER:EMAIL:CONFIRMATION",
+        "BACKEND:EMAILS:CONFIRMATION"
+      ]
+    },
+    {
+      "message": "Could not send email to {recipient} : {errorMessage}",
+      "sumoEventText": "send_email",
+      "phpConstantKey": "SEND_EMAIL",
+      "fileReferences": [],
+      "aiComments": "Logs email delivery failures when the system cannot send emails to specific recipients. This occurs when email sending operations fail due to invalid recipients, delivery issues, or email service problems. Includes recipient and error message details for tracking email delivery issues, monitoring email service health, and ensuring proper email delivery troubleshooting and resolution.",
+      "domains": [
+        "BACKEND:EMAILS",
+        "CONNECTIVITY"
+      ]
+    },
+    {
+      "message": "Created new Form Authentication AuthProvider",
+      "sumoEventText": "ai_prompt_form_created",
+      "phpConstantKey": "AI_PROMPT_FORM_CREATED",
+      "fileReferences": [
+        "lib/Formstack/Controller/FormAuthentication/FormAuthenticationListController.php:52"
+      ],
+      "aiComments": "Logs successful creation of form authentication providers for form-level authentication. This occurs when administrators set up authentication providers specifically for individual forms to control access. Includes provider details for tracking form authentication setup, monitoring form-level security configuration, and ensuring proper form access control management across different authentication methods.",
+      "domains": [
+        "LIVE-FORM:AUTHENTICATION:FORM-LEVEL",
+        "BACKEND:AUTHENTICATION"
+      ]
+    },
+    {
+      "message": "Created new ScheduledSearchReindex task",
+      "sumoEventText": "ai_prompt_form_created",
+      "phpConstantKey": "AI_PROMPT_FORM_CREATED",
+      "fileReferences": [
+        "lib/Formstack/Service/ScheduledSearchReindexService.php:59"
+      ],
+      "aiComments": "Logs successful creation of scheduled search reindexing tasks for OpenSearch index maintenance. This occurs when administrators schedule form or account reindexing operations to maintain search index consistency. Includes task details for tracking search index maintenance scheduling, monitoring OpenSearch index health, and ensuring proper search functionality across the platform.",
+      "domains": [
+        "BACKEND:SEARCH:OPENSEARCH",
+        "BACKEND:QUEUES"
+      ]
+    },
+    {
+      "message": "Deleted Indexed Submission Document {$submissionId}",
+      "sumoEventText": "ai_prompt_form_deleted",
+      "phpConstantKey": "AI_PROMPT_FORM_DELETED",
+      "fileReferences": [],
+      "aiComments": "Logs successful deletion of submission documents from OpenSearch search indexes. This occurs when submissions are deleted and their corresponding search index entries are removed. Includes submission ID for tracking search index cleanup operations, monitoring OpenSearch index maintenance, and ensuring proper search index consistency when submissions are removed from the system.",
+      "domains": [
+        "BACKEND:SEARCH:OPENSEARCH",
+        "BACKEND:DELETION:SOFT"
+      ]
+    },
+    {
+      "message": "Deleted S3 object",
+      "sumoEventText": "s3",
+      "phpConstantKey": "S3",
+      "fileReferences": [
+        "lib/Formstack/Cron/S3Cleanup/S3FileService.php:42",
+        "lib/Formstack/Utility/S3FileMigrator/S3FileMigrationTask.php:260"
+      ],
+      "aiComments": "Logs successful deletion of objects from Amazon S3 storage. This occurs during S3 cleanup operations or when files are removed from S3 storage. Includes S3 object details for tracking S3 storage management, monitoring file cleanup operations, and ensuring proper S3 storage lifecycle management and cost optimization across the platform.",
+      "domains": [
+        "BACKEND:FILES:STORAGE",
+        "BACKEND:DELETION:SOFT"
+      ]
+    },
+    {
+      "message": "Deleting Form Authentication AuthProvider",
+      "sumoEventText": "ab_form_error",
+      "phpConstantKey": "AB_FORM_ERROR",
+      "fileReferences": [
+        "lib/Formstack/Controller/FormAuthentication/FormAuthenticationListController.php:81"
+      ],
+      "aiComments": "Logs when form authentication providers are being deleted from the system. This occurs when administrators remove form-level authentication providers to change form access control settings. Includes provider details for tracking form authentication provider removal, monitoring form security configuration changes, and ensuring proper form access control management during authentication provider lifecycle changes.",
+      "domains": [
+        "LIVE-FORM:AUTHENTICATION",
+        "BACKEND:AUTHENTICATION"
+      ]
+    },
+    {
+      "message": "Downloaded submission file {submissionDataId}",
+      "sumoEventText": "submission_file_downloaded",
+      "phpConstantKey": "SUBMISSION_FILE_DOWNLOADED",
+      "fileReferences": [],
+      "aiComments": "Logs when submission files are successfully downloaded by users. This occurs when users download file attachments or uploaded files from form submissions. Includes submission data ID for tracking file download activities, monitoring file access patterns, and ensuring proper file download security and audit trails across different submission file types.",
+      "domains": [
+        "BACKEND:FILES:STORAGE",
+        "SUBMISSION:VALIDATION"
+      ]
+    },
+    {
+      "message": "Downloaded submission file {submissionDataId} via API",
+      "sumoEventText": "submission_file_downloaded",
+      "phpConstantKey": "SUBMISSION_FILE_DOWNLOADED",
+      "fileReferences": [],
+      "aiComments": "Logs when submission files are downloaded through API calls by external applications or integrations. This occurs when third-party systems or applications download files from form submissions via the Formstack API. Includes submission data ID for tracking API-based file download activities, monitoring API file access patterns, and ensuring proper API file download security and audit trails.",
+      "domains": [
+        "API:V2:FILES",
+        "BACKEND:FILES:STORAGE"
+      ]
+    },
+    {
+      "message": "Dropbox using new app keys",
+      "sumoEventText": "",
+      "phpConstantKey": "",
+      "fileReferences": [
+        "lib/Formstack/Model/SubmitAction/Dropbox.php:362"
+      ],
+      "aiComments": "Logs when Dropbox integration successfully uses the new OAuth app credentials during token refresh operations. This occurs when the system attempts to refresh expired Dropbox access tokens and the new client credentials work properly. Indicates successful migration to updated Dropbox API credentials and helps track OAuth credential transitions.",
+      "domains": [
+        "FORM-BUILDER:INTEGRATION:DROPBOX",
+        "CONNECTIVITY:AUTHENTICATION"
+      ]
+    },
+    {
+      "message": "Dropbox using old app keys",
+      "sumoEventText": "",
+      "phpConstantKey": "",
+      "fileReferences": [
+        "lib/Formstack/Model/SubmitAction/Dropbox.php:371"
+      ],
+      "aiComments": "Logs when Dropbox integration falls back to using legacy OAuth app credentials after new credentials fail. This occurs when token refresh fails with new credentials and the system automatically retries with the previous app keys. Indicates credential migration issues and helps track which integrations still rely on legacy OAuth configurations.",
+      "domains": [
+        "FORM-BUILDER:INTEGRATION:DROPBOX",
+        "CONNECTIVITY:AUTHENTICATION"
+      ]
+    },
+    {
+      "message": "DropboxClient API call",
+      "sumoEventText": "api_call",
+      "phpConstantKey": "API_CALL",
+      "fileReferences": [],
+      "aiComments": "Logs API calls made to Dropbox cloud storage services. This occurs during Dropbox integration operations when the system communicates with Dropbox for file storage and management. Includes API call details for tracking Dropbox integration activities, monitoring cloud storage connectivity, and ensuring proper file management functionality across Dropbox submit actions and integrations.",
+      "domains": [
+        "FORM-BUILDER:INTEGRATION:DROPBOX",
+        "CONNECTIVITY"
+      ]
+    },
+    {
+      "message": "Email prepared for delivery for {gearmanUnique}",
+      "sumoEventText": "cron_emailqueue",
+      "phpConstantKey": "CRON_EMAIL_QUEUE",
+      "fileReferences": [],
+      "aiComments": "Logs when emails are prepared for delivery in the email queue system. This occurs when email jobs are queued for background processing and delivery. Includes Gearman unique identifier for tracking email queue processing, monitoring email delivery pipeline efficiency, and ensuring proper email job management and delivery scheduling across the distributed email system.",
+      "domains": [
+        "BACKEND:EMAILS",
+        "BACKEND:QUEUES"
+      ]
+    },
+    {
+      "message": "Embedded form with custom header or footer loaded",
+      "sumoEventText": "embedded_form_render_custom_header_footer",
+      "phpConstantKey": "EMBEDDED_FORM_RENDER_CUSTOM_HEADER_FOOTER",
+      "fileReferences": [
+        "lib/Formstack/Controller/Form/FormViewController.php:172"
+      ],
+      "aiComments": "Logs when embedded forms are loaded with custom header or footer content. This occurs when forms are embedded on external websites with custom styling or branding elements. Includes form details for tracking embedded form customization usage, monitoring form embedding patterns, and ensuring proper form presentation and branding across different external websites and integrations.",
+      "domains": [
+        "LIVE-FORM:EMBED",
+        "LIVE-FORM:RENDER"
+      ]
+    },
+    {
+      "message": "Empty recipients email list",
+      "sumoEventText": "model_update_empty_original",
+      "phpConstantKey": "INTERNAL_MODEL_INVALID_UPDATE_CALL",
+      "fileReferences": [
+        "lib/Formstack/Job/SendEmailJob.php:108"
+      ],
+      "aiComments": "Logs when email sending operations encounter empty recipient lists during email job processing. This occurs when email jobs are processed but no valid recipients are found in the recipient list. Includes email job details for tracking email processing issues, monitoring email configuration problems, and ensuring proper email recipient validation and error handling across different email types and configurations.",
+      "domains": [
+        "BACKEND:EMAILS",
+        "BACKEND:VALIDATION"
+      ]
+    },
+    {
+      "message": "Ending session",
+      "sumoEventText": "cron_invalidate_expired_sessions",
+      "phpConstantKey": "CRON_INVALIDATE_EXPIRED_SESSIONS",
+      "fileReferences": [
+        "lib/Formstack/Job/AnalyticsEndSessionJob.php:98"
+      ],
+      "aiComments": "Logs when user sessions are ended or invalidated in the system. This occurs when sessions expire, users log out, or sessions are manually terminated for security purposes. Includes session details for tracking session lifecycle management, monitoring user authentication patterns, and ensuring proper session security and cleanup across different user types and authentication methods.",
+      "domains": [
+        "BACKEND:AUTHENTICATION",
+        "BACKEND:ANALYTICS"
+      ]
+    },
+    {
+      "message": "Error processing authProvider {authProviderId} metadata, but continuing with auth",
+      "sumoEventText": "ab_form_error",
+      "phpConstantKey": "AB_FORM_ERROR",
+      "fileReferences": [],
+      "aiComments": "Logs when authentication provider metadata processing encounters errors but authentication continues. This occurs when there are issues with auth provider configuration or metadata parsing but the authentication process can still proceed. Includes auth provider ID for tracking authentication provider issues, monitoring SSO configuration problems, and ensuring proper authentication fallback handling across different identity providers.",
+      "domains": [
+        "LIVE-FORM:AUTHENTICATION:SAML-CONFIGURATION",
+        "BACKEND:AUTHENTICATION"
+      ]
+    },
+    {
+      "message": "Error trying to unserialize field data",
+      "sumoEventText": "ab_form_error",
+      "phpConstantKey": "AB_FORM_ERROR",
+      "fileReferences": [
+        "lib/Formstack/Field/FieldType.php:1186"
+      ],
+      "aiComments": "Logs when field data unserialization fails during form field processing. This occurs when the system attempts to deserialize stored field data but encounters corrupted or invalid serialized data. Includes field details for tracking field data corruption issues, monitoring form field data integrity, and ensuring proper field data serialization and deserialization handling across different field types.",
+      "domains": [
+        "FORM-BUILDER:FIELD",
+        "BACKEND:DATA-AT-REST:DECRYPTION-FAILED"
+      ]
+    },
+    {
+      "message": "ExactTargetClient API call",
+      "sumoEventText": "api_call",
+      "phpConstantKey": "API_CALL",
+      "fileReferences": [],
+      "aiComments": "Logs API calls made to ExactTarget (Salesforce Marketing Cloud) email marketing services. This occurs during ExactTarget integration operations when the system communicates with ExactTarget for email marketing campaigns and subscriber management. Includes API call details for tracking ExactTarget integration activities, monitoring email marketing service connectivity, and ensuring proper email marketing functionality across ExactTarget submit actions and integrations.",
+      "domains": [
+        "FORM-BUILDER:INTEGRATION",
+        "CONNECTIVITY"
+      ]
+    },
+    {
+      "message": "Exiting gracefully after time limit reached",
+      "sumoEventText": "submission_rate_limit_by_ip",
+      "phpConstantKey": "SUBMISSION_RATE_LIMIT_BY_IP",
+      "fileReferences": [
+        "lib/Formstack/Worker.php:372",
+        "lib/Formstack/Utility/WorkerWatchdog/WorkerWatchdog.php:375"
+      ],
+      "aiComments": "Logs when background workers exit gracefully after reaching their time limits during job processing. This occurs when workers complete their allocated processing time and shut down cleanly to prevent resource exhaustion. Includes worker details for tracking worker lifecycle management, monitoring job processing efficiency, and ensuring proper worker resource management and graceful shutdown procedures across the distributed worker system.",
+      "domains": [
+        "BACKEND:QUEUES",
+        "BACKEND:THROTTLING"
+      ]
+    },
+    {
+      "message": "Export Complete",
+      "sumoEventText": "account_forms_export",
+      "phpConstantKey": "ACCOUNT_FORMS_EXPORT",
+      "fileReferences": [
+        "lib/Formstack/Job/AbstractExportJob.php:113"
+      ],
+      "aiComments": "Logs successful completion of form or submission export operations. This occurs when users export form data, submissions, or account information to various formats. Includes export details for tracking data export patterns, ensuring compliance with data export requests, and monitoring export job performance and completion rates.",
+      "domains": [
+        "SUBMISSION:EGRESS:EXPORT",
+        "BACKEND:QUEUES"
+      ]
+    },
+    {
+      "message": "Export Job Data",
+      "sumoEventText": "account_forms_export",
+      "phpConstantKey": "ACCOUNT_FORMS_EXPORT",
+      "fileReferences": [
+        "lib/Formstack/Job/ExportParticipantUsageJob.php:169",
+        "lib/Formstack/Job/ExportSubmissionsJob.php:836"
+      ],
+      "aiComments": "Logs when export job data is processed during export operations. This occurs when background export jobs process form data, submissions, or account information for export generation. Includes export job details for tracking export data processing, monitoring export job performance, and ensuring proper export data preparation and formatting across different export types and data sources.",
+      "domains": [
+        "SUBMISSION:EGRESS:EXPORT",
+        "BACKEND:QUEUES"
+      ]
+    },
+    {
+      "message": "Export Job Removed Zip File",
+      "sumoEventText": "account_forms_export",
+      "phpConstantKey": "ACCOUNT_FORMS_EXPORT",
+      "fileReferences": [
+        "lib/Formstack/Job/AbstractExportJob.php:128"
+      ],
+      "aiComments": "Logs when export job zip files are removed after export completion or cleanup operations. This occurs when export files are cleaned up from temporary storage after successful export delivery or when export jobs are cancelled. Includes export job details for tracking export file cleanup operations, monitoring storage management, and ensuring proper export file lifecycle management and storage optimization.",
+      "domains": [
+        "SUBMISSION:EGRESS:EXPORT",
+        "BACKEND:FILES:STORAGE"
+      ]
+    },
+    {
+      "message": "Export Job uploaded file",
+      "sumoEventText": "account_forms_export",
+      "phpConstantKey": "ACCOUNT_FORMS_EXPORT",
+      "fileReferences": [
+        "lib/Formstack/Job/AbstractExportJob.php:172"
+      ],
+      "aiComments": "Logs when export job files are successfully uploaded to storage after export generation. This occurs when export files are uploaded to cloud storage or file systems for user access and download. Includes export job details for tracking export file upload operations, monitoring export file delivery, and ensuring proper export file storage and accessibility for users across different export types and storage systems.",
+      "domains": [
+        "SUBMISSION:EGRESS:EXPORT",
+        "BACKEND:FILES:UPLOAD"
+      ]
+    },
+    {
+      "message": "Extended existing ScheduledSearchReindex task",
+      "sumoEventText": "scheduled_cancellations_task_runner",
+      "phpConstantKey": "SCHEDULED_CANCELLATIONS_TASK_RUNNER",
+      "fileReferences": [
+        "lib/Formstack/Service/ScheduledSearchReindexService.php:74"
+      ],
+      "aiComments": "Logs when existing scheduled search reindexing tasks are extended with additional time or scope. This occurs when reindexing operations need more time to complete or when additional forms or accounts are added to existing reindexing schedules. Includes task details for tracking search reindexing task extensions, monitoring OpenSearch index maintenance scheduling, and ensuring proper search index consistency management across the platform.",
+      "domains": [
+        "BACKEND:SEARCH:OPENSEARCH",
+        "BACKEND:QUEUES"
+      ]
+    },
+    {
+      "message": "Failed Create or Refresh AuthToken",
+      "sumoEventText": "form_update_failed",
+      "phpConstantKey": "FORM_UPDATE_FAILED",
+      "fileReferences": [
+        "lib/Formstack/Model/SubmitAction/OAuth2SubmitAction.php:446"
+      ],
+      "aiComments": "Logs when OAuth2 authentication token creation or refresh operations fail for submit actions. This occurs when OAuth2 integrations cannot obtain or refresh access tokens for third-party service authentication. Includes OAuth2 details for tracking authentication token failures, monitoring OAuth2 integration issues, and ensuring proper OAuth2 token management and error handling across different third-party service integrations.",
+      "domains": [
+        "FORM-BUILDER:INTEGRATION:AUTH-FAILED",
+        "CONNECTIVITY:AUTHENTICATION"
+      ]
+    },
+    {
+      "message": "Failed to find form due to bad form alias, form account, or account mismatch",
+      "sumoEventText": "form_update_failed",
+      "phpConstantKey": "FORM_UPDATE_FAILED",
+      "fileReferences": [
+        "lib/Formstack/FormApplication.php:252",
+        "lib/Formstack/FormApplication.php:312"
+      ],
+      "aiComments": "Logs when form lookup operations fail due to invalid form aliases, incorrect form account associations, or account mismatches. This occurs when the system cannot locate forms based on provided identifiers or when there are permission issues with form access. Includes form details for tracking form lookup failures, monitoring form access issues, and ensuring proper form identification and access control validation across different form access methods.",
+      "domains": [
+        "LIVE-FORM:RENDER",
+        "BACKEND:VALIDATION"
+      ]
+    },
+    {
+      "message": "Failed to find form due to bad form id or viewkey",
+      "sumoEventText": "form_update_failed",
+      "phpConstantKey": "FORM_UPDATE_FAILED",
+      "fileReferences": [
+        "lib/Formstack/FormApplication.php:429"
+      ],
+      "aiComments": "Logs when form lookup operations fail due to invalid form IDs or view keys. This occurs when the system cannot locate forms based on provided form identifiers or when view keys are incorrect or expired. Includes form details for tracking form lookup failures, monitoring form access issues, and ensuring proper form identification and access control validation across different form access methods and security configurations.",
+      "domains": [
+        "LIVE-FORM:RENDER",
+        "BACKEND:VALIDATION"
+      ]
+    },
+    {
+      "message": "Failed to find form due to bad subdomain",
+      "sumoEventText": "form_update_failed",
+      "phpConstantKey": "FORM_UPDATE_FAILED",
+      "fileReferences": [
+        "lib/Formstack/FormApplication.php:296",
+        "lib/Formstack/FormApplication.php:356",
+        "lib/Formstack/FormApplication.php:485"
+      ],
+      "aiComments": "Logs when form lookup operations fail due to invalid or incorrect subdomain configurations. This occurs when the system cannot locate forms based on provided subdomain information or when there are subdomain routing issues. Includes subdomain details for tracking form lookup failures, monitoring subdomain configuration issues, and ensuring proper subdomain-based form access and routing across different account configurations.",
+      "domains": [
+        "LIVE-FORM:RENDER",
+        "BACKEND:VALIDATION"
+      ]
+    },
+    {
+      "message": "Failed transaction for authorizenet",
+      "sumoEventText": "form_update_failed",
+      "phpConstantKey": "FORM_UPDATE_FAILED",
+      "fileReferences": [
+        "lib/Formstack/Model/SubmitAction/AuthorizeNet.php:565"
+      ],
+      "aiComments": "Logs when Authorize.Net payment transactions fail during payment processing operations. This occurs when payment processing encounters errors such as declined cards, insufficient funds, or payment gateway issues. Includes transaction details for tracking payment processing failures, monitoring payment gateway connectivity, and ensuring proper payment transaction error handling and user notification across different payment scenarios.",
+      "domains": [
+        "BACKEND:SUBMIT-ACTIONS:PAYMENTS:DECLINED",
+        "FORM-BUILDER:INTEGRATION:PAYMENTS"
+      ]
+    },
+    {
+      "message": "Form {formId} created successfully",
+      "sumoEventText": "ab_form_error",
+      "phpConstantKey": "AB_FORM_ERROR",
+      "fileReferences": [],
+      "aiComments": "Logs successful form creation events in the system. This occurs when users create new forms through the form builder interface. Includes form ID and creation details for tracking form creation patterns, user activity, and ensuring proper form lifecycle management across the platform.",
+      "domains": [
+        "FORM-BUILDER",
+        "BACKEND:ANALYTICS"
+      ]
+    },
+    {
+      "message": "Form deletion error for {formId}",
+      "sumoEventText": "ab_form_error",
+      "phpConstantKey": "AB_FORM_ERROR",
+      "fileReferences": [],
+      "aiComments": "Logs when form deletion operations encounter errors during the deletion process. This occurs when forms cannot be deleted due to dependencies, permissions, or system issues. Includes form ID and error details for tracking form deletion failures, monitoring form deletion issues, and ensuring proper form deletion error handling and user notification across different deletion scenarios.",
+      "domains": [
+        "FORM-BUILDER",
+        "BACKEND:DELETION:SOFT"
+      ]
+    },
+    {
+      "message": "Form not found for {formId}",
+      "sumoEventText": "ab_form_error",
+      "phpConstantKey": "AB_FORM_ERROR",
+      "fileReferences": [],
+      "aiComments": "Logs when form lookup operations fail to find forms with the specified form ID. This occurs when forms are requested but cannot be located in the system due to deletion, permissions, or data issues. Includes form ID for tracking form lookup failures, monitoring form access issues, and ensuring proper form identification and error handling across different form access methods.",
+      "domains": [
+        "LIVE-FORM:RENDER",
+        "BACKEND:VALIDATION"
+      ]
+    },
+    {
+      "message": "Form Render",
+      "sumoEventText": "form_render",
+      "phpConstantKey": "FORM_RENDER",
+      "fileReferences": [
+        "lib/Formstack/Dto/Model/FormBuilderFormDtoGenerated.php:142",
+        "lib/Formstack/Controller/PublicFormController.php:1850",
+        "lib/Formstack/Api2025/Form/Dto/Details/FormExtrasApiDto.php:85",
+        "lib/Formstack/Builder/FormResponseDtoBuilder.php:642",
+        "lib/Formstack/FormAnalytics/TrackingEndpoint.php:102"
+      ],
+      "aiComments": "Logs when forms are rendered for display to users. This occurs during form rendering operations when the system generates HTML output for form display. Includes form details for tracking form rendering performance, ensuring proper form display functionality, and monitoring form rendering errors or issues across different form types and themes.",
+      "domains": [
+        "LIVE-FORM:RENDER",
+        "BACKEND:ANALYTICS"
+      ]
+    },
+    {
+      "message": "Form setting {field} for {formId} changed successfully",
+      "sumoEventText": "ab_form_error",
+      "phpConstantKey": "AB_FORM_ERROR",
+      "fileReferences": [],
+      "aiComments": "Logs successful updates to form settings or properties. This occurs when users modify form configurations such as form name, description, or other form properties. Includes field name and form ID for tracking form configuration changes, monitoring form management activities, and ensuring proper form setting updates and audit trails across different form types and configurations.",
+      "domains": [
+        "FORM-BUILDER",
+        "BACKEND:ANALYTICS"
+      ]
+    },
+    {
+      "message": "Form submission is NOT stale",
+      "sumoEventText": "ab_form_error",
+      "phpConstantKey": "AB_FORM_ERROR",
+      "fileReferences": [
+        "lib/Formstack/Controller/PublicFormController.php:3287",
+        "lib/Formstack/Service/Submission/FormSubmitValidationService.php:785"
+      ],
+      "aiComments": "Logs when form submissions are validated as not stale during submission processing. This occurs when the system checks submission freshness and determines that submissions are current and valid for processing. Includes submission details for tracking submission validation, monitoring submission freshness checks, and ensuring proper submission processing and duplicate prevention across different form types and submission scenarios.",
+      "domains": [
+        "SUBMISSION:VALIDATION",
+        "BACKEND:VALIDATION"
+      ]
+    },
+    {
+      "message": "Form submitted with invalid fields",
+      "sumoEventText": "ab_form_error",
+      "phpConstantKey": "AB_FORM_ERROR",
+      "fileReferences": [
+        "lib/Formstack/Service/Submission/FormSubmitValidationService.php:427"
+      ],
+      "aiComments": "Logs when form submissions contain invalid field data during submission validation. This occurs when form submissions fail validation due to incorrect field values, missing required fields, or field format issues. Includes validation details for tracking form submission validation failures, monitoring form field validation issues, and ensuring proper form submission error handling and user feedback across different form types and validation rules.",
+      "domains": [
+        "SUBMISSION:VALIDATION",
+        "LIVE-FORM:VALIDATION"
+      ]
+    },
+    {
+      "message": "Form submitted with missing required fields",
+      "sumoEventText": "ab_form_error",
+      "phpConstantKey": "AB_FORM_ERROR",
+      "fileReferences": [
+        "lib/Formstack/Service/Submission/FormSubmitValidationService.php:405"
+      ],
+      "aiComments": "Logs when form submissions are missing required fields during submission validation. This occurs when form submissions fail validation due to empty or missing required field values. Includes validation details for tracking form submission validation failures, monitoring required field validation issues, and ensuring proper form submission error handling and user feedback across different form types and required field configurations.",
+      "domains": [
+        "SUBMISSION:VALIDATION:REQUIRED-MISSING",
+        "LIVE-FORM:VALIDATION"
+      ]
+    },
+    {
+      "message": "Form submitted with non-unique fields",
+      "sumoEventText": "ab_form_error",
+      "phpConstantKey": "AB_FORM_ERROR",
+      "fileReferences": [
+        "lib/Formstack/Service/Submission/FormSubmitValidationService.php:449"
+      ],
+      "aiComments": "Logs when form submissions contain non-unique field values during submission validation. This occurs when form submissions fail validation due to duplicate values in fields that require uniqueness. Includes validation details for tracking form submission validation failures, monitoring field uniqueness validation issues, and ensuring proper form submission error handling and user feedback across different form types and uniqueness constraint configurations.",
+      "domains": [
+        "SUBMISSION:VALIDATION:UNIQUE-VIOLATION",
+        "FORM-BUILDER:LOGIC:UNIQUE"
+      ]
+    },
+    {
+      "message": "Form View",
+      "sumoEventText": "form_view",
+      "phpConstantKey": "FORM_VIEW",
+      "fileReferences": [
+        "lib/Formstack/FormApplication.php:71",
+        "lib/Formstack/FormApplication.php:85",
+        "lib/Formstack/Controller/Form/FormInternalController.php:134",
+        "lib/Formstack/Controller/FormController.php:3878",
+        "lib/Formstack/Controller/PublicFormController.php:1415"
+      ],
+      "aiComments": "Logs when users view forms through the hosted form interface. This occurs during form rendering when visitors access forms via direct links or embedded forms. Includes form ID, version, account ID, and viewing method for tracking form popularity, user engagement, and ensuring proper form access analytics and performance monitoring.",
+      "domains": [
+        "LIVE-FORM:VIEW",
+        "BACKEND:ANALYTICS"
+      ]
+    },
+    {
+      "message": "Form was stale on submission",
+      "sumoEventText": "ab_form_error",
+      "phpConstantKey": "AB_FORM_ERROR",
+      "fileReferences": [
+        "lib/Formstack/Controller/PublicFormController.php:3258",
+        "lib/Formstack/Controller/PublicFormController.php:3278",
+        "lib/Formstack/Service/Submission/FormSubmitValidationService.php:766",
+        "lib/Formstack/Service/Submission/FormSubmitValidationService.php:779"
+      ],
+      "aiComments": "Logs when form submissions are rejected due to stale form data during submission processing. This occurs when the system detects that form data has been modified since the form was initially loaded, indicating potential duplicate submissions or form tampering. Includes submission details for tracking stale form detection, monitoring submission freshness validation, and ensuring proper form submission security and duplicate prevention across different form types and submission scenarios.",
+      "domains": [
+        "SUBMISSION:VALIDATION",
+        "BACKEND:INGRESS:DEDUP-GUARDS"
+      ]
+    },
+    {
+      "message": "Form was stale on submission; no displayTime",
+      "sumoEventText": "ab_form_error",
+      "phpConstantKey": "AB_FORM_ERROR",
+      "fileReferences": [
+        "lib/Formstack/Controller/PublicFormController.php:3258",
+        "lib/Formstack/Service/Submission/FormSubmitValidationService.php:766"
+      ],
+      "aiComments": "Logs when form submissions are rejected due to stale form data without display time information. This occurs when the system detects stale form data but cannot determine when the form was initially displayed. Includes submission details for tracking stale form detection without timing data, monitoring submission freshness validation issues, and ensuring proper form submission security and duplicate prevention across different form types and submission scenarios.",
+      "domains": [
+        "SUBMISSION:VALIDATION",
+        "BACKEND:INGRESS:DEDUP-GUARDS"
+      ]
+    },
+    {
+      "message": "FormCreatedListener Sift Science check for user first form",
+      "sumoEventText": "siftscience_event",
+      "phpConstantKey": "SIFTSCIENCE_EVENT",
+      "fileReferences": [
+        "lib/Formstack/Model/Listeners/SiftScience/FormCreatedListener.php:34"
+      ],
+      "aiComments": "Logs when Sift Science fraud detection checks are performed for users creating their first form. This occurs when the system analyzes form creation patterns to detect potential fraudulent activity or abuse. Includes user and form details for tracking fraud detection activities, monitoring form creation patterns, and ensuring proper fraud prevention and account security across different user types and form creation scenarios.",
+      "domains": [
+        "BACKEND:SECURITY",
+        "FORM-BUILDER"
+      ]
+    },
+    {
+      "message": "Found Formstack user from SAML metadata",
+      "sumoEventText": "theme_not_found",
+      "phpConstantKey": "FORM_THEME_INVALID",
+      "fileReferences": [
+        "lib/Formstack/Model/AuthProvider/SAMLAuthProvider.php:267"
+      ],
+      "aiComments": "Logs when SAML authentication successfully identifies and maps a Formstack user from SAML metadata. This occurs during SAML SSO authentication when the system matches SAML user attributes to existing Formstack user accounts. Includes user and SAML details for tracking SAML authentication success, monitoring SSO user mapping, and ensuring proper SAML authentication and user identification across different identity providers and user configurations.",
+      "domains": [
+        "LIVE-FORM:AUTHENTICATION:SAML",
+        "BACKEND:AUTHENTICATION"
+      ]
+    },
+    {
+      "message": "Found Submission {submissionId}",
+      "sumoEventText": "theme_not_found",
+      "phpConstantKey": "FORM_THEME_INVALID",
+      "fileReferences": [],
+      "aiComments": "Logs when submission lookup operations successfully find submissions with the specified submission ID. This occurs when the system locates submissions in the database for processing, editing, or retrieval operations. Includes submission ID for tracking submission lookup success, monitoring submission access patterns, and ensuring proper submission identification and retrieval across different submission types and access methods.",
+      "domains": [
+        "BACKEND:SEARCH",
+        "SUBMISSION:VALIDATION"
+      ]
+    },
+    {
+      "message": "Geolocated Submission {submissionId} successfully",
+      "sumoEventText": "auto_delete_submissions_account_settings",
+      "phpConstantKey": "AUTO_DELETE_SUBMISSIONS_ACCOUNT_SETTINGS",
+      "fileReferences": [],
+      "aiComments": "Logs when submission geolocation operations successfully determine the geographic location of form submissions. This occurs when the system processes IP addresses to identify the geographic location of form submitters. Includes submission ID and location details for tracking geolocation success, monitoring submission location data, and ensuring proper geographic analytics and reporting across different submission types and geographic regions.",
+      "domains": [
+        "BACKEND:ANALYTICS",
+        "SUBMISSION:VALIDATION"
+      ]
+    },
+    {
+      "message": "Google Calendar Submit Action success",
+      "sumoEventText": "submitaction_googlecontacts",
+      "phpConstantKey": "SUBMITACTION_GOOGLECONTACTS",
+      "fileReferences": [
+        "lib/Formstack/Model/SubmitAction/GoogleCalendar.php:466"
+      ],
+      "aiComments": "Logs successful completion of Google Calendar submit actions for form submissions. This occurs when form submissions are successfully processed and calendar events are created in Google Calendar. Includes submit action details for tracking Google Calendar integration success, monitoring calendar event creation, and ensuring proper Google Calendar submit action functionality across different form types and calendar configurations.",
+      "domains": [
+        "SUBMISSION:EGRESS:SUBMIT-ACTION",
+        "FORM-BUILDER:INTEGRATION"
+      ]
+    },
+    {
+      "message": "Google integration is using new keys",
+      "sumoEventText": "submitaction_googlecontacts",
+      "phpConstantKey": "SUBMITACTION_GOOGLECONTACTS",
+      "fileReferences": [
+        "lib/Formstack/Model/SubmitAction/GoogleClientSubmitAction.php:150"
+      ],
+      "aiComments": "Logs when Google integrations successfully use new OAuth credentials during authentication operations. This occurs when the system attempts to authenticate with Google services and the new client credentials work properly. Indicates successful migration to updated Google API credentials and helps track OAuth credential transitions across different Google service integrations.",
+      "domains": [
+        "FORM-BUILDER:INTEGRATION",
+        "CONNECTIVITY:AUTHENTICATION"
+      ]
+    },
+    {
+      "message": "Google integration is using old keys",
+      "sumoEventText": "submitaction_googlecontacts",
+      "phpConstantKey": "SUBMITACTION_GOOGLECONTACTS",
+      "fileReferences": [
+        "lib/Formstack/Model/SubmitAction/GoogleClientSubmitAction.php:148"
+      ],
+      "aiComments": "Logs when Google integrations fall back to using legacy OAuth credentials after new credentials fail. This occurs when authentication fails with new credentials and the system automatically retries with the previous app keys. Indicates credential migration issues and helps track which integrations still rely on legacy OAuth configurations across different Google service integrations.",
+      "domains": [
+        "FORM-BUILDER:INTEGRATION",
+        "CONNECTIVITY:AUTHENTICATION"
+      ]
+    },
+    {
+      "message": "Google Sheets Google Sheets Error",
+      "sumoEventText": "submitaction_googlecontacts",
+      "phpConstantKey": "SUBMITACTION_GOOGLECONTACTS",
+      "fileReferences": [],
+      "aiComments": "Logs when Google Sheets submit actions encounter errors during spreadsheet operations. This occurs when form submissions fail to write data to Google Sheets due to API issues, permission problems, or spreadsheet configuration errors. Includes error details for tracking Google Sheets integration issues, monitoring spreadsheet operation failures, and ensuring proper Google Sheets submit action error handling and user notification.",
+      "domains": [
+        "FORM-BUILDER:INTEGRATION:GOOGLE-SHEETS",
+        "BACKEND:SUBMIT-ACTIONS:RETRY-EXHAUSTED"
+      ]
+    },
+    {
+      "message": "Google Sheets Submit Action success",
+      "sumoEventText": "submitaction_googlecontacts",
+      "phpConstantKey": "SUBMITACTION_GOOGLECONTACTS",
+      "fileReferences": [
+        "lib/Formstack/Model/SubmitAction/GoogleSpreadsheets.php:1216",
+        "lib/Formstack/Model/SubmitAction/GoogleSpreadsheets.php:1290"
+      ],
+      "aiComments": "Logs successful completion of Google Sheets submit actions for form submissions. This occurs when form submissions are successfully processed and data is written to Google Sheets spreadsheets. Includes submit action details for tracking Google Sheets integration success, monitoring spreadsheet data writing, and ensuring proper Google Sheets submit action functionality across different form types and spreadsheet configurations.",
+      "domains": [
+        "SUBMISSION:EGRESS:SUBMIT-ACTION",
+        "FORM-BUILDER:INTEGRATION:GOOGLE-SHEETS"
+      ]
+    },
+    {
+      "message": "GoogleCalendarClient API call",
+      "sumoEventText": "api_call",
+      "phpConstantKey": "API_CALL",
+      "fileReferences": [],
+      "aiComments": "Logs API calls made to Google Calendar services. This occurs during Google Calendar integration operations when the system communicates with Google Calendar for event creation and management. Includes API call details for tracking Google Calendar integration activities, monitoring calendar service connectivity, and ensuring proper calendar event management functionality across Google Calendar submit actions and integrations.",
+      "domains": [
+        "FORM-BUILDER:INTEGRATION",
+        "CONNECTIVITY"
+      ]
+    },
+    {
+      "message": "GoogleDrive file upload failed",
+      "sumoEventText": "odin_file_upload",
+      "phpConstantKey": "ODIN_FILE_UPLOAD",
+      "fileReferences": [
+        "lib/Formstack/Model/SubmitAction/GoogleDrive.php:363"
+      ],
+      "aiComments": "Logs when Google Drive file upload operations fail during submit action processing. This occurs when form submissions with file attachments cannot be uploaded to Google Drive due to API issues, permission problems, or file size limitations. Includes upload details for tracking Google Drive integration issues, monitoring file upload failures, and ensuring proper Google Drive submit action error handling and user notification.",
+      "domains": [
+        "BACKEND:SUBMIT-ACTIONS:GOOGLE-DRIVE:UPLOAD-FAILED",
+        "FORM-BUILDER:INTEGRATION:GOOGLE-DRIVE"
+      ]
+    },
+    {
+      "message": "GoogleDrive file uploaded",
+      "sumoEventText": "odin_file_upload",
+      "phpConstantKey": "ODIN_FILE_UPLOAD",
+      "fileReferences": [
+        "lib/Formstack/Model/SubmitAction/GoogleDrive.php:383"
+      ],
+      "aiComments": "Logs successful completion of Google Drive file upload operations during submit action processing. This occurs when form submissions with file attachments are successfully uploaded to Google Drive. Includes upload details for tracking Google Drive integration success, monitoring file upload operations, and ensuring proper Google Drive submit action functionality across different file types and upload configurations.",
+      "domains": [
+        "SUBMISSION:EGRESS:SUBMIT-ACTION",
+        "FORM-BUILDER:INTEGRATION:GOOGLE-DRIVE"
+      ]
+    },
+    {
+      "message": "GoogleDriveClient API call",
+      "sumoEventText": "api_call",
+      "phpConstantKey": "API_CALL",
+      "fileReferences": [],
+      "aiComments": "Logs API calls made to Google Drive services. This occurs during Google Drive integration operations when the system communicates with Google Drive for file storage and management. Includes API call details for tracking Google Drive integration activities, monitoring cloud storage connectivity, and ensuring proper file management functionality across Google Drive submit actions and integrations.",
+      "domains": [
+        "FORM-BUILDER:INTEGRATION:GOOGLE-DRIVE",
+        "CONNECTIVITY"
+      ]
+    },
+    {
+      "message": "GoogleSpreadsheetsClient API call",
+      "sumoEventText": "api_call",
+      "phpConstantKey": "API_CALL",
+      "fileReferences": [],
+      "aiComments": "Logs API calls made to Google Spreadsheets services. This occurs during Google Sheets integration operations when the system communicates with Google Sheets for spreadsheet data management. Includes API call details for tracking Google Sheets integration activities, monitoring spreadsheet service connectivity, and ensuring proper spreadsheet data management functionality across Google Sheets submit actions and integrations.",
+      "domains": [
+        "FORM-BUILDER:INTEGRATION:GOOGLE-SHEETS",
+        "CONNECTIVITY"
+      ]
+    },
+    {
+      "message": "Handling submission created event.",
+      "sumoEventText": "submission_created",
+      "phpConstantKey": "USER_ACTIVITY_SUBMISSION_CREATED",
+      "fileReferences": [
+        "lib/Formstack/Search/DataIntegrity/OpensearchDataIntegrityRunner.php:221",
+        "lib/Formstack/Model/Listeners/Opensearch/OpensearchSubmissionReindexListener.php:37"
+      ],
+      "aiComments": "Logs when submission created events are processed by the OpenSearch data integrity system. This occurs when the system handles submission creation events to maintain search index consistency and data integrity. Includes submission details for tracking submission event processing, monitoring search index maintenance, and ensuring proper OpenSearch data synchronization across different submission types and search operations.",
+      "domains": [
+        "BACKEND:SEARCH:OPENSEARCH",
+        "SUBMISSION:VALIDATION"
+      ]
+    },
+    {
+      "message": "Handling submission deleted event.",
+      "sumoEventText": "submission_deleted",
+      "phpConstantKey": "USER_ACTIVITY_SUBMISSION_DELETED",
+      "fileReferences": [
+        "lib/Formstack/Model/Listeners/Opensearch/OpensearchSubmissionReindexListener.php:63"
+      ],
+      "aiComments": "Logs when submission deleted events are processed by the OpenSearch data integrity system. This occurs when the system handles submission deletion events to maintain search index consistency and remove deleted submissions from search indexes. Includes submission details for tracking submission deletion event processing, monitoring search index cleanup, and ensuring proper OpenSearch data synchronization when submissions are removed from the system.",
+      "domains": [
+        "BACKEND:SEARCH:OPENSEARCH",
+        "SUBMISSION:VALIDATION"
+      ]
+    },
+    {
+      "message": "Handling submission updated event.",
+      "sumoEventText": "submission_updated",
+      "phpConstantKey": "USER_ACTIVITY_SUBMISSION_UPDATED",
+      "fileReferences": [
+        "lib/Formstack/Model/Listeners/Opensearch/OpensearchSubmissionReindexListener.php:48"
+      ],
+      "aiComments": "Logs when submission updated events are processed by the OpenSearch data integrity system. This occurs when the system handles submission update events to maintain search index consistency and update modified submissions in search indexes. Includes submission details for tracking submission update event processing, monitoring search index updates, and ensuring proper OpenSearch data synchronization when submissions are modified in the system.",
+      "domains": [
+        "BACKEND:SEARCH:OPENSEARCH",
+        "SUBMISSION:VALIDATION"
+      ]
+    },
+    {
+      "message": "Handling submissionData event.",
+      "sumoEventText": "auto_delete_submissions_sso_event",
+      "phpConstantKey": "AUTO_DELETE_SUBMISSIONS_SSO_EVENT",
+      "fileReferences": [
+        "lib/Formstack/Model/Listeners/Opensearch/OpensearchSubmissionReindexListener.php:84"
+      ],
+      "aiComments": "Logs when submission data events are processed by the OpenSearch data integrity system. This occurs when the system handles submission data events to maintain search index consistency and update submission data in search indexes. Includes submission data details for tracking submission data event processing, monitoring search index data updates, and ensuring proper OpenSearch data synchronization when submission data is modified in the system.",
+      "domains": [
+        "BACKEND:SEARCH:OPENSEARCH",
+        "SUBMISSION:VALIDATION"
+      ]
+    },
+    {
+      "message": "HubSpot API Request",
+      "sumoEventText": "submitaction_hubspot",
+      "phpConstantKey": "SUBMITACTION_HUBSPOT",
+      "fileReferences": [
+        "lib/Formstack/Model/SubmitAction/HubSpot.php:696",
+        "lib/Formstack/Model/SubmitAction/HubSpot.php:868"
+      ],
+      "aiComments": "Logs API requests made to HubSpot CRM services. This occurs during HubSpot integration operations when the system communicates with HubSpot for contact management, lead tracking, and CRM data synchronization. Includes API request details for tracking HubSpot integration activities, monitoring CRM service connectivity, and ensuring proper HubSpot submit action functionality across different form types and CRM configurations.",
+      "domains": [
+        "FORM-BUILDER:INTEGRATION:HUBSPOT",
+        "CONNECTIVITY"
+      ]
+    },
+    {
+      "message": "HubSpot using new app keys",
+      "sumoEventText": "submitaction_hubspot",
+      "phpConstantKey": "SUBMITACTION_HUBSPOT",
+      "fileReferences": [
+        "lib/Formstack/Model/SubmitAction/HubSpot.php:1160"
+      ],
+      "aiComments": "Logs when HubSpot integration successfully uses new OAuth app credentials during authentication operations. This occurs when the system attempts to authenticate with HubSpot services and the new client credentials work properly. Indicates successful migration to updated HubSpot API credentials and helps track OAuth credential transitions across different HubSpot service integrations.",
+      "domains": [
+        "FORM-BUILDER:INTEGRATION:HUBSPOT",
+        "CONNECTIVITY:AUTHENTICATION"
+      ]
+    },
+    {
+      "message": "Importing SAML metadata via file upload",
+      "sumoEventText": "auth_provider_saml",
+      "phpConstantKey": "AUTH_PROVIDER_SAML",
+      "fileReferences": [
+        "lib/Formstack/Service/AuthProviderService.php:278"
+      ],
+      "aiComments": "Logs when SAML metadata is imported via file upload for authentication provider configuration. This occurs when administrators upload SAML metadata files to configure SSO authentication providers. Includes import details for tracking SAML metadata import activities, monitoring SSO configuration setup, and ensuring proper SAML authentication provider configuration across different identity providers and file upload methods.",
+      "domains": [
+        "LIVE-FORM:AUTHENTICATION:SAML-SETUP",
+        "BACKEND:AUTHENTICATION"
+      ]
+    },
+    {
+      "message": "Importing SAML metadata via URL",
+      "sumoEventText": "auth_provider_saml",
+      "phpConstantKey": "AUTH_PROVIDER_SAML",
+      "fileReferences": [
+        "lib/Formstack/Service/AuthProviderService.php:257"
+      ],
+      "aiComments": "Logs when SAML metadata is imported via URL for authentication provider configuration. This occurs when administrators provide SAML metadata URLs to configure SSO authentication providers. Includes import details for tracking SAML metadata import activities, monitoring SSO configuration setup, and ensuring proper SAML authentication provider configuration across different identity providers and URL-based import methods.",
+      "domains": [
+        "LIVE-FORM:AUTHENTICATION:SAML-SETUP",
+        "BACKEND:AUTHENTICATION"
+      ]
+    },
+    {
+      "message": "Incremented form.views for {formId} with {views} views",
+      "sumoEventText": "",
+      "phpConstantKey": "",
+      "fileReferences": [],
+      "aiComments": "Logs successful batch updates to form view counters in the database. This occurs when cached view counts are processed and written to the form table during background job execution. Includes form ID and view count for tracking form popularity and ensuring accurate analytics data persistence.",
+      "domains": [
+        "BACKEND:ANALYTICS",
+        "LIVE-FORM:VIEW"
+      ]
+    },
+    {
+      "message": "Incremented formAnalytics {formAnalyticsId} with {views} views",
+      "sumoEventText": "",
+      "phpConstantKey": "",
+      "fileReferences": [],
+      "aiComments": "Logs successful updates to daily form analytics view counters in the database. This occurs when cached view counts are processed and written to the formAnalytics table for daily tracking. Includes analytics record ID and view count for maintaining accurate daily form performance metrics and analytics reporting.",
+      "domains": [
+        "BACKEND:ANALYTICS",
+        "LIVE-FORM:VIEW"
+      ]
+    },
+    {
+      "message": "Inserted formAnalytics {formAnalyticsId} with {views} views",
+      "sumoEventText": "submission_approval_inserted",
+      "phpConstantKey": "SUBMISSION_APPROVAL_INSERTED",
+      "fileReferences": [],
+      "aiComments": "Logs successful insertion of new daily form analytics records in the database. This occurs when new analytics records are created for daily form performance tracking. Includes analytics record ID and view count for tracking form analytics data creation, monitoring daily form performance metrics, and ensuring proper analytics data management and reporting across different form types and time periods.",
+      "domains": [
+        "BACKEND:ANALYTICS",
+        "LIVE-FORM:VIEW"
+      ]
+    },
+    {
+      "message": "Logging frontend and backend hidden {fieldId}s on submission for {formId}",
+      "sumoEventText": "skipped_hidden_field_validation",
+      "phpConstantKey": "SKIPPED_HIDDEN_FIELD_VALIDATION",
+      "fileReferences": [],
+      "aiComments": "Logs when hidden fields are identified and logged during form submission processing. This occurs when the system detects hidden fields that are present in both frontend and backend processing and logs them for validation tracking. Includes field ID and form ID for tracking hidden field processing, monitoring form field validation, and ensuring proper hidden field handling across different form types and submission scenarios.",
+      "domains": [
+        "SUBMISSION:VALIDATION",
+        "FORM-BUILDER:FIELD:HIDDEN"
+      ]
+    },
+    {
+      "message": "Logging frontend only hidden and hidden by both FE and BE {fieldId}s on submission for {formId}",
+      "sumoEventText": "skipped_hidden_field_validation",
+      "phpConstantKey": "SKIPPED_HIDDEN_FIELD_VALIDATION",
+      "fileReferences": [],
+      "aiComments": "Logs when frontend-only hidden fields and fields hidden by both frontend and backend are identified during form submission processing. This occurs when the system detects different types of hidden fields and logs them for validation tracking. Includes field ID and form ID for tracking hidden field processing, monitoring form field validation, and ensuring proper hidden field handling across different form types and submission scenarios.",
+      "domains": [
+        "SUBMISSION:VALIDATION",
+        "FORM-BUILDER:FIELD:HIDDEN"
+      ]
+    },
+    {
+      "message": "Microsoft OneDrive Integration: Unable to create link",
+      "sumoEventText": "integration_api_call",
+      "phpConstantKey": "INTEGRATION_API_CALL",
+      "fileReferences": [],
+      "aiComments": "Logs when Microsoft OneDrive integration fails to create sharing links for uploaded files. This occurs when OneDrive submit actions encounter errors during link creation operations. Includes integration details for tracking OneDrive integration issues, monitoring file sharing failures, and ensuring proper OneDrive submit action error handling and user notification across different file types and sharing configurations.",
+      "domains": [
+        "FORM-BUILDER:INTEGRATION:ONEDRIVE",
+        "BACKEND:SUBMIT-ACTIONS:RETRY-EXHAUSTED"
+      ]
+    },
+    {
+      "message": "MySQL failed to retrieve record for opensearch submission {submissionId}",
+      "sumoEventText": "mysql_lost_connection",
+      "phpConstantKey": "MYSQL_LOST_CONNECTION",
+      "fileReferences": [],
+      "aiComments": "Logs when MySQL database operations fail to retrieve submission records for OpenSearch indexing operations. This occurs when the system cannot fetch submission data from the database for search index maintenance. Includes submission ID for tracking database retrieval failures, monitoring OpenSearch indexing issues, and ensuring proper database connectivity and search index synchronization across different submission types and indexing operations.",
+      "domains": [
+        "BACKEND:SEARCH:OPENSEARCH",
+        "CONNECTIVITY"
+      ]
+    },
+    {
+      "message": "New form {formId} session {sessionId}",
+      "sumoEventText": "ab_form_error",
+      "phpConstantKey": "AB_FORM_ERROR",
+      "fileReferences": [],
+      "aiComments": "Logs when new form sessions are created for form access and interaction tracking. This occurs when users access forms and new session identifiers are generated for tracking form interactions. Includes form ID and session ID for tracking form session creation, monitoring form access patterns, and ensuring proper form session management and user interaction tracking across different form types and access methods.",
+      "domains": [
+        "LIVE-FORM:VIEW",
+        "BACKEND:ANALYTICS"
+      ]
+    },
+    {
+      "message": "No approvers found, auto approval engaged",
+      "sumoEventText": "theme_not_found",
+      "phpConstantKey": "FORM_THEME_INVALID",
+      "fileReferences": [
+        "lib/Formstack/Model/Form.php:5047"
+      ],
+      "aiComments": "Logs when automatic approval is triggered due to no approvers being found for form submissions. This occurs when forms have approval workflows configured but no approvers are available, so the system automatically approves submissions. Includes approval details for tracking automatic approval triggers, monitoring approval workflow efficiency, and ensuring proper approval process management across different form types and approval configurations.",
+      "domains": [
+        "BACKEND:WORKFLOW",
+        "SUBMISSION:VALIDATION"
+      ]
+    },
+    {
+      "message": "No authProvider metadata update required for {authProviderId}",
+      "sumoEventText": "authprovider_user_fetch_exception",
+      "phpConstantKey": "USER_ACTIVITY_AUTHPROVIDER_USER_FETCH_EXCEPTION",
+      "fileReferences": [],
+      "aiComments": "Logs when authentication provider metadata updates are not required during authentication operations. This occurs when the system checks for metadata updates but determines that the current metadata is still valid and up-to-date. Includes auth provider ID for tracking metadata update checks, monitoring authentication provider maintenance, and ensuring proper authentication provider configuration management across different identity providers and update cycles.",
+      "domains": [
+        "BACKEND:AUTHENTICATION",
+        "LIVE-FORM:AUTHENTICATION:SAML-CONFIGURATION"
+      ]
+    },
+    {
+      "message": "No FormApprover(s) found for form, submission skipped approval process",
+      "sumoEventText": "theme_not_found",
+      "phpConstantKey": "FORM_THEME_INVALID",
+      "fileReferences": [],
+      "aiComments": "Logs when form submissions skip the approval process due to no form approvers being configured. This occurs when forms have approval workflows enabled but no approvers are assigned, so submissions bypass the approval process. Includes form details for tracking approval process bypasses, monitoring approval workflow configuration issues, and ensuring proper approval process management across different form types and approval configurations.",
+      "domains": [
+        "BACKEND:WORKFLOW",
+        "SUBMISSION:VALIDATION"
+      ]
+    },
+    {
+      "message": "Notification Email {notificationEmailId} created successfully",
+      "sumoEventText": "notification_marked_as_read",
+      "phpConstantKey": "USER_ACTIVITY_NOTIFICATION_MARKED_AS_READ",
+      "fileReferences": [],
+      "aiComments": "Logs successful creation of notification email configurations for forms. This occurs when users set up notification emails to be sent to form owners or administrators after form submissions. Includes notification email ID for tracking notification email setup activities, monitoring email configuration management, and ensuring proper notification email functionality across different form types and notification configurations.",
+      "domains": [
+        "FORM-BUILDER:EMAIL:NOTIFICATION",
+        "BACKEND:EMAILS:NOTIFICATION"
+      ]
+    },
+    {
+      "message": "Notification Email setting {field} for {notificationEmailId} changed successfully",
+      "sumoEventText": "notification_marked_as_read",
+      "phpConstantKey": "USER_ACTIVITY_NOTIFICATION_MARKED_AS_READ",
+      "fileReferences": [],
+      "aiComments": "Logs successful updates to notification email settings for existing notification email configurations. This occurs when users modify notification email properties such as subject, content, or recipient settings. Includes field name and notification email ID for tracking notification email configuration changes, monitoring email setting management, and ensuring proper notification email functionality updates across different form types and notification configurations.",
+      "domains": [
+        "FORM-BUILDER:EMAIL:NOTIFICATION",
+        "BACKEND:EMAILS:NOTIFICATION"
+      ]
+    },
+    {
+      "message": "OAuth2RestClient access token check failure",
+      "sumoEventText": "csrf_token_error",
+      "phpConstantKey": "CSRF_TOKEN_ERROR",
+      "fileReferences": [
+        "lib/Formstack/Client/OAuth2RestClient.php:113"
+      ],
+      "aiComments": "Logs when OAuth2 access token validation checks fail during API client operations. This occurs when the system attempts to validate OAuth2 access tokens but encounters authentication failures or token expiration issues. Includes OAuth2 details for tracking access token validation failures, monitoring OAuth2 authentication issues, and ensuring proper OAuth2 token management and error handling across different third-party service integrations.",
+      "domains": [
+        "FORM-BUILDER:INTEGRATION:AUTH-FAILED",
+        "CONNECTIVITY:AUTHENTICATION"
+      ]
+    },
+    {
+      "message": "Object marked for deletion",
+      "sumoEventText": "cache_large_object",
+      "phpConstantKey": "CACHE_LARGE_OBJECT",
+      "fileReferences": [
+        "lib/Formstack/Cron/S3Cleanup.php:165"
+      ],
+      "aiComments": "Logs when objects are marked for deletion during S3 cleanup operations. This occurs when the system identifies objects that are eligible for deletion based on retention policies or cleanup criteria. Includes object details for tracking S3 cleanup operations, monitoring storage management, and ensuring proper S3 storage lifecycle management and cost optimization across different object types and storage configurations."
+    },
+    {
+      "message": "OneDrive created anonymous link",
+      "sumoEventText": "ai_prompt_form_created",
+      "phpConstantKey": "AI_PROMPT_FORM_CREATED",
+      "fileReferences": [
+        "lib/Formstack/Model/SubmitAction/OneDrive.php:562"
+      ],
+      "aiComments": "Logs successful creation of anonymous sharing links for OneDrive files during submit action processing. This occurs when form submissions with file attachments are uploaded to OneDrive and anonymous sharing links are generated for file access. Includes link creation details for tracking OneDrive integration success, monitoring file sharing operations, and ensuring proper OneDrive submit action functionality across different file types and sharing configurations."
+    },
+    {
+      "message": "OneDrive created organization link",
+      "sumoEventText": "ai_prompt_form_created",
+      "phpConstantKey": "AI_PROMPT_FORM_CREATED",
+      "fileReferences": [
+        "lib/Formstack/Model/SubmitAction/OneDrive.php:569"
+      ],
+      "aiComments": "Logs successful creation of organization sharing links for OneDrive files during submit action processing. This occurs when form submissions with file attachments are uploaded to OneDrive and organization sharing links are generated for internal file access. Includes link creation details for tracking OneDrive integration success, monitoring file sharing operations, and ensuring proper OneDrive submit action functionality across different file types and organization sharing configurations."
+    },
+    {
+      "message": "OneDrive file uploaded",
+      "sumoEventText": "odin_file_upload",
+      "phpConstantKey": "ODIN_FILE_UPLOAD",
+      "fileReferences": [
+        "lib/Formstack/Model/SubmitAction/OneDrive.php:552"
+      ],
+      "aiComments": "Logs successful completion of OneDrive file upload operations during submit action processing. This occurs when form submissions with file attachments are successfully uploaded to OneDrive cloud storage. Includes upload details for tracking OneDrive integration success, monitoring file upload operations, and ensuring proper OneDrive submit action functionality across different file types and upload configurations."
+    },
+    {
+      "message": "OneDrive run finishing with upload links",
+      "sumoEventText": "odin_file_upload",
+      "phpConstantKey": "ODIN_FILE_UPLOAD",
+      "fileReferences": [
+        "lib/Formstack/Model/SubmitAction/OneDrive.php:393"
+      ],
+      "aiComments": "Logs when OneDrive submit actions complete successfully with upload links generated for file access. This occurs when form submissions with file attachments are processed and OneDrive upload links are created for file sharing. Includes upload link details for tracking OneDrive integration completion, monitoring file upload success, and ensuring proper OneDrive submit action functionality across different file types and upload configurations."
+    },
+    {
+      "message": "OneDrive SubmitAction run",
+      "sumoEventText": "submitaction_run",
+      "phpConstantKey": "USER_ACTIVITY_SUBMITACTION_RUN",
+      "fileReferences": [
+        "lib/Formstack/Model/SubmitAction/OneDrive.php:330"
+      ],
+      "aiComments": "Logs when OneDrive submit actions are executed for form submissions. This occurs when form submissions trigger OneDrive submit actions to upload files to OneDrive cloud storage. Includes submit action details for tracking OneDrive integration execution, monitoring file upload operations, and ensuring proper OneDrive submit action functionality across different form types and file upload configurations.",
+      "domains": [
+        "SUBMISSION:EGRESS:SUBMIT-ACTION",
+        "FORM-BUILDER:INTEGRATION:ONEDRIVE"
+      ]
+    },
+    {
+      "message": "OpenSearchReindexFormJob Initializing",
+      "sumoEventText": "",
+      "phpConstantKey": "",
+      "fileReferences": [
+        "lib/Formstack/Job/OpensearchReindexFormJob.php:180"
+      ],
+      "aiComments": "Logs the initialization phase of OpenSearch form reindexing jobs. This occurs when background jobs start to rebuild search indexes for specific forms in OpenSearch. Includes form validation, database connection setup, and payload verification to ensure proper search index maintenance and form data synchronization.",
+      "domains": [
+        "BACKEND:SEARCH:OPENSEARCH",
+        "BACKEND:QUEUES"
+      ]
+    },
+    {
+      "message": "OpenSearchReindexFormJob Starting",
+      "sumoEventText": "",
+      "phpConstantKey": "",
+      "fileReferences": [
+        "lib/Formstack/Job/OpensearchReindexFormJob.php:285"
+      ],
+      "aiComments": "Logs the start of OpenSearch form reindexing job execution. This occurs when the job begins processing form submissions to rebuild search indexes. Includes status observer notifications and scheduled task status updates to track reindexing progress and ensure search index consistency across the platform.",
+      "domains": [
+        "BACKEND:SEARCH:OPENSEARCH",
+        "BACKEND:QUEUES"
+      ]
+    },
+    {
+      "message": "OpenSearchReindexFormJob Success",
+      "sumoEventText": "portals_email_queue_success",
+      "phpConstantKey": "PORTALS_EMAIL_QUEUE_SUCCESS",
+      "fileReferences": [
+        "lib/Formstack/Job/OpensearchReindexFormJob.php:298"
+      ],
+      "aiComments": "Logs successful completion of OpenSearch form reindexing jobs. This occurs when form reindexing operations complete successfully and search indexes are updated with the latest form data. Includes job completion details for tracking reindexing success, monitoring search index maintenance, and ensuring proper OpenSearch data synchronization and search functionality across the platform.",
+      "domains": [
+        "BACKEND:SEARCH:OPENSEARCH",
+        "BACKEND:QUEUES"
+      ]
+    },
+    {
+      "message": "OpensearchSubmissionDocumentUpdate queue created for {submissionId}.",
+      "sumoEventText": "cron_emailqueue",
+      "phpConstantKey": "CRON_EMAIL_QUEUE",
+      "fileReferences": [],
+      "aiComments": "Logs when OpenSearch submission document update jobs are queued for background processing. This occurs when submission data changes require updates to the search index and update jobs are created for processing. Includes submission ID for tracking search index update job creation, monitoring OpenSearch data synchronization, and ensuring proper search index maintenance and data consistency across different submission types and update operations.",
+      "domains": [
+        "BACKEND:SEARCH:OPENSEARCH",
+        "BACKEND:QUEUES"
+      ]
+    },
+    {
+      "message": "Override duplicate job queuing",
+      "sumoEventText": "",
+      "phpConstantKey": "",
+      "fileReferences": [
+        "lib/Formstack/Builder/ExportSubmissionsJobBuilder.php:94"
+      ],
+      "aiComments": "Logs when duplicate export job queuing is bypassed due to existing job validation. This occurs when the system detects an export job is already in progress and overrides the duplicate prevention mechanism. Includes export details and error information to track job queuing conflicts and ensure proper export job management.",
+      "domains": [
+        "SUBMISSION:EGRESS:EXPORT",
+        "BACKEND:QUEUES:IDEMPOTENCY"
+      ]
+    },
+    {
+      "message": "PartialSubmission processing started for {formId}",
+      "sumoEventText": "cron_deletepartialsubmissions",
+      "phpConstantKey": "CRON_DELETEPARTIALSUBMISSIONS",
+      "fileReferences": [],
+      "aiComments": "Logs when partial submission processing begins for specific forms. This occurs when the system starts processing incomplete or partial form submissions for cleanup or completion. Includes form ID for tracking partial submission processing, monitoring form submission cleanup operations, and ensuring proper partial submission management across different form types and processing scenarios.",
+      "domains": [
+        "SUBMISSION:VALIDATION",
+        "BACKEND:QUEUES"
+      ]
+    },
+    {
+      "message": "PayflowProClient API call",
+      "sumoEventText": "api_call",
+      "phpConstantKey": "API_CALL",
+      "fileReferences": [],
+      "aiComments": "Logs API calls made to PayflowPro payment processing services. This occurs during payment processing operations when the system communicates with PayflowPro for transaction processing. Includes API call details for tracking payment processing activities, monitoring payment gateway connectivity, and ensuring proper payment transaction handling and security compliance across different payment scenarios.",
+      "domains": [
+        "BACKEND:SUBMIT-ACTIONS:PAYMENTS",
+        "CONNECTIVITY"
+      ]
+    },
+    {
+      "message": "PayPal (Payflow Pro) Submit Action success",
+      "sumoEventText": "form_submit_error",
+      "phpConstantKey": "FORM_SUBMIT_ERROR",
+      "fileReferences": [],
+      "aiComments": "Logs successful completion of PayPal Payflow Pro submit actions for form submissions. This occurs when form submissions are successfully processed and payment transactions are completed through PayPal Payflow Pro. Includes submit action details for tracking PayPal payment processing success, monitoring payment transaction completion, and ensuring proper PayPal submit action functionality across different form types and payment configurations.",
+      "domains": [
+        "SUBMISSION:EGRESS:SUBMIT-ACTION",
+        "FORM-BUILDER:INTEGRATION:PAYMENTS"
+      ]
+    },
+    {
+      "message": "PayPal API call",
+      "sumoEventText": "api_call",
+      "phpConstantKey": "API_CALL",
+      "fileReferences": [
+        "lib/Formstack/Model/SubmitAction/PayPalPro.php:693"
+      ],
+      "aiComments": "Logs API calls made to PayPal payment processing services. This occurs during payment processing operations when the system communicates with PayPal for transaction processing. Includes API call details for tracking payment processing activities, monitoring payment gateway connectivity, and ensuring proper payment transaction handling and security compliance across different payment scenarios.",
+      "domains": [
+        "BACKEND:SUBMIT-ACTIONS:PAYMENTS",
+        "CONNECTIVITY"
+      ]
+    },
+    {
+      "message": "post data preparation / pre reuquest",
+      "sumoEventText": "cache_invalid_data",
+      "phpConstantKey": "CACHE_INVALID_DATA",
+      "fileReferences": [
+        "lib/Formstack/Model/SubmitAction/WebHook.php:466"
+      ],
+      "aiComments": "Logs when webhook data preparation begins before making webhook requests. This occurs when the system prepares form submission data for webhook delivery and performs pre-request validation. Includes webhook details for tracking webhook data preparation, monitoring webhook request processing, and ensuring proper webhook submit action functionality across different form types and webhook configurations.",
+      "domains": [
+        "BACKEND:SUBMIT-ACTIONS:WEBHOOK",
+        "SUBMISSION:EGRESS:SUBMIT-ACTION"
+      ]
+    },
+    {
+      "message": "post request - Webhook run completed as expected",
+      "sumoEventText": "sendgrid_webhook",
+      "phpConstantKey": "SENDGRID_WEBHOOK",
+      "fileReferences": [
+        "lib/Formstack/Model/SubmitAction/WebHook.php:482"
+      ],
+      "aiComments": "Logs successful completion of webhook requests during submit action processing. This occurs when webhook submit actions complete successfully and webhook requests are delivered as expected. Includes webhook details for tracking webhook delivery success, monitoring webhook request processing, and ensuring proper webhook submit action functionality across different form types and webhook configurations.",
+      "domains": [
+        "BACKEND:SUBMIT-ACTIONS:WEBHOOK",
+        "SUBMISSION:EGRESS:SUBMIT-ACTION"
+      ]
+    },
+    {
+      "message": "Pre data preparation",
+      "sumoEventText": "cache_invalid_data",
+      "phpConstantKey": "CACHE_INVALID_DATA",
+      "fileReferences": [
+        "lib/Formstack/Model/SubmitAction/WebHook.php:232"
+      ],
+      "aiComments": "Logs when webhook data preparation begins before webhook request processing. This occurs when the system starts preparing form submission data for webhook delivery and performs initial data validation. Includes webhook details for tracking webhook data preparation initiation, monitoring webhook request processing, and ensuring proper webhook submit action functionality across different form types and webhook configurations.",
+      "domains": [
+        "BACKEND:SUBMIT-ACTIONS:WEBHOOK",
+        "SUBMISSION:EGRESS:SUBMIT-ACTION"
+      ]
+    },
+    {
+      "message": "Prefill Mapping security settings update",
+      "sumoEventText": "prefill_mapping_mapping",
+      "phpConstantKey": "PREFILL_MAPPING_MAPPING",
+      "fileReferences": [
+        "lib/Formstack/Service/PrefillMappingService.php:368"
+      ],
+      "aiComments": "Logs when prefill mapping security settings are updated for form field prefill configurations. This occurs when administrators modify security settings for prefill mappings to control data access and validation. Includes prefill mapping details for tracking security setting updates, monitoring prefill mapping configuration changes, and ensuring proper prefill mapping security management across different form types and prefill configurations.",
+      "domains": [
+        "FORM-BUILDER:FIELD",
+        "BACKEND:SECURITY"
+      ]
+    },
+    {
+      "message": "Processed batch for {workerName}",
+      "sumoEventText": "",
+      "phpConstantKey": "",
+      "fileReferences": [],
+      "aiComments": "Logs successful completion of batch job processing by background workers. This occurs when batch workers finish processing multiple queued items together for efficiency. Includes worker name and batch size for monitoring worker performance, throughput, and ensuring proper batch job execution across the distributed worker system.",
+      "domains": [
+        "BACKEND:QUEUES",
+        "BACKEND:OBSERVABILITY"
+      ]
+    },
+    {
+      "message": "Processing field for data preparation",
+      "sumoEventText": "credit_card_field_migrate_tool",
+      "phpConstantKey": "CREDIT_CARD_FIELD_MIGRATE_TOOL",
+      "fileReferences": [
+        "lib/Formstack/Model/SubmitAction/WebHook.php:263"
+      ],
+      "aiComments": "Logs when form fields are processed during data preparation for webhook delivery. This occurs when the system processes individual form fields to prepare data for webhook requests. Includes field processing details for tracking webhook data preparation, monitoring field data processing, and ensuring proper webhook submit action functionality across different form types and field configurations.",
+      "domains": [
+        "BACKEND:SUBMIT-ACTIONS:WEBHOOK",
+        "FORM-BUILDER:FIELD"
+      ]
+    },
+    {
+      "message": "Queue Payload Encoding",
+      "sumoEventText": "cron_emailqueue",
+      "phpConstantKey": "CRON_EMAIL_QUEUE",
+      "fileReferences": [
+        "lib/Formstack/Email.php:482"
+      ],
+      "aiComments": "Logs when queue payloads are encoded for background job processing. This occurs when the system prepares job data for queuing and encodes payloads for efficient processing. Includes encoding details for tracking queue payload preparation, monitoring job queuing operations, and ensuring proper background job processing and data serialization across different job types and queue systems.",
+      "domains": [
+        "BACKEND:QUEUES",
+        "BACKEND:EMAILS"
+      ]
+    },
+    {
+      "message": "Queued form reindex job for ScheduledSearchReindex",
+      "sumoEventText": "submit_action_webhook_queued",
+      "phpConstantKey": "WORKER_SUBMITACTION_WEBHOOK_QUEUED",
+      "fileReferences": [
+        "lib/Formstack/Cron/ScheduledTask/ScheduledSearchReindexTaskRunner.php:52"
+      ],
+      "aiComments": "Logs when form reindexing jobs are queued for scheduled search reindexing operations. This occurs when the system schedules form reindexing jobs to maintain search index consistency. Includes job queuing details for tracking search reindexing job scheduling, monitoring OpenSearch index maintenance, and ensuring proper search index consistency management across different form types and reindexing operations.",
+      "domains": [
+        "BACKEND:SEARCH:OPENSEARCH",
+        "BACKEND:QUEUES"
+      ]
+    },
+    {
+      "message": "ReCAPTCHA score below threshold",
+      "sumoEventText": "captcha",
+      "phpConstantKey": "CAPTCHA",
+      "fileReferences": [
+        "lib/Formstack/Service/CaptchaVerifyService.php:90"
+      ],
+      "aiComments": "Logs when ReCAPTCHA verification scores fall below the configured threshold during form submission validation. This occurs when the system detects potential bot activity or suspicious form submissions based on ReCAPTCHA scoring. Includes ReCAPTCHA details for tracking bot detection, monitoring form security, and ensuring proper spam prevention and form submission validation across different form types and security configurations.",
+      "domains": [
+        "SUBMISSION:VALIDATION",
+        "BACKEND:SECURITY"
+      ]
+    },
+    {
+      "message": "Redirect to a custom domain",
+      "sumoEventText": "redirect_url",
+      "phpConstantKey": "REDIRECT_URL",
+      "fileReferences": [],
+      "aiComments": "Logs when form submissions are redirected to custom domains after successful submission processing. This occurs when forms are configured to redirect users to external websites or custom domains after submission completion. Includes redirect details for tracking form submission redirects, monitoring user flow after form completion, and ensuring proper form submission redirect functionality across different form types and redirect configurations.",
+      "domains": [
+        "LIVE-FORM",
+        "SUBMISSION:EGRESS"
+      ]
+    },
+    {
+      "message": "Reindexed Submission {$submissionId}",
+      "sumoEventText": "auto_delete_submissions_account_settings",
+      "phpConstantKey": "AUTO_DELETE_SUBMISSIONS_ACCOUNT_SETTINGS",
+      "fileReferences": [],
+      "aiComments": "Logs successful reindexing of submission documents in OpenSearch search indexes. This occurs when submission data is updated in the search index to maintain search functionality and data consistency. Includes submission ID for tracking search index updates, monitoring OpenSearch data synchronization, and ensuring proper search index maintenance and data consistency across different submission types and indexing operations.",
+      "domains": [
+        "BACKEND:SEARCH:OPENSEARCH",
+        "SUBMISSION:VALIDATION"
+      ]
+    },
+    {
+      "message": "Rejecting queue message over retry count",
+      "sumoEventText": "cron_emailqueue",
+      "phpConstantKey": "CRON_EMAIL_QUEUE",
+      "fileReferences": [
+        "lib/Formstack/Worker.php:435"
+      ],
+      "aiComments": "Logs when queue messages are rejected due to exceeding the maximum retry count during background job processing. This occurs when jobs fail repeatedly and reach the retry limit, so they are permanently rejected from the queue. Includes retry details for tracking job failure patterns, monitoring queue message processing, and ensuring proper job failure handling and queue management across different job types and retry configurations.",
+      "domains": [
+        "BACKEND:QUEUES:RETRIES",
+        "BACKEND:QUEUES:JOB-FAILED"
+      ]
+    },
+    {
+      "message": "Report load successful for {reportId}",
+      "sumoEventText": "report_loaded",
+      "phpConstantKey": "USER_ACTIVITY_REPORT_LOADED",
+      "fileReferences": [],
+      "aiComments": "Logs successful loading of reports in the system. This occurs when users access reports and the system successfully loads report data and configurations. Includes report ID for tracking report access activities, monitoring report usage patterns, and ensuring proper report functionality and user experience across different report types and access methods.",
+      "domains": [
+        "BACKEND:ANALYTICS",
+        "SUBMISSION:EGRESS:EXPORT"
+      ]
+    },
+    {
+      "message": "ReportExport found after wait",
+      "sumoEventText": "theme_not_found",
+      "phpConstantKey": "FORM_THEME_INVALID",
+      "fileReferences": [
+        "lib/Formstack/Job/ExportSubmissionsJob.php:609"
+      ],
+      "aiComments": "Logs when report export files are found after waiting for export completion. This occurs when export jobs complete and the system successfully locates the generated export files. Includes export details for tracking export file availability, monitoring export job completion, and ensuring proper export file generation and retrieval across different export types and file formats.",
+      "domains": [
+        "SUBMISSION:EGRESS:EXPORT",
+        "BACKEND:QUEUES"
+      ]
+    },
+    {
+      "message": "ReportExport found immediately",
+      "sumoEventText": "theme_not_found",
+      "phpConstantKey": "FORM_THEME_INVALID",
+      "fileReferences": [
+        "lib/Formstack/Job/ExportSubmissionsJob.php:615"
+      ],
+      "aiComments": "Logs when report export files are found immediately without waiting for export completion. This occurs when export files are already available and the system can retrieve them without delay. Includes export details for tracking export file availability, monitoring export job efficiency, and ensuring proper export file generation and retrieval across different export types and file formats.",
+      "domains": [
+        "SUBMISSION:EGRESS:EXPORT",
+        "BACKEND:QUEUES"
+      ]
+    },
+    {
+      "message": "Response was not 201 when trying to create ticket in {type}",
+      "sumoEventText": "ai_prompt_form_created",
+      "phpConstantKey": "AI_PROMPT_FORM_CREATED",
+      "fileReferences": [],
+      "aiComments": "Logs when ticket creation operations fail due to unexpected HTTP response codes in ticketing system integrations. This occurs when form submissions trigger ticket creation but the ticketing system returns non-201 status codes indicating failure. Includes ticketing system details for tracking ticket creation failures, monitoring ticketing integration issues, and ensuring proper ticketing submit action error handling and user notification across different ticketing systems and integration configurations.",
+      "domains": [
+        "FORM-BUILDER:INTEGRATION",
+        "BACKEND:SUBMIT-ACTIONS:RETRY-EXHAUSTED"
+      ]
+    },
+    {
+      "message": "Running. Submission: {submissionId} SubmitAction: {sourceid}",
+      "sumoEventText": "auto_delete_submissions_account_settings",
+      "phpConstantKey": "AUTO_DELETE_SUBMISSIONS_ACCOUNT_SETTINGS",
+      "fileReferences": [],
+      "aiComments": "Logs when submit actions are executed for specific form submissions. This occurs when form submissions trigger submit actions and the system begins processing the submit action logic. Includes submission ID and submit action ID for tracking submit action execution, monitoring form submission processing, and ensuring proper submit action functionality across different form types and submit action configurations.",
+      "domains": [
+        "SUBMISSION:EGRESS:SUBMIT-ACTION",
+        "BACKEND:SUBMIT-ACTIONS"
+      ]
+    },
+    {
+      "message": "runUploadSubmitActions failed to complete",
+      "sumoEventText": "form_update_failed",
+      "phpConstantKey": "FORM_UPDATE_FAILED",
+      "fileReferences": [
+        "lib/Formstack/Controller/PublicFormController.php:417"
+      ],
+      "aiComments": "Logs when upload submit actions fail to complete during form submission processing. This occurs when form submissions with file uploads encounter errors during submit action execution. Includes upload details for tracking upload submit action failures, monitoring file upload processing issues, and ensuring proper upload submit action error handling and user notification across different form types and file upload configurations.",
+      "domains": [
+        "BACKEND:SUBMIT-ACTIONS:RETRY-EXHAUSTED",
+        "BACKEND:FILES:UPLOAD-FAILED"
+      ]
+    },
+    {
+      "message": "S3 single-part upload completed successfully",
+      "sumoEventText": "s3",
+      "phpConstantKey": "S3",
+      "fileReferences": [],
+      "aiComments": "Logs successful completion of single-part file uploads to Amazon S3 storage. This occurs when files are uploaded to S3 using single-part upload method for smaller files. Includes upload details for tracking S3 upload success, monitoring file storage operations, and ensuring proper S3 submit action functionality across different file types and upload configurations.",
+      "domains": [
+        "SUBMISSION:EGRESS:SUBMIT-ACTION",
+        "FORM-BUILDER:INTEGRATION:AMAZON-S3"
+      ]
+    },
+    {
+      "message": "SalesforceClient API call",
+      "sumoEventText": "api_call",
+      "phpConstantKey": "API_CALL",
+      "fileReferences": [],
+      "aiComments": "Logs API calls made to Salesforce CRM services. This occurs during Salesforce integration operations when the system communicates with Salesforce for contact management, lead tracking, and CRM data synchronization. Includes API call details for tracking Salesforce integration activities, monitoring CRM service connectivity, and ensuring proper Salesforce submit action functionality across different form types and CRM configurations.",
+      "domains": [
+        "FORM-BUILDER:INTEGRATION:SALESFORCE",
+        "CONNECTIVITY"
+      ]
+    },
+    {
+      "message": "SAML Authentication Succeeded",
+      "sumoEventText": "saml_authentication",
+      "phpConstantKey": "USER_ACTIVITY_SAML_AUTH",
+      "fileReferences": [
+        "lib/Formstack/Model/AuthProvider/SAMLAuthProvider.php:401"
+      ],
+      "aiComments": "Logs successful SAML authentication events when users sign in through SAML identity providers. This occurs during SSO authentication flows when users authenticate via enterprise identity systems. Includes authentication details for tracking SSO usage patterns, ensuring proper security compliance, and monitoring SAML authentication success rates across different identity providers.",
+      "domains": [
+        "LIVE-FORM:AUTHENTICATION:SAML",
+        "BACKEND:AUTHENTICATION"
+      ]
+    },
+    {
+      "message": "SAML Form Authentication Auth Provider Mismatch",
+      "sumoEventText": "auth_provider_saml",
+      "phpConstantKey": "AUTH_PROVIDER_SAML",
+      "fileReferences": [
+        "lib/Formstack/Model/AuthProvider.php:787"
+      ],
+      "aiComments": "Logs when SAML form authentication encounters auth provider mismatches during authentication operations. This occurs when the system detects inconsistencies between expected and actual SAML authentication providers for form-level authentication. Includes authentication details for tracking SAML authentication issues, monitoring form-level security problems, and ensuring proper SAML authentication provider validation across different form types and authentication configurations.",
+      "domains": [
+        "LIVE-FORM:AUTHENTICATION:SAML",
+        "BACKEND:AUTHENTICATION"
+      ]
+    },
+    {
+      "message": "SAML metadata validation summary",
+      "sumoEventText": "auth_provider_saml",
+      "phpConstantKey": "AUTH_PROVIDER_SAML",
+      "fileReferences": [
+        "lib/Formstack/Model/AuthProvider/SAMLAuthProvider.php:494"
+      ],
+      "aiComments": "Logs when SAML metadata validation operations complete and provide summary information. This occurs when the system validates SAML metadata for authentication providers and generates validation summaries. Includes validation details for tracking SAML metadata validation results, monitoring SAML configuration health, and ensuring proper SAML authentication provider setup and configuration across different identity providers and metadata sources.",
+      "domains": [
+        "LIVE-FORM:AUTHENTICATION:SAML-CONFIGURATION",
+        "BACKEND:AUTHENTICATION"
+      ]
+    },
+    {
+      "message": "Save unique view for form {formId}",
+      "sumoEventText": "fsid_could_not_add_user_because_email_not_unique",
+      "phpConstantKey": "FSID_COULD_NOT_ADD_USER_BECAUSE_EMAIL_NOT_UNIQUE",
+      "fileReferences": [],
+      "aiComments": "Logs when unique form views are saved for form analytics tracking. This occurs when the system records unique form views for analytics and performance monitoring. Includes form ID for tracking form view analytics, monitoring form popularity, and ensuring proper form analytics data collection and reporting across different form types and viewing scenarios.",
+      "domains": [
+        "BACKEND:ANALYTICS",
+        "LIVE-FORM:VIEW"
+      ]
+    },
+    {
+      "message": "SCIM API call to {requestUri}",
+      "sumoEventText": "api_call",
+      "phpConstantKey": "API_CALL",
+      "fileReferences": [],
+      "aiComments": "Logs API calls made to SCIM (System for Cross-domain Identity Management) services. This occurs during SCIM integration operations when the system communicates with SCIM providers for user identity management and synchronization. Includes API call details for tracking SCIM integration activities, monitoring identity management operations, and ensuring proper SCIM API functionality across different identity providers and SCIM configurations.",
+      "domains": [
+        "BACKEND:AUTHENTICATION",
+        "CONNECTIVITY"
+      ]
+    },
+    {
+      "message": "ScriptApplication end",
+      "sumoEventText": "application",
+      "phpConstantKey": "APPLICATION",
+      "fileReferences": [
+        "lib/Formstack/ScriptApplication.php:27"
+      ],
+      "aiComments": "Logs when script applications complete execution and terminate. This occurs when background scripts or command-line applications finish their processing and shut down. Includes application details for tracking script execution completion, monitoring application lifecycle management, and ensuring proper script application termination and resource cleanup across different script types and execution contexts.",
+      "domains": [
+        "BACKEND:OBSERVABILITY",
+        "BACKEND:QUEUES"
+      ]
+    },
+    {
+      "message": "SendGrid webhook for sendgridMessageId {sendgridMessageId}",
+      "sumoEventText": "sendgrid_webhook",
+      "phpConstantKey": "SENDGRID_WEBHOOK",
+      "fileReferences": [],
+      "aiComments": "Logs when SendGrid webhooks are received for specific email messages. This occurs when SendGrid sends webhook notifications about email delivery status, bounces, or other email events. Includes SendGrid message ID for tracking email delivery events, monitoring email service webhook processing, and ensuring proper email delivery tracking and notification handling across different email types and delivery scenarios.",
+      "domains": [
+        "BACKEND:EMAILS:WEBHOOK-STATUS",
+        "BACKEND:EMAILS"
+      ]
+    },
+    {
+      "message": "Sending email to SendGrid failed",
+      "sumoEventText": "cron_emailqueue",
+      "phpConstantKey": "CRON_EMAIL_QUEUE",
+      "fileReferences": [
+        "lib/Formstack/Job/SendEmailJob.php:542"
+      ],
+      "aiComments": "Logs when email sending operations fail when attempting to send emails through SendGrid. This occurs when the system encounters errors during email delivery to SendGrid service. Includes email details for tracking email delivery failures, monitoring SendGrid service connectivity issues, and ensuring proper email delivery error handling and retry mechanisms across different email types and delivery configurations.",
+      "domains": [
+        "BACKEND:EMAILS:SENDGRID-SMTP",
+        "CONNECTIVITY"
+      ]
+    },
+    {
+      "message": "Sending email via customer SMTP failed",
+      "sumoEventText": "cron_emailqueue",
+      "phpConstantKey": "CRON_EMAIL_QUEUE",
+      "fileReferences": [
+        "lib/Formstack/Job/SendEmailJob.php:534"
+      ],
+      "aiComments": "Logs when email sending operations fail when attempting to send emails through customer SMTP configurations. This occurs when the system encounters errors during email delivery to customer SMTP servers. Includes email details for tracking email delivery failures, monitoring customer SMTP connectivity issues, and ensuring proper email delivery error handling and retry mechanisms across different email types and SMTP configurations.",
+      "domains": [
+        "BACKEND:EMAILS",
+        "CONNECTIVITY"
+      ]
+    },
+    {
+      "message": "Sending Message",
+      "sumoEventText": "pusher_message_sent",
+      "phpConstantKey": "PUSHER_MESSAGE_SENT",
+      "fileReferences": [
+        "lib/Formstack/DataTeam/Client/DataTeamSqsClient.php:92"
+      ],
+      "aiComments": "Logs when messages are sent through the messaging system for real-time communication. This occurs when the system sends messages to users or systems for notifications, updates, or real-time communication. Includes message details for tracking message delivery, monitoring real-time communication, and ensuring proper message delivery and notification handling across different message types and communication channels.",
+      "domains": [
+        "BACKEND:QUEUES",
+        "BACKEND:OBSERVABILITY"
+      ]
+    },
+    {
+      "message": "Sent tracked event to SiftScience",
+      "sumoEventText": "pusher_message_sent",
+      "phpConstantKey": "PUSHER_MESSAGE_SENT",
+      "fileReferences": [
+        "lib/Formstack/Client/SiftScienceClient.php:226"
+      ],
+      "aiComments": "Logs when tracked events are successfully sent to Sift Science fraud detection service. This occurs when the system sends user behavior and transaction data to Sift Science for fraud analysis and risk assessment. Includes event details for tracking fraud detection activities, monitoring Sift Science integration, and ensuring proper fraud prevention and risk management across different user activities and transaction types.",
+      "domains": [
+        "BACKEND:SECURITY",
+        "CONNECTIVITY"
+      ]
+    },
+    {
+      "message": "Setting aux session cookie in startAction",
+      "sumoEventText": "auto_delete_submissions_account_settings",
+      "phpConstantKey": "AUTO_DELETE_SUBMISSIONS_ACCOUNT_SETTINGS",
+      "fileReferences": [
+        "lib/Formstack/Controller/PlatformSsoController.php:233"
+      ],
+      "aiComments": "Logs when auxiliary session cookies are set during SSO authentication start actions. This occurs when the system establishes session cookies for SSO authentication flows and user session management. Includes session details for tracking SSO authentication cookie management, monitoring user session establishment, and ensuring proper SSO authentication and session handling across different authentication providers and session configurations.",
+      "domains": [
+        "BACKEND:AUTHENTICATION",
+        "LIVE-FORM:AUTHENTICATION:SSO"
+      ]
+    },
+    {
+      "message": "Shared report load successful for {reportId}",
+      "sumoEventText": "report_loaded",
+      "phpConstantKey": "USER_ACTIVITY_REPORT_LOADED",
+      "fileReferences": [],
+      "aiComments": "Logs successful loading of shared reports in the system. This occurs when users access shared reports and the system successfully loads report data and configurations. Includes report ID for tracking shared report access activities, monitoring report sharing usage patterns, and ensuring proper shared report functionality and user experience across different report types and sharing configurations.",
+      "domains": [
+        "BACKEND:ANALYTICS",
+        "SUBMISSION:EGRESS:EXPORT"
+      ]
+    },
+    {
+      "message": "Shared submission {submissionId} view",
+      "sumoEventText": "auto_delete_submissions_account_settings",
+      "phpConstantKey": "AUTO_DELETE_SUBMISSIONS_ACCOUNT_SETTINGS",
+      "fileReferences": [],
+      "aiComments": "Logs when shared submissions are viewed by users. This occurs when users access shared submission data through sharing links or shared access methods. Includes submission ID for tracking shared submission access activities, monitoring submission sharing usage patterns, and ensuring proper shared submission functionality and access control across different submission types and sharing configurations.",
+      "domains": [
+        "SUBMISSION:VALIDATION",
+        "BACKEND:ANALYTICS"
+      ]
+    },
+    {
+      "message": "Shutting down",
+      "sumoEventText": "cron_downgrade_expired_trials",
+      "phpConstantKey": "CRON_DOWNGRADE_EXPIRED_TRIALS",
+      "fileReferences": [
+        "lib/Formstack/Worker.php:798"
+      ],
+      "aiComments": "Logs when background workers or services are shutting down gracefully. This occurs when workers complete their processing cycles or when the system initiates shutdown procedures for maintenance or updates. Includes shutdown details for tracking worker lifecycle management, monitoring system shutdown procedures, and ensuring proper resource cleanup and graceful shutdown across different worker types and system components.",
+      "domains": [
+        "BACKEND:QUEUES",
+        "BACKEND:OBSERVABILITY"
+      ]
+    },
+    {
+      "message": "Skipped adding user to approval",
+      "sumoEventText": "portals_email_skipped_reminder",
+      "phpConstantKey": "PORTALS_EMAIL_SKIPPED_REMINDER",
+      "fileReferences": [
+        "lib/Formstack/Model/Form.php:4973"
+      ],
+      "aiComments": "Logs when users are skipped from being added to approval workflows. This occurs when the system determines that certain users should not be included in approval processes based on business rules or configuration settings. Includes user and approval details for tracking approval workflow exclusions, monitoring approval process efficiency, and ensuring proper approval workflow management across different form types and approval configurations.",
+      "domains": [
+        "BACKEND:WORKFLOW",
+        "SUBMISSION:VALIDATION"
+      ]
+    },
+    {
+      "message": "Skipped notification email due to logic",
+      "sumoEventText": "portals_email_skipped_reminder",
+      "phpConstantKey": "PORTALS_EMAIL_SKIPPED_REMINDER",
+      "fileReferences": [
+        "lib/Formstack/Service/SharedNotificationEmailService.php:92"
+      ],
+      "aiComments": "Logs when notification emails are skipped due to business logic or configuration rules. This occurs when the system determines that notification emails should not be sent based on specific conditions or user preferences. Includes notification details for tracking email skipping logic, monitoring notification email efficiency, and ensuring proper notification email management and user preference handling across different notification types and email configurations.",
+      "domains": [
+        "BACKEND:EMAILS",
+        "FORM-BUILDER:EMAIL:NOTIFICATION"
+      ]
+    },
+    {
+      "message": "Skipping data processing for frontend and double hidden {fieldId}s on submission for {formId}",
+      "sumoEventText": "cache_invalid_data",
+      "phpConstantKey": "CACHE_INVALID_DATA",
+      "fileReferences": [],
+      "aiComments": "Logs when data processing is skipped for frontend and double hidden fields during form submission processing. This occurs when the system identifies fields that are hidden by both frontend and backend processing and skips their data processing. Includes field ID and form ID for tracking field processing exclusions, monitoring form field validation efficiency, and ensuring proper hidden field handling across different form types and submission scenarios.",
+      "domains": [
+        "SUBMISSION:VALIDATION",
+        "FORM-BUILDER:FIELD:HIDDEN"
+      ]
+    },
+    {
+      "message": "Skipping ScheduledSearchReindex task not in queued status",
+      "sumoEventText": "scheduled_cancellations_task_runner",
+      "phpConstantKey": "SCHEDULED_CANCELLATIONS_TASK_RUNNER",
+      "fileReferences": [
+        "lib/Formstack/Cron/ScheduledTask/ScheduledSearchReindexTaskRunner.php:44"
+      ],
+      "aiComments": "Logs when scheduled search reindexing tasks are skipped due to incorrect status. This occurs when the system attempts to process scheduled reindexing tasks but finds they are not in the expected queued status. Includes task details for tracking reindexing task status validation, monitoring scheduled task processing, and ensuring proper search reindexing task management and status consistency across different task types and scheduling configurations.",
+      "domains": [
+        "BACKEND:SEARCH:OPENSEARCH",
+        "BACKEND:QUEUES"
+      ]
+    },
+    {
+      "message": "SmartsheetClient API call",
+      "sumoEventText": "api_call",
+      "phpConstantKey": "API_CALL",
+      "fileReferences": [],
+      "aiComments": "Logs API calls made to Smartsheet project management services. This occurs during Smartsheet integration operations when the system communicates with Smartsheet for project management and collaboration. Includes API call details for tracking Smartsheet integration activities, monitoring project management service connectivity, and ensuring proper Smartsheet submit action functionality across different form types and project management configurations.",
+      "domains": [
+        "FORM-BUILDER:INTEGRATION",
+        "CONNECTIVITY"
+      ]
+    },
+    {
+      "message": "Starting HardDeleteFormJob",
+      "sumoEventText": "",
+      "phpConstantKey": "",
+      "fileReferences": [
+        "lib/Formstack/Job/HardDeleteFormJob.php:27"
+      ],
+      "aiComments": "Logs the initiation of hard form deletion jobs that permanently remove forms and associated data. This occurs when forms marked for deletion are processed for complete removal from the system. Includes form ID for tracking deletion operations and ensuring proper cleanup of form data, submissions, and related resources during account deletion workflows.",
+      "domains": [
+        "BACKEND:DELETION:HARD",
+        "FORM-BUILDER"
+      ]
+    },
+    {
+      "message": "Starting S3 file upload",
+      "sumoEventText": "s3",
+      "phpConstantKey": "S3",
+      "fileReferences": [],
+      "aiComments": "Logs when S3 file upload operations begin for form submissions with file attachments. This occurs when the system starts uploading files to Amazon S3 storage during submit action processing. Includes upload details for tracking S3 upload initiation, monitoring file upload operations, and ensuring proper S3 submit action functionality across different file types and upload configurations.",
+      "domains": [
+        "SUBMISSION:EGRESS:SUBMIT-ACTION",
+        "FORM-BUILDER:INTEGRATION:AMAZON-S3"
+      ]
+    },
+    {
+      "message": "Stripe payment sucessfully taken",
+      "sumoEventText": "billing_anonymous_payment_method_update",
+      "phpConstantKey": "BILLING_ANONYMOUS_PAYMENT_METHOD_UPDATE",
+      "fileReferences": [
+        "lib/Formstack/FormIntegration/Stripe/Runner.php:611"
+      ],
+      "aiComments": "Logs successful completion of Stripe payment processing for form submissions. This occurs when form submissions with payment fields are successfully processed and payments are charged through Stripe. Includes payment details for tracking Stripe payment success, monitoring payment processing operations, and ensuring proper Stripe payment integration functionality across different form types and payment configurations.",
+      "domains": [
+        "SUBMISSION:EGRESS:SUBMIT-ACTION",
+        "FORM-BUILDER:INTEGRATION:PAYMENTS"
+      ]
+    },
+    {
+      "message": "Stripe submit action failed",
+      "sumoEventText": "form_submit_error",
+      "phpConstantKey": "FORM_SUBMIT_ERROR",
+      "fileReferences": [
+        "lib/Formstack/FormIntegration/Stripe/Runner.php:639"
+      ],
+      "aiComments": "Logs when Stripe submit actions fail during form submission processing. This occurs when form submissions with Stripe payment processing encounter errors during payment operations. Includes error details for tracking Stripe payment failures, monitoring payment processing issues, and ensuring proper Stripe payment integration error handling and user notification across different form types and payment scenarios.",
+      "domains": [
+        "BACKEND:SUBMIT-ACTIONS:PAYMENTS:DECLINED",
+        "FORM-BUILDER:INTEGRATION:PAYMENTS"
+      ]
+    },
+    {
+      "message": "Submission {submissionId} deleted",
+      "sumoEventText": "auto_delete_submissions_account_settings",
+      "phpConstantKey": "AUTO_DELETE_SUBMISSIONS_ACCOUNT_SETTINGS",
+      "fileReferences": [],
+      "aiComments": "Logs when form submissions are successfully deleted from the system. This occurs when users or administrators delete submissions or when automatic deletion processes remove submissions based on retention policies. Includes submission ID for tracking submission deletion activities, monitoring submission lifecycle management, and ensuring proper submission data cleanup and audit trails across different submission types and deletion scenarios.",
+      "domains": [
+        "BACKEND:DELETION:SOFT",
+        "SUBMISSION:VALIDATION"
+      ]
+    },
+    {
+      "message": "Submission {submissionId} deleted successfully",
+      "sumoEventText": "auto_delete_submissions_account_settings",
+      "phpConstantKey": "AUTO_DELETE_SUBMISSIONS_ACCOUNT_SETTINGS",
+      "fileReferences": [],
+      "aiComments": "Logs successful completion of form submission deletion operations. This occurs when form submissions are successfully removed from the system and all associated data is cleaned up. Includes submission ID for tracking successful submission deletion, monitoring submission deletion operations, and ensuring proper submission data cleanup and audit trails across different submission types and deletion methods.",
+      "domains": [
+        "BACKEND:DELETION:SOFT",
+        "SUBMISSION:VALIDATION"
+      ]
+    },
+    {
+      "message": "Submission {submissionId} exported successfully",
+      "sumoEventText": "auto_delete_submissions_account_settings",
+      "phpConstantKey": "AUTO_DELETE_SUBMISSIONS_ACCOUNT_SETTINGS",
+      "fileReferences": [],
+      "aiComments": "Logs successful completion of form submission export operations. This occurs when form submissions are successfully exported to various formats for data analysis or reporting purposes. Includes submission ID for tracking submission export success, monitoring export operations, and ensuring proper submission data export functionality across different export formats and submission types.",
+      "domains": [
+        "SUBMISSION:EGRESS:EXPORT",
+        "BACKEND:ANALYTICS"
+      ]
+    },
+    {
+      "message": "Submission {submissionId} view",
+      "sumoEventText": "auto_delete_submissions_account_settings",
+      "phpConstantKey": "AUTO_DELETE_SUBMISSIONS_ACCOUNT_SETTINGS",
+      "fileReferences": [],
+      "aiComments": "Logs when form submissions are viewed by users or administrators. This occurs when users access submission data through the form management interface or submission viewing functionality. Includes submission ID for tracking submission access activities, monitoring submission viewing patterns, and ensuring proper submission access control and audit trails across different submission types and access methods.",
+      "domains": [
+        "SUBMISSION:VALIDATION",
+        "BACKEND:ANALYTICS"
+      ]
+    },
+    {
+      "message": "Submission approval {submissionApprovalId} inserted",
+      "sumoEventText": "auto_delete_submissions_account_settings",
+      "phpConstantKey": "AUTO_DELETE_SUBMISSIONS_ACCOUNT_SETTINGS",
+      "fileReferences": [],
+      "aiComments": "Logs when submission approval records are inserted into the system for approval workflow management. This occurs when form submissions enter approval workflows and approval records are created for tracking approval status. Includes approval ID for tracking submission approval creation, monitoring approval workflow management, and ensuring proper submission approval processing and status tracking across different form types and approval configurations.",
+      "domains": [
+        "BACKEND:WORKFLOW",
+        "SUBMISSION:VALIDATION"
+      ]
+    },
+    {
+      "message": "Submission count sync job added to the queue",
+      "sumoEventText": "auto_delete_submissions_account_settings",
+      "phpConstantKey": "AUTO_DELETE_SUBMISSIONS_ACCOUNT_SETTINGS",
+      "fileReferences": [
+        "lib/Formstack/Controller/SubmissionsController.php:3465"
+      ],
+      "aiComments": "Logs when submission count synchronization jobs are queued for background processing. This occurs when the system needs to update submission counts for forms or accounts and queues synchronization jobs for processing. Includes job details for tracking submission count sync job queuing, monitoring submission count maintenance, and ensuring proper submission count accuracy and data consistency across different form types and account configurations.",
+      "domains": [
+        "BACKEND:ANALYTICS",
+        "BACKEND:QUEUES"
+      ]
+    },
+    {
+      "message": "Submission created on {formId}.",
+      "sumoEventText": "submission_created",
+      "phpConstantKey": "USER_ACTIVITY_SUBMISSION_CREATED",
+      "fileReferences": [],
+      "aiComments": "Logs successful form submission creation events when users submit forms. This occurs during form submission processing when new submission records are created in the database. Includes form ID for tracking submission patterns, form performance, and ensuring proper submission lifecycle management and analytics.",
+      "domains": [
+        "SUBMISSION:VALIDATION",
+        "BACKEND:ANALYTICS"
+      ]
+    },
+    {
+      "message": "Submission data contains private file url (post processing, completed as expected)",
+      "sumoEventText": "auto_delete_submissions_account_settings",
+      "phpConstantKey": "AUTO_DELETE_SUBMISSIONS_ACCOUNT_SETTINGS",
+      "fileReferences": [],
+      "aiComments": "Logs when submission data processing completes successfully after handling private file URLs. This occurs when form submissions contain private file URLs and the system successfully processes them during post-processing operations. Includes processing details for tracking private file URL handling, monitoring submission data processing, and ensuring proper private file URL management and security across different submission types and file configurations.",
+      "domains": [
+        "BACKEND:DATA-AT-REST:SUBMISSIONDATA",
+        "BACKEND:FILES:STORAGE"
+      ]
+    },
+    {
+      "message": "Submission data contains private file url (pre processing)",
+      "sumoEventText": "auto_delete_submissions_account_settings",
+      "phpConstantKey": "AUTO_DELETE_SUBMISSIONS_ACCOUNT_SETTINGS",
+      "fileReferences": [],
+      "aiComments": "Logs when submission data processing begins and detects private file URLs during pre-processing operations. This occurs when form submissions contain private file URLs and the system identifies them before processing. Includes processing details for tracking private file URL detection, monitoring submission data processing initiation, and ensuring proper private file URL handling and security across different submission types and file configurations.",
+      "domains": [
+        "BACKEND:DATA-AT-REST:SUBMISSIONDATA",
+        "BACKEND:FILES:STORAGE"
+      ]
+    },
+    {
+      "message": "Submission document not found when attempting to delete",
+      "sumoEventText": "auto_delete_submissions_account_settings",
+      "phpConstantKey": "AUTO_DELETE_SUBMISSIONS_ACCOUNT_SETTINGS",
+      "fileReferences": [
+        "lib/Formstack/Job/OpensearchSubmissionDocumentDeleteJob.php:60"
+      ],
+      "aiComments": "Logs when submission documents cannot be found in OpenSearch during deletion operations. This occurs when the system attempts to delete submission documents from search indexes but the documents are not found. Includes deletion details for tracking search index cleanup issues, monitoring OpenSearch document management, and ensuring proper search index consistency and document lifecycle management across different submission types and indexing operations.",
+      "domains": [
+        "BACKEND:SEARCH:OPENSEARCH",
+        "BACKEND:DELETION:SOFT"
+      ]
+    },
+    {
+      "message": "Submission Export Created",
+      "sumoEventText": "auto_delete_submissions_account_settings",
+      "phpConstantKey": "AUTO_DELETE_SUBMISSIONS_ACCOUNT_SETTINGS",
+      "fileReferences": [
+        "lib/Formstack/Job/ExportSubmissionsJob.php:156"
+      ],
+      "aiComments": "Logs when submission export files are successfully created during export operations. This occurs when export jobs complete and submission data is exported to various formats for data analysis or reporting. Includes export details for tracking submission export creation, monitoring export job completion, and ensuring proper submission data export functionality across different export formats and submission types.",
+      "domains": [
+        "SUBMISSION:EGRESS:EXPORT",
+        "BACKEND:QUEUES"
+      ]
+    },
+    {
+      "message": "Submission has a match using the new SHA 256 share key",
+      "sumoEventText": "auto_delete_submissions_account_settings",
+      "phpConstantKey": "AUTO_DELETE_SUBMISSIONS_ACCOUNT_SETTINGS",
+      "fileReferences": [
+        "lib/Formstack/Service/SharedSubmissionService.php:46"
+      ],
+      "aiComments": "Logs when submission sharing operations successfully match submissions using the new SHA 256 share key algorithm. This occurs when the system processes shared submission access requests and successfully identifies submissions using the updated cryptographic hash method. Includes sharing details for tracking submission sharing success, monitoring shared submission access, and ensuring proper submission sharing functionality and security across different submission types and sharing configurations.",
+      "domains": [
+        "SUBMISSION:VALIDATION",
+        "BACKEND:SECURITY"
+      ]
+    },
+    {
+      "message": "Submission limit hit, form unavailable",
+      "sumoEventText": "auto_delete_submissions_account_settings",
+      "phpConstantKey": "AUTO_DELETE_SUBMISSIONS_ACCOUNT_SETTINGS",
+      "fileReferences": [
+        "lib/Formstack/FormApplication.php:536"
+      ],
+      "aiComments": "Logs when forms become unavailable due to reaching submission limits. This occurs when forms have reached their maximum allowed submission count and are temporarily disabled to prevent further submissions. Includes form details for tracking submission limit enforcement, monitoring form availability, and ensuring proper form usage management and subscription limit enforcement across different form types and account configurations.",
+      "domains": [
+        "LIVE-FORM:RENDER",
+        "BACKEND:THROTTLING"
+      ]
+    },
+    {
+      "message": "Submission setting {field} for {submissionId} changed successfully",
+      "sumoEventText": "auto_delete_submissions_account_settings",
+      "phpConstantKey": "AUTO_DELETE_SUBMISSIONS_ACCOUNT_SETTINGS",
+      "fileReferences": [],
+      "aiComments": "Logs successful updates to submission settings or properties. This occurs when users or administrators modify submission configurations such as submission status, notes, or other submission properties. Includes field name and submission ID for tracking submission configuration changes, monitoring submission management activities, and ensuring proper submission setting updates and audit trails across different submission types and configuration changes.",
+      "domains": [
+        "SUBMISSION:VALIDATION",
+        "BACKEND:ANALYTICS"
+      ]
+    },
+    {
+      "message": "SubmissionCreated event dispatched for {submissionId}.",
+      "sumoEventText": "auto_delete_submissions_sso_event",
+      "phpConstantKey": "AUTO_DELETE_SUBMISSIONS_SSO_EVENT",
+      "fileReferences": [],
+      "aiComments": "Logs when submission created events are dispatched to the event system for processing. This occurs when new form submissions are created and the system dispatches events to notify other components about the submission creation. Includes submission ID for tracking submission event dispatching, monitoring event system processing, and ensuring proper submission event handling and notification across different submission types and event processing scenarios.",
+      "domains": [
+        "SUBMISSION:VALIDATION",
+        "BACKEND:QUEUES"
+      ]
+    },
+    {
+      "message": "Submissions Export File Created",
+      "sumoEventText": "submissions_export",
+      "phpConstantKey": "SUBMISSIONS_EXPORT",
+      "fileReferences": [
+        "lib/Formstack/Data/DataExporter.php:467",
+        "lib/Formstack/Data/MySQLDataAdapter.php:2050"
+      ],
+      "aiComments": "Logs when submission export files are successfully created during data export operations. This occurs when export jobs complete and submission data is exported to various formats for data analysis or reporting. Includes export details for tracking submission export file creation, monitoring export job completion, and ensuring proper submission data export functionality across different export formats and submission types.",
+      "domains": [
+        "SUBMISSION:EGRESS:EXPORT",
+        "BACKEND:QUEUES"
+      ]
+    },
+    {
+      "message": "Submissions fetch via API with search query finished.",
+      "sumoEventText": "auto_delete_submissions_account_settings",
+      "phpConstantKey": "AUTO_DELETE_SUBMISSIONS_ACCOUNT_SETTINGS",
+      "fileReferences": [
+        "lib/Formstack/Search/SubmissionSearchExaminer.php:49"
+      ],
+      "aiComments": "Logs when submission search operations via API complete successfully with search queries. This occurs when API requests for submission data include search parameters and the search operations finish processing. Includes search details for tracking API submission search completion, monitoring submission search performance, and ensuring proper API submission search functionality across different search types and API configurations.",
+      "domains": [
+        "API:V2",
+        "BACKEND:SEARCH"
+      ]
+    },
+    {
+      "message": "Submissions fetch via API with search query starting.",
+      "sumoEventText": "auto_delete_submissions_account_settings",
+      "phpConstantKey": "AUTO_DELETE_SUBMISSIONS_ACCOUNT_SETTINGS",
+      "fileReferences": [
+        "lib/Formstack/Search/SubmissionSearchExaminer.php:42"
+      ],
+      "aiComments": "Logs when submission search operations via API begin with search queries. This occurs when API requests for submission data include search parameters and the search operations start processing. Includes search details for tracking API submission search initiation, monitoring submission search performance, and ensuring proper API submission search functionality across different search types and API configurations.",
+      "domains": [
+        "API:V2",
+        "BACKEND:SEARCH"
+      ]
+    },
+    {
+      "message": "Submissions fetch with search query starting.",
+      "sumoEventText": "auto_delete_submissions_account_settings",
+      "phpConstantKey": "AUTO_DELETE_SUBMISSIONS_ACCOUNT_SETTINGS",
+      "fileReferences": [
+        "lib/Formstack/Search/SubmissionSearchExaminer.php:56"
+      ],
+      "aiComments": "Logs when submission search operations begin with search queries. This occurs when the system starts processing submission search requests that include search parameters and filters. Includes search details for tracking submission search initiation, monitoring submission search performance, and ensuring proper submission search functionality across different search types and search configurations.",
+      "domains": [
+        "BACKEND:SEARCH",
+        "SUBMISSION:VALIDATION"
+      ]
+    },
+    {
+      "message": "Submissions report with search query finished.",
+      "sumoEventText": "auto_delete_submissions_account_settings",
+      "phpConstantKey": "AUTO_DELETE_SUBMISSIONS_ACCOUNT_SETTINGS",
+      "fileReferences": [
+        "lib/Formstack/Search/SubmissionSearchExaminer.php:63"
+      ],
+      "aiComments": "Logs when submission report generation with search queries completes successfully. This occurs when the system finishes generating reports based on submission search results and search parameters. Includes report details for tracking submission report completion, monitoring report generation performance, and ensuring proper submission reporting functionality across different report types and search configurations.",
+      "domains": [
+        "BACKEND:ANALYTICS",
+        "SUBMISSION:EGRESS:EXPORT"
+      ]
+    },
+    {
+      "message": "SubmissionUpdated event dispatched for {submissionId}.",
+      "sumoEventText": "auto_delete_submissions_sso_event",
+      "phpConstantKey": "AUTO_DELETE_SUBMISSIONS_SSO_EVENT",
+      "fileReferences": [],
+      "aiComments": "Logs when submission updated events are dispatched to the event system for processing. This occurs when form submissions are modified and the system dispatches events to notify other components about the submission updates. Includes submission ID for tracking submission event dispatching, monitoring event system processing, and ensuring proper submission event handling and notification across different submission types and event processing scenarios.",
+      "domains": [
+        "SUBMISSION:VALIDATION",
+        "BACKEND:QUEUES"
+      ]
+    },
+    {
+      "message": "Submit Action {submitActionId} created successfully",
+      "sumoEventText": "form_submit_error",
+      "phpConstantKey": "FORM_SUBMIT_ERROR",
+      "fileReferences": [],
+      "aiComments": "Logs successful creation of submit actions for forms. This occurs when users or administrators create new submit actions to configure form submission processing and integrations. Includes submit action ID for tracking submit action creation, monitoring form integration setup, and ensuring proper submit action functionality and configuration management across different form types and submit action configurations.",
+      "domains": [
+        "FORM-BUILDER:INTEGRATION",
+        "BACKEND:SUBMIT-ACTIONS"
+      ]
+    },
+    {
+      "message": "Submit Action option {field} for {submitActionId} changed successfully",
+      "sumoEventText": "form_submit_error",
+      "phpConstantKey": "FORM_SUBMIT_ERROR",
+      "fileReferences": [],
+      "aiComments": "Logs successful updates to submit action options or settings. This occurs when users or administrators modify submit action configurations such as integration settings, API endpoints, or other submit action properties. Includes field name and submit action ID for tracking submit action configuration changes, monitoring form integration management, and ensuring proper submit action functionality updates across different form types and submit action configurations.",
+      "domains": [
+        "FORM-BUILDER:INTEGRATION",
+        "BACKEND:SUBMIT-ACTIONS"
+      ]
+    },
+    {
+      "message": "Submit actions selected for submission",
+      "sumoEventText": "form_submit_error",
+      "phpConstantKey": "FORM_SUBMIT_ERROR",
+      "fileReferences": [
+        "lib/Formstack/Controller/PublicFormController.php:549",
+        "lib/Formstack/Service/SharedSubmitActionService.php:177"
+      ],
+      "aiComments": "Logs when submit actions are selected and configured for form submission processing. This occurs when the system identifies which submit actions should be executed for a specific form submission based on form configuration and submission data. Includes submit action details for tracking submit action selection, monitoring form submission processing, and ensuring proper submit action execution and integration handling across different form types and submit action configurations.",
+      "domains": [
+        "SUBMISSION:EGRESS:SUBMIT-ACTION",
+        "BACKEND:SUBMIT-ACTIONS"
+      ]
+    },
+    {
+      "message": "SubmitAction {type} bulk run started for {submissionIds}",
+      "sumoEventText": "submitaction_success",
+      "phpConstantKey": "SUBMITACTION_SUCCESS",
+      "fileReferences": [],
+      "aiComments": "Logs when bulk submit action operations begin for multiple submissions. This occurs when the system starts processing submit actions for multiple form submissions in batch operations for efficiency. Includes submit action type and submission IDs for tracking bulk submit action execution, monitoring batch processing performance, and ensuring proper bulk submit action functionality across different submit action types and batch processing scenarios.",
+      "domains": [
+        "SUBMISSION:EGRESS:SUBMIT-ACTION",
+        "BACKEND:SUBMIT-ACTIONS"
+      ]
+    },
+    {
+      "message": "SubmitAction {type} run for {submissionId}",
+      "sumoEventText": "submitaction_success",
+      "phpConstantKey": "SUBMITACTION_SUCCESS",
+      "fileReferences": [],
+      "aiComments": "Logs when submit actions are executed for specific form submissions. This occurs when the system processes submit actions for individual form submissions based on form configuration and submission data. Includes submit action type and submission ID for tracking submit action execution, monitoring form submission processing, and ensuring proper submit action functionality across different submit action types and submission processing scenarios.",
+      "domains": [
+        "SUBMISSION:EGRESS:SUBMIT-ACTION",
+        "BACKEND:SUBMIT-ACTIONS"
+      ]
+    },
+    {
+      "message": "SubmitAction Integration",
+      "sumoEventText": "submitaction_success",
+      "phpConstantKey": "SUBMITACTION_SUCCESS",
+      "fileReferences": [
+        "lib/Formstack/Model/SubmitAction/OAuth2SubmitAction.php:648",
+        "lib/Formstack/Job/SubmitActionBulkJob.php:85",
+        "lib/Formstack/Job/AbstractSubmitActionJob.php:174",
+        "lib/Formstack/Job/SubmitActionBatchSingleJob.php:194"
+      ],
+      "aiComments": "Logs when submit action integrations are executed for form submissions. This occurs when the system processes submit actions that integrate with external services or APIs for form submission processing. Includes integration details for tracking submit action integration execution, monitoring form submission processing, and ensuring proper submit action integration functionality across different integration types and submission processing scenarios.",
+      "domains": [
+        "SUBMISSION:EGRESS:SUBMIT-ACTION",
+        "FORM-BUILDER:INTEGRATION"
+      ]
+    },
+    {
+      "message": "SubmitAction Job Before Decrypting",
+      "sumoEventText": "submitaction_success",
+      "phpConstantKey": "SUBMITACTION_SUCCESS",
+      "fileReferences": [
+        "lib/Formstack/Job/AbstractSubmitActionJob.php:309"
+      ],
+      "aiComments": "Logs when submit action jobs begin processing before decrypting sensitive data. This occurs when submit action jobs start execution and prepare to decrypt encrypted data for processing. Includes job details for tracking submit action job processing initiation, monitoring data decryption operations, and ensuring proper submit action job security and data handling across different submit action types and job processing scenarios.",
+      "domains": [
+        "BACKEND:DATA-AT-REST:DECRYPTION",
+        "BACKEND:SUBMIT-ACTIONS"
+      ]
+    },
+    {
+      "message": "SubmitActionLog Worker Could not retrieve associated {payload}",
+      "sumoEventText": "worker_autocapture",
+      "phpConstantKey": "WORKER_AUTOCAPTURE",
+      "fileReferences": [],
+      "aiComments": "Logs when submit action log workers cannot retrieve associated payload data during processing. This occurs when background workers attempt to process submit action logs but cannot access the required payload information. Includes payload details for tracking submit action log processing issues, monitoring worker payload retrieval, and ensuring proper submit action log processing and data access across different submit action types and worker processing scenarios.",
+      "domains": [
+        "BACKEND:QUEUES:JOB-FAILED",
+        "BACKEND:SUBMIT-ACTIONS"
+      ]
+    },
+    {
+      "message": "SubmitActionSingle failed",
+      "sumoEventText": "form_update_failed",
+      "phpConstantKey": "FORM_UPDATE_FAILED",
+      "fileReferences": [
+        "lib/Formstack/Job/AbstractSubmitActionJob.php:56"
+      ],
+      "aiComments": "Logs when single submit action jobs fail during execution. This occurs when individual submit action jobs encounter errors during processing and cannot complete successfully. Includes failure details for tracking submit action job failures, monitoring submit action processing issues, and ensuring proper submit action error handling and retry mechanisms across different submit action types and job processing scenarios."
+    },
+    {
+      "message": "Successfully sent email message",
+      "sumoEventText": "pusher_message_sent",
+      "phpConstantKey": "PUSHER_MESSAGE_SENT",
+      "fileReferences": [
+        "lib/Formstack/Email.php:671"
+      ],
+      "aiComments": "Logs successful email delivery through the email service system. This occurs when emails are successfully sent via SendGrid or customer SMTP configurations. Includes email delivery details for tracking email delivery success rates, monitoring email service performance, and ensuring proper email notification delivery across different email types and configurations."
+    },
+    {
+      "message": "Throwable 500 error in onError",
+      "sumoEventText": "ab_form_error",
+      "phpConstantKey": "AB_FORM_ERROR",
+      "fileReferences": [
+        "lib/Formstack/Application.php:640"
+      ],
+      "aiComments": "Logs when throwable 500 errors occur in error handling routines. This occurs when the system encounters server errors during error processing and cannot handle them gracefully. Includes error details for tracking server error handling issues, monitoring error processing failures, and ensuring proper error handling and system stability across different error types and processing scenarios."
+    },
+    {
+      "message": "Token has expired",
+      "sumoEventText": "csrf_token_error",
+      "phpConstantKey": "CSRF_TOKEN_ERROR",
+      "fileReferences": [
+        "lib/Formstack/Model/SubmitAction/OAuth2SubmitAction.php:431"
+      ],
+      "aiComments": "Logs when authentication tokens have expired during OAuth2 operations. This occurs when the system attempts to use OAuth2 tokens that have passed their expiration time and are no longer valid. Includes token details for tracking OAuth2 token expiration, monitoring authentication token management, and ensuring proper OAuth2 token refresh and error handling across different OAuth2 integrations and token types."
+    },
+    {
+      "message": "Unable to find SAML user data",
+      "sumoEventText": "auth_provider_saml",
+      "phpConstantKey": "AUTH_PROVIDER_SAML",
+      "fileReferences": [
+        "lib/Formstack/Model/AuthProvider/SAMLAuthProvider.php:192"
+      ],
+      "aiComments": "Logs when SAML authentication cannot find user data during authentication operations. This occurs when the system attempts to authenticate users via SAML but cannot locate the required user information in the SAML response. Includes authentication details for tracking SAML user data retrieval issues, monitoring SAML authentication problems, and ensuring proper SAML authentication and user identification across different identity providers and user configurations."
+    },
+    {
+      "message": "Unable to find user",
+      "sumoEventText": "fsid_could_not_add_user_because_email_not_unique",
+      "phpConstantKey": "FSID_COULD_NOT_ADD_USER_BECAUSE_EMAIL_NOT_UNIQUE",
+      "fileReferences": [
+        "lib/Formstack/Controller/CPFSController.php:2547",
+        "lib/Formstack/Controller/CPFSController.php:2704",
+        "lib/Formstack/Model/Events/ApiTokenCreated.php:27",
+        "lib/Formstack/Model/Events/ApiClientCreated.php:29",
+        "lib/Formstack/Model/AuthProvider/LDAPAuthProvider.php:156"
+      ],
+      "aiComments": "Logs when user lookup operations fail to find users in the system. This occurs when the system attempts to locate users based on provided identifiers but cannot find matching user records. Includes user details for tracking user lookup failures, monitoring user access issues, and ensuring proper user identification and access control validation across different user types and access methods.",
+      "domains": [
+        "BACKEND:AUTHENTICATION",
+        "BACKEND:VALIDATION"
+      ]
+    },
+    {
+      "message": "Unable to parse authProvider {authProviderId} metadata",
+      "sumoEventText": "field_value_parse",
+      "phpConstantKey": "FIELD_VALUE_PARSE",
+      "fileReferences": [],
+      "aiComments": "Logs when authentication provider metadata parsing fails during authentication operations. This occurs when the system attempts to parse authentication provider metadata but encounters invalid or malformed data. Includes auth provider ID for tracking metadata parsing issues, monitoring authentication provider configuration problems, and ensuring proper authentication provider setup and metadata validation across different identity providers and metadata formats.",
+      "domains": [
+        "LIVE-FORM:AUTHENTICATION:SAML-CONFIGURATION",
+        "BACKEND:AUTHENTICATION"
+      ]
+    },
+    {
+      "message": "Unable to perform Google Sheets Submit Action",
+      "sumoEventText": "submitaction_googlecontacts",
+      "phpConstantKey": "SUBMITACTION_GOOGLECONTACTS",
+      "fileReferences": [
+        "lib/Formstack/Model/SubmitAction/GoogleSpreadsheets.php:1273"
+      ],
+      "aiComments": "Logs when Google Sheets submit actions fail during form submission processing. This occurs when form submissions with Google Sheets submit actions encounter errors during spreadsheet operations. Includes error details for tracking Google Sheets integration issues, monitoring spreadsheet operation failures, and ensuring proper Google Sheets submit action error handling and user notification across different form types and spreadsheet configurations.",
+      "domains": [
+        "FORM-BUILDER:INTEGRATION:GOOGLE-SHEETS",
+        "BACKEND:SUBMIT-ACTIONS:RETRY-EXHAUSTED"
+      ]
+    },
+    {
+      "message": "Unable to process SAML Response",
+      "sumoEventText": "portals_email_process_reminder",
+      "phpConstantKey": "PORTALS_EMAIL_PROCESS_REMINDER",
+      "fileReferences": [
+        "lib/Formstack/Model/AuthProvider/SAMLAuthProvider.php:364"
+      ],
+      "aiComments": "Logs when SAML response processing fails during authentication operations. This occurs when the system receives SAML responses from identity providers but cannot process them due to validation errors or malformed data. Includes SAML details for tracking SAML response processing issues, monitoring SAML authentication problems, and ensuring proper SAML authentication and response validation across different identity providers and SAML configurations.",
+      "domains": [
+        "LIVE-FORM:AUTHENTICATION:SAML",
+        "BACKEND:AUTHENTICATION"
+      ]
+    },
+    {
+      "message": "Unable to retrieve Form Model in AbstractFormService::getFormFromAccountAndAlias",
+      "sumoEventText": "ab_form_error",
+      "phpConstantKey": "AB_FORM_ERROR",
+      "fileReferences": [
+        "lib/Formstack/Service/AbstractFormService.php:68",
+        "lib/Formstack/Service/AbstractFormService.php:79"
+      ],
+      "aiComments": "Logs when form model retrieval fails in the AbstractFormService when attempting to get forms by account and alias. This occurs when the system cannot locate form models based on provided account and alias information. Includes form details for tracking form retrieval failures, monitoring form access issues, and ensuring proper form identification and access control validation across different form types and access methods.",
+      "domains": [
+        "LIVE-FORM:RENDER",
+        "BACKEND:VALIDATION"
+      ]
+    },
+    {
+      "message": "Unable to retrieve submission (id: {submissionId}) Error: {error}",
+      "sumoEventText": "auto_delete_submissions_account_settings",
+      "phpConstantKey": "AUTO_DELETE_SUBMISSIONS_ACCOUNT_SETTINGS",
+      "fileReferences": [],
+      "aiComments": "Logs when submission retrieval operations fail to find submissions with the specified submission ID. This occurs when the system attempts to locate submissions but encounters errors during the retrieval process. Includes submission ID and error details for tracking submission retrieval failures, monitoring submission access issues, and ensuring proper submission identification and error handling across different submission types and access methods.",
+      "domains": [
+        "SUBMISSION:VALIDATION",
+        "BACKEND:VALIDATION"
+      ]
+    },
+    {
+      "message": "Update form {formId} touches",
+      "sumoEventText": "billing_anonymous_payment_method_update",
+      "phpConstantKey": "BILLING_ANONYMOUS_PAYMENT_METHOD_UPDATE",
+      "fileReferences": [],
+      "aiComments": "Logs when form touch operations are performed to update form modification timestamps. This occurs when forms are accessed or modified and the system updates the form's last touched timestamp for tracking purposes. Includes form ID for tracking form touch operations, monitoring form access patterns, and ensuring proper form lifecycle management and timestamp tracking across different form types and access scenarios.",
+      "domains": [
+        "FORM-BUILDER",
+        "BACKEND:ANALYTICS"
+      ]
+    },
+    {
+      "message": "Update form conversion",
+      "sumoEventText": "billing_anonymous_payment_method_update",
+      "phpConstantKey": "BILLING_ANONYMOUS_PAYMENT_METHOD_UPDATE",
+      "fileReferences": [
+        "lib/Formstack/Job/AnalyticsConversionJob.php:43"
+      ],
+      "aiComments": "Logs when form conversion tracking is updated to record form conversion events and metrics. This occurs when forms are converted from one state to another (e.g., from draft to published) and the system updates conversion tracking data. Includes form ID and conversion details for tracking form conversion events, monitoring form lifecycle progression, and ensuring proper conversion analytics and reporting across different form types and conversion scenarios."
+    },
+    {
+      "message": "Updated Credentials",
+      "sumoEventText": "account_updated",
+      "phpConstantKey": "USER_ACTIVITY_ACCOUNT_UPDATED",
+      "fileReferences": [
+        "lib/Formstack/Job/UpdateCredentialsJob.php:65"
+      ],
+      "aiComments": "Logs when user credentials are successfully updated to record credential change events and security updates. This occurs when users update their authentication credentials (passwords, API keys, etc.) and the system confirms the update operation. Includes user ID and credential details for tracking credential updates, monitoring security changes, and ensuring proper credential management and audit trails across different user types and credential scenarios.",
+      "domains": [
+        "BACKEND:AUTHENTICATION",
+        "BACKEND:SECURITY"
+      ]
+    },
+    {
+      "message": "Updated IntegrationCredentials in non-user driven flow",
+      "sumoEventText": "account_updated",
+      "phpConstantKey": "USER_ACTIVITY_ACCOUNT_UPDATED",
+      "fileReferences": [
+        "lib/Formstack/Model/SubmitAction/OAuth2SubmitAction.php:542"
+      ],
+      "aiComments": "Logs when integration credentials are updated in automated or system-driven flows (not user-initiated). This occurs when the system automatically refreshes or updates OAuth2 tokens, API keys, or other integration credentials without direct user intervention. Includes integration details and credential information for tracking automated credential updates, monitoring integration health, and ensuring proper credential management in system-driven authentication flows across different integration types and scenarios.",
+      "domains": [
+        "FORM-BUILDER:INTEGRATION",
+        "CONNECTIVITY:AUTHENTICATION"
+      ]
+    },
+    {
+      "message": "Updated metadata for {authProviderId}",
+      "sumoEventText": "account_updated",
+      "phpConstantKey": "USER_ACTIVITY_ACCOUNT_UPDATED",
+      "fileReferences": [],
+      "aiComments": "Logs when authentication provider metadata is successfully updated to record metadata change events and configuration updates. This occurs when SAML, OAuth2, or other authentication provider metadata is refreshed or modified and the system confirms the update operation. Includes auth provider ID and metadata details for tracking metadata updates, monitoring authentication configuration changes, and ensuring proper authentication provider management and audit trails across different provider types and metadata scenarios.",
+      "domains": [
+        "LIVE-FORM:AUTHENTICATION:SAML-CONFIGURATION",
+        "BACKEND:AUTHENTICATION"
+      ]
+    },
+    {
+      "message": "Updating bottleneck for field",
+      "sumoEventText": "credit_card_field_migrate_tool",
+      "phpConstantKey": "CREDIT_CARD_FIELD_MIGRATE_TOOL",
+      "fileReferences": [
+        "lib/Formstack/Job/AnalyticsEndSessionJob.php:92"
+      ],
+      "aiComments": "Logs when field bottleneck analysis is being updated to record field performance metrics and optimization data. This occurs when the system analyzes field performance bottlenecks and updates bottleneck tracking data for form fields. Includes field ID and bottleneck details for tracking field performance issues, monitoring form field optimization, and ensuring proper field performance analysis and bottleneck identification across different field types and performance scenarios.",
+      "domains": [
+        "BACKEND:ANALYTICS",
+        "FORM-BUILDER:FIELD"
+      ]
+    },
+    {
+      "message": "Updating form {formId} with {universalDelta} submissions and {unreadDelta} unread submissions",
+      "sumoEventText": "ab_form_error",
+      "phpConstantKey": "AB_FORM_ERROR",
+      "fileReferences": [],
+      "aiComments": "Logs when form submission counts are being updated to record submission delta changes and unread submission tracking. This occurs when the system updates form submission statistics with new submission counts and unread submission deltas. Includes form ID, universal delta, and unread delta for tracking submission count updates, monitoring form submission statistics, and ensuring proper submission count management and delta tracking across different form types and submission scenarios.",
+      "domains": [
+        "BACKEND:ANALYTICS",
+        "SUBMISSION:VALIDATION"
+      ]
+    },
+    {
+      "message": "Updating Form Authentication provider setting",
+      "sumoEventText": "ab_form_error",
+      "phpConstantKey": "AB_FORM_ERROR",
+      "fileReferences": [
+        "lib/Formstack/Controller/FormAuthentication/FormAuthenticationEditController.php:129"
+      ],
+      "aiComments": "Logs when form authentication provider settings are being updated to record authentication configuration changes and provider updates. This occurs when users modify form authentication settings, change authentication providers, or update authentication configuration options. Includes form ID and authentication provider details for tracking authentication setting updates, monitoring form security configuration changes, and ensuring proper form authentication management and provider configuration across different authentication types and form scenarios.",
+      "domains": [
+        "LIVE-FORM:AUTHENTICATION:FORM-LEVEL",
+        "BACKEND:AUTHENTICATION"
+      ]
+    },
+    {
+      "message": "Updating SAML settings manually for Form Authentication provider",
+      "sumoEventText": "auth_provider_saml",
+      "phpConstantKey": "AUTH_PROVIDER_SAML",
+      "fileReferences": [
+        "lib/Formstack/Controller/FormAuthentication/FormAuthenticationEditController.php:183"
+      ],
+      "aiComments": "Logs when SAML authentication settings are manually updated for form authentication providers to record SAML configuration changes and manual updates. This occurs when users manually modify SAML authentication settings, update SAML metadata, or change SAML configuration options for form authentication. Includes form ID and SAML provider details for tracking SAML setting updates, monitoring form authentication configuration changes, and ensuring proper SAML authentication management and manual configuration updates across different SAML providers and form scenarios.",
+      "domains": [
+        "LIVE-FORM:AUTHENTICATION:SAML-CONFIGURATION",
+        "BACKEND:AUTHENTICATION"
+      ]
+    },
+    {
+      "message": "Uploading SAML metadata file for Form Authentication provider",
+      "sumoEventText": "auth_provider_saml",
+      "phpConstantKey": "AUTH_PROVIDER_SAML",
+      "fileReferences": [
+        "lib/Formstack/Controller/FormAuthentication/FormAuthenticationEditController.php:158"
+      ],
+      "aiComments": "Logs when SAML metadata files are uploaded for form authentication providers to record SAML metadata upload events and file processing. This occurs when users upload SAML metadata files to configure form authentication providers and the system processes the uploaded metadata. Includes form ID and SAML metadata details for tracking SAML metadata uploads, monitoring form authentication configuration, and ensuring proper SAML metadata management and file upload processing across different SAML providers and form scenarios.",
+      "domains": [
+        "LIVE-FORM:AUTHENTICATION:SAML-SETUP",
+        "BACKEND:AUTHENTICATION"
+      ]
+    },
+    {
+      "message": "User has changed field type",
+      "sumoEventText": "changed_field_type",
+      "phpConstantKey": "USER_ACTIVITY_FIELD_TYPE_CHANGE",
+      "fileReferences": [
+        "lib/Formstack/Controller/FormBuilderController.php:623"
+      ],
+      "aiComments": "Logs when users change field types in form builder to record field type modification events and form structure changes. This occurs when users modify form fields by changing their types (e.g., from text to dropdown, from single line to multi-line) and the system records the field type change. Includes form ID, field ID, and field type details for tracking field type changes, monitoring form structure modifications, and ensuring proper field type management and form builder audit trails across different field types and form scenarios.",
+      "domains": [
+        "FORM-BUILDER:FIELD",
+        "BACKEND:ANALYTICS"
+      ]
+    },
+    {
+      "message": "Using cached HTML",
+      "sumoEventText": "",
+      "phpConstantKey": "",
+      "fileReferences": [
+        "lib/Formstack/Email/EmailHtmlPostProcessor.php:36"
+      ],
+      "aiComments": "Logs when email HTML processing uses cached processed HTML instead of regenerating it. This occurs when the email system finds previously processed HTML with CSS inlined and reuses it for performance. Includes cache hit information to track email processing efficiency and reduce computational overhead for frequently sent email templates.",
+      "domains": [
+        "BACKEND:EMAILS",
+        "BACKEND:PERFORMANCE"
+      ]
+    },
+    {
+      "message": "Using single-part S3 upload for small file",
+      "sumoEventText": "s3",
+      "phpConstantKey": "S3",
+      "fileReferences": [],
+      "aiComments": "Logs when S3 file uploads use single-part upload method for small files to record S3 upload strategy and performance optimization. This occurs when the system uploads small files to Amazon S3 using the simpler single-part upload method instead of multipart uploads. Includes S3 upload details for tracking S3 upload performance, monitoring file upload strategies, and ensuring proper S3 upload optimization and cost efficiency across different file sizes and upload scenarios.",
+      "domains": [
+        "SUBMISSION:EGRESS:SUBMIT-ACTION",
+        "FORM-BUILDER:INTEGRATION:AMAZON-S3"
+      ]
+    },
+    {
+      "message": "Verify Recaptcha Results",
+      "sumoEventText": "captcha",
+      "phpConstantKey": "CAPTCHA",
+      "fileReferences": [
+        "lib/Formstack/Service/CaptchaVerifyService.php:72"
+      ],
+      "aiComments": "Logs reCAPTCHA verification results to record CAPTCHA validation outcomes and bot detection events. This occurs when form submissions are validated against Google reCAPTCHA to prevent spam and bot submissions. Includes reCAPTCHA score and verification details for tracking CAPTCHA effectiveness, monitoring bot detection accuracy, and ensuring proper form security and spam prevention across different form submissions and CAPTCHA versions.",
+      "domains": [
+        "SUBMISSION:VALIDATION",
+        "BACKEND:SECURITY"
+      ]
+    },
+    {
+      "message": "Viewed temporary unsanitized data",
+      "sumoEventText": "submission_viewed",
+      "phpConstantKey": "USER_ACTIVITY_SUBMISSION_VIEWED",
+      "fileReferences": [
+        "lib/Formstack/Controller/TemporaryUnsanitizedDataController.php:53"
+      ],
+      "aiComments": "Logs when users view temporary unsanitized submission data to record access to raw submission data before sanitization processing. This occurs when administrators or support staff access temporary unsanitized data for debugging or data recovery purposes. Includes submission ID and user details for tracking raw data access, monitoring data security compliance, and ensuring proper audit trails for sensitive data access across different submission types and access scenarios.",
+      "domains": [
+        "SUBMISSION:VALIDATION",
+        "BACKEND:SECURITY"
+      ]
+    },
+    {
+      "message": "Virus scan passed",
+      "sumoEventText": "virus_scan",
+      "phpConstantKey": "VIRUS_SCAN",
+      "fileReferences": [
+        "lib/Formstack/VirusScan/ClamAv/ClamAvScanner.php:43"
+      ],
+      "aiComments": "Logs successful virus scan completion via ClamAV during file upload processing. This occurs when uploaded files pass security scanning to ensure they are safe before storage. Includes scan duration and ClamAV response details for monitoring file security compliance and tracking virus scanning performance across the platform.",
+      "domains": [
+        "BACKEND:FILES:UPLOAD-SUCCESS",
+        "BACKEND:SECURITY"
+      ]
+    },
+    {
+      "message": "Webhook pre-send (performWebhookRequest)",
+      "sumoEventText": "sendgrid_webhook",
+      "phpConstantKey": "SENDGRID_WEBHOOK",
+      "fileReferences": [],
+      "aiComments": "Logs webhook pre-send preparation phase to record webhook request preparation and data processing before sending. This occurs when the system prepares webhook payloads and validates webhook configurations before sending webhook notifications to external endpoints. Includes webhook details for tracking webhook preparation steps, monitoring webhook processing performance, and ensuring proper webhook data preparation and validation across different webhook configurations and submission scenarios.",
+      "domains": [
+        "BACKEND:SUBMIT-ACTIONS:WEBHOOK",
+        "SUBMISSION:EGRESS:SUBMIT-ACTION"
+      ]
+    },
+    {
+      "message": "Webhook queued for submission {submissionId}",
+      "sumoEventText": "sendgrid_webhook",
+      "phpConstantKey": "SENDGRID_WEBHOOK",
+      "fileReferences": [],
+      "aiComments": "Logs when webhooks are queued for submission processing to record webhook queue operations and asynchronous webhook delivery. This occurs when form submissions trigger webhook notifications that are added to the queue for asynchronous processing. Includes submission ID and webhook details for tracking webhook queue operations, monitoring webhook delivery scheduling, and ensuring proper webhook processing and delivery across different submission types and webhook configurations.",
+      "domains": [
+        "BACKEND:SUBMIT-ACTIONS:WEBHOOK",
+        "BACKEND:QUEUES"
+      ]
+    },
+    {
+      "message": "Webhook send failed",
+      "sumoEventText": "sendgrid_webhook",
+      "phpConstantKey": "SENDGRID_WEBHOOK",
+      "fileReferences": [
+        "lib/Formstack/Model/SubmitAction/WebHook.php:622"
+      ],
+      "aiComments": "Logs webhook delivery failures to record webhook send errors and external integration issues. This occurs when webhook notifications fail to deliver to external endpoints due to network errors, timeout issues, or endpoint unavailability. Includes webhook error details for tracking webhook delivery failures, monitoring external integration health, and ensuring proper webhook retry logic and error handling across different webhook configurations and submission scenarios.",
+      "domains": [
+        "BACKEND:SUBMIT-ACTIONS:WEBHOOK",
+        "BACKEND:SUBMIT-ACTIONS:RETRY-EXHAUSTED"
+      ]
+    },
+    {
+      "message": "Webhook sent",
+      "sumoEventText": "submit_action_webhook_sent",
+      "phpConstantKey": "WORKER_SUBMITACTION_WEBHOOK_SENT",
+      "fileReferences": [
+        "lib/Formstack/Model/SubmitAction/WebHook.php:652"
+      ],
+      "aiComments": "Logs successful webhook delivery to external endpoints during submit action processing. This occurs when form submissions trigger webhook notifications to configured external URLs. Includes webhook details for tracking webhook delivery success rates, monitoring external integration health, and ensuring proper webhook notification delivery across different submit action configurations.",
+      "domains": [
+        "BACKEND:SUBMIT-ACTIONS:WEBHOOK",
+        "SUBMISSION:EGRESS:SUBMIT-ACTION"
+      ]
+    },
+    {
+      "message": "WebMergeClient API call",
+      "sumoEventText": "api_call",
+      "phpConstantKey": "API_CALL",
+      "fileReferences": [],
+      "aiComments": "Logs API calls to WebMerge document generation service to record WebMerge integration operations and document creation events. This occurs when form submissions trigger WebMerge submit actions to generate PDF documents, contracts, or other merged documents. Includes API call details for tracking WebMerge integration usage, monitoring document generation performance, and ensuring proper WebMerge API connectivity and document creation across different form submissions and document templates.",
+      "domains": [
+        "FORM-BUILDER:INTEGRATION:WEBMERGE",
+        "CONNECTIVITY"
+      ]
+    },
+    {
+      "message": "Workflow {submissionId} updated successfully",
+      "sumoEventText": "workflow_get_signature_error",
+      "phpConstantKey": "WORKFLOW_GET_SIGNATURE_ERROR",
+      "fileReferences": [],
+      "aiComments": "Logs when workflow submissions are successfully updated to record workflow update events and submission processing completion. This occurs when workflow processes complete successfully and update submission data or workflow status. Includes submission ID and workflow details for tracking workflow updates, monitoring submission workflow progression, and ensuring proper workflow management and update tracking across different workflow types and submission scenarios.",
+      "domains": [
+        "BACKEND:WORKFLOW",
+        "SUBMISSION:VALIDATION"
+      ]
+    },
+    {
+      "message": "XML after purifying has changed in SAMLAuthProvider",
+      "sumoEventText": "form_encryption_changed",
+      "phpConstantKey": "FORM_ENCRYPTION_CHANGED",
+      "fileReferences": [
+        "lib/Formstack/Model/AuthProvider/SAMLAuthProvider.php:451"
+      ],
+      "aiComments": "Logs when SAML XML metadata changes after purification processing to record SAML metadata modification events and XML processing changes. This occurs when SAML metadata XML is processed and purified, resulting in changes to the XML structure or content. Includes SAML provider details and XML change information for tracking SAML metadata modifications, monitoring XML processing changes, and ensuring proper SAML metadata management and XML purification tracking across different SAML providers and metadata scenarios.",
+      "domains": [
+        "LIVE-FORM:AUTHENTICATION:SAML-CONFIGURATION",
+        "BACKEND:AUTHENTICATION"
+      ]
+    }
+  ],
+  "count": 228,
+  "description": "Enriched message details with AI comments, file references, and domain information for Sumo Logic queries."
+}

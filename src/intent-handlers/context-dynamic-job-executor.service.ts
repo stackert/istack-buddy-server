@@ -194,9 +194,20 @@ export class ContextDynamicJobExecutor implements IntentHandler {
     // Security & Protection
     summary += `**Security:**\n`;
     summary += `- **Protection Type:** ${protectionType || 'None'}\n`;
-    if (activeAuthProviderName) {
+
+    // Auth Provider - show full details or "no auth provider found"
+    if (form.authProvider && typeof form.authProvider === 'object') {
+      summary += `- **Auth Provider:**\n`;
+      summary += `  - **ID:** ${form.authProvider.authProviderId || 'N/A'}\n`;
+      summary += `  - **Name:** ${form.authProvider.name || 'N/A'}\n`;
+      summary += `  - **Type:** ${form.authProvider.type || 'N/A'}\n`;
+    } else if (activeAuthProviderName) {
+      // Fallback to old field if new structure not available
       summary += `- **Auth Provider:** ${activeAuthProviderName}\n`;
+    } else {
+      summary += `- **Auth Provider:** no auth provider found\n`;
     }
+
     summary += `- **CAPTCHA:** ${isCaptchaEnabled ? '✅ Enabled' : '❌ Disabled'}\n`;
     if (expirationType) {
       summary += `- **Expiration:** ${expirationType}\n`;

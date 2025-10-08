@@ -68,13 +68,22 @@ export class IstackBuddySlackApiService implements OnModuleDestroy {
   public async handleSlackEvent(req: any, res: any): Promise<void> {
     const body = req.body;
 
-    // DEBUG: Log ALL incoming Slack events regardless of signature
-    this.logger.log('=== SLACK EVENT RECEIVED ===');
-    this.logger.log(`Headers: ${JSON.stringify(req.headers, null, 2)}`);
-    this.logger.log(`Body: ${JSON.stringify(body, null, 2)}`);
-    this.logger.log(`Raw body available: ${!!req.rawBody}`);
-    this.logger.log(`Raw body string available: ${!!req.rawBodyString}`);
-    this.logger.log('==============================');
+    // Trim verbose logging unless explicitly enabled
+    const slackDebug = process.env.SLACK_DEBUG === 'true';
+    if (slackDebug) {
+      this.logger.log('=== SLACK EVENT RECEIVED (DEBUG) ===');
+      this.logger.log(`Headers: ${JSON.stringify(req.headers, null, 2)}`);
+      this.logger.log(`Body: ${JSON.stringify(body, null, 2)}`);
+      this.logger.log(`Raw body available: ${!!req.rawBody}`);
+      this.logger.log(`Raw body string available: ${!!req.rawBodyString}`);
+      this.logger.log('====================================');
+    } else {
+      // Minimal signal
+      this.logger.log('=== SLACK EVENT RECEIVED ===');
+      this.logger.log(
+        `Event type: ${body?.event?.type || body?.type || 'unknown'} (content-length=${req.headers?.['content-length'] || 'n/a'})`,
+      );
+    }
 
     try {
       // Handle URL verification challenge (Slack App setup)

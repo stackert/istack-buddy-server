@@ -5,7 +5,7 @@
 
 set -e
 
-BASE_URL="http://localhost:3505/information-services"
+BASE_URL="http://192.168.1.3:3505/information-services"
 BEARER_TOKEN="istack-buddy-dev-token-2024"
 #FORM_ID="6072193"
 FORM_ID="6321476" # FORM-3545_authorize_net_bad_ip (personal use form)
@@ -166,3 +166,4 @@ echo "   Submit Action Type: $SUBMIT_ACTION_TYPE"
 echo "   Query: theHinkyReport"
 echo ""
 echo "✅ The Hinky Report Query Test Complete!"
+echo "RESULTS_RESPONSE: $RESULTS_RESPONSE"

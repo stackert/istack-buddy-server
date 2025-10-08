@@ -6,6 +6,7 @@ import { KnowledgeBaseJobExecutor } from '../../intent-handlers/knowledge-base-j
 import { ContextDynamicJobExecutor } from '../../intent-handlers/context-dynamic-job-executor.service';
 import { AssistUserJobExecutor } from '../../intent-handlers/assist-user-job-executor.service';
 import { ObservationJobExecutor } from '../../intent-handlers/observation-job-executor.service';
+import { SumoMessageRecommendationJobExecutor } from '../../intent-handlers/sumo-message-recommendation-job-executor.service';
 import { IntentHandler } from '../interfaces/intent-handler.interface';
 
 @Injectable()
@@ -20,6 +21,7 @@ export class IntentHandlerRegistryService implements OnModuleInit {
     private readonly contextDynamicExecutor: ContextDynamicJobExecutor,
     private readonly assistUserExecutor: AssistUserJobExecutor,
     private readonly observationExecutor: ObservationJobExecutor,
+    private readonly sumoMessageRecommendationExecutor: SumoMessageRecommendationJobExecutor,
   ) {}
 
   onModuleInit() {
@@ -30,6 +32,7 @@ export class IntentHandlerRegistryService implements OnModuleInit {
     this.registerHandler(this.contextDynamicExecutor);
     this.registerHandler(this.assistUserExecutor);
     this.registerHandler(this.observationExecutor);
+    this.registerHandler(this.sumoMessageRecommendationExecutor);
     this.logger.log('Intent handler registration completed');
   }
 

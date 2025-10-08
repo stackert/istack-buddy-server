@@ -1,0 +1,69 @@
+{
+  "executedQuery": "_sourceCategory=formstack/prod/*\n| json field=_raw \"message\" as message\n| json field=_raw \"context.authProviderId\" as authProviderId\n| where authProviderId = \"23\"\n| count message\n\n-- Date Range: 2025-10-04T04:00:01.000Z to 2025-10-08T03:59:59.000Z",
+  "recordSchema": {
+    "message": {
+      "type": "string",
+      "example": "Unable to authenticate CAS"
+    },
+    "occurrenceCount": {
+      "type": "string",
+      "example": "23"
+    },
+    "sumoEventText": {
+      "type": "null",
+      "example": null
+    },
+    "phpConstantKey": {
+      "type": "null",
+      "example": null
+    },
+    "fileReferences": {
+      "type": "null",
+      "example": null
+    },
+    "aiComments": {
+      "type": "null",
+      "example": null
+    },
+    "domains": {
+      "type": "null",
+      "example": null
+    },
+    "_validationNote": "To validate results, run the executedQuery directly in Sumo Logic"
+  },
+  "records": [
+    {
+      "message": "Unable to authenticate CAS",
+      "occurrenceCount": "23",
+      "sumoEventText": null,
+      "phpConstantKey": null,
+      "fileReferences": null,
+      "aiComments": null,
+      "domains": null
+    },
+    {
+      "message": "Error authenticating CAS",
+      "occurrenceCount": "2",
+      "sumoEventText": null,
+      "phpConstantKey": null,
+      "fileReferences": null,
+      "aiComments": null,
+      "domains": null
+    }
+  ],
+  "messageCount": 2,
+  "queryName": "theHinkyReport",
+  "arguments": [
+    "formId",
+    "accountId",
+    "submitActionType",
+    "submitActionId",
+    "submissionId",
+    "authProviderId"
+  ],
+  "timeRange": {
+    "from": "2025-10-04T04:00:01.000Z",
+    "to": "2025-10-08T03:59:59.000Z"
+  },
+  "validationNote": "To validate results, run the executedQuery directly in Sumo Logic"
+}

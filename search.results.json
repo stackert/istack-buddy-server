@@ -1,8 +1,3 @@
-=== Knowledge Base Search Test ===
-Query: ' what is a sumo report?'
-
-STEP 1: Submitting preQuery...
-PreQuery Response:
 {
   "originalText": "what is a sumo report?",
   "normalizedText": "A Sumo report is a specialized logging and analytics tool used within the Formstack platform to monitor and analyze backend activities. It provides insights into various operational metrics, including submission actions, email delivery statuses, and integration performance. By leveraging Sumo Logic, Formstack can track events such as submission creation, submit action executions, and email notifications, allowing for effective troubleshooting and performance optimization. Users can query logs to identify issues, monitor system health, and ensure that integrations are functioning as intended. This reporting capability is essential for maintaining the reliability and efficiency of the Formstack services.",

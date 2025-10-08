@@ -75,6 +75,18 @@ class ObservationMakerSumoReport extends ObservationMakers.AbstractObservationMa
       return { isObservationTrue: false, logItems } as IObservationResult;
     }
 
+    // Guard: if records are missing or empty, emit INFO and exit gracefully
+    if (!sumoQuery.records || sumoQuery.records.length === 0) {
+      const infoItem: IObservationLogItem = this.createInfoLogItem(context, {
+        subjectId: sumoQuery?.queryName || 'sumo-query',
+        messageSecondary:
+          'No records returned for this query. Skipping observation analysis.',
+        relatedEntityIds: [],
+      });
+      logItems.push(infoItem);
+      return { isObservationTrue: true, logItems } as IObservationResult;
+    }
+
     // Skip schema analysis - only focus on submission-specific metrics
 
     // Analyze submission-specific metrics

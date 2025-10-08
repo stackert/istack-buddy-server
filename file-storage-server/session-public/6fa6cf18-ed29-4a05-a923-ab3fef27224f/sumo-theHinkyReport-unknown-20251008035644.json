@@ -1,0 +1,22 @@
+{
+  "executedQuery": "_sourceCategory=formstack/prod/*\n| json field=_raw \"message\" as message\n| json field=_raw \"context.authProviderId\" as authProviderId\n| where authProviderId = \"863\"\n| count message\n\n-- Date Range: 2025-09-30T04:00:01.000Z to 2025-10-07T03:59:59.000Z",
+  "recordSchema": {
+    "_validationNote": "To validate results, run the executedQuery directly in Sumo Logic"
+  },
+  "records": [],
+  "messageCount": 0,
+  "queryName": "theHinkyReport",
+  "arguments": [
+    "formId",
+    "accountId",
+    "submitActionType",
+    "submitActionId",
+    "submissionId",
+    "authProviderId"
+  ],
+  "timeRange": {
+    "from": "2025-09-30T04:00:01.000Z",
+    "to": "2025-10-07T03:59:59.000Z"
+  },
+  "validationNote": "To validate results, run the executedQuery directly in Sumo Logic"
+}

@@ -5,6 +5,7 @@ import { KnowledgeBaseJobExecutor } from './knowledge-base-job-executor.service'
 import { ContextDynamicJobExecutor } from './context-dynamic-job-executor.service';
 import { AssistUserJobExecutor } from './assist-user-job-executor.service';
 import { ObservationJobExecutor } from './observation-job-executor.service';
+import { SumoMessageRecommendationJobExecutor } from './sumo-message-recommendation-job-executor.service';
 import { IStackInfoModule } from '../istack-buddy-slack-api/istack-info.module';
 import { FileManagerModule } from '../file-manager/file-manager.module';
 import { RobotModule } from '../robots/robot.module';
@@ -25,6 +26,7 @@ import { LoggerModule } from '../common/logger/logger.module';
     ContextDynamicJobExecutor,
     AssistUserJobExecutor,
     ObservationJobExecutor,
+    SumoMessageRecommendationJobExecutor,
   ],
   exports: [
     SumoReportSingleJobExecutor,
@@ -33,6 +35,7 @@ import { LoggerModule } from '../common/logger/logger.module';
     ContextDynamicJobExecutor,
     AssistUserJobExecutor,
     ObservationJobExecutor,
+    SumoMessageRecommendationJobExecutor,
   ],
 })
 export class IntentHandlersModule {}

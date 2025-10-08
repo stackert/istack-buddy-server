@@ -1,0 +1,65 @@
+{
+  "executedQuery": "_sourceCategory=formstack/prod/*\n| json field=_raw \"message\" as message\n| json field=_raw \"context.authProviderId\" as authProviderId\n| where authProviderId = \"863\"\n| count message\n\n-- Date Range: 2025-10-02T04:00:01.000Z to 2025-10-09T03:59:59.000Z",
+  "recordSchema": {
+    "message": {
+      "type": "string",
+      "example": "SAML Authentication Succeeded"
+    },
+    "occurrenceCount": {
+      "type": "string",
+      "example": "1"
+    },
+    "sumoEventText": {
+      "type": "string",
+      "example": "saml_authentication"
+    },
+    "phpConstantKey": {
+      "type": "string",
+      "example": "USER_ACTIVITY_SAML_AUTH"
+    },
+    "fileReferences": {
+      "type": "object",
+      "example": "[\"lib/Formstack/Model/AuthProvider/SAMLAuthProvider.php:401\"]"
+    },
+    "aiComments": {
+      "type": "string",
+      "example": "Logs successful SAML authentication events when us..."
+    },
+    "domains": {
+      "type": "object",
+      "example": "[\"LIVE-FORM:AUTHENTICATION:SAML\",\"BACKEND:AUTHENTICATION\"]"
+    },
+    "_validationNote": "To validate results, run the executedQuery directly in Sumo Logic"
+  },
+  "records": [
+    {
+      "message": "SAML Authentication Succeeded",
+      "occurrenceCount": "1",
+      "sumoEventText": "saml_authentication",
+      "phpConstantKey": "USER_ACTIVITY_SAML_AUTH",
+      "fileReferences": [
+        "lib/Formstack/Model/AuthProvider/SAMLAuthProvider.php:401"
+      ],
+      "aiComments": "Logs successful SAML authentication events when users sign in through SAML identity providers. This occurs during SSO authentication flows when users authenticate via enterprise identity systems. Includes authentication details for tracking SSO usage patterns, ensuring proper security compliance, and monitoring SAML authentication success rates across different identity providers.",
+      "domains": [
+        "LIVE-FORM:AUTHENTICATION:SAML",
+        "BACKEND:AUTHENTICATION"
+      ]
+    }
+  ],
+  "messageCount": 1,
+  "queryName": "theHinkyReport",
+  "arguments": [
+    "formId",
+    "accountId",
+    "submitActionType",
+    "submitActionId",
+    "submissionId",
+    "authProviderId"
+  ],
+  "timeRange": {
+    "from": "2025-10-02T04:00:01.000Z",
+    "to": "2025-10-09T03:59:59.000Z"
+  },
+  "validationNote": "To validate results, run the executedQuery directly in Sumo Logic"
+}

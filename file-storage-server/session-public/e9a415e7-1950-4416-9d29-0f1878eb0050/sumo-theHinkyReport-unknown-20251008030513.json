@@ -1,0 +1,121 @@
+{
+  "executedQuery": "_sourceCategory=formstack/prod/*\n| json field=_raw \"message\" as message\n| json field=_raw \"context.authProviderId\" as authProviderId\n| where authProviderId = \"2215\"\n| count message\n\n-- Date Range: 2025-10-04T04:00:01.000Z to 2025-10-08T03:59:59.000Z",
+  "recordSchema": {
+    "message": {
+      "type": "string",
+      "example": "AuthProvider created"
+    },
+    "occurrenceCount": {
+      "type": "string",
+      "example": "1"
+    },
+    "sumoEventText": {
+      "type": "string",
+      "example": "authprovider_user_fetch_exception"
+    },
+    "phpConstantKey": {
+      "type": "string",
+      "example": "USER_ACTIVITY_AUTHPROVIDER_USER_FETCH_EXCEPTION"
+    },
+    "fileReferences": {
+      "type": "object",
+      "example": "[\"lib/Formstack/Service/AuthProviderService.php:83\"]"
+    },
+    "aiComments": {
+      "type": "string",
+      "example": "Logs when authentication providers are successfull..."
+    },
+    "domains": {
+      "type": "object",
+      "example": "[\"BACKEND:AUTHENTICATION\",\"LIVE-FORM:AUTHENTICATION:SSO-SETUP\"]"
+    },
+    "_validationNote": "To validate results, run the executedQuery directly in Sumo Logic"
+  },
+  "records": [
+    {
+      "message": "AuthProvider created",
+      "occurrenceCount": "1",
+      "sumoEventText": "authprovider_user_fetch_exception",
+      "phpConstantKey": "USER_ACTIVITY_AUTHPROVIDER_USER_FETCH_EXCEPTION",
+      "fileReferences": [
+        "lib/Formstack/Service/AuthProviderService.php:83"
+      ],
+      "aiComments": "Logs when authentication providers are successfully created in the system. This occurs when administrators set up new SSO authentication providers for enterprise authentication. Includes provider details for tracking authentication provider setup, monitoring SSO configuration activities, and ensuring proper enterprise authentication infrastructure management across different identity providers.",
+      "domains": [
+        "BACKEND:AUTHENTICATION",
+        "LIVE-FORM:AUTHENTICATION:SSO-SETUP"
+      ]
+    },
+    {
+      "message": "Updating Form Authentication provider setting",
+      "occurrenceCount": "2",
+      "sumoEventText": "ab_form_error",
+      "phpConstantKey": "AB_FORM_ERROR",
+      "fileReferences": [
+        "lib/Formstack/Controller/FormAuthentication/FormAuthenticationEditController.php:129"
+      ],
+      "aiComments": "Logs when form authentication provider settings are being updated to record authentication configuration changes and provider updates. This occurs when users modify form authentication settings, change authentication providers, or update authentication configuration options. Includes form ID and authentication provider details for tracking authentication setting updates, monitoring form security configuration changes, and ensuring proper form authentication management and provider configuration across different authentication types and form scenarios.",
+      "domains": [
+        "LIVE-FORM:AUTHENTICATION:FORM-LEVEL",
+        "BACKEND:AUTHENTICATION"
+      ]
+    },
+    {
+      "message": "Deleting Form Authentication AuthProvider",
+      "occurrenceCount": "1",
+      "sumoEventText": "ab_form_error",
+      "phpConstantKey": "AB_FORM_ERROR",
+      "fileReferences": [
+        "lib/Formstack/Controller/FormAuthentication/FormAuthenticationListController.php:81"
+      ],
+      "aiComments": "Logs when form authentication providers are being deleted from the system. This occurs when administrators remove form-level authentication providers to change form access control settings. Includes provider details for tracking form authentication provider removal, monitoring form security configuration changes, and ensuring proper form access control management during authentication provider lifecycle changes.",
+      "domains": [
+        "LIVE-FORM:AUTHENTICATION",
+        "BACKEND:AUTHENTICATION"
+      ]
+    },
+    {
+      "message": "AuthProvider deleted",
+      "occurrenceCount": "1",
+      "sumoEventText": "authprovider_user_fetch_exception",
+      "phpConstantKey": "USER_ACTIVITY_AUTHPROVIDER_USER_FETCH_EXCEPTION",
+      "fileReferences": [
+        "lib/Formstack/Service/AuthProviderService.php:109"
+      ],
+      "aiComments": "Logs when authentication providers are successfully deleted from the system. This occurs when administrators remove SSO authentication providers from enterprise authentication configurations. Includes provider details for tracking authentication provider removal, monitoring SSO configuration changes, and ensuring proper enterprise authentication infrastructure cleanup and security management.",
+      "domains": [
+        "BACKEND:AUTHENTICATION",
+        "LIVE-FORM:AUTHENTICATION:SSO-SETUP"
+      ]
+    },
+    {
+      "message": "Created new Form Authentication AuthProvider",
+      "occurrenceCount": "1",
+      "sumoEventText": "ai_prompt_form_created",
+      "phpConstantKey": "AI_PROMPT_FORM_CREATED",
+      "fileReferences": [
+        "lib/Formstack/Controller/FormAuthentication/FormAuthenticationListController.php:52"
+      ],
+      "aiComments": "Logs successful creation of form authentication providers for form-level authentication. This occurs when administrators set up authentication providers specifically for individual forms to control access. Includes provider details for tracking form authentication setup, monitoring form-level security configuration, and ensuring proper form access control management across different authentication methods.",
+      "domains": [
+        "LIVE-FORM:AUTHENTICATION:FORM-LEVEL",
+        "BACKEND:AUTHENTICATION"
+      ]
+    }
+  ],
+  "messageCount": 5,
+  "queryName": "theHinkyReport",
+  "arguments": [
+    "formId",
+    "accountId",
+    "submitActionType",
+    "submitActionId",
+    "submissionId",
+    "authProviderId"
+  ],
+  "timeRange": {
+    "from": "2025-10-04T04:00:01.000Z",
+    "to": "2025-10-08T03:59:59.000Z"
+  },
+  "validationNote": "To validate results, run the executedQuery directly in Sumo Logic"
+}

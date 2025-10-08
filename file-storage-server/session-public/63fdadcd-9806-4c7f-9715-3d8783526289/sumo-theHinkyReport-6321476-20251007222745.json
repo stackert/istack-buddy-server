@@ -1,0 +1,500 @@
+{
+  "executedQuery": "_sourceCategory=formstack/prod/*\n| json field=_raw \"message\" as message\n| json field=_raw \"context.formId\" as formId\n| where formId = \"6321476\"\n| count message\n\n-- Date Range: 2025-10-04T04:00:01.000Z to 2025-10-08T03:59:59.000Z",
+  "recordSchema": {
+    "message": {
+      "type": "string",
+      "example": "Handling submission updated event."
+    },
+    "occurrenceCount": {
+      "type": "string",
+      "example": "7"
+    },
+    "sumoEventText": {
+      "type": "string",
+      "example": "submission_updated"
+    },
+    "phpConstantKey": {
+      "type": "string",
+      "example": "USER_ACTIVITY_SUBMISSION_UPDATED"
+    },
+    "fileReferences": {
+      "type": "object",
+      "example": "[\"lib/Formstack/Model/Listeners/Opensearch/OpensearchSubmissionReindexListener.php:48\"]"
+    },
+    "aiComments": {
+      "type": "string",
+      "example": "Logs when submission updated events are processed ..."
+    },
+    "domains": {
+      "type": "object",
+      "example": "[\"BACKEND:SEARCH:OPENSEARCH\",\"SUBMISSION:VALIDATION\"]"
+    },
+    "_validationNote": "To validate results, run the executedQuery directly in Sumo Logic"
+  },
+  "records": [
+    {
+      "message": "Handling submission updated event.",
+      "occurrenceCount": "7",
+      "sumoEventText": "submission_updated",
+      "phpConstantKey": "USER_ACTIVITY_SUBMISSION_UPDATED",
+      "fileReferences": [
+        "lib/Formstack/Model/Listeners/Opensearch/OpensearchSubmissionReindexListener.php:48"
+      ],
+      "aiComments": "Logs when submission updated events are processed by the OpenSearch data integrity system. This occurs when the system handles submission update events to maintain search index consistency and update modified submissions in search indexes. Includes submission details for tracking submission update event processing, monitoring search index updates, and ensuring proper OpenSearch data synchronization when submissions are modified in the system.",
+      "domains": [
+        "BACKEND:SEARCH:OPENSEARCH",
+        "SUBMISSION:VALIDATION"
+      ]
+    },
+    {
+      "message": "Report load successful for {reportId}",
+      "occurrenceCount": "11",
+      "sumoEventText": "report_loaded",
+      "phpConstantKey": "USER_ACTIVITY_REPORT_LOADED",
+      "fileReferences": [],
+      "aiComments": "Logs successful loading of reports in the system. This occurs when users access reports and the system successfully loads report data and configurations. Includes report ID for tracking report access activities, monitoring report usage patterns, and ensuring proper report functionality and user experience across different report types and access methods.",
+      "domains": [
+        "BACKEND:ANALYTICS",
+        "SUBMISSION:EGRESS:EXPORT"
+      ]
+    },
+    {
+      "message": "Submission setting {field} for {submissionId} changed successfully",
+      "occurrenceCount": "2",
+      "sumoEventText": "auto_delete_submissions_account_settings",
+      "phpConstantKey": "AUTO_DELETE_SUBMISSIONS_ACCOUNT_SETTINGS",
+      "fileReferences": [],
+      "aiComments": "Logs successful updates to submission settings or properties. This occurs when users or administrators modify submission configurations such as submission status, notes, or other submission properties. Includes field name and submission ID for tracking submission configuration changes, monitoring submission management activities, and ensuring proper submission setting updates and audit trails across different submission types and configuration changes.",
+      "domains": [
+        "SUBMISSION:VALIDATION",
+        "BACKEND:ANALYTICS"
+      ]
+    },
+    {
+      "message": "After syncing form submission counts",
+      "occurrenceCount": "2",
+      "sumoEventText": "ab_form_error",
+      "phpConstantKey": "AB_FORM_ERROR",
+      "fileReferences": [
+        "lib/Formstack/Job/SubmissionCountSyncJob.php:87"
+      ],
+      "aiComments": "Logs completion of form submission count synchronization operations. This occurs when background jobs finish updating form submission counters to ensure data consistency. Includes sync details for tracking submission count accuracy, monitoring data synchronization performance, and ensuring proper form analytics and reporting data integrity across the platform.",
+      "domains": [
+        "BACKEND:ANALYTICS",
+        "BACKEND:QUEUES"
+      ]
+    },
+    {
+      "message": "SubmissionCreated event dispatched for {submissionId}.",
+      "occurrenceCount": "5",
+      "sumoEventText": "auto_delete_submissions_sso_event",
+      "phpConstantKey": "AUTO_DELETE_SUBMISSIONS_SSO_EVENT",
+      "fileReferences": [],
+      "aiComments": "Logs when submission created events are dispatched to the event system for processing. This occurs when new form submissions are created and the system dispatches events to notify other components about the submission creation. Includes submission ID for tracking submission event dispatching, monitoring event system processing, and ensuring proper submission event handling and notification across different submission types and event processing scenarios.",
+      "domains": [
+        "SUBMISSION:VALIDATION",
+        "BACKEND:QUEUES"
+      ]
+    },
+    {
+      "message": "Logging frontend only hidden and hidden by both FE and BE {fieldId}s on submission for {formId}",
+      "occurrenceCount": "5",
+      "sumoEventText": "skipped_hidden_field_validation",
+      "phpConstantKey": "SKIPPED_HIDDEN_FIELD_VALIDATION",
+      "fileReferences": [],
+      "aiComments": "Logs when frontend-only hidden fields and fields hidden by both frontend and backend are identified during form submission processing. This occurs when the system detects different types of hidden fields and logs them for validation tracking. Includes field ID and form ID for tracking hidden field processing, monitoring form field validation, and ensuring proper hidden field handling across different form types and submission scenarios.",
+      "domains": [
+        "SUBMISSION:VALIDATION",
+        "FORM-BUILDER:FIELD:HIDDEN"
+      ]
+    },
+    {
+      "message": "Found Submission {submissionId}",
+      "occurrenceCount": "3",
+      "sumoEventText": "theme_not_found",
+      "phpConstantKey": "FORM_THEME_INVALID",
+      "fileReferences": [],
+      "aiComments": "Logs when submission lookup operations successfully find submissions with the specified submission ID. This occurs when the system locates submissions in the database for processing, editing, or retrieval operations. Includes submission ID for tracking submission lookup success, monitoring submission access patterns, and ensuring proper submission identification and retrieval across different submission types and access methods.",
+      "domains": [
+        "BACKEND:SEARCH",
+        "SUBMISSION:VALIDATION"
+      ]
+    },
+    {
+      "message": "Checking submissions for form {formId}: count={submissionCount}, limit={submissionLimit}, max={maxSubmissions}, overLimit={overLimit}",
+      "occurrenceCount": "4",
+      "sumoEventText": null,
+      "phpConstantKey": null,
+      "fileReferences": null,
+      "aiComments": null,
+      "domains": null
+    },
+    {
+      "message": "Update form {formId} touches",
+      "occurrenceCount": "6",
+      "sumoEventText": "billing_anonymous_payment_method_update",
+      "phpConstantKey": "BILLING_ANONYMOUS_PAYMENT_METHOD_UPDATE",
+      "fileReferences": [],
+      "aiComments": "Logs when form touch operations are performed to update form modification timestamps. This occurs when forms are accessed or modified and the system updates the form's last touched timestamp for tracking purposes. Includes form ID for tracking form touch operations, monitoring form access patterns, and ensuring proper form lifecycle management and timestamp tracking across different form types and access scenarios.",
+      "domains": [
+        "FORM-BUILDER",
+        "BACKEND:ANALYTICS"
+      ]
+    },
+    {
+      "message": "SubmissionUpdated event dispatched for {submissionId}.",
+      "occurrenceCount": "7",
+      "sumoEventText": "auto_delete_submissions_sso_event",
+      "phpConstantKey": "AUTO_DELETE_SUBMISSIONS_SSO_EVENT",
+      "fileReferences": [],
+      "aiComments": "Logs when submission updated events are dispatched to the event system for processing. This occurs when form submissions are modified and the system dispatches events to notify other components about the submission updates. Includes submission ID for tracking submission event dispatching, monitoring event system processing, and ensuring proper submission event handling and notification across different submission types and event processing scenarios.",
+      "domains": [
+        "SUBMISSION:VALIDATION",
+        "BACKEND:QUEUES"
+      ]
+    },
+    {
+      "message": "Save unique view for form {formId}",
+      "occurrenceCount": "3",
+      "sumoEventText": "fsid_could_not_add_user_because_email_not_unique",
+      "phpConstantKey": "FSID_COULD_NOT_ADD_USER_BECAUSE_EMAIL_NOT_UNIQUE",
+      "fileReferences": [],
+      "aiComments": "Logs when unique form views are saved for form analytics tracking. This occurs when the system records unique form views for analytics and performance monitoring. Includes form ID for tracking form view analytics, monitoring form popularity, and ensuring proper form analytics data collection and reporting across different form types and viewing scenarios.",
+      "domains": [
+        "BACKEND:ANALYTICS",
+        "LIVE-FORM:VIEW"
+      ]
+    },
+    {
+      "message": "Ending session",
+      "occurrenceCount": "6",
+      "sumoEventText": "cron_invalidate_expired_sessions",
+      "phpConstantKey": "CRON_INVALIDATE_EXPIRED_SESSIONS",
+      "fileReferences": [
+        "lib/Formstack/Job/AnalyticsEndSessionJob.php:98"
+      ],
+      "aiComments": "Logs when user sessions are ended or invalidated in the system. This occurs when sessions expire, users log out, or sessions are manually terminated for security purposes. Includes session details for tracking session lifecycle management, monitoring user authentication patterns, and ensuring proper session security and cleanup across different user types and authentication methods.",
+      "domains": [
+        "BACKEND:AUTHENTICATION",
+        "BACKEND:ANALYTICS"
+      ]
+    },
+    {
+      "message": "Submission count sync job added to the queue",
+      "occurrenceCount": "1",
+      "sumoEventText": "auto_delete_submissions_account_settings",
+      "phpConstantKey": "AUTO_DELETE_SUBMISSIONS_ACCOUNT_SETTINGS",
+      "fileReferences": [
+        "lib/Formstack/Controller/SubmissionsController.php:3465"
+      ],
+      "aiComments": "Logs when submission count synchronization jobs are queued for background processing. This occurs when the system needs to update submission counts for forms or accounts and queues synchronization jobs for processing. Includes job details for tracking submission count sync job queuing, monitoring submission count maintenance, and ensuring proper submission count accuracy and data consistency across different form types and account configurations.",
+      "domains": [
+        "BACKEND:ANALYTICS",
+        "BACKEND:QUEUES"
+      ]
+    },
+    {
+      "message": "Submission created on {formId}.",
+      "occurrenceCount": "5",
+      "sumoEventText": "submission_created",
+      "phpConstantKey": "USER_ACTIVITY_SUBMISSION_CREATED",
+      "fileReferences": [],
+      "aiComments": "Logs successful form submission creation events when users submit forms. This occurs during form submission processing when new submission records are created in the database. Includes form ID for tracking submission patterns, form performance, and ensuring proper submission lifecycle management and analytics.",
+      "domains": [
+        "SUBMISSION:VALIDATION",
+        "BACKEND:ANALYTICS"
+      ]
+    },
+    {
+      "message": "No FormApprover(s) found for form, submission skipped approval process",
+      "occurrenceCount": "5",
+      "sumoEventText": "theme_not_found",
+      "phpConstantKey": "FORM_THEME_INVALID",
+      "fileReferences": [],
+      "aiComments": "Logs when form submissions skip the approval process due to no form approvers being configured. This occurs when forms have approval workflows enabled but no approvers are assigned, so submissions bypass the approval process. Includes form details for tracking approval process bypasses, monitoring approval workflow configuration issues, and ensuring proper approval process management across different form types and approval configurations.",
+      "domains": [
+        "BACKEND:WORKFLOW",
+        "SUBMISSION:VALIDATION"
+      ]
+    },
+    {
+      "message": "AuthorizeNet IP Debug",
+      "occurrenceCount": "3",
+      "sumoEventText": null,
+      "phpConstantKey": null,
+      "fileReferences": null,
+      "aiComments": null,
+      "domains": null
+    },
+    {
+      "message": "Incremented formAnalytics {formAnalyticsId} with {views} views",
+      "occurrenceCount": "1",
+      "sumoEventText": null,
+      "phpConstantKey": null,
+      "fileReferences": [],
+      "aiComments": "Logs successful updates to daily form analytics view counters in the database. This occurs when cached view counts are processed and written to the formAnalytics table for daily tracking. Includes analytics record ID and view count for maintaining accurate daily form performance metrics and analytics reporting.",
+      "domains": [
+        "BACKEND:ANALYTICS",
+        "LIVE-FORM:VIEW"
+      ]
+    },
+    {
+      "message": "Successfully sent email message",
+      "occurrenceCount": "5",
+      "sumoEventText": "pusher_message_sent",
+      "phpConstantKey": "PUSHER_MESSAGE_SENT",
+      "fileReferences": [
+        "lib/Formstack/Email.php:671"
+      ],
+      "aiComments": "Logs successful email delivery through the email service system. This occurs when emails are successfully sent via SendGrid or customer SMTP configurations. Includes email delivery details for tracking email delivery success rates, monitoring email service performance, and ensuring proper email notification delivery across different email types and configurations.",
+      "domains": null
+    },
+    {
+      "message": "Updating form {formId} with {universalDelta} submissions and {unreadDelta} unread submissions",
+      "occurrenceCount": "7",
+      "sumoEventText": "ab_form_error",
+      "phpConstantKey": "AB_FORM_ERROR",
+      "fileReferences": [],
+      "aiComments": "Logs when form submission counts are being updated to record submission delta changes and unread submission tracking. This occurs when the system updates form submission statistics with new submission counts and unread submission deltas. Includes form ID, universal delta, and unread delta for tracking submission count updates, monitoring form submission statistics, and ensuring proper submission count management and delta tracking across different form types and submission scenarios.",
+      "domains": [
+        "BACKEND:ANALYTICS",
+        "SUBMISSION:VALIDATION"
+      ]
+    },
+    {
+      "message": "Reindexed Submission {$submissionId}",
+      "occurrenceCount": "12",
+      "sumoEventText": "auto_delete_submissions_account_settings",
+      "phpConstantKey": "AUTO_DELETE_SUBMISSIONS_ACCOUNT_SETTINGS",
+      "fileReferences": [],
+      "aiComments": "Logs successful reindexing of submission documents in OpenSearch search indexes. This occurs when submission data is updated in the search index to maintain search functionality and data consistency. Includes submission ID for tracking search index updates, monitoring OpenSearch data synchronization, and ensuring proper search index maintenance and data consistency across different submission types and indexing operations.",
+      "domains": [
+        "BACKEND:SEARCH:OPENSEARCH",
+        "SUBMISSION:VALIDATION"
+      ]
+    },
+    {
+      "message": "Submission {submissionId} view",
+      "occurrenceCount": "130",
+      "sumoEventText": "auto_delete_submissions_account_settings",
+      "phpConstantKey": "AUTO_DELETE_SUBMISSIONS_ACCOUNT_SETTINGS",
+      "fileReferences": [],
+      "aiComments": "Logs when form submissions are viewed by users or administrators. This occurs when users access submission data through the form management interface or submission viewing functionality. Includes submission ID for tracking submission access activities, monitoring submission viewing patterns, and ensuring proper submission access control and audit trails across different submission types and access methods.",
+      "domains": [
+        "SUBMISSION:VALIDATION",
+        "BACKEND:ANALYTICS"
+      ]
+    },
+    {
+      "message": "Form submission is NOT stale",
+      "occurrenceCount": "5",
+      "sumoEventText": "ab_form_error",
+      "phpConstantKey": "AB_FORM_ERROR",
+      "fileReferences": [
+        "lib/Formstack/Controller/PublicFormController.php:3287",
+        "lib/Formstack/Service/Submission/FormSubmitValidationService.php:785"
+      ],
+      "aiComments": "Logs when form submissions are validated as not stale during submission processing. This occurs when the system checks submission freshness and determines that submissions are current and valid for processing. Includes submission details for tracking submission validation, monitoring submission freshness checks, and ensuring proper submission processing and duplicate prevention across different form types and submission scenarios.",
+      "domains": [
+        "SUBMISSION:VALIDATION",
+        "BACKEND:VALIDATION"
+      ]
+    },
+    {
+      "message": "Form Render",
+      "occurrenceCount": "6",
+      "sumoEventText": "form_render",
+      "phpConstantKey": "FORM_RENDER",
+      "fileReferences": [
+        "lib/Formstack/Dto/Model/FormBuilderFormDtoGenerated.php:142",
+        "lib/Formstack/Controller/PublicFormController.php:1850",
+        "lib/Formstack/Api2025/Form/Dto/Details/FormExtrasApiDto.php:85",
+        "lib/Formstack/Builder/FormResponseDtoBuilder.php:642",
+        "lib/Formstack/FormAnalytics/TrackingEndpoint.php:102"
+      ],
+      "aiComments": "Logs when forms are rendered for display to users. This occurs during form rendering operations when the system generates HTML output for form display. Includes form details for tracking form rendering performance, ensuring proper form display functionality, and monitoring form rendering errors or issues across different form types and themes.",
+      "domains": [
+        "LIVE-FORM:RENDER",
+        "BACKEND:ANALYTICS"
+      ]
+    },
+    {
+      "message": "Running. Submission: {submissionId} SubmitAction: {sourceid}",
+      "occurrenceCount": "4",
+      "sumoEventText": "auto_delete_submissions_account_settings",
+      "phpConstantKey": "AUTO_DELETE_SUBMISSIONS_ACCOUNT_SETTINGS",
+      "fileReferences": [],
+      "aiComments": "Logs when submit actions are executed for specific form submissions. This occurs when form submissions trigger submit actions and the system begins processing the submit action logic. Includes submission ID and submit action ID for tracking submit action execution, monitoring form submission processing, and ensuring proper submit action functionality across different form types and submit action configurations.",
+      "domains": [
+        "SUBMISSION:EGRESS:SUBMIT-ACTION",
+        "BACKEND:SUBMIT-ACTIONS"
+      ]
+    },
+    {
+      "message": "Inserted formAnalytics {formAnalyticsId} with {views} views",
+      "occurrenceCount": "2",
+      "sumoEventText": "submission_approval_inserted",
+      "phpConstantKey": "SUBMISSION_APPROVAL_INSERTED",
+      "fileReferences": [],
+      "aiComments": "Logs successful insertion of new daily form analytics records in the database. This occurs when new analytics records are created for daily form performance tracking. Includes analytics record ID and view count for tracking form analytics data creation, monitoring daily form performance metrics, and ensuring proper analytics data management and reporting across different form types and time periods.",
+      "domains": [
+        "BACKEND:ANALYTICS",
+        "LIVE-FORM:VIEW"
+      ]
+    },
+    {
+      "message": "Update form conversion",
+      "occurrenceCount": "5",
+      "sumoEventText": "billing_anonymous_payment_method_update",
+      "phpConstantKey": "BILLING_ANONYMOUS_PAYMENT_METHOD_UPDATE",
+      "fileReferences": [
+        "lib/Formstack/Job/AnalyticsConversionJob.php:43"
+      ],
+      "aiComments": "Logs when form conversion tracking is updated to record form conversion events and metrics. This occurs when forms are converted from one state to another (e.g., from draft to published) and the system updates conversion tracking data. Includes form ID and conversion details for tracking form conversion events, monitoring form lifecycle progression, and ensuring proper conversion analytics and reporting across different form types and conversion scenarios.",
+      "domains": null
+    },
+    {
+      "message": "Logging frontend and backend hidden {fieldId}s on submission for {formId}",
+      "occurrenceCount": "5",
+      "sumoEventText": "skipped_hidden_field_validation",
+      "phpConstantKey": "SKIPPED_HIDDEN_FIELD_VALIDATION",
+      "fileReferences": [],
+      "aiComments": "Logs when hidden fields are identified and logged during form submission processing. This occurs when the system detects hidden fields that are present in both frontend and backend processing and logs them for validation tracking. Includes field ID and form ID for tracking hidden field processing, monitoring form field validation, and ensuring proper hidden field handling across different form types and submission scenarios.",
+      "domains": [
+        "SUBMISSION:VALIDATION",
+        "FORM-BUILDER:FIELD:HIDDEN"
+      ]
+    },
+    {
+      "message": "New form {formId} session {sessionId}",
+      "occurrenceCount": "6",
+      "sumoEventText": "ab_form_error",
+      "phpConstantKey": "AB_FORM_ERROR",
+      "fileReferences": [],
+      "aiComments": "Logs when new form sessions are created for form access and interaction tracking. This occurs when users access forms and new session identifiers are generated for tracking form interactions. Includes form ID and session ID for tracking form session creation, monitoring form access patterns, and ensuring proper form session management and user interaction tracking across different form types and access methods.",
+      "domains": [
+        "LIVE-FORM:VIEW",
+        "BACKEND:ANALYTICS"
+      ]
+    },
+    {
+      "message": "Incremented form.views for {formId} with {views} views",
+      "occurrenceCount": "3",
+      "sumoEventText": null,
+      "phpConstantKey": null,
+      "fileReferences": [],
+      "aiComments": "Logs successful batch updates to form view counters in the database. This occurs when cached view counts are processed and written to the form table during background job execution. Includes form ID and view count for tracking form popularity and ensuring accurate analytics data persistence.",
+      "domains": [
+        "BACKEND:ANALYTICS",
+        "LIVE-FORM:VIEW"
+      ]
+    },
+    {
+      "message": "AuthorizeNetClient API call",
+      "occurrenceCount": "5",
+      "sumoEventText": "api_call",
+      "phpConstantKey": "API_CALL",
+      "fileReferences": [],
+      "aiComments": "Logs API calls made to Authorize.Net payment processing services. This occurs during payment processing operations when the system communicates with Authorize.Net for transaction processing. Includes API call details for tracking payment processing activities, monitoring payment gateway connectivity, and ensuring proper payment transaction handling and security compliance.",
+      "domains": [
+        "BACKEND:SUBMIT-ACTIONS:PAYMENTS",
+        "CONNECTIVITY"
+      ]
+    },
+    {
+      "message": "SubmitAction {type} run for {submissionId}",
+      "occurrenceCount": "10",
+      "sumoEventText": "submitaction_success",
+      "phpConstantKey": "SUBMITACTION_SUCCESS",
+      "fileReferences": [],
+      "aiComments": "Logs when submit actions are executed for specific form submissions. This occurs when the system processes submit actions for individual form submissions based on form configuration and submission data. Includes submit action type and submission ID for tracking submit action execution, monitoring form submission processing, and ensuring proper submit action functionality across different submit action types and submission processing scenarios.",
+      "domains": [
+        "SUBMISSION:EGRESS:SUBMIT-ACTION",
+        "BACKEND:SUBMIT-ACTIONS"
+      ]
+    },
+    {
+      "message": "Submit actions selected for submission",
+      "occurrenceCount": "10",
+      "sumoEventText": "form_submit_error",
+      "phpConstantKey": "FORM_SUBMIT_ERROR",
+      "fileReferences": [
+        "lib/Formstack/Controller/PublicFormController.php:549",
+        "lib/Formstack/Service/SharedSubmitActionService.php:177"
+      ],
+      "aiComments": "Logs when submit actions are selected and configured for form submission processing. This occurs when the system identifies which submit actions should be executed for a specific form submission based on form configuration and submission data. Includes submit action details for tracking submit action selection, monitoring form submission processing, and ensuring proper submit action execution and integration handling across different form types and submit action configurations.",
+      "domains": [
+        "SUBMISSION:EGRESS:SUBMIT-ACTION",
+        "BACKEND:SUBMIT-ACTIONS"
+      ]
+    },
+    {
+      "message": "Handling submission created event.",
+      "occurrenceCount": "5",
+      "sumoEventText": "submission_created",
+      "phpConstantKey": "USER_ACTIVITY_SUBMISSION_CREATED",
+      "fileReferences": [
+        "lib/Formstack/Search/DataIntegrity/OpensearchDataIntegrityRunner.php:221",
+        "lib/Formstack/Model/Listeners/Opensearch/OpensearchSubmissionReindexListener.php:37"
+      ],
+      "aiComments": "Logs when submission created events are processed by the OpenSearch data integrity system. This occurs when the system handles submission creation events to maintain search index consistency and data integrity. Includes submission details for tracking submission event processing, monitoring search index maintenance, and ensuring proper OpenSearch data synchronization across different submission types and search operations.",
+      "domains": [
+        "BACKEND:SEARCH:OPENSEARCH",
+        "SUBMISSION:VALIDATION"
+      ]
+    },
+    {
+      "message": "Before syncing form submission counts",
+      "occurrenceCount": "2",
+      "sumoEventText": "ab_form_error",
+      "phpConstantKey": "AB_FORM_ERROR",
+      "fileReferences": [
+        "lib/Formstack/Job/SubmissionCountSyncJob.php:36"
+      ],
+      "aiComments": "Logs the start of form submission count synchronization operations. This occurs when background jobs begin updating form submission counters to ensure data consistency. Includes sync details for tracking submission count synchronization initiation, monitoring data consistency operations, and ensuring proper form analytics and reporting data integrity across the platform.",
+      "domains": [
+        "BACKEND:ANALYTICS",
+        "BACKEND:QUEUES"
+      ]
+    },
+    {
+      "message": "SendGrid webhook for sendgridMessageId {sendgridMessageId}",
+      "occurrenceCount": "5",
+      "sumoEventText": "sendgrid_webhook",
+      "phpConstantKey": "SENDGRID_WEBHOOK",
+      "fileReferences": [],
+      "aiComments": "Logs when SendGrid webhooks are received for specific email messages. This occurs when SendGrid sends webhook notifications about email delivery status, bounces, or other email events. Includes SendGrid message ID for tracking email delivery events, monitoring email service webhook processing, and ensuring proper email delivery tracking and notification handling across different email types and delivery scenarios.",
+      "domains": [
+        "BACKEND:EMAILS:WEBHOOK-STATUS",
+        "BACKEND:EMAILS"
+      ]
+    },
+    {
+      "message": "Email prepared for delivery for {gearmanUnique}",
+      "occurrenceCount": "5",
+      "sumoEventText": "cron_emailqueue",
+      "phpConstantKey": "CRON_EMAIL_QUEUE",
+      "fileReferences": [],
+      "aiComments": "Logs when emails are prepared for delivery in the email queue system. This occurs when email jobs are queued for background processing and delivery. Includes Gearman unique identifier for tracking email queue processing, monitoring email delivery pipeline efficiency, and ensuring proper email job management and delivery scheduling across the distributed email system.",
+      "domains": [
+        "BACKEND:EMAILS",
+        "BACKEND:QUEUES"
+      ]
+    }
+  ],
+  "messageCount": 36,
+  "queryName": "theHinkyReport",
+  "arguments": [
+    "formId",
+    "accountId",
+    "submitActionType",
+    "submitActionId",
+    "submissionId",
+    "authProviderId"
+  ],
+  "timeRange": {
+    "from": "2025-10-04T04:00:01.000Z",
+    "to": "2025-10-08T03:59:59.000Z"
+  },
+  "validationNote": "To validate results, run the executedQuery directly in Sumo Logic"
+}

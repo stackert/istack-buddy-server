@@ -880,6 +880,9 @@ paths:
                       workflowIncompleteSubmissionCount:
                         type: number
                         example: 5
+                      activeAuthProviderName:
+                        type: string
+                        example: SAML Provider
                       protectionType:
                         type: string
                         enum:
@@ -887,19 +890,6 @@ paths:
                           - Password
                           - None
                         example: SSO
-                      authProvider:
-                        type: object
-                        nullable: true
-                        properties:
-                          authProviderId:
-                            type: number
-                            example: 123
-                          name:
-                            type: string
-                            example: SAML Provider
-                          type:
-                            type: string
-                            example: saml
                       submitActions:
                         type: array
                         items:
@@ -1720,13 +1710,11 @@ paths:
     get:
       operationId: SumoReportController_getKnownMessages
       summary: Get Known Messages
-      description: >-
-        Retrieve enriched details for valid Sumo Logic message patterns
-        including AI comments, file references, and domain information
+      description: Retrieve list of valid Sumo Logic message patterns for use in queries
       parameters: []
       responses:
         '200':
-          description: Enriched message details retrieved successfully
+          description: Known messages retrieved successfully
           content:
             application/json:
               schema:
@@ -1735,36 +1723,10 @@ paths:
                   messages:
                     type: array
                     items:
-                      type: object
-                      properties:
-                        message:
-                          type: string
-                          example: Handling submission updated event.
-                        sumoEventText:
-                          type: string
-                          example: submission_updated
-                        phpConstantKey:
-                          type: string
-                          example: USER_ACTIVITY_SUBMISSION_UPDATED
-                        fileReferences:
-                          type: array
-                          items:
-                            type: string
-                          example:
-                            - >-
-                              lib/Formstack/Model/Listeners/Opensearch/OpensearchSubmissionReindexListener.php:48
-                        aiComments:
-                          type: string
-                          example: >-
-                            Logs when submission updated events are processed by
-                            the OpenSearch data integrity system...
-                        domains:
-                          type: array
-                          items:
-                            type: string
-                          example:
-                            - BACKEND:SEARCH:OPENSEARCH
-                            - SUBMISSION:VALIDATION
+                      type: string
+                    example:
+                      - Submission created on {formId}.
+                      - SubmitAction {type} run for {submissionId}
                   count:
                     type: number
                     example: 25
