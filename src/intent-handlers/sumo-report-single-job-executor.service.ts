@@ -50,6 +50,7 @@ export class SumoReportSingleJobExecutor
           Submit Action ID: *${queryParams.subjects.submitActionId?.[0] || '[any]'}*
           Submit Action Type: *${queryParams.subjects.submitActionType?.[0] || '[any]'}*
           Auth Provider ID: *${queryParams.subjects.authProviderId?.[0] || '[any]'}*
+          Account ID: *${queryParams.subjects.accountId?.[0] || '[any]'}*
           Submission ID: *${queryParams.subjects.submissionId?.[0] || '[any]'}*
           Date Range: *${queryParams.dateRange.startDate || '[any]'}* to *${queryParams.dateRange.endDate || '[any]'}*
           Submitting job...`,
@@ -100,6 +101,15 @@ export class SumoReportSingleJobExecutor
       throw new Error('No sub-intents provided in intent data');
     }
 
+    // Normalize date range for relative time expressions (e.g., "past 24 hours")
+    const normalizedDateRange = this.normalizeRelativeDateRange(
+      {
+        startDate: intentData.dateRange?.startDate,
+        endDate: intentData.dateRange?.endDate,
+      },
+      intentData.originalUserPrompt || '',
+    );
+
     return {
       queryName: this.mapSubIntentToQueryName(subIntents[0]),
       subjects: {
@@ -108,11 +118,9 @@ export class SumoReportSingleJobExecutor
         submitActionType: intentData.subjects?.submitActionType || [],
         submissionId: intentData.subjects?.submissionId || [],
         authProviderId: intentData.subjects?.authProviderId || [],
+        accountId: intentData.subjects?.accountId || [],
       },
-      dateRange: {
-        startDate: intentData.dateRange?.startDate || '',
-        endDate: intentData.dateRange?.endDate || '',
-      },
+      dateRange: normalizedDateRange,
     };
   }
 

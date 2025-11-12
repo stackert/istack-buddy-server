@@ -14,6 +14,10 @@ Extract date ranges from natural language:
 - We must stay within an 8 day window (7 days + 1 additional day)
 - Assume Eastern time zone when no timezone is provided
 - Assume current day, month, year when not provided. "Can you give me a report xyz" should have a date range of today, 1 day. Assume NOW.year, NOW.month, NOW.day (we need start time 00:00:01, stop time 23:59:59). "Give me report blah-blah-blah for past 7 days" should be from today minus 7 days
+- **IMPORTANT: Relative time expressions like "past X hours" or "past X days" should be calculated relative to the CURRENT TIME (now()), not day boundaries.** For example:
+  - "past 24 hours" means: endDate = now() + 1 second, startDate = now() - 24 hours + 1 second
+  - "past 2 days" means: endDate = now() + 1 second, startDate = now() - 2 days + 1 second
+  - Do NOT use day boundaries (00:00:01 to 23:59:59) for relative time expressions
 - Include in dateRange object: {"startDate": "2025-09-13", "endDate": "2025-09-13"}
 - ISO 8601 examples: {"startDate": "2025-09-13T00:00:00.000Z", "endDate": "2025-09-13T23:59:59.999Z"}
 - NEVER put dates in subjects - dates go in dateRange only
